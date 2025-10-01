@@ -199,6 +199,25 @@ class OPPModel(Model):
                         name=f"flow_conservation_h{h}_i{i}",
                     )
 
+        # (14)
+        for h in self.H:
+            for i in self.V:
+                if i >= 2 and i <= final_node:
+                    model.addCons(
+                        self.constraint_one_input_arc_per_node(h, i, z),
+                        name=f"one_input_arc_per_node_h{h}_i{i}",
+                    )
+
+        # (15)
+        for h in self.H:
+            for n in self.N:
+                for j in self.V:
+                    if j >= 2:
+                        model.addCons(
+                            self.constraint_one_output_arc_per_node(h, n, j, z, a, y),
+                            name=f"one_output_arc_per_node_h{h}_n{n}_j{j}",
+                        )
+
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
         advance_time = sum(ea[n] for n in self.N)
@@ -284,3 +303,19 @@ class OPPModel(Model):
         return quicksum(z(g, i, h) for g in self.V if g < final_node) == quicksum(
             z(i, j, h) for j in self.V if j > 2
         )
+
+    def constraint_one_input_arc_per_node(self, h, i, z):
+        """
+        (14): One input arc per node constraint.
+        Ensures that each node has maximum one incoming arc in the mission route.
+        """
+        final_node = len(self.V) - 1
+        return quicksum(z[i, j, h] for j in self.V if j < final_node) <= 1
+
+    def constraint_one_output_arc_per_node(self, h, n, j, z, a, y):
+        """
+        (15): One output arc per node constraint.
+        Ensures that each node has maximum one outgoing arc in the mission route.
+        """
+        final_node = len(self.V) - 1
+        return (z[i, j, h] >= a[n, j] * y[n, h] for i in self.V if i < final_node)
