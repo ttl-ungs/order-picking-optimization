@@ -43,6 +43,7 @@ Variables:
             i ∈ V y j ∈ V en la misión h ∈ H
 """
 
+import pyscipopt
 from models.model import Model
 
 """
@@ -83,7 +84,42 @@ class OPPModel(Model):
         x: dict,
         y: dict,
     ):
-        pass
+        model = pyscipopt.Model("OPP Model")
+
+        # ta_n = delay of order n ∈ N
+        ta = [model.addVar(f"ta_{n}") for n in self.N]
+
+        # ea_n = advance of order n ∈ N
+        ea = [model.addVar(f"ea_{n}") for n in self.N]
+
+        # t_(exec_h) = execution time of mission h ∈ H
+        t_exec = [model.addVar(f"t_exec_{h}") for h in self.H]
+
+        # u_pk = processing time of the batch assigned to position k ∈ K
+        #        of picker p ∈ P
+        u = {(p, k): model.addVar(f"u_{p}_{k}") for p in self.P for k in self.K}
+
+        # v_pk = completion time for the batch assigned to position k ∈ K
+        #        of picker p ∈ P
+        v = {(p, k): model.addVar(f"v_{p}_{k}") for p in self.P for k in self.K}
+
+        # z_ijh = 1 if the arc connecting locations i ∈ V and j ∈ V are
+        #         included in mission h ∈ H, 0 otherwise
+        z = {
+            (i, j, h): model.addVar(f"z_{i}_{j}_{h}", vtype="B")
+            for i in self.V
+            for j in self.V
+            for h in self.H
+        }
+
+        # f_ijh = Number of units passing through the arc connecting locations
+        #         i ∈ V and j ∈ V in mission h ∈ H
+        f = {
+            (i, j, h): model.addVar(f"f_{i}_{j}_{h}")
+            for i in self.V
+            for j in self.V
+            for h in self.H
+        }
 
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.N for k in self.K)
