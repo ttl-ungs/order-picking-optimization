@@ -137,19 +137,19 @@ class OPPModel(Model):
         # Each mission must finish at the end (node 1).  (7)
         for h in self.H:
             model.addCons(
-                self.constraint_finish_at_end_rule(z, h),
+                self.constraint_finish_at_end(z, h),
                 name=f"finish_at_end_h{h}",
             )
 
         # A picker cannot return to the depot (node 1) after leaving it.  (8)
         model.addCons(
-            self.constraint_cant_go_back_to_depot_rule(z),
+            self.constraint_cant_go_back_to_depot(z),
             name=f"cant_go_back_to_depot_h{h}",
         )
 
         # A picker cannot leave the end node.  (9)
         model.addCons(
-            self.constraint_cant_move_from_end_node_rule(z),
+            self.constraint_cant_move_from_end_node(z),
             name=f"cant_move_from_end_node_h{h}",
         )
 
@@ -161,17 +161,17 @@ class OPPModel(Model):
 
         return w1 * recolection_time + w2 * penalty
 
-    def constraint_start_from_depot_rule(self, z, h):
+    def constraint_start_from_depot(self, z, h):
         """
-        Each mission must start from the depot (node 1).
+        (6): Each mission must start from the depot (node 1).
         """
         # We assume the initial depot is node 1.
         # The sum of the arcs z(1, j, h) for all destinations 'j' must be 1.
         return quicksum(z[1, j, h] for j in self.V if j > 1) == 1
 
-    def constraint_finish_at_end_rule(self, z, h):
+    def constraint_finish_at_end(self, z, h):
         """
-        Each mission must finish at the end (node 1).
+        (7): Each mission must finish at the end (node 1).
         """
         # We assume the end node is node len(J).
         # The sum of the arcs z(1, len(J) - 1, h) for all origins 'i' must be 1.
@@ -179,17 +179,17 @@ class OPPModel(Model):
         final_node = len(self.V) - 1
         return quicksum(z[1, final_node, h] for i in self.V if i > 1) == 1
 
-    def constraint_cant_go_back_to_depot_rule(self, z):
+    def constraint_cant_go_back_to_depot(self, z):
         """
-        A picker cannot return to the depot (node 1) after leaving it.
+        (8): A picker cannot return to the depot (node 1) after leaving it.
         """
         # We assume the depot is node 1.
         # The sum of the arcs z(i, 1, h) for all origins 'i' must be 0.
         return quicksum(z[i, 1, h] for i in self.V for h in self.H if i > 1) == 0
 
-    def constraint_cant_move_from_end_node_rule(self, z):
+    def constraint_cant_move_from_end_node(self, z):
         """
-        A picker cannot leave the end node.
+        (9): A picker cannot leave the end node.
         """
         # We assume the end node is node len(J).
         # The sum of the arcs z(len(J), j, h) for all destinations 'j' must be 0.
