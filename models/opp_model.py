@@ -129,6 +129,9 @@ class OPPModel(Model):
         )
 
         # Constraints
+
+        final_node = len(self.V) - 1
+
         # (6)
         for h in self.H:
             model.addCons(
@@ -169,7 +172,7 @@ class OPPModel(Model):
         for h in self.H:
             for n in self.N:
                 for i in self.V:
-                    if i <= len(self.V) - 1:
+                    if i <= final_node:
                         model.addCons(
                             self.constraint_location_exit(h, n, i, z, a, y),
                             name=f"location_exit_h{h}_n{n}_i{i}",
@@ -179,13 +182,22 @@ class OPPModel(Model):
         for h in self.H:
             for i in self.V:
                 for j in self.V:
-                    if i <= len(self.V) - 1 and j > 1:
+                    if i <= final_node and j > 1:
                         model.addCons(
                             self.constraint_articles_capacity(
                                 i, j, h, f, cap_vehicle, z
                             ),
                             name=f"articles_capacity_h{h}_i{i}_j{j}",
                         )
+
+        # (13)
+        for h in self.H:
+            for i in self.V:
+                if i >= 2 and i <= final_node:
+                    model.addCons(
+                        self.constraint_flow_conservation(z, h, i),
+                        name=f"flow_conservation_h{h}_i{i}",
+                    )
 
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
@@ -261,3 +273,14 @@ class OPPModel(Model):
         not exceed the vehicle's capacity.
         """
         return f[i, j, h] <= cap_vehicle * z[i, j, h]
+
+    def constraint_flow_conservation(self, z, h, i):
+        """
+        (13): Flow conservation constraint.
+        Ensures that the flow of articles is conserved at each location.
+        """
+
+        final_node = len(self.V) - 1
+        return quicksum(z(g, i, h) for g in self.V if g < final_node) == quicksum(
+            z(i, j, h) for j in self.V if j > 2
+        )
