@@ -84,3 +84,11 @@ class OPPModel(Model):
         y: dict,
     ):
         pass
+
+    def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
+        recolection_time = sum(v[p, k] for p in self.N for k in self.K)
+        advance_time = sum(ea[n] for n in self.N)
+        delay_time = sum(ta[n] for n in self.N)
+        penalty = gamma * advance_time + delta * delay_time
+
+        return w1 * recolection_time + w2 * penalty
