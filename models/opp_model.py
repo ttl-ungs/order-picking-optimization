@@ -141,6 +141,12 @@ class OPPModel(Model):
                 name=f"finish_at_end_h{h}",
             )
 
+        # A picker cannot return to the depot (node 1) after leaving it.  (8)
+        model.addCons(
+            self.constraint_cant_go_back_to_depot_rule(z),
+            name=f"cant_go_back_to_depot_h{h}",
+        )
+
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
         advance_time = sum(ea[n] for n in self.N)
@@ -166,3 +172,11 @@ class OPPModel(Model):
 
         final_node = len(self.V) - 1
         return quicksum(z[1, final_node, h] for i in self.V if i > 1) == 1
+
+    def constraint_cant_go_back_to_depot_rule(self, z):
+        """
+        A picker cannot return to the depot (node 1) after leaving it.
+        """
+        # We assume the depot is node 1.
+        # The sum of the arcs z(i, 1, h) for all origins 'i' must be 0.
+        return quicksum(z[i, 1, h] for i in self.V for h in self.H if i > 1) == 0
