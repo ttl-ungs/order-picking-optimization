@@ -153,6 +153,30 @@ class OPPModel(Model):
             name=f"cant_move_from_end_node_h{h}",
         )
 
+        # Location enter constraint.  (10)
+        # Ensures that if a location is visited in a mission, then the route must
+        # have a path that enters the location.
+        for h in self.H:
+            for n in self.N:
+                for j in self.V:
+                    if j > 2:
+                        model.addCons(
+                            self.constraint_location_enter(h, n, j, z, a, y),
+                            name=f"location_enter_h{h}_n{n}_j{j}",
+                        )
+
+        # Location exit constraint.  (11)
+        # Ensures that if a location is visited in a mission, then the route must
+        # have a path that exits the location.
+        for h in self.H:
+            for n in self.N:
+                for i in self.V:
+                    if i <= len(self.V) - 1:
+                        model.addCons(
+                            self.constraint_location_exit(h, n, i, z, a, y),
+                            name=f"location_exit_h{h}_n{n}_i{i}",
+                        )
+
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
         advance_time = sum(ea[n] for n in self.N)
@@ -201,3 +225,21 @@ class OPPModel(Model):
             )
             == 0
         )
+
+    def constraint_location_enter(self, h, n, j, z, a, y):
+        """
+        (10): Location enter constraint.
+        Ensures that if a location is visited in a mission, then the route must
+        have a path that enters the location.
+        """
+
+        final_node = len(self.V) - 1
+        return (z[i, j, h] >= a[n, j] * y[n, h] for i in self.V if i < final_node)
+
+    def constraint_location_exit(self, h, n, i, z, a, y):
+        """
+        (11): Location exit constraint.
+        Ensures that if a location is visited in a mission, then the route must
+        have a path that exits the location.
+        """
+        return (z[j, i, h] >= a[n, j] * y[n, h] for j in self.V if j > 1)
