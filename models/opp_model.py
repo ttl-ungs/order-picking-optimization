@@ -122,40 +122,40 @@ class OPPModel(Model):
             for h in self.H
         }
 
+        # Objective function
         model.setObjective(
             self.objective_function(w1, v, w2, ea, gamma, delta, ta),
             sense=pyscipopt.SCIP_OPTIMIZE_MINIMIZE,
         )
 
-        # Each mission must start from the depot (node 1).  (6)
+        # Constraints
+        # (6)
         for h in self.H:
             model.addCons(
                 self.constraint_start_from_depot_rule(z, h),
                 name=f"start_from_depot_h{h}",
             )
 
-        # Each mission must finish at the end (node 1).  (7)
+        # (7)
         for h in self.H:
             model.addCons(
                 self.constraint_finish_at_end(z, h),
                 name=f"finish_at_end_h{h}",
             )
 
-        # A picker cannot return to the depot (node 1) after leaving it.  (8)
+        # (8)
         model.addCons(
             self.constraint_cant_go_back_to_depot(z),
             name=f"cant_go_back_to_depot_h{h}",
         )
 
-        # A picker cannot leave the end node.  (9)
+        # (9)
         model.addCons(
             self.constraint_cant_move_from_end_node(z),
             name=f"cant_move_from_end_node_h{h}",
         )
 
-        # Location enter constraint.  (10)
-        # Ensures that if a location is visited in a mission, then the route must
-        # have a path that enters the location.
+        # (10)
         for h in self.H:
             for n in self.N:
                 for j in self.V:
@@ -165,9 +165,7 @@ class OPPModel(Model):
                             name=f"location_enter_h{h}_n{n}_j{j}",
                         )
 
-        # Location exit constraint.  (11)
-        # Ensures that if a location is visited in a mission, then the route must
-        # have a path that exits the location.
+        # (11)
         for h in self.H:
             for n in self.N:
                 for i in self.V:
