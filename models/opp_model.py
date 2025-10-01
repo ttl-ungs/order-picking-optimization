@@ -175,6 +175,18 @@ class OPPModel(Model):
                             name=f"location_exit_h{h}_n{n}_i{i}",
                         )
 
+        # (12)
+        for h in self.H:
+            for i in self.V:
+                for j in self.V:
+                    if i <= len(self.V) - 1 and j > 1:
+                        model.addCons(
+                            self.constraint_articles_capacity(
+                                i, j, h, f, cap_vehicle, z
+                            ),
+                            name=f"articles_capacity_h{h}_i{i}_j{j}",
+                        )
+
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
         advance_time = sum(ea[n] for n in self.N)
@@ -241,3 +253,11 @@ class OPPModel(Model):
         have a path that exits the location.
         """
         return (z[j, i, h] >= a[n, j] * y[n, h] for j in self.V if j > 1)
+
+    def constraint_articles_capacity(self, i, j, h, f, cap_vehicle, z):
+        """
+        (12): Articles capacity constraint.
+        Ensures that the total capacity of articles assigned to a mission does
+        not exceed the vehicle's capacity.
+        """
+        return f[i, j, h] <= cap_vehicle * z[i, j, h]
