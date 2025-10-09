@@ -261,6 +261,15 @@ class OPPModel(Model):
                 name=f"processing_time_p{p}_k1",
             )
 
+        # (21)
+        for p in self.P:
+            for k in self.K:
+                if k >= 2:
+                    model.addCons(
+                        self.constraint_completition_batch_time(u, v, p, k),
+                        name=f"completition_batch_time_p{p}_k{k}",
+                    )
+
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
         advance_time = sum(ea[n] for n in self.N)
@@ -423,3 +432,12 @@ class OPPModel(Model):
         for each position of a picker.
         """
         return u[p, 1] <= v[p, 1]
+
+    def constraint_completition_batch_time(u, v, p, k):
+        """
+        (21): Completion time of batch constraint.
+        Ensures that the completion time of a batch assigned to a position
+        of a picker is correctly calculated based on the processing time
+        of that batch.
+        """
+        return u[p, k] + v[p, k - 1] <= v[p, k]
