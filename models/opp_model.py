@@ -20,7 +20,7 @@ Parameters:
     β^time = Tiempo requerido para viajar en una unidad de espacio
     β^setup = Tiempo requerido para planificar cada lote
     β^picking = Tiempo requerido para buscar y recolectar ítems
-    due_carico_n = Fecha límite para la órden n ∈ N
+    due_date_n = Fecha límite para la órden n ∈ N
     M = Entero lo suficientemente grande
     dis_i = Distancia viajada para completar el lote i ∈ B
     capbatch_i = Capacidad requerida para un lote i ∈ B
@@ -77,7 +77,7 @@ class OPPModel(Model):
         beta_time: float,
         beta_setup: float,
         beta_picking: float,
-        due_carico: dict,
+        due_date: dict,
         M: float,
         dis: dict,
         capbatch: dict,
@@ -270,6 +270,30 @@ class OPPModel(Model):
                         name=f"completition_batch_time_p{p}_k{k}",
                     )
 
+        # (22)
+        for p in self.P:
+            for k in self.K:
+                for h in self.H:
+                    for n in self.N:
+                        model.addCons(
+                            self.constraint_tardiness_definition(
+                                v, p, k, due_date, n, M, h, x, y, ta
+                            ),
+                            name=f"tardiness_definition_p{p}_k{k}_n{n}_h{h}",
+                        )
+
+        # (23)
+        for p in self.P:
+            for k in self.K:
+                for h in self.H:
+                    for n in self.N:
+                        model.addCons(
+                            self.constraint_earliness_definition(
+                                v, p, k, due_date, n, M, h, x, y, ea
+                            ),
+                            name=f"earliness_definition_p{p}_k{k}_n{n}_h{h}",
+                        )
+
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
         advance_time = sum(ea[n] for n in self.N)
@@ -441,3 +465,21 @@ class OPPModel(Model):
         of that batch.
         """
         return u[p, k] + v[p, k - 1] <= v[p, k]
+
+    def constraint_tardiness_definition(v, p, k, due_date, n, M, h, x, y, ta):
+        """
+        (22): Tardiness definition constraint.
+        Ensures that the tardiness of an order is correctly calculated
+        based on the due date and the completion time of the mission
+        to which the order is assigned.
+        """
+        return v[p, k] - due_date[n] - M * (2 - x[p, k, h] - y[n, h]) <= ta[n]
+
+    def constraint_earliness_definition(v, p, k, due_date, n, M, h, x, y, ea):
+        """
+        (23): Earliness definition constraint.
+        Ensures that the earliness of an order is correctly calculated
+        based on the due date and the completion time of the mission
+        to which the order is assigned.
+        """
+        return due_date[n] - v[p, k] - M * (2 - x[p, k, h] - y[n, h]) <= ea[n]
