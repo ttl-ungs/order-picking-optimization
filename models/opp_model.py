@@ -294,6 +294,23 @@ class OPPModel(Model):
                             name=f"earliness_definition_p{p}_k{k}_n{n}_h{h}",
                         )
 
+        # (24)
+        for p in self.P:
+            for k in self.K:
+                for h in self.H:
+                    model.addCons(
+                        self.constraint_x_binary(p, k, h, x),
+                        name=f"x_binary_p{p}_k{k}_h{h}",
+                    )
+
+        # (25)
+        for h in self.H:
+            for n in self.N:
+                model.addCons(
+                    self.constraint_y_binary(n, h, y),
+                    name=f"y_binary_n{n}_h{h}",
+                )
+
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
         advance_time = sum(ea[n] for n in self.N)
@@ -483,3 +500,17 @@ class OPPModel(Model):
         to which the order is assigned.
         """
         return due_date[n] - v[p, k] - M * (2 - x[p, k, h] - y[n, h]) <= ea[n]
+
+    def constraint_x_binary(self, p, k, h, x):
+        """
+        (24): Binary constraint for x variables.
+        Ensures that the variable x is binary (0 or 1).
+        """
+        return x[p, k, h] in [0, 1]
+
+    def constraint_y_binary(self, n, h, y):
+        """
+        (25): Binary constraint for y variables.
+        Ensures that the variable y is binary (0 or 1).
+        """
+        return y[n, h] in [0, 1]
