@@ -236,6 +236,15 @@ class OPPModel(Model):
                         self.constraint_no_loops(h, i, z), name=f"no_loops_h{h}_i{i}"
                     )
 
+        # (18)
+        for h in self.H:
+            model.addCons(
+                self.constraint_valid_excecution_time(
+                    h, t_exec, beta_time, beta_setup, beta_picking, cap_n, y, d, z
+                ),
+                name=f"valid_execution_time_h{h}",
+            )
+
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
         advance_time = sum(ea[n] for n in self.N)
@@ -357,3 +366,27 @@ class OPPModel(Model):
         """
         final_node = len(self.V) - 1
         return z[i, i, h] == 0 if i >= 2 and i <= final_node else None
+
+    def constraint_valid_excecution_time(
+        self, h, t_exec, beta_time, beta_setup, beta_picking, cap, y, d, z
+    ):
+        """
+        (18): Valid execution time constraint.
+        Ensures that the execution time of a mission is correctly calculated
+        based on travel time, setup time, and picking time.
+        """
+        final_node = len(self.V) - 1
+        return (
+            beta_setup
+            + beta_picking * quicksum(cap[n] * y[n, h] for n in self.N)
+            + beta_time
+            * (
+                quicksum(
+                    d[i, j] * z[i, j, h]
+                    for i in self.V
+                    for j in self.V
+                    if i < final_node and j > 2
+                )
+            )
+            <= t_exec[h]
+        )
