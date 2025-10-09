@@ -360,6 +360,8 @@ class OPPModel(Model):
                             name=f"f_nonnegativity_h{h}_i{i}_j{j}",
                         )
 
+        model.optimize()
+
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
         advance_time = sum(ea[n] for n in self.N)
