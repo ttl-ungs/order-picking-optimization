@@ -228,6 +228,14 @@ class OPPModel(Model):
                             name=f"avoid_subtours_cycles_h{h}_n{n}_i{i}",
                         )
 
+        # (17)
+        for h in self.H:
+            for i in self.V:
+                if i >= 2 and i <= final_node:
+                    model.addCons(
+                        self.constraint_no_loops(h, i, z), name=f"no_loops_h{h}_i{i}"
+                    )
+
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
         advance_time = sum(ea[n] for n in self.N)
@@ -341,3 +349,11 @@ class OPPModel(Model):
             == quicksum(f[i, j, h] for j in self.V if j > 2)
             >= a[n, i] * y[n, h]
         )
+
+    def constraint_no_loops(self, h, i, z):
+        """
+        (17): No loops constraint.
+        Ensures that the route does not contain loops.
+        """
+        final_node = len(self.V) - 1
+        return z[i, i, h] == 0 if i >= 2 and i <= final_node else None
