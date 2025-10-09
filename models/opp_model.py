@@ -311,6 +311,55 @@ class OPPModel(Model):
                     name=f"y_binary_n{n}_h{h}",
                 )
 
+        # (26) is implicit in the definition of the variables
+
+        # (27)
+        for h in self.H:
+            model.addCons(
+                self.constraint_t_exec(h, t_exec),
+                name=f"t_exec_nonnegativity_h{h}",
+            )
+
+        # (28)
+        for n in self.N:
+            model.addCons(
+                self.constraint_ta(n, ta),
+                name=f"ta_nonnegativity_n{n}",
+            )
+
+        # (29)
+        for n in self.N:
+            model.addCons(
+                self.constraint_ea(n, ea),
+                name=f"ea_nonnegativity_n{n}",
+            )
+
+        # (30)
+        for p in self.P:
+            for k in self.K:
+                model.addCons(
+                    self.constraint_u(p, k, u),
+                    name=f"u_nonnegativity_p{p}_k{k}",
+                )
+
+        # (31)
+        for p in self.P:
+            for k in self.K:
+                model.addCons(
+                    self.constraint_v(p, k, v),
+                    name=f"v_nonnegativity_p{p}_k{k}",
+                )
+
+        # (32)
+        for h in self.H:
+            for i in self.V:
+                for j in self.V:
+                    if i <= final_node and j >= 2:
+                        model.addCons(
+                            self.constraint_flow_nonnegativity(i, j, h, f),
+                            name=f"f_nonnegativity_h{h}_i{i}_j{j}",
+                        )
+
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
         advance_time = sum(ea[n] for n in self.N)
@@ -514,3 +563,45 @@ class OPPModel(Model):
         Ensures that the variable y is binary (0 or 1).
         """
         return y[n, h] in [0, 1]
+
+    def constraint_t_exec(self, h, t_exec):
+        """
+        (26): Non-negativity constraint for t_exec variables.
+        Ensures that the variable t_exec is non-negative.
+        """
+        return t_exec[h] >= 0
+
+    def constraint_ta(self, n, ta):
+        """
+        (26): Non-negativity constraint for ta variables.
+        Ensures that the variable ta is non-negative.
+        """
+        return ta[n] >= 0
+
+    def constraint_ea(self, n, ea):
+        """
+        (26): Non-negativity constraint for ea variables.
+        Ensures that the variable ea is non-negative.
+        """
+        return ea[n] >= 0
+
+    def constraint_u(self, p, k, u):
+        """
+        (26): Non-negativity constraint for u variables.
+        Ensures that the variable u is non-negative.
+        """
+        return u[p, k] >= 0
+
+    def constraint_v(self, p, k, v):
+        """
+        (26): Non-negativity constraint for v variables.
+        Ensures that the variable v is non-negative.
+        """
+        return v[p, k] >= 0
+
+    def constraint_flow_nonnegativity(self, i, j, h, f):
+        """
+        (26): Non-negativity constraint for f variables.
+        Ensures that the variable f is non-negative.
+        """
+        return f[i, j, h] >= 0
