@@ -218,6 +218,16 @@ class OPPModel(Model):
                             name=f"one_output_arc_per_node_h{h}_n{n}_j{j}",
                         )
 
+        # (16)
+        for h in self.H:
+            for n in self.N:
+                for i in self.V:
+                    if i >= 2 and i <= final_node:
+                        model.addCons(
+                            self.constraint_avoid_subtours_cycles(f, i, h, a, y, n),
+                            name=f"avoid_subtours_cycles_h{h}_n{n}_i{i}",
+                        )
+
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
         advance_time = sum(ea[n] for n in self.N)
@@ -319,3 +329,15 @@ class OPPModel(Model):
         """
         final_node = len(self.V) - 1
         return (z[i, j, h] >= a[n, j] * y[n, h] for i in self.V if i < final_node)
+
+    def constraint_avoid_subtours_cycles(self, f, i, h, a, y, n):
+        """
+        (16): Subtour elimination constraint.
+        Ensures that the route does not contain subtours or cycles.
+        """
+        final_node = len(self.V) - 1
+        return (
+            quicksum(f[g, i, h] for g in self.V if g < final_node)
+            == quicksum(f[i, j, h] for j in self.V if j > 2)
+            >= a[n, i] * y[n, h]
+        )
