@@ -164,20 +164,24 @@ class OPPModel(Model):
             for n in self.N:
                 for j in self.V:
                     if j > 2:
-                        model.addCons(
-                            self.constraint_location_enter(h, n, j, z, a, y),
-                            name=f"location_enter_h{h}_n{n}_j{j}",
-                        )
+                        for i in self.V:
+                            if i < final_node:
+                                model.addCons(
+                                    self.constraint_location_enter(h, n, i, j, z, a, y),
+                                    name=f"location_enter_h{h}_n{n}_j{j}",
+                                )
 
         # (11)
         for h in self.H:
             for n in self.N:
                 for i in self.V:
                     if i <= final_node:
-                        model.addCons(
-                            self.constraint_location_exit(h, n, i, z, a, y),
-                            name=f"location_exit_h{h}_n{n}_i{i}",
-                        )
+                        for j in self.V:
+                            if j > 1:
+                                model.addCons(
+                                    self.constraint_location_exit(h, n, i, j, z, a, y),
+                                    name=f"location_exit_h{h}_n{n}_i{i}",
+                                )
 
         # (12)
         for h in self.H:
@@ -214,10 +218,12 @@ class OPPModel(Model):
             for n in self.N:
                 for j in self.V:
                     if j >= 2:
-                        model.addCons(
-                            self.constraint_one_output_arc_per_node(h, n, j, z, a, y),
-                            name=f"one_output_arc_per_node_h{h}_n{n}_j{j}",
-                        )
+                        for i in self.V:
+                            if i < final_node:
+                                model.addCons(
+                                    self.constraint_one_output_arc_per_node(h, n, i, j, z, a, y),
+                                    name=f"one_output_arc_per_node_h{h}_n{n}_j{j}",
+                                )
 
         # (16)
         for h in self.H:
@@ -349,23 +355,21 @@ class OPPModel(Model):
             == 0
         )
 
-    def constraint_location_enter(self, h, n, j, z, a, y):
+    def constraint_location_enter(self, h, n, j, i, z, a, y):
         """
         (10): Location enter constraint.
         Ensures that if a location is visited in a mission, then the route must
         have a path that enters the location.
         """
+        return z[i, j, h] >= a[n, j] * y[n, h]
 
-        final_node = len(self.V) - 1
-        return (z[i, j, h] >= a[n, j] * y[n, h] for i in self.V if i < final_node)
-
-    def constraint_location_exit(self, h, n, i, z, a, y):
+    def constraint_location_exit(self, h, n, i, j, z, a, y):
         """
         (11): Location exit constraint.
         Ensures that if a location is visited in a mission, then the route must
         have a path that exits the location.
         """
-        return (z[j, i, h] >= a[n, j] * y[n, h] for j in self.V if j > 1)
+        return z[j, i, h] >= a[n, j] * y[n, h]
 
     def constraint_articles_capacity(self, i, j, h, f, cap_vehicle, z):
         """
@@ -394,13 +398,12 @@ class OPPModel(Model):
         final_node = len(self.V) - 1
         return quicksum(z[i, j, h] for j in self.V if j < final_node) <= 1
 
-    def constraint_one_output_arc_per_node(self, h, n, j, z, a, y):
+    def constraint_one_output_arc_per_node(self, h, n, i, j, z, a, y):
         """
         (15): One output arc per node constraint.
         Ensures that each node has maximum one outgoing arc in the mission route.
         """
-        final_node = len(self.V) - 1
-        return (z[i, j, h] >= a[n, j] * y[n, h] for i in self.V if i < final_node)
+        return z[i, j, h] >= a[n, j] * y[n, h]
 
     def constraint_avoid_subtours_cycles(self, f, i, h, a, y, n):
         """
@@ -408,11 +411,9 @@ class OPPModel(Model):
         Ensures that the route does not contain subtours or cycles.
         """
         final_node = len(self.V) - 1
-        return (
-            quicksum(f[g, i, h] for g in self.V if g < final_node)
-            == quicksum(f[i, j, h] for j in self.V if j > 2)
-            >= a[n, i] * y[n, h]
-        )
+        flow_in = quicksum(f[g, i, h] for g in self.V if g < final_node)
+        required_flow = a[n, i] * y[n, h]
+        return flow_in >= required_flow
 
     def constraint_no_loops(self, h, i, z):
         """
