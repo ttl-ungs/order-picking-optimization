@@ -86,28 +86,29 @@ class OPPModel(Model):
         y: dict,
     ):
         model = pyscipopt.Model("OPP Model")
+        self.model = model
 
         # ta_n = delay of order n ∈ N
-        ta = [model.addVar(f"ta_{n}") for n in self.N]
+        ta = {n: model.addVar(name=f"ta_{n}", lb=0) for n in self.N}
 
         # ea_n = advance of order n ∈ N
-        ea = [model.addVar(f"ea_{n}") for n in self.N]
+        ea = {n: model.addVar(name=f"ea_{n}", lb=0) for n in self.N}
 
         # t_(exec_h) = execution time of mission h ∈ H
-        t_exec = [model.addVar(f"t_exec_{h}") for h in self.H]
+        t_exec = {h: model.addVar(name=f"t_exec_{h}", lb=0) for h in self.H}
 
         # u_pk = processing time of the batch assigned to position k ∈ K
         #        of picker p ∈ P
-        u = {(p, k): model.addVar(f"u_{p}_{k}") for p in self.P for k in self.K}
+        u = {(p, k): model.addVar(name=f"u_{p}_{k}", lb=0) for p in self.P for k in self.K}
 
         # v_pk = completion time for the batch assigned to position k ∈ K
         #        of picker p ∈ P
-        v = {(p, k): model.addVar(f"v_{p}_{k}") for p in self.P for k in self.K}
+        v = {(p, k): model.addVar(name=f"v_{p}_{k}", lb=0) for p in self.P for k in self.K}
 
         # z_ijh = 1 if the arc connecting locations i ∈ V and j ∈ V are
         #         included in mission h ∈ H, 0 otherwise
         z = {
-            (i, j, h): model.addVar(f"z_{i}_{j}_{h}", vtype="B")
+            (i, j, h): model.addVar(name=f"z_{i}_{j}_{h}", vtype="B")
             for i in self.V
             for j in self.V
             for h in self.H
@@ -116,7 +117,7 @@ class OPPModel(Model):
         # f_ijh = Number of units passing through the arc connecting locations
         #         i ∈ V and j ∈ V in mission h ∈ H
         f = {
-            (i, j, h): model.addVar(f"f_{i}_{j}_{h}")
+            (i, j, h): model.addVar(name=f"f_{i}_{j}_{h}", lb=0)
             for i in self.V
             for j in self.V
             for h in self.H
@@ -125,7 +126,7 @@ class OPPModel(Model):
         # Objective function
         model.setObjective(
             self.objective_function(w1, v, w2, ea, gamma, delta, ta),
-            sense=pyscipopt.SCIP_OPTIMIZE_MINIMIZE,
+            sense='minimize'
         )
 
         # Constraints
@@ -135,7 +136,7 @@ class OPPModel(Model):
         # (6)
         for h in self.H:
             model.addCons(
-                self.constraint_start_from_depot_rule(z, h),
+                self.constraint_start_from_depot(z, h),
                 name=f"start_from_depot_h{h}",
             )
 
@@ -294,71 +295,8 @@ class OPPModel(Model):
                             name=f"earliness_definition_p{p}_k{k}_n{n}_h{h}",
                         )
 
-        # (24)
-        for p in self.P:
-            for k in self.K:
-                for h in self.H:
-                    model.addCons(
-                        self.constraint_x_binary(p, k, h, x),
-                        name=f"x_binary_p{p}_k{k}_h{h}",
-                    )
+        # (24, 25, 26, 27, 28, 29, 30, 31, 32) are implicit in the definition of the variables
 
-        # (25)
-        for h in self.H:
-            for n in self.N:
-                model.addCons(
-                    self.constraint_y_binary(n, h, y),
-                    name=f"y_binary_n{n}_h{h}",
-                )
-
-        # (26) is implicit in the definition of the variables
-
-        # (27)
-        for h in self.H:
-            model.addCons(
-                self.constraint_t_exec(h, t_exec),
-                name=f"t_exec_nonnegativity_h{h}",
-            )
-
-        # (28)
-        for n in self.N:
-            model.addCons(
-                self.constraint_ta(n, ta),
-                name=f"ta_nonnegativity_n{n}",
-            )
-
-        # (29)
-        for n in self.N:
-            model.addCons(
-                self.constraint_ea(n, ea),
-                name=f"ea_nonnegativity_n{n}",
-            )
-
-        # (30)
-        for p in self.P:
-            for k in self.K:
-                model.addCons(
-                    self.constraint_u(p, k, u),
-                    name=f"u_nonnegativity_p{p}_k{k}",
-                )
-
-        # (31)
-        for p in self.P:
-            for k in self.K:
-                model.addCons(
-                    self.constraint_v(p, k, v),
-                    name=f"v_nonnegativity_p{p}_k{k}",
-                )
-
-        # (32)
-        for h in self.H:
-            for i in self.V:
-                for j in self.V:
-                    if i <= final_node and j >= 2:
-                        model.addCons(
-                            self.constraint_flow_nonnegativity(i, j, h, f),
-                            name=f"f_nonnegativity_h{h}_i{i}_j{j}",
-                        )
 
         model.optimize()
 
@@ -444,8 +382,8 @@ class OPPModel(Model):
         """
 
         final_node = len(self.V) - 1
-        return quicksum(z(g, i, h) for g in self.V if g < final_node) == quicksum(
-            z(i, j, h) for j in self.V if j > 2
+        return quicksum(z[g, i, h] for g in self.V if g < final_node) == quicksum(
+            z[i, j, h] for j in self.V if j > 2
         )
 
     def constraint_one_input_arc_per_node(self, h, i, z):
@@ -525,7 +463,7 @@ class OPPModel(Model):
         """
         return u[p, 1] <= v[p, 1]
 
-    def constraint_completition_batch_time(u, v, p, k):
+    def constraint_completition_batch_time(self, u, v, p, k):
         """
         (21): Completion time of batch constraint.
         Ensures that the completion time of a batch assigned to a position
@@ -534,7 +472,7 @@ class OPPModel(Model):
         """
         return u[p, k] + v[p, k - 1] <= v[p, k]
 
-    def constraint_tardiness_definition(v, p, k, due_date, n, M, h, x, y, ta):
+    def constraint_tardiness_definition(self, v, p, k, due_date, n, M, h, x, y, ta):
         """
         (22): Tardiness definition constraint.
         Ensures that the tardiness of an order is correctly calculated
@@ -543,7 +481,7 @@ class OPPModel(Model):
         """
         return v[p, k] - due_date[n] - M * (2 - x[p, k, h] - y[n, h]) <= ta[n]
 
-    def constraint_earliness_definition(v, p, k, due_date, n, M, h, x, y, ea):
+    def constraint_earliness_definition(self, v, p, k, due_date, n, M, h, x, y, ea):
         """
         (23): Earliness definition constraint.
         Ensures that the earliness of an order is correctly calculated
@@ -566,44 +504,3 @@ class OPPModel(Model):
         """
         return y[n, h] in [0, 1]
 
-    def constraint_t_exec(self, h, t_exec):
-        """
-        (26): Non-negativity constraint for t_exec variables.
-        Ensures that the variable t_exec is non-negative.
-        """
-        return t_exec[h] >= 0
-
-    def constraint_ta(self, n, ta):
-        """
-        (26): Non-negativity constraint for ta variables.
-        Ensures that the variable ta is non-negative.
-        """
-        return ta[n] >= 0
-
-    def constraint_ea(self, n, ea):
-        """
-        (26): Non-negativity constraint for ea variables.
-        Ensures that the variable ea is non-negative.
-        """
-        return ea[n] >= 0
-
-    def constraint_u(self, p, k, u):
-        """
-        (26): Non-negativity constraint for u variables.
-        Ensures that the variable u is non-negative.
-        """
-        return u[p, k] >= 0
-
-    def constraint_v(self, p, k, v):
-        """
-        (26): Non-negativity constraint for v variables.
-        Ensures that the variable v is non-negative.
-        """
-        return v[p, k] >= 0
-
-    def constraint_flow_nonnegativity(self, i, j, h, f):
-        """
-        (26): Non-negativity constraint for f variables.
-        Ensures that the variable f is non-negative.
-        """
-        return f[i, j, h] >= 0
