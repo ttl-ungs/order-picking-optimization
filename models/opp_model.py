@@ -20,7 +20,7 @@ Parameters:
     β^time = Tiempo requerido para viajar en una unidad de espacio
     β^setup = Tiempo requerido para planificar cada lote
     β^picking = Tiempo requerido para buscar y recolectar ítems
-    due_date_n = Fecha límite para la órden n ∈ N
+    due_date = Fecha límite para la órden n ∈ N
     M = Entero lo suficientemente grande
     dis_i = Distancia viajada para completar el lote i ∈ B
     capbatch_i = Capacidad requerida para un lote i ∈ B
@@ -171,7 +171,7 @@ class OPPModel(Model):
         #                             name=f"location_enter_h{h}_n{n}_j{j}",
         #                         )
 
-        (11)
+        # (11)
         # for h in self.H:
         #     for n in self.N:
         #         for i in self.V:
@@ -198,9 +198,9 @@ class OPPModel(Model):
         # (13)
         for h in self.H:
             for i in self.V:
-                if i >= 2 and i <= final_node:
+                if i > 1 and i < final_node:
                     model.addCons(
-                        self.constraint_flow_conservation(z, h, i, final_node),
+                        self.constraint_flow_conservation(z, h, i),
                         name=f"flow_conservation_h{h}_i{i}",
                     )
 
@@ -236,12 +236,12 @@ class OPPModel(Model):
                         )
 
         # (17)
-        # for h in self.H:
-        #     for i in self.V:
-        #         if i >= 2 and i <= final_node:
-        #             model.addCons(
-        #                 self.constraint_no_loops(h, i, z), name=f"no_loops_h{h}_i{i}"
-        #             )
+        for h in self.H:
+            for i in self.V:
+                if i >= 2 and i <= final_node:
+                    model.addCons(
+                        self.constraint_no_loops(h, i, z, final_node), name=f"no_loops_h{h}_i{i}"
+                    )
 
         # (18)
         for h in self.H:
@@ -301,8 +301,9 @@ class OPPModel(Model):
                             name=f"earliness_definition_p{p}_k{k}_n{n}_h{h}",
                         )
 
-        # (24, 25, 26, 27, 28, 29, 30, 31, 32) are implicit in the definition of the variables
 
+        # (24), (25), (26), (27), (28), (29), (30), (31) and (32) 
+        #               are implicit in the definition of the variables
 
         model.optimize()
 
@@ -327,10 +328,8 @@ class OPPModel(Model):
         (7): Each mission must finish at the end (node 1).
         """
         # We assume the end node is node len(J).
-        # The sum of the arcs z(1, len(J) - 1, h) for all origins 'i' must be 1.
-
-        final_node = len(self.V) - 1
-        return quicksum(z[1, final_node, h] for i in self.V if i > 1) == 1
+        # The sum of the arcs z(i, len(J), h) for all origins 'i' must be 1.
+        return quicksum(z[i, final_node, h] for i in self.V if i < final_node) == 1
 
     def constraint_cant_go_back_to_depot(self, z):
         """
@@ -346,7 +345,6 @@ class OPPModel(Model):
         """
         # We assume the end node is node len(J).
         # The sum of the arcs z(len(J), j, h) for all destinations 'j' must be 0.
-
         return (
             quicksum(
                 z[final_node, j, h] for j in self.V for h in self.H if j < final_node
@@ -378,14 +376,13 @@ class OPPModel(Model):
         """
         return f[i, j, h] <= cap_vehicle * z[i, j, h]
 
-    def constraint_flow_conservation(self, z, h, i, final_node):
+    def constraint_flow_conservation(self, z, h, i):
         """
         (13): Flow conservation constraint.
         Ensures that the flow of articles is conserved at each location.
         """
-
-        return quicksum(z[g, i, h] for g in self.V if g < final_node) == quicksum(
-            z[i, j, h] for j in self.V if j > 2
+        return quicksum(z[g, i, h] for g in self.V if g != i) == quicksum(
+            z[i, j, h] for j in self.V if j != i
         )
 
     def constraint_one_input_arc_per_node(self, h, i, z, final_node):
@@ -393,7 +390,6 @@ class OPPModel(Model):
         (14): One input arc per node constraint.
         Ensures that each node has maximum one incoming arc in the mission route.
         """
-
         return quicksum(z[i, j, h] for j in self.V if j < final_node) <= 1
 
     def constraint_one_output_arc_per_node(self, h, n, i, j, z, a, y):
@@ -401,7 +397,6 @@ class OPPModel(Model):
         (15): One output arc per node constraint.
         Ensures that each node has maximum one outgoing arc in the mission route.
         """
-
         return z[i, j, h] >= a[n, j] * y[n, h]
 
     def constraint_avoid_subtours_cycles(self, f, i, h, a, y, n, final_node):
@@ -409,7 +404,6 @@ class OPPModel(Model):
         (16): Subtour elimination constraint.
         Ensures that the route does not contain subtours or cycles.
         """
-
         flow_in = quicksum(f[g, i, h] for g in self.V if g < final_node)
         required_flow = a[n, i] * y[n, h]
         return flow_in >= required_flow
@@ -419,7 +413,6 @@ class OPPModel(Model):
         (17): No loops constraint.
         Ensures that the route does not contain loops.
         """
-
         return z[i, i, h] == 0 if i >= 2 and i <= final_node else None
 
     def constraint_valid_excecution_time(
@@ -430,7 +423,6 @@ class OPPModel(Model):
         Ensures that the execution time of a mission is correctly calculated
         based on travel time, setup time, and picking time.
         """
-
         return (
             beta_setup
             + beta_picking * quicksum(cap[n] * y[n, h] for n in self.N)
