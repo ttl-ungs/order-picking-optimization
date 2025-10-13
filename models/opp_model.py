@@ -214,16 +214,16 @@ class OPPModel(Model):
                     )
 
         # (15)
-        for h in self.H:
-            for n in self.N:
-                for j in self.V:
-                    if j >= 2:
-                        for i in self.V:
-                            if i < final_node:
-                                model.addCons(
-                                    self.constraint_one_output_arc_per_node(h, n, i, j, z, a, y),
-                                    name=f"one_output_arc_per_node_h{h}_n{n}_j{j}",
-                                )
+        # for h in self.H:
+        #     for n in self.N:
+        #         for j in self.V:
+        #             if j >= 2:
+        #                 for i in self.V:
+        #                     if i < final_node:
+        #                         model.addCons(
+        #                             self.constraint_one_output_arc_per_node(h, n, i, j, z, a, y),
+        #                             name=f"one_output_arc_per_node_h{h}_n{n}_j{j}",
+        #                         )
 
         # (16)
         for h in self.H:
@@ -301,6 +301,17 @@ class OPPModel(Model):
                             name=f"earliness_definition_p{p}_k{k}_n{n}_h{h}",
                         )
 
+       # Simplification for (10), (11) and (15)
+        for h in self.H:
+            for j in self.V:
+                required = quicksum(a[n, j] * y[n, h] for n in self.N)
+                if j > 1 and j < final_node: 
+                    inflow = quicksum(z[i, j, h] for i in self.V if i != j)
+                    model.addCons(
+                        inflow == required,
+                        name=f"forced_visit_h{h}_j{j}",
+                    )
+
 
         # (24), (25), (26), (27), (28), (29), (30), (31) and (32) 
         #               are implicit in the definition of the variables
@@ -352,21 +363,21 @@ class OPPModel(Model):
             == 0
         )
 
-    def constraint_location_enter(self, h, n, j, i, z, a, y):
-        """
-        (10): Location enter constraint.
-        Ensures that if a location is visited in a mission, then the route must
-        have a path that enters the location.
-        """
-        return z[i, j, h] >= a[n, j] * y[n, h]
+    # def constraint_location_enter(self, h, n, j, i, z, a, y):
+    #     """
+    #     (10): Location enter constraint.
+    #     Ensures that if a location is visited in a mission, then the route must
+    #     have a path that enters the location.
+    #     """
+    #     return z[i, j, h] >= a[n, j] * y[n, h]
 
-    def constraint_location_exit(self, h, n, i, j, z, a, y):
-        """
-        (11): Location exit constraint.
-        Ensures that if a location is visited in a mission, then the route must
-        have a path that exits the location.
-        """
-        return z[j, i, h] >= a[n, j] * y[n, h]
+    # def constraint_location_exit(self, h, n, i, j, z, a, y):
+    #     """
+    #     (11): Location exit constraint.
+    #     Ensures that if a location is visited in a mission, then the route must
+    #     have a path that exits the location.
+    #     """
+    #     return z[j, i, h] >= a[n, j] * y[n, h]
 
     def constraint_articles_capacity(self, i, j, h, f, cap_vehicle, z):
         """
@@ -392,12 +403,12 @@ class OPPModel(Model):
         """
         return quicksum(z[i, j, h] for j in self.V if j < final_node) <= 1
 
-    def constraint_one_output_arc_per_node(self, h, n, i, j, z, a, y):
-        """
-        (15): One output arc per node constraint.
-        Ensures that each node has maximum one outgoing arc in the mission route.
-        """
-        return z[i, j, h] >= a[n, j] * y[n, h]
+    # def constraint_one_output_arc_per_node(self, h, n, i, j, z, a, y):
+    #     """
+    #     (15): One output arc per node constraint.
+    #     Ensures that each node has maximum one outgoing arc in the mission route.
+    #     """
+    #     return z[i, j, h] >= a[n, j] * y[n, h]
 
     def constraint_avoid_subtours_cycles(self, f, i, h, a, y, n, final_node):
         """
