@@ -46,6 +46,10 @@ Variables:
 import pyscipopt
 from pyscipopt import quicksum
 from models.model import Model
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils.output_handler import print_solution_results
 
 """
 Based on OPP article: A Model for the Joint Optimisation of Order Batching, 
@@ -313,10 +317,22 @@ class OPPModel(Model):
                     )
 
 
-        # (24), (25), (26), (27), (28), (29), (30), (31) and (32) 
-        #               are implicit in the definition of the variables
+        # (24), (25), (26), (27), (28), (29), (30), (31) and (32) are implicit in the definition of the variables
 
         model.optimize()
+
+        print_solution_results(model=model, 
+                        N=self.N, 
+                        V=self.V, 
+                        H=self.H, 
+                        P=self.P, 
+                        K=self.K, 
+                        ta=ta, 
+                        ea=ea, 
+                        t_exec=t_exec, 
+                        v=v, 
+                        z=z)
+
 
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
