@@ -48,8 +48,8 @@ from pyscipopt import quicksum
 from models.model import Model
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils.output_handler import print_solution_results
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 """
 Based on OPP article: A Model for the Joint Optimisation of Order Batching, 
@@ -103,11 +103,19 @@ class OPPModel(Model):
 
         # u_pk = processing time of the batch assigned to position k ∈ K
         #        of picker p ∈ P
-        u = {(p, k): model.addVar(name=f"u_{p}_{k}", lb=0) for p in self.P for k in self.K}
+        u = {
+            (p, k): model.addVar(name=f"u_{p}_{k}", lb=0)
+            for p in self.P
+            for k in self.K
+        }
 
         # v_pk = completion time for the batch assigned to position k ∈ K
         #        of picker p ∈ P
-        v = {(p, k): model.addVar(name=f"v_{p}_{k}", lb=0) for p in self.P for k in self.K}
+        v = {
+            (p, k): model.addVar(name=f"v_{p}_{k}", lb=0)
+            for p in self.P
+            for k in self.K
+        }
 
         # z_ijh = 1 if the arc connecting locations i ∈ V and j ∈ V are
         #         included in mission h ∈ H, 0 otherwise
@@ -129,8 +137,7 @@ class OPPModel(Model):
 
         # Objective function
         model.setObjective(
-            self.objective_function(w1, v, w2, ea, gamma, delta, ta),
-            sense='minimize'
+            self.objective_function(w1, v, w2, ea, gamma, delta, ta), sense="minimize"
         )
 
         # Constraints
@@ -147,7 +154,7 @@ class OPPModel(Model):
         # (7)
         for h in self.H:
             model.addCons(
-                self.constraint_finish_at_end(z, h,final_node),
+                self.constraint_finish_at_end(z, h, final_node),
                 name=f"finish_at_end_h{h}",
             )
 
@@ -159,7 +166,7 @@ class OPPModel(Model):
 
         # (9)
         model.addCons(
-            self.constraint_cant_move_from_end_node(z,final_node),
+            self.constraint_cant_move_from_end_node(z, final_node),
             name=f"cant_move_from_end_node_h{h}",
         )
 
@@ -235,7 +242,9 @@ class OPPModel(Model):
                 for i in self.V:
                     if i >= 2 and i <= final_node:
                         model.addCons(
-                            self.constraint_avoid_subtours_cycles(f, i, h, a, y, n, final_node),
+                            self.constraint_avoid_subtours_cycles(
+                                f, i, h, a, y, n, final_node
+                            ),
                             name=f"avoid_subtours_cycles_h{h}_n{n}_i{i}",
                         )
 
@@ -244,14 +253,24 @@ class OPPModel(Model):
             for i in self.V:
                 if i >= 2 and i <= final_node:
                     model.addCons(
-                        self.constraint_no_loops(h, i, z, final_node), name=f"no_loops_h{h}_i{i}"
+                        self.constraint_no_loops(h, i, z, final_node),
+                        name=f"no_loops_h{h}_i{i}",
                     )
 
         # (18)
         for h in self.H:
             model.addCons(
                 self.constraint_valid_excecution_time(
-                    h, t_exec, beta_time, beta_setup, beta_picking, cap_n, y, d, z, final_node
+                    h,
+                    t_exec,
+                    beta_time,
+                    beta_setup,
+                    beta_picking,
+                    cap_n,
+                    y,
+                    d,
+                    z,
+                    final_node,
                 ),
                 name=f"valid_execution_time_h{h}",
             )
@@ -305,34 +324,38 @@ class OPPModel(Model):
                             name=f"earliness_definition_p{p}_k{k}_n{n}_h{h}",
                         )
 
-       # Simplification for (10), (11) and (15)
+        # Simplification for (10), (11) and (15)
         for h in self.H:
             for j in self.V:
                 required = quicksum(a[n, j] * y[n, h] for n in self.N)
-                if j > 1 and j < final_node: 
+                if j > 1 and j < final_node:
                     inflow = quicksum(z[i, j, h] for i in self.V if i != j)
                     model.addCons(
                         inflow == required,
                         name=f"forced_visit_h{h}_j{j}",
                     )
 
-
         # (24), (25), (26), (27), (28), (29), (30), (31) and (32) are implicit in the definition of the variables
 
         model.optimize()
 
-        print_solution_results(model=model, 
-                        N=self.N, 
-                        V=self.V, 
-                        H=self.H, 
-                        P=self.P, 
-                        K=self.K, 
-                        ta=ta, 
-                        ea=ea, 
-                        t_exec=t_exec, 
-                        v=v, 
-                        z=z)
+        # Print solution results, for testing purposes
+        super().notify(
+            model=model,
+            N=self.N,
+            V=self.V,
+            H=self.H,
+            P=self.P,
+            K=self.K,
+            ta=ta,
+            ea=ea,
+            t_exec=t_exec,
+            v=v,
+            z=z,
+        )
 
+        # TODO: return solution values
+        return model.getStatus()
 
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
