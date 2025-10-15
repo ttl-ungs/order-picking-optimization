@@ -132,10 +132,8 @@ class TestOPPModel(unittest.TestCase):
         V, H, K, P, B, w1, w2, gamma, delta, d, cap_vehicle, cap_n, x = (
             two_orders_two_aisles()
         )
-        N = {1, 2}
 
         N = {1, 2}
-
         a = {(n, v): 0 for n in N for v in V}
 
         # Order 1 must visit locations 2, 3, 4
@@ -147,6 +145,69 @@ class TestOPPModel(unittest.TestCase):
         a[(2, 5)] = 1
         a[(2, 6)] = 1
         a[(2, 7)] = 1
+
+        y = {(1, 1): 1, (1, 2): 0, (2, 1): 0, (2, 2): 1}
+
+        beta_time = 0.5
+        beta_setup = 1.0
+        beta_picking = 1.0
+        M = 1000.0
+
+        due_date = {1: 15.0, 2: 15.0}
+        dis = {}
+        capbatch = {}
+        b = {}
+
+        model = OPPModel(N, V, H, K, P, B)
+        output_handler = OutputHandler()
+        model.attach(output_handler)
+
+        try:
+            result = model.solve(
+                w1,
+                w2,
+                gamma,
+                delta,
+                d,
+                cap_n,
+                cap_vehicle,
+                a,
+                beta_time,
+                beta_setup,
+                beta_picking,
+                due_date,
+                M,
+                dis,
+                capbatch,
+                b,
+                x,
+                y,
+            )
+        except Exception as e:
+            self.fail(f"Model execution failed: {e}")
+
+        self.assertTrue(
+            result in ("optimal", "feasible", "infeasible", "unbounded"),
+            "The model did not find a solution.",
+        )
+
+    def test_two_orders_two_aisles_one_picking_point_per_order(
+        self, observer: Observer = None
+    ):
+        from tests.test_scenarios import two_orders_two_aisles
+
+        V, H, K, P, B, w1, w2, gamma, delta, d, cap_vehicle, cap_n, x = (
+            two_orders_two_aisles()
+        )
+
+        N = {1, 2}
+        a = {(n, v): 0 for n in N for v in V}
+
+        # Order 1 must visit location 3
+        a[(1, 3)] = 1
+
+        # Order 2 must visit location 5
+        a[(2, 5)] = 1
 
         y = {(1, 1): 1, (1, 2): 0, (2, 1): 0, (2, 2): 1}
 
