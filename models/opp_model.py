@@ -46,6 +46,8 @@ Variables:
 import pyscipopt
 from pyscipopt import quicksum
 from models.model import Model
+
+from models.opp_location_graph import OPPLocationGraph
 import sys
 import os
 
@@ -59,27 +61,16 @@ Batch Assignment Sequencing and Picking Routing
 
 class OPPModel(Model):
     def __init__(
-        self,
-        N: set,
-        V: set,
-        H: set,
-        K: set,
-        P: set,
-        B: set,
-        depot_node=None,
-        final_node=None,
+        self, N: set, location_graph: OPPLocationGraph, H: set, K: set, P: set, B: set
     ):
         super().__init__()
 
         self.N = N
-        self.V = V
+        self.location_graph = location_graph
         self.H = H
         self.K = K
         self.P = P
         self.B = B
-
-        self.depot_node = depot_node if depot_node is not None else min(V)
-        self.final_node = final_node if final_node is not None else max(V)
 
     def solve(
         self,
@@ -87,7 +78,6 @@ class OPPModel(Model):
         w2: float,
         gamma: float,
         delta: float,
-        d: dict,
         cap_n: dict,
         cap_vehicle: float,
         a: dict,
@@ -134,8 +124,8 @@ class OPPModel(Model):
         #         included in mission h ∈ H, 0 otherwise
         z = {
             (i, j, h): model.addVar(name=f"z_{i}_{j}_{h}", vtype="B")
-            for i in self.V
-            for j in self.V
+            for i in self.location_graph.get_vertices()
+            for j in self.location_graph.get_vertices()
             for h in self.H
         }
 
@@ -143,8 +133,8 @@ class OPPModel(Model):
         #         i ∈ V and j ∈ V in mission h ∈ H
         f = {
             (i, j, h): model.addVar(name=f"f_{i}_{j}_{h}", lb=0)
-            for i in self.V
-            for j in self.V
+            for i in self.location_graph.get_vertices()
+            for j in self.location_graph.get_vertices()
             for h in self.H
         }
 
@@ -154,8 +144,8 @@ class OPPModel(Model):
         )
 
         # Constraints
-        depot_node = self.depot_node
-        final_node = self.final_node
+        depot_node = self.location_graph.get_depot()
+        final_node = self.location_graph.get_final()
 
         # (6)
         for h in self.H:
@@ -185,7 +175,7 @@ class OPPModel(Model):
 
         # (10) y (11)
         for h in self.H:
-            for j in self.V:
+            for j in self.location_graph.get_vertices():
                 if j != depot_node and j != final_node:
                     model.addCons(
                         self.constraint_force_visit(h, j, z, a, y),
@@ -194,8 +184,8 @@ class OPPModel(Model):
 
         # (12)
         for h in self.H:
-            for i in self.V:
-                for j in self.V:
+            for i in self.location_graph.get_vertices():
+                for j in self.location_graph.get_vertices():
                     if i != final_node and j != depot_node:
                         model.addCons(
                             self.constraint_articles_capacity(
@@ -206,7 +196,7 @@ class OPPModel(Model):
 
         # (13)
         for h in self.H:
-            for i in self.V:
+            for i in self.location_graph.get_vertices():
                 if i != depot_node and i != final_node:
                     model.addCons(
                         self.constraint_flow_conservation(z, h, i),
@@ -215,7 +205,7 @@ class OPPModel(Model):
 
         # (14)
         for h in self.H:
-            for i in self.V:
+            for i in self.location_graph.get_vertices():
                 if i != depot_node:
                     model.addCons(
                         self.constraint_one_input_arc_per_node(h, i, z),
@@ -224,7 +214,7 @@ class OPPModel(Model):
 
         # (15)
         for h in self.H:
-            for i in self.V:
+            for i in self.location_graph.get_vertices():
                 if i != depot_node and i != final_node:
                     model.addCons(
                         self.constraint_one_output_arc_per_node(h, i, z),
@@ -234,7 +224,7 @@ class OPPModel(Model):
         # (16)
         for h in self.H:
             for n in self.N:
-                for i in self.V:
+                for i in self.location_graph.get_vertices():
                     if i != depot_node:
                         model.addCons(
                             self.constraint_avoid_subtours_cycles(f, i, h, a, y, n),
@@ -243,7 +233,7 @@ class OPPModel(Model):
 
         # (17)
         for h in self.H:
-            for i in self.V:
+            for i in self.location_graph.get_vertices():
                 if i != depot_node:
                     model.addCons(
                         self.constraint_no_loops(h, i, z),
@@ -261,7 +251,6 @@ class OPPModel(Model):
                     beta_picking,
                     cap_n,
                     y,
-                    d,
                     z,
                 ),
                 name=f"valid_execution_time_h{h}",
@@ -318,10 +307,12 @@ class OPPModel(Model):
 
         # Simplification for (10), (11) and (15)
         for h in self.H:
-            for j in self.V:
+            for j in self.location_graph.get_vertices():
                 required = quicksum(a[n, j] * y[n, h] for n in self.N)
                 if j != depot_node and j != final_node:
-                    inflow = quicksum(z[i, j, h] for i in self.V if i != j)
+                    inflow = quicksum(
+                        z[i, j, h] for i in self.location_graph.get_vertices() if i != j
+                    )
                     model.addCons(
                         inflow == required,
                         name=f"forced_visit_h{h}_j{j}",
@@ -335,7 +326,7 @@ class OPPModel(Model):
         super().notify(
             model=model,
             N=self.N,
-            V=self.V,
+            V=self.location_graph.get_vertices(),
             H=self.H,
             P=self.P,
             K=self.K,
@@ -362,7 +353,11 @@ class OPPModel(Model):
         """
         # The sum of the arcs z(depot, j, h) for all destinations 'j' must be 1.
         return (
-            quicksum(z[self.depot_node, j, h] for j in self.V if j != self.depot_node)
+            quicksum(
+                z[self.location_graph.get_depot(), j, h]
+                for j in self.location_graph.get_vertices()
+                if j != self.location_graph.get_depot()
+            )
             == 1
         )
 
@@ -372,7 +367,11 @@ class OPPModel(Model):
         """
         # The sum of the arcs z(i, final_node, h) for all origins 'i' must be 1.
         return (
-            quicksum(z[i, self.final_node, h] for i in self.V if i != self.final_node)
+            quicksum(
+                z[i, self.location_graph.get_final(), h]
+                for i in self.location_graph.get_vertices()
+                if i != self.location_graph.get_final()
+            )
             == 1
         )
 
@@ -383,10 +382,10 @@ class OPPModel(Model):
         # The sum of the arcs z(i, depot, h) for all origins 'i' must be 0.
         return (
             quicksum(
-                z[i, self.depot_node, h]
-                for i in self.V
+                z[i, self.location_graph.get_depot(), h]
+                for i in self.location_graph.get_vertices()
                 for h in self.H
-                if i != self.depot_node
+                if i != self.location_graph.get_depot()
             )
             == 0
         )
@@ -398,10 +397,10 @@ class OPPModel(Model):
         # The sum of the arcs z(final_node, j, h) for all destinations 'j' must be 0.
         return (
             quicksum(
-                z[self.final_node, j, h]
-                for j in self.V
+                z[self.location_graph.get_final(), j, h]
+                for j in self.location_graph.get_vertices()
                 for h in self.H
-                if j != self.final_node
+                if j != self.location_graph.get_final()
             )
             == 0
         )
@@ -412,7 +411,9 @@ class OPPModel(Model):
         then the sum of arcs entering 'j' must be at least 1.
         """
         # The inflow to node 'j'
-        inflow = quicksum(z[i, j, h] for i in self.V if i != j)
+        inflow = quicksum(
+            z[i, j, h] for i in self.location_graph.get_vertices() if i != j
+        )
 
         # The visit requirement for node 'j' (will be 1 if required, 0 if not)
         requirement = quicksum(a[n, j] * y[n, h] for n in self.N)
@@ -432,30 +433,44 @@ class OPPModel(Model):
         (13): Flow conservation constraint.
         Ensures that the flow of articles is conserved at each location.
         """
-        return quicksum(z[g, i, h] for g in self.V if g != i) == quicksum(
-            z[i, j, h] for j in self.V if j != i
-        )
+        return quicksum(
+            z[g, i, h] for g in self.location_graph.get_vertices() if g != i
+        ) == quicksum(z[i, j, h] for j in self.location_graph.get_vertices() if j != i)
 
     def constraint_one_input_arc_per_node(self, h, i, z):
         """
         (14): One input arc per node constraint.
         Ensures that each node has maximum one incoming arc in the mission route.
         """
-        return quicksum(z[i, j, h] for j in self.V if j != self.final_node) <= 1
+        return (
+            quicksum(
+                z[i, j, h]
+                for j in self.location_graph.get_vertices()
+                if j != self.location_graph.get_final()
+            )
+            <= 1
+        )
 
     def constraint_one_output_arc_per_node(self, h, i, z):
         """
         (15): One output arc per node constraint.
         Ensures that each node has maximum one outgoing arc in the mission route.
         """
-        return quicksum(z[i, k, h] for k in self.V if k != i) <= 1
+        return (
+            quicksum(z[i, k, h] for k in self.location_graph.get_vertices() if k != i)
+            <= 1
+        )
 
     def constraint_avoid_subtours_cycles(self, f, i, h, a, y, n):
         """
         (16): Subtour elimination constraint.
         Ensures that the route does not contain subtours or cycles.
         """
-        flow_in = quicksum(f[g, i, h] for g in self.V if g != self.final_node)
+        flow_in = quicksum(
+            f[g, i, h]
+            for g in self.location_graph.get_vertices()
+            if g != self.location_graph.get_final()
+        )
         required_flow = a[n, i] * y[n, h]
         return flow_in >= required_flow
 
@@ -464,10 +479,10 @@ class OPPModel(Model):
         (17): No loops constraint.
         Ensures that the route does not contain loops.
         """
-        return z[i, i, h] == 0 if i != self.depot_node else None
+        return z[i, i, h] == 0 if i != self.location_graph.get_depot() else None
 
     def constraint_valid_excecution_time(
-        self, h, t_exec, beta_time, beta_setup, beta_picking, cap, y, d, z
+        self, h, t_exec, beta_time, beta_setup, beta_picking, cap, y, z
     ):
         """
         (18): Valid execution time constraint.
@@ -480,12 +495,13 @@ class OPPModel(Model):
             + beta_time
             * (
                 quicksum(
-                    d[i, j] * z[i, j, h]
-                    for i in self.V
-                    for j in self.V
-                    if i != self.final_node
-                    and j != self.depot_node
-                    and j != self.final_node
+                    self.location_graph.get_distance(i, j) * z[i, j, h]
+                    for i in self.location_graph.get_vertices()
+                    for j in self.location_graph.get_vertices()
+                    if i != self.location_graph.get_final()
+                    and j != self.location_graph.get_depot()
+                    and j != self.location_graph.get_final()
+                    and self.location_graph.has_edge(i, j)
                 )
             )
             <= t_exec[h]

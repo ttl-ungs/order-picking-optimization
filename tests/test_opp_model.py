@@ -4,6 +4,7 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from models.opp_location_graph import OPPLocationGraph
 from observer.observer import Observer
 from utils.output_handler import OutputHandler
 from models.opp_model import OPPModel
@@ -20,8 +21,21 @@ class TestOPPModel(unittest.TestCase):
         P = {1, 2}  # Pickers
         B = set()  # Lotes Factibles
 
+        location_graph = OPPLocationGraph(depot_node=1, final_node=4)
+
+        for v in V:
+            if v in {2, 3}:
+                location_graph.add_vertex(v, "picking")
+
+        location_graph.add_edge(1, 2, 10.0)
+        location_graph.add_edge(1, 3, 12.0)
+        location_graph.add_edge(2, 3, 5.0)
+        location_graph.add_edge(2, 4, 10.0)
+        location_graph.add_edge(3, 2, 5.0)
+        location_graph.add_edge(3, 4, 10.0)
+
         # ---- Inicialización ----
-        model = OPPModel(N, V, H, K, P, B, depot_node=1, final_node=4)
+        model = OPPModel(N, location_graph, H, K, P, B)
 
         output_handler = OutputHandler()
         model.attach(output_handler)
@@ -33,27 +47,6 @@ class TestOPPModel(unittest.TestCase):
         w2 = 10.0  # Peso de penalizaciones
         gamma = 1.0  # Peso del adelanto
         delta = 5.0  # Peso de la demora
-
-        # Distancias
-        M_cost = 99999
-        d = {
-            (1, 1): M_cost,
-            (1, 2): 10.0,
-            (1, 3): 12.0,
-            (1, 4): M_cost,
-            (2, 1): M_cost,
-            (2, 2): M_cost,
-            (2, 3): 5.0,
-            (2, 4): 10.0,
-            (3, 1): M_cost,
-            (3, 2): 5.0,
-            (3, 3): M_cost,
-            (3, 4): 10.0,
-            (4, 1): M_cost,
-            (4, 2): M_cost,
-            (4, 3): M_cost,
-            (4, 4): M_cost,
-        }
 
         # Capacidades
         cap_vehicle = 5.0
@@ -98,7 +91,6 @@ class TestOPPModel(unittest.TestCase):
                 w2,
                 gamma,
                 delta,
-                d,
                 cap_n,
                 cap_vehicle,
                 a,
@@ -122,7 +114,9 @@ class TestOPPModel(unittest.TestCase):
     def test_two_orders_two_aisles(self):
         from tests.test_scenarios import two_orders_two_aisles
 
-        V, H, K, P, B, w1, w2, gamma, delta, d, cap_vehicle, x = two_orders_two_aisles()
+        V, H, K, P, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle, x = (
+            two_orders_two_aisles()
+        )
 
         N = {"O1", "O2"}
         a = {(n, v): 0 for n in N for v in V}
@@ -146,10 +140,8 @@ class TestOPPModel(unittest.TestCase):
         M = 1000.0
 
         due_date = {"O1": 15.0, "O2": 15.0}
-        depot_node = "L1"
-        final_node = "L8"
 
-        model = OPPModel(N, V, H, K, P, B, depot_node, final_node)
+        model = OPPModel(N, opp_location_graph, H, K, P, B)
         output_handler = OutputHandler()
         model.attach(output_handler)
 
@@ -159,7 +151,6 @@ class TestOPPModel(unittest.TestCase):
                 w2,
                 gamma,
                 delta,
-                d,
                 cap_n,
                 cap_vehicle,
                 a,
@@ -182,7 +173,9 @@ class TestOPPModel(unittest.TestCase):
     def test_two_orders_two_aisles_one_picking_point_per_order(self):
         from tests.test_scenarios import two_orders_two_aisles
 
-        V, H, K, P, B, w1, w2, gamma, delta, d, cap_vehicle, x = two_orders_two_aisles()
+        V, H, K, P, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle, x = (
+            two_orders_two_aisles()
+        )
 
         N = {"O1", "O2"}
         a = {(n, v): 0 for n in N for v in V}
@@ -202,10 +195,8 @@ class TestOPPModel(unittest.TestCase):
         M = 1000.0
 
         due_date = {"O1": 15.0, "O2": 15.0}
-        depot_node = "L1"
-        final_node = "L8"
 
-        model = OPPModel(N, V, H, K, P, B, depot_node, final_node)
+        model = OPPModel(N, opp_location_graph, H, K, P, B)
         output_handler = OutputHandler()
         model.attach(output_handler)
 
@@ -215,7 +206,6 @@ class TestOPPModel(unittest.TestCase):
                 w2,
                 gamma,
                 delta,
-                d,
                 cap_n,
                 cap_vehicle,
                 a,

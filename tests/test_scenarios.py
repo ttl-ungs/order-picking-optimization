@@ -1,5 +1,7 @@
 import itertools
 
+from models.opp_location_graph import OPPLocation, OPPLocationGraph
+
 
 def two_orders_two_aisles():
     V = {"L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8"}
@@ -8,23 +10,25 @@ def two_orders_two_aisles():
     P = {"P1", "P2"}
     B = set()
 
+    opp_location_graph = OPPLocationGraph("L1", "L8")
+
+    for i in range(2, 8):
+        opp_location_graph.add_vertex(f"L{i}", "picking")
+
+    opp_location_graph.add_edge("L1", "L2", 10)
+    opp_location_graph.add_edge("L2", "L3", 10)
+    opp_location_graph.add_edge("L3", "L4", 10)
+    opp_location_graph.add_edge("L4", "L8", 10)
+
+    opp_location_graph.add_edge("L1", "L5", 10)
+    opp_location_graph.add_edge("L5", "L6", 10)
+    opp_location_graph.add_edge("L6", "L7", 10)
+    opp_location_graph.add_edge("L7", "L8", 10)
+
     w1 = 1.0
     w2 = 10.0
     gamma = 1.0
     delta = 5.0
-
-    M_cost = 99999
-    d = {(i, j): M_cost for i, j in itertools.product(V, repeat=2)}
-
-    d[("L1", "L2")] = 10
-    d[("L2", "L3")] = 10
-    d[("L3", "L4")] = 10
-    d[("L4", "L8")] = 10
-
-    d[("L1", "L5")] = 10
-    d[("L5", "L6")] = 10
-    d[("L6", "L7")] = 10
-    d[("L7", "L8")] = 10
 
     x = {(p, k, h): 0 for p in P for k in K for h in H}
     x[("P1", 1, "M1")] = 1
@@ -32,4 +36,4 @@ def two_orders_two_aisles():
 
     cap_vehicle = 5.0
 
-    return V, H, K, P, B, w1, w2, gamma, delta, d, cap_vehicle, x
+    return V, H, K, P, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle, x
