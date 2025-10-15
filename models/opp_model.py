@@ -78,7 +78,6 @@ class OPPModel(Model):
         self.P = P
         self.B = B
 
-        # Nodos especiales - si no se especifican, usar convención numérica
         self.depot_node = depot_node if depot_node is not None else min(V)
         self.final_node = final_node if final_node is not None else max(V)
 
@@ -155,7 +154,6 @@ class OPPModel(Model):
         )
 
         # Constraints
-        # Usar los nodos especiales definidos en __init__
         depot_node = self.depot_node
         final_node = self.final_node
 
@@ -169,7 +167,7 @@ class OPPModel(Model):
         # (7)
         for h in self.H:
             model.addCons(
-                self.constraint_finish_at_end(z, h, final_node),
+                self.constraint_finish_at_end(z, h),
                 name=f"finish_at_end_h{h}",
             )
 
@@ -181,7 +179,7 @@ class OPPModel(Model):
 
         # (9)
         model.addCons(
-            self.constraint_cant_move_from_end_node(z, final_node),
+            self.constraint_cant_move_from_end_node(z),
             name=f"cant_move_from_end_node_h{h}",
         )
 
@@ -190,7 +188,7 @@ class OPPModel(Model):
             for j in self.V:
                 if j != depot_node and j != final_node:
                     model.addCons(
-                        self.constraint_force_visit(h, j, z, a, y, self.N),
+                        self.constraint_force_visit(h, j, z, a, y),
                         name=f"force_visit_h{h}_j{j}",
                     )
 
@@ -220,7 +218,7 @@ class OPPModel(Model):
             for i in self.V:
                 if i != depot_node:
                     model.addCons(
-                        self.constraint_one_input_arc_per_node(h, i, z, final_node),
+                        self.constraint_one_input_arc_per_node(h, i, z),
                         name=f"one_input_arc_per_node_h{h}_i{i}",
                     )
 
@@ -239,9 +237,7 @@ class OPPModel(Model):
                 for i in self.V:
                     if i != depot_node:
                         model.addCons(
-                            self.constraint_avoid_subtours_cycles(
-                                f, i, h, a, y, n, final_node
-                            ),
+                            self.constraint_avoid_subtours_cycles(f, i, h, a, y, n),
                             name=f"avoid_subtours_cycles_h{h}_n{n}_i{i}",
                         )
 
@@ -250,7 +246,7 @@ class OPPModel(Model):
             for i in self.V:
                 if i != depot_node:
                     model.addCons(
-                        self.constraint_no_loops(h, i, z, final_node),
+                        self.constraint_no_loops(h, i, z),
                         name=f"no_loops_h{h}_i{i}",
                     )
 
@@ -267,7 +263,6 @@ class OPPModel(Model):
                     y,
                     d,
                     z,
-                    final_node,
                 ),
                 name=f"valid_execution_time_h{h}",
             )
@@ -371,12 +366,15 @@ class OPPModel(Model):
             == 1
         )
 
-    def constraint_finish_at_end(self, z, h, final_node):
+    def constraint_finish_at_end(self, z, h):
         """
         (7): Each mission must finish at the final node.
         """
         # The sum of the arcs z(i, final_node, h) for all origins 'i' must be 1.
-        return quicksum(z[i, final_node, h] for i in self.V if i != final_node) == 1
+        return (
+            quicksum(z[i, self.final_node, h] for i in self.V if i != self.final_node)
+            == 1
+        )
 
     def constraint_cant_go_back_to_depot(self, z):
         """
@@ -393,19 +391,22 @@ class OPPModel(Model):
             == 0
         )
 
-    def constraint_cant_move_from_end_node(self, z, final_node):
+    def constraint_cant_move_from_end_node(self, z):
         """
         (9): A picker cannot leave the final node.
         """
         # The sum of the arcs z(final_node, j, h) for all destinations 'j' must be 0.
         return (
             quicksum(
-                z[final_node, j, h] for j in self.V for h in self.H if j != final_node
+                z[self.final_node, j, h]
+                for j in self.V
+                for h in self.H
+                if j != self.final_node
             )
             == 0
         )
 
-    def constraint_force_visit(self, h, j, z, a, y, N):
+    def constraint_force_visit(self, h, j, z, a, y):
         """
         (10) y (11): If mission 'h' must visit location 'j',
         then the sum of arcs entering 'j' must be at least 1.
@@ -414,7 +415,7 @@ class OPPModel(Model):
         inflow = quicksum(z[i, j, h] for i in self.V if i != j)
 
         # The visit requirement for node 'j' (will be 1 if required, 0 if not)
-        requirement = quicksum(a[n, j] * y[n, h] for n in N)
+        requirement = quicksum(a[n, j] * y[n, h] for n in self.N)
 
         return inflow >= requirement
 
@@ -435,12 +436,12 @@ class OPPModel(Model):
             z[i, j, h] for j in self.V if j != i
         )
 
-    def constraint_one_input_arc_per_node(self, h, i, z, final_node):
+    def constraint_one_input_arc_per_node(self, h, i, z):
         """
         (14): One input arc per node constraint.
         Ensures that each node has maximum one incoming arc in the mission route.
         """
-        return quicksum(z[i, j, h] for j in self.V if j != final_node) <= 1
+        return quicksum(z[i, j, h] for j in self.V if j != self.final_node) <= 1
 
     def constraint_one_output_arc_per_node(self, h, i, z):
         """
@@ -449,16 +450,16 @@ class OPPModel(Model):
         """
         return quicksum(z[i, k, h] for k in self.V if k != i) <= 1
 
-    def constraint_avoid_subtours_cycles(self, f, i, h, a, y, n, final_node):
+    def constraint_avoid_subtours_cycles(self, f, i, h, a, y, n):
         """
         (16): Subtour elimination constraint.
         Ensures that the route does not contain subtours or cycles.
         """
-        flow_in = quicksum(f[g, i, h] for g in self.V if g != final_node)
+        flow_in = quicksum(f[g, i, h] for g in self.V if g != self.final_node)
         required_flow = a[n, i] * y[n, h]
         return flow_in >= required_flow
 
-    def constraint_no_loops(self, h, i, z, final_node):
+    def constraint_no_loops(self, h, i, z):
         """
         (17): No loops constraint.
         Ensures that the route does not contain loops.
@@ -466,7 +467,7 @@ class OPPModel(Model):
         return z[i, i, h] == 0 if i != self.depot_node else None
 
     def constraint_valid_excecution_time(
-        self, h, t_exec, beta_time, beta_setup, beta_picking, cap, y, d, z, final_node
+        self, h, t_exec, beta_time, beta_setup, beta_picking, cap, y, d, z
     ):
         """
         (18): Valid execution time constraint.
@@ -482,7 +483,9 @@ class OPPModel(Model):
                     d[i, j] * z[i, j, h]
                     for i in self.V
                     for j in self.V
-                    if i != final_node and j != self.depot_node and j != final_node
+                    if i != self.final_node
+                    and j != self.depot_node
+                    and j != self.final_node
                 )
             )
             <= t_exec[h]
