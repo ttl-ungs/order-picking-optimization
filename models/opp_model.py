@@ -225,16 +225,13 @@ class OPPModel(Model):
                     )
 
         # (15)
-        # for h in self.H:
-        #     for n in self.N:
-        #         for j in self.V:
-        #             if j >= 2:
-        #                 for i in self.V:
-        #                     if i < final_node:
-        #                         model.addCons(
-        #                             self.constraint_one_output_arc_per_node(h, n, i, j, z, a, y),
-        #                             name=f"one_output_arc_per_node_h{h}_n{n}_j{j}",
-        #                         )
+        for h in self.H:
+            for i in self.V:
+                if i != depot_node and i != final_node:
+                    model.addCons(
+                        self.constraint_one_output_arc_per_node(h, i, z),
+                        name=f"one_output_arc_per_node_h{h}_i{i}",
+                    )
 
         # (16)
         for h in self.H:
@@ -445,12 +442,12 @@ class OPPModel(Model):
         """
         return quicksum(z[i, j, h] for j in self.V if j != final_node) <= 1
 
-    # def constraint_one_output_arc_per_node(self, h, n, i, j, z, a, y):
-    #     """
-    #     (15): One output arc per node constraint.
-    #     Ensures that each node has maximum one outgoing arc in the mission route.
-    #     """
-    #     return z[i, j, h] >= a[n, j] * y[n, h]
+    def constraint_one_output_arc_per_node(self, h, i, z):
+        """
+        (15): One output arc per node constraint.
+        Ensures that each node has maximum one outgoing arc in the mission route.
+        """
+        return quicksum(z[i, k, h] for k in self.V if k != i) <= 1
 
     def constraint_avoid_subtours_cycles(self, f, i, h, a, y, n, final_node):
         """
