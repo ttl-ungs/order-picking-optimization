@@ -423,7 +423,7 @@ class OPPModel(Model):
         Ensures that the total capacity of articles assigned to a mission does
         not exceed the vehicle's capacity.
         """
-        return f[i, j, h] <= z[i, j, h] * cap_vehicle
+        return f[i, j, h] - float(cap_vehicle) * z[i, j, h] <= 0
 
     def constraint_flow_conservation(self, z, h, i):
         """
