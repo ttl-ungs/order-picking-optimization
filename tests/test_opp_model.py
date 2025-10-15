@@ -21,7 +21,7 @@ class TestOPPModel(unittest.TestCase):
         B = set()  # Lotes Factibles
 
         # ---- Inicialización ----
-        model = OPPModel(N, V, H, K, P, B)
+        model = OPPModel(N, V, H, K, P, B, depot_node=1, final_node=4)
 
         output_handler = OutputHandler()
         model.attach(output_handler)
@@ -80,10 +80,6 @@ class TestOPPModel(unittest.TestCase):
         # Fechas límite
         due_date = {1: 15.0, 2: 15.0}
 
-        dis = {}
-        capbatch = {}
-        b = {}
-
         # ---- Variables de decisión ----
         # Asignación de pickers
         x = {(p, k, h): 0 for p in P for k in K for h in H}
@@ -111,9 +107,6 @@ class TestOPPModel(unittest.TestCase):
                 beta_picking,
                 due_date,
                 M,
-                dis,
-                capbatch,
-                b,
                 x,
                 y,
             )
@@ -126,39 +119,37 @@ class TestOPPModel(unittest.TestCase):
             "SCIP no encontró ningún estado de solución.",
         )
 
-    def test_two_orders_two_aisles(self, observer: Observer = None):
+    def test_two_orders_two_aisles(self):
         from tests.test_scenarios import two_orders_two_aisles
 
-        V, H, K, P, B, w1, w2, gamma, delta, d, cap_vehicle, cap_n, x = (
-            two_orders_two_aisles()
-        )
+        V, H, K, P, B, w1, w2, gamma, delta, d, cap_vehicle, x = two_orders_two_aisles()
 
-        N = {1, 2}
+        N = {"O1", "O2"}
         a = {(n, v): 0 for n in N for v in V}
 
         # Order 1 must visit locations 2, 3, 4
-        a[(1, 2)] = 1
-        a[(1, 3)] = 1
-        a[(1, 4)] = 1
+        a[("O1", "L2")] = 1
+        a[("O1", "L3")] = 1
+        a[("O1", "L4")] = 1
 
         # Order 2 must visit locations 5, 6, 7
-        a[(2, 5)] = 1
-        a[(2, 6)] = 1
-        a[(2, 7)] = 1
+        a[("O2", "L5")] = 1
+        a[("O2", "L6")] = 1
+        a[("O2", "L7")] = 1
 
-        y = {(1, 1): 1, (1, 2): 0, (2, 1): 0, (2, 2): 1}
+        y = {("O1", "M1"): 1, ("O1", "M2"): 0, ("O2", "M1"): 0, ("O2", "M2"): 1}
+        cap_n = {"O1": 3.0, "O2": 3.0}
 
         beta_time = 0.5
         beta_setup = 1.0
         beta_picking = 1.0
         M = 1000.0
 
-        due_date = {1: 15.0, 2: 15.0}
-        dis = {}
-        capbatch = {}
-        b = {}
+        due_date = {"O1": 15.0, "O2": 15.0}
+        depot_node = "L1"
+        final_node = "L8"
 
-        model = OPPModel(N, V, H, K, P, B)
+        model = OPPModel(N, V, H, K, P, B, depot_node, final_node)
         output_handler = OutputHandler()
         model.attach(output_handler)
 
@@ -177,9 +168,6 @@ class TestOPPModel(unittest.TestCase):
                 beta_picking,
                 due_date,
                 M,
-                dis,
-                capbatch,
-                b,
                 x,
                 y,
             )
@@ -191,37 +179,33 @@ class TestOPPModel(unittest.TestCase):
             "The model did not find a solution.",
         )
 
-    def test_two_orders_two_aisles_one_picking_point_per_order(
-        self, observer: Observer = None
-    ):
+    def test_two_orders_two_aisles_one_picking_point_per_order(self):
         from tests.test_scenarios import two_orders_two_aisles
 
-        V, H, K, P, B, w1, w2, gamma, delta, d, cap_vehicle, cap_n, x = (
-            two_orders_two_aisles()
-        )
+        V, H, K, P, B, w1, w2, gamma, delta, d, cap_vehicle, x = two_orders_two_aisles()
 
-        N = {1, 2}
+        N = {"O1", "O2"}
         a = {(n, v): 0 for n in N for v in V}
 
         # Order 1 must visit location 3
-        a[(1, 3)] = 1
+        a[("O1", "L3")] = 1
 
         # Order 2 must visit location 5
-        a[(2, 5)] = 1
+        a[("O2", "L5")] = 1
 
-        y = {(1, 1): 1, (1, 2): 0, (2, 1): 0, (2, 2): 1}
+        y = {("O1", "M1"): 1, ("O1", "M2"): 0, ("O2", "M1"): 0, ("O2", "M2"): 1}
+        cap_n = {"O1": 3.0, "O2": 3.0}
 
         beta_time = 0.5
         beta_setup = 1.0
         beta_picking = 1.0
         M = 1000.0
 
-        due_date = {1: 15.0, 2: 15.0}
-        dis = {}
-        capbatch = {}
-        b = {}
+        due_date = {"O1": 15.0, "O2": 15.0}
+        depot_node = "L1"
+        final_node = "L8"
 
-        model = OPPModel(N, V, H, K, P, B)
+        model = OPPModel(N, V, H, K, P, B, depot_node, final_node)
         output_handler = OutputHandler()
         model.attach(output_handler)
 
@@ -240,9 +224,6 @@ class TestOPPModel(unittest.TestCase):
                 beta_picking,
                 due_date,
                 M,
-                dis,
-                capbatch,
-                b,
                 x,
                 y,
             )
