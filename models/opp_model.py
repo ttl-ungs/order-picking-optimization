@@ -185,29 +185,14 @@ class OPPModel(Model):
             name=f"cant_move_from_end_node_h{h}",
         )
 
-        # (10)
-        # for h in self.H:
-        #     for n in self.N:
-        #         for j in self.V:
-        #             if j > 2:
-        #                 for i in self.V:
-        #                     if i < final_node:
-        #                         model.addCons(
-        #                             self.constraint_location_enter(h, n, i, j, z, a, y),
-        #                             name=f"location_enter_h{h}_n{n}_j{j}",
-        #                         )
-
-        # (11)
-        # for h in self.H:
-        #     for n in self.N:
-        #         for i in self.V:
-        #             if i <= final_node:
-        #                 for j in self.V:
-        #                     if j > 1:
-        #                         model.addCons(
-        #                             self.constraint_location_exit(h, n, i, j, z, a, y),
-        #                             name=f"location_exit_h{h}_n{n}_i{i}",
-        #                         )
+        # (10) y (11)
+        for h in self.H:
+            for j in self.V:
+                if j != depot_node and j != final_node:
+                    model.addCons(
+                        self.constraint_force_visit(h, j, z, a, y, self.N),
+                        name=f"force_visit_h{h}_j{j}",
+                    )
 
         # (12)
         for h in self.H:
@@ -423,21 +408,18 @@ class OPPModel(Model):
             == 0
         )
 
-    # def constraint_location_enter(self, h, n, j, i, z, a, y):
-    #     """
-    #     (10): Location enter constraint.
-    #     Ensures that if a location is visited in a mission, then the route must
-    #     have a path that enters the location.
-    #     """
-    #     return z[i, j, h] >= a[n, j] * y[n, h]
+    def constraint_force_visit(self, h, j, z, a, y, N):
+        """
+        (10) y (11): If mission 'h' must visit location 'j',
+        then the sum of arcs entering 'j' must be at least 1.
+        """
+        # The inflow to node 'j'
+        inflow = quicksum(z[i, j, h] for i in self.V if i != j)
 
-    # def constraint_location_exit(self, h, n, i, j, z, a, y):
-    #     """
-    #     (11): Location exit constraint.
-    #     Ensures that if a location is visited in a mission, then the route must
-    #     have a path that exits the location.
-    #     """
-    #     return z[j, i, h] >= a[n, j] * y[n, h]
+        # The visit requirement for node 'j' (will be 1 if required, 0 if not)
+        requirement = quicksum(a[n, j] * y[n, h] for n in N)
+
+        return inflow >= requirement
 
     def constraint_articles_capacity(self, i, j, h, f, cap_vehicle, z):
         """
