@@ -354,7 +354,6 @@ class OPPModel(Model):
             z=z,
         )
 
-        # TODO: return solution values
         return model.getStatus()
 
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
@@ -424,7 +423,7 @@ class OPPModel(Model):
         Ensures that the total capacity of articles assigned to a mission does
         not exceed the vehicle's capacity.
         """
-        return f[i, j, h] <= cap_vehicle * z[i, j, h]
+        return f[i, j, h] <= z[i, j, h] * cap_vehicle
 
     def constraint_flow_conservation(self, z, h, i):
         """
