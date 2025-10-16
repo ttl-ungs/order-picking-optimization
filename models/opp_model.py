@@ -162,17 +162,19 @@ class OPPModel(Model):
             )
 
         # (8)
-        model.addCons(
-            self.constraint_cant_go_back_to_depot(z),
-            name=f"cant_go_back_to_depot_h{h}",
-        )
+        for h in self.H:
+            model.addCons(
+                self.constraint_cant_go_back_to_depot(z, h),
+                name=f"cant_go_back_to_depot_h{h}",
+            )
 
         # (9)
-        model.addCons(
-            self.constraint_cant_move_from_end_node(z),
-            name=f"cant_move_from_end_node_h{h}",
+        for h in self.H:
+            model.addCons(
+                self.constraint_cant_move_from_end_node(z, h),
+                name=f"cant_move_from_end_node_h{h}",
         )
-
+                      
         # (10) y (11)
         for h in self.H:
             for j in self.location_graph.get_vertices():
@@ -314,7 +316,7 @@ class OPPModel(Model):
                         z[i, j, h] for i in self.location_graph.get_vertices() if i != j
                     )
                     model.addCons(
-                        inflow == required,
+                        self.constraint_force_visit_reduce(inflow, required),
                         name=f"forced_visit_h{h}_j{j}",
                     )
 
@@ -375,7 +377,7 @@ class OPPModel(Model):
             == 1
         )
 
-    def constraint_cant_go_back_to_depot(self, z):
+    def constraint_cant_go_back_to_depot(self, z, h):
         """
         (8): A picker cannot return to the depot after leaving it.
         """
@@ -384,13 +386,12 @@ class OPPModel(Model):
             quicksum(
                 z[i, self.location_graph.get_depot(), h]
                 for i in self.location_graph.get_vertices()
-                for h in self.H
                 if i != self.location_graph.get_depot()
             )
             == 0
         )
 
-    def constraint_cant_move_from_end_node(self, z):
+    def constraint_cant_move_from_end_node(self, z, h):
         """
         (9): A picker cannot leave the final node.
         """
@@ -399,7 +400,6 @@ class OPPModel(Model):
             quicksum(
                 z[self.location_graph.get_final(), j, h]
                 for j in self.location_graph.get_vertices()
-                for h in self.H
                 if j != self.location_graph.get_final()
             )
             == 0
@@ -457,7 +457,7 @@ class OPPModel(Model):
         Ensures that each node has maximum one outgoing arc in the mission route.
         """
         return (
-            quicksum(z[i, k, h] for k in self.location_graph.get_vertices() if k != i)
+            quicksum(z[i, k, h] for k in self.location_graph.get_vertices() if k != i and i!= self.location_graph.final_node)
             <= 1
         )
 
@@ -550,3 +550,6 @@ class OPPModel(Model):
         to which the order is assigned.
         """
         return due_date[n] - v[p, k] - M * (2 - x[p, k, h] - y[n, h]) <= ea[n]
+
+    def constraint_force_visit_reduce(self, inflow, required):
+        return inflow == required
