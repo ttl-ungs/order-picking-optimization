@@ -307,20 +307,16 @@ class OPPModel(Model):
                             name=f"earliness_definition_p{p}_k{k}_n{n}_h{h}",
                         )
 
-        # Simplification for (10), (11) and (15)
-        for h in self.H:
-            for j in self.location_graph.get_vertices():
-                required = quicksum(a[n, j] * y[n, h] for n in self.N)
-                if j != depot_node and j != final_node:
-                    inflow = quicksum(
-                        z[i, j, h] for i in self.location_graph.get_vertices() if i != j
-                    )
-                    model.addCons(
-                        self.constraint_force_visit_reduce(inflow, required),
-                        name=f"forced_visit_h{h}_j{j}",
-                    )
-
         # (24), (25), (26), (27), (28), (29), (30), (31) and (32) are implicit in the definition of the variables
+
+        # Extra: Allow only paths between neighbors
+        for h in self.H:
+            for i in self.location_graph.get_vertices():
+                for j in self.location_graph.get_vertices():
+                    if not (self.location_graph.has_edge(i, j)):
+                      model.addCons(
+                          z[i, j, h] == 0, 
+                          name=f"only_valid_edges_i{j}_j{j}_h{h}")  
 
         model.optimize()
 
@@ -550,6 +546,3 @@ class OPPModel(Model):
         to which the order is assigned.
         """
         return due_date[n] - v[p, k] - M * (2 - x[p, k, h] - y[n, h]) <= ea[n]
-
-    def constraint_force_visit_reduce(self, inflow, required):
-        return inflow == required
