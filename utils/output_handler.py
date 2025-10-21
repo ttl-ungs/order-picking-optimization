@@ -1,5 +1,6 @@
 import pyscipopt
 
+from models.opp_location_graph import OPPLocationGraph
 from observer.observer import Observer
 
 
@@ -18,6 +19,8 @@ class OutputHandler(Observer):
         t_exec: dict,
         v: dict,
         z: dict,
+        depot_vertex,
+        final_vertex,
     ):
         print("\n" + "=" * 50)
         print(" OPTIMIZATION RESULTS")
@@ -65,13 +68,19 @@ class OutputHandler(Observer):
                         try:
                             val_z = model.getVal(z[i, j, h])
                             if val_z > 0.5:
-                                mission_route_arcs.append(f"({i} -> {j})")
+                                mission_route_arcs.append((i, j))
                         except KeyError:
                             continue
 
                 if mission_route_arcs:
+                    ordered_route = self._reconstruct_route(
+                        mission_route_arcs,
+                        depot_vertex,
+                        final_vertex,
+                    )
+
                     print(
-                        f"  Mission {h}: Selected Arcs: {', '.join([r.strip('()') for r in mission_route_arcs])}"
+                        f"  Mission {h}: Selected Arcs: {', '.join([f'{r[0]} -> {r[1]}' for r in ordered_route])}"
                     )
                 else:
                     print(f"  Mission {h}: Not assigned or trivial/not found route")
@@ -81,3 +90,20 @@ class OutputHandler(Observer):
             print(f"SCIP finished with status: {model.getStatus()}")
 
         print("=" * 50 + "\n")
+
+    def _reconstruct_route(self, active_arcs, depot, final):
+
+        if not active_arcs:
+            return [depot, final] if depot != final else [depot]
+
+        arc_dict = {origin: destination for origin, destination in active_arcs}
+
+        route = [depot]
+        current = depot
+
+        while current != final and current in arc_dict:
+            next_node = arc_dict[current]
+            route.append(next_node)
+            current = next_node
+
+        return route
