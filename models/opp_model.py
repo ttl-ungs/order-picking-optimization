@@ -48,6 +48,7 @@ from pyscipopt import quicksum
 from models.model import Model
 
 from models.opp_location_graph import OPPLocationGraph
+from models.opp_output_builder import build_output
 import sys
 import os
 
@@ -173,8 +174,8 @@ class OPPModel(Model):
             model.addCons(
                 self.constraint_cant_move_from_end_node(z, h),
                 name=f"cant_move_from_end_node_h{h}",
-        )
-                      
+            )
+
         # (10) y (11)
         for h in self.H:
             for j in self.location_graph.get_vertices():
@@ -314,9 +315,9 @@ class OPPModel(Model):
             for i in self.location_graph.get_vertices():
                 for j in self.location_graph.get_vertices():
                     if not (self.location_graph.has_edge(i, j)):
-                      model.addCons(
-                          z[i, j, h] == 0, 
-                          name=f"only_valid_edges_i{j}_j{j}_h{h}")  
+                        model.addCons(
+                            z[i, j, h] == 0, name=f"only_valid_edges_i{j}_j{j}_h{h}"
+                        )
 
         model.optimize()
 
@@ -333,9 +334,12 @@ class OPPModel(Model):
             t_exec=t_exec,
             v=v,
             z=z,
+            depot_vertex=depot_node,
+            final_vertex=final_node,
         )
 
-        return model.getStatus()
+        output = build_output(model, self.location_graph, self.H, z)
+        return model.getStatus(), output
 
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recolection_time = sum(v[p, k] for p in self.P for k in self.K)
@@ -453,7 +457,11 @@ class OPPModel(Model):
         Ensures that each node has maximum one outgoing arc in the mission route.
         """
         return (
-            quicksum(z[i, k, h] for k in self.location_graph.get_vertices() if k != i and i!= self.location_graph.final_node)
+            quicksum(
+                z[i, k, h]
+                for k in self.location_graph.get_vertices()
+                if k != i and i != self.location_graph.final_node
+            )
             <= 1
         )
 
