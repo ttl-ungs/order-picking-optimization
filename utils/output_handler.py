@@ -80,7 +80,7 @@ class OutputHandler(Observer):
                     )
 
                     print(
-                        f"  Mission {h}: Selected Arcs: {', '.join([f'{r[0]} -> {r[1]}' for r in ordered_route])}"
+                        f"  Mission {h}: Route: {' -> '.join(map(str, ordered_route))}"
                     )
                 else:
                     print(f"  Mission {h}: Not assigned or trivial/not found route")
