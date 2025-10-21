@@ -5,6 +5,8 @@ from models.opp_location_graph import OPPLocationGraph
 def build_output(
     model: pyscipopt.Model, location_graph: OPPLocationGraph, H: set, z: dict
 ):
+    if z is None or model is None or model.getStatus() != "optimal":
+        return None
 
     output_graph = OPPLocationGraph(
         depot_node=location_graph.get_depot(), final_node=location_graph.get_final()
