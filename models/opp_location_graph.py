@@ -82,3 +82,14 @@ class OPPLocationGraph:
     def get_vertices(self):
         """Get all vertex IDs in the graph."""
         return {v.location_id for v in self.vertices}
+
+    def __eq__(self, value):
+        if not isinstance(value, OPPLocationGraph):
+            return NotImplemented
+
+        return (
+            self.get_depot() == value.get_depot()
+            and self.get_final() == value.get_final()
+            and self.get_vertices() == value.get_vertices()
+            and self.distances == value.distances
+        )

@@ -4,6 +4,7 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from models.opp_location_graph import OPPLocationGraph
 from utils.output_handler import OutputHandler
 from models.opp_model import OPPModel
 
@@ -42,7 +43,7 @@ class TestOPPModel(unittest.TestCase):
         model.attach(output_handler)
 
         try:
-            result, _ = model.solve(
+            result, output_graph = model.solve(
                 w1,
                 w2,
                 gamma,
@@ -61,6 +62,28 @@ class TestOPPModel(unittest.TestCase):
         except Exception as e:
             self.fail(f"Model execution failed: {e}")
 
+        expected_graph = OPPLocationGraph(
+            depot_node="L1",
+            final_node="L4",
+        )
+
+        for i in location_graph.get_vertices():
+            if i not in expected_graph.get_vertices():
+                expected_graph.add_vertex(i, "picking")
+
+        expected_graph.add_edge("L1", "L2", location_graph.get_distance("L1", "L2"))
+        expected_graph.add_edge("L2", "L4", location_graph.get_distance("L2", "L4"))
+
+        expected_graph.add_edge("L1", "L3", location_graph.get_distance("L1", "L3"))
+        expected_graph.add_edge("L3", "L4", location_graph.get_distance("L3", "L4"))
+
+        self.assertTrue(
+            result in ("optimal", "feasible", "infeasible", "unbounded"),
+            "The model did not find a solution.",
+        )
+
+        self.assertEqual(output_graph, expected_graph)
+
         self.assertTrue(
             result in ("optimal", "feasible", "infeasible", "unbounded"),
             "The model did not find a solution.",
@@ -74,7 +97,7 @@ class TestOPPModel(unittest.TestCase):
     def test_two_orders_two_aisles(self):
         from tests.test_scenarios import two_orders_two_aisles
 
-        V, H, K, P, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle, x = (
+        V, H, K, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
             two_orders_two_aisles()
         )
 
@@ -101,12 +124,12 @@ class TestOPPModel(unittest.TestCase):
 
         due_date = {"O1": 15.0, "O2": 15.0}
 
-        model = OPPModel(N, opp_location_graph, H, K, P, B)
+        model = OPPModel(N, location_graph, H, K, P, B)
         output_handler = OutputHandler()
         model.attach(output_handler)
 
         try:
-            result, _ = model.solve(
+            result, output_graph = model.solve(
                 w1,
                 w2,
                 gamma,
@@ -125,10 +148,31 @@ class TestOPPModel(unittest.TestCase):
         except Exception as e:
             self.fail(f"Model execution failed: {e}")
 
+        expected_graph = OPPLocationGraph(
+            depot_node="L1",
+            final_node="L8",
+        )
+
+        for i in location_graph.get_vertices():
+            if i not in expected_graph.get_vertices():
+                expected_graph.add_vertex(i, "picking")
+
+        expected_graph.add_edge("L1", "L2", location_graph.get_distance("L1", "L2"))
+        expected_graph.add_edge("L2", "L3", location_graph.get_distance("L2", "L3"))
+        expected_graph.add_edge("L3", "L4", location_graph.get_distance("L3", "L4"))
+        expected_graph.add_edge("L4", "L8", location_graph.get_distance("L4", "L8"))
+
+        expected_graph.add_edge("L1", "L5", location_graph.get_distance("L1", "L5"))
+        expected_graph.add_edge("L5", "L6", location_graph.get_distance("L5", "L6"))
+        expected_graph.add_edge("L6", "L7", location_graph.get_distance("L6", "L7"))
+        expected_graph.add_edge("L7", "L8", location_graph.get_distance("L7", "L8"))
+
         self.assertTrue(
             result in ("optimal", "feasible", "infeasible", "unbounded"),
             "The model did not find a solution.",
         )
+
+        self.assertEqual(output_graph, expected_graph)
 
     """
         Test 2.2: Medium. 8 vertex, 8 edges, 2 orders, 2 missions.
@@ -138,7 +182,7 @@ class TestOPPModel(unittest.TestCase):
     def test_two_orders_two_aisles_one_picking_point_per_order(self):
         from tests.test_scenarios import two_orders_two_aisles
 
-        V, H, K, P, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle, x = (
+        V, H, K, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
             two_orders_two_aisles()
         )
 
@@ -161,12 +205,12 @@ class TestOPPModel(unittest.TestCase):
 
         due_date = {"O1": 15.0, "O2": 15.0}
 
-        model = OPPModel(N, opp_location_graph, H, K, P, B)
+        model = OPPModel(N, location_graph, H, K, P, B)
         output_handler = OutputHandler()
         model.attach(output_handler)
 
         try:
-            result, _ = model.solve(
+            result, output_graph = model.solve(
                 w1,
                 w2,
                 gamma,
@@ -185,15 +229,36 @@ class TestOPPModel(unittest.TestCase):
         except Exception as e:
             self.fail(f"Model execution failed: {e}")
 
+        expected_graph = OPPLocationGraph(
+            depot_node="L1",
+            final_node="L8",
+        )
+
+        for i in location_graph.get_vertices():
+            if i not in expected_graph.get_vertices():
+                expected_graph.add_vertex(i, "picking")
+
+        expected_graph.add_edge("L1", "L2", location_graph.get_distance("L1", "L2"))
+        expected_graph.add_edge("L2", "L3", location_graph.get_distance("L2", "L3"))
+        expected_graph.add_edge("L3", "L4", location_graph.get_distance("L3", "L4"))
+        expected_graph.add_edge("L4", "L8", location_graph.get_distance("L4", "L8"))
+
+        expected_graph.add_edge("L1", "L5", location_graph.get_distance("L1", "L5"))
+        expected_graph.add_edge("L5", "L6", location_graph.get_distance("L5", "L6"))
+        expected_graph.add_edge("L6", "L7", location_graph.get_distance("L6", "L7"))
+        expected_graph.add_edge("L7", "L8", location_graph.get_distance("L7", "L8"))
+
         self.assertTrue(
             result in ("optimal", "feasible", "infeasible", "unbounded"),
             "The model did not find a solution.",
         )
 
+        self.assertEqual(output_graph, expected_graph)
+
     def test_two_orders_two_aisles_using_one_aisle(self):
         from tests.test_scenarios import two_orders_two_aisles
 
-        V, H, K, P, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle, x = (
+        V, H, K, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
             two_orders_two_aisles()
         )
 
@@ -214,12 +279,12 @@ class TestOPPModel(unittest.TestCase):
 
         due_date = {"O1": 15.0, "O2": 15.0}
 
-        model = OPPModel(N, opp_location_graph, H, K, P, B)
+        model = OPPModel(N, location_graph, H, K, P, B)
         output_handler = OutputHandler()
         model.attach(output_handler)
 
         try:
-            result, output = model.solve(
+            result, output_graph = model.solve(
                 w1,
                 w2,
                 gamma,
@@ -238,10 +303,26 @@ class TestOPPModel(unittest.TestCase):
         except Exception as e:
             self.fail(f"Model execution failed: {e}")
 
+        expected_graph = OPPLocationGraph(
+            depot_node="L1",
+            final_node="L8",
+        )
+
+        for i in location_graph.get_vertices():
+            if i not in expected_graph.get_vertices():
+                expected_graph.add_vertex(i, "picking")
+
+        expected_graph.add_edge("L1", "L2", location_graph.get_distance("L1", "L2"))
+        expected_graph.add_edge("L2", "L3", location_graph.get_distance("L2", "L3"))
+        expected_graph.add_edge("L3", "L4", location_graph.get_distance("L3", "L4"))
+        expected_graph.add_edge("L4", "L8", location_graph.get_distance("L4", "L8"))
+
         self.assertTrue(
             result in ("optimal", "feasible", "infeasible", "unbounded"),
             "The model did not find a solution.",
         )
+
+        self.assertEqual(output_graph, expected_graph)
 
     """
         Test 3: Medium. 5 vertex, 6 edges, 2 orders, 2 missions.
@@ -251,7 +332,7 @@ class TestOPPModel(unittest.TestCase):
     def test_two_possible_routes(self):
         from tests.test_scenarios import test_two_possible_routes
 
-        V, H, K, P, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle, x = (
+        V, H, K, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
             test_two_possible_routes()
         )
 
@@ -272,12 +353,12 @@ class TestOPPModel(unittest.TestCase):
 
         due_date = {"O1": 15.0, "O2": 15.0}
 
-        model = OPPModel(N, opp_location_graph, H, K, P, B)
+        model = OPPModel(N, location_graph, H, K, P, B)
         output_handler = OutputHandler()
         model.attach(output_handler)
 
         try:
-            result, _ = model.solve(
+            result, output_graph = model.solve(
                 w1,
                 w2,
                 gamma,
@@ -296,10 +377,24 @@ class TestOPPModel(unittest.TestCase):
         except Exception as e:
             self.fail(f"Model execution failed: {e}")
 
+        expected_graph = OPPLocationGraph(
+            depot_node="L1",
+            final_node="L5",
+        )
+
+        for i in location_graph.get_vertices():
+            if i not in expected_graph.get_vertices():
+                expected_graph.add_vertex(i, "picking")
+
+        expected_graph.add_edge("L1", "L4", location_graph.get_distance("L1", "L4"))
+        expected_graph.add_edge("L4", "L5", location_graph.get_distance("L4", "L5"))
+
         self.assertTrue(
             result in ("optimal", "feasible", "infeasible", "unbounded"),
             "The model did not find a solution.",
         )
+
+        self.assertEqual(output_graph, expected_graph)
 
 
 if __name__ == "__main__":
