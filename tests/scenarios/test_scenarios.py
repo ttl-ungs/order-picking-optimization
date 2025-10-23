@@ -6,7 +6,6 @@ from models.opp_location_graph import OPPLocation, OPPLocationGraph
    Scenario for test 1
 """
 
-
 def basic_two_orders_capacity_limit():
     V = {"L1", "L2", "L3", "L4"}
     H = {"M1", "M2"}
@@ -134,7 +133,7 @@ def bidirectional_edges():
         opp_location_graph.add_vertex(f"L{i}", "picking")
 
     opp_location_graph.add_edge("L1", "L2", 5)
-    opp_location_graph.add_edge("L2", "L1", 5)
+    opp_location_graph.add_edge("L2", "L1", 50)
 
     opp_location_graph.add_edge("L1", "L3", 2)
     opp_location_graph.add_edge("L3", "L1", 2)
