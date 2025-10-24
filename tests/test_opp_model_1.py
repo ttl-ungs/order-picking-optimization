@@ -8,7 +8,7 @@ from models.opp_location_graph import OPPLocationGraph
 from utils.output_handler import OutputHandler
 from models.opp_model import OPPModel
 
-from tests.scenarios.test_scenarios import basic_two_orders_capacity_limit
+from tests.scenarios.scenario_1 import basic_two_orders_capacity_limit
 
 
 class TestOPPModel(unittest.TestCase):

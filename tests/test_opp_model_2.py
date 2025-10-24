@@ -8,7 +8,7 @@ from models.opp_location_graph import OPPLocationGraph
 from utils.output_handler import OutputHandler
 from models.opp_model import OPPModel
 
-from tests.scenarios.test_scenarios import two_orders_two_aisles
+from tests.scenarios.scenario_2 import two_orders_two_aisles
 
 
 class TestOPPModel(unittest.TestCase):

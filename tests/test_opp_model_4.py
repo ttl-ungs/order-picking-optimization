@@ -8,7 +8,7 @@ from models.opp_location_graph import OPPLocationGraph
 from utils.output_handler import OutputHandler
 from models.opp_model import OPPModel
 
-from tests.scenarios.test_scenarios import bidirectional_edges
+from tests.scenarios.scenario_4 import bidirectional_edges
 
 class TestOPPModel(unittest.TestCase):
 
@@ -29,7 +29,7 @@ class TestOPPModel(unittest.TestCase):
         a[("O1", "L3")] = 1
 
         a[("O2", "L2")] = 1
-        a[("O1", "L4")] = 1
+        a[("O4", "L4")] = 1
 
         y = {("O1", "M1"): 1, ("O1", "M2"): 0, ("O2", "M1"): 0, ("O2", "M2"): 1}
         cap_n = {"O1": 3.0, "O2": 3.0}
