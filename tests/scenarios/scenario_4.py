@@ -6,7 +6,7 @@ from models.opp_location_graph import OPPLocationGraph
 
 def bidirectional_edges():
     V = {"L1", "L2", "L3", "L4", "L5"}
-    H = {"M1", "M2"}
+    H = {"M1"}
     K = {1}
     P = {"P1", "P2"}
     B = set()

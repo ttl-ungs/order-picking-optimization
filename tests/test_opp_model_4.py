@@ -13,7 +13,9 @@ from tests.scenarios.scenario_4 import bidirectional_edges
 class TestOPPModel(unittest.TestCase):
 
     """
-        Test 4
+        Test 4: 5 vertex, 2 orders, 1 mission.
+        Purpose: Force the model to generate a cicle.
+        Status: Not feasible solucion found.
     """
         
     def test_repeated_picking_locations(self):
@@ -24,14 +26,10 @@ class TestOPPModel(unittest.TestCase):
         N = {"O1", "O2"}
         a = {(n, v): 0 for n in N for v in V}
 
-        # Orders must visit location 4
         a[("O1", "L2")] = 1
         a[("O1", "L3")] = 1
 
-        a[("O2", "L2")] = 1
-        a[("O4", "L4")] = 1
-
-        y = {("O1", "M1"): 1, ("O1", "M2"): 0, ("O2", "M1"): 0, ("O2", "M2"): 1}
+        y = {("O1", "M1"): 1, ("O2", "M1"): 0}
         cap_n = {"O1": 3.0, "O2": 3.0}
 
         beta_time = 0.5
