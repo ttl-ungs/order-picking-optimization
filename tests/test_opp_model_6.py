@@ -25,7 +25,6 @@ class TestOPPModel(unittest.TestCase):
         N = {"O1", "O2"}
         a = {(n, v): 0 for n in N for v in V}
 
-        # Orders must visit location 4
         a[("O1", "L2")] = 1
         a[("O2", "L3")] = 1
 

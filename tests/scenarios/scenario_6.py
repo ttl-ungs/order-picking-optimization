@@ -1,7 +1,7 @@
 from models.opp_location_graph import OPPLocationGraph
 
 """
-   Scenario for test 5
+   Scenario for test 6
 """
 
 def test_two_orders_two_locations():
