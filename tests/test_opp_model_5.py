@@ -19,7 +19,7 @@ class TestOPPModel(unittest.TestCase):
         Conclusion: Optimal solution found.
     """
         
-    def test_repeated_picking_locations(self):
+    def test_repeated_picking_locations_2(self):
         V, H, K, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
             bidirectional_edges()
         )
