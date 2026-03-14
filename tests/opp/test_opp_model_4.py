@@ -2,36 +2,34 @@ import unittest
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from models.opp_location_graph import OPPLocationGraph
+from models.opp.opp_location_graph import OPPLocationGraph
 from utils.output_handler import OutputHandler
-from models.opp_model import OPPModel
+from models.opp.opp_model import OPPModel
 
-from tests.scenarios.scenario_7 import test_two_orders_two_locations_two_missions
+from tests.opp.scenarios.scenario_4 import bidirectional_edges
+
 
 class TestOPPModel(unittest.TestCase):
-
     """
-        Test 7: 4 vertex, 2 orders, 2 mission.
-        Purpose: To test the functionality of the model when two orders of two differents missions
-        are linked to two locations.
+    Test 4: 5 vertex, 2 orders, 1 mission.
+    Purpose: Force the model to generate a cicle.
+    Status: Not feasible solucion found.
     """
 
-    def test_two_orders_two_locations_two_missions(self):
+    def test_repeated_picking_locations(self):
         V, H, K, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
-            test_two_orders_two_locations_two_missions()
+            bidirectional_edges()
         )
 
         N = {"O1", "O2"}
         a = {(n, v): 0 for n in N for v in V}
 
         a[("O1", "L2")] = 1
-        a[("O2", "L3")] = 1
+        a[("O1", "L3")] = 1
 
-        y = {("O1", "M1"): 1, ("O2", "M1"): 0,
-             ("O1", "M2"): 0, ("O2", "M2"): 1}
-        
+        y = {("O1", "M1"): 1, ("O2", "M1"): 0}
         cap_n = {"O1": 3.0, "O2": 3.0}
 
         beta_time = 0.5
@@ -67,7 +65,7 @@ class TestOPPModel(unittest.TestCase):
 
         expected_graph = OPPLocationGraph(
             depot_node="L1",
-            final_node="L4",
+            final_node="L5",
         )
 
         for i in location_graph.get_vertices():
@@ -76,15 +74,17 @@ class TestOPPModel(unittest.TestCase):
 
         expected_graph.add_edge("L1", "L2", location_graph.get_distance("L1", "L2"))
         expected_graph.add_edge("L2", "L4", location_graph.get_distance("L2", "L4"))
-        expected_graph.add_edge("L1", "L3", location_graph.get_distance("L1", "L3"))
+        expected_graph.add_edge("L4", "L3", location_graph.get_distance("L4", "L3"))
         expected_graph.add_edge("L3", "L4", location_graph.get_distance("L3", "L4"))
+        expected_graph.add_edge("L4", "L5", location_graph.get_distance("L4", "L5"))
 
         self.assertTrue(
-            result in ("optimal", "feasible", "infeasible", "unbounded"),
+            result in ("optimal", "feasible"),
             "The model did not find a solution.",
         )
 
         self.assertEqual(output_graph, expected_graph)
+
 
 if __name__ == "__main__":
     # pyscipopt.SCIP_PARAMSETTING_DEFAULT.set("limits/time", 60)

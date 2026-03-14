@@ -1,8 +1,10 @@
-from models.opp_location_graph import OPPLocationGraph
+from models.opp.opp_location_graph import OPPLocationGraph
 
 """
    Scenario for test 1
 """
+
+
 def basic_two_orders_capacity_limit():
     V = {"L1", "L2", "L3", "L4"}
     H = {"M1", "M2"}

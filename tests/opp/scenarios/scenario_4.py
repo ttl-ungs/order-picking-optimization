@@ -1,8 +1,9 @@
-from models.opp_location_graph import OPPLocationGraph
+from models.opp.opp_location_graph import OPPLocationGraph
 
 """
    Scenario for test 4
 """
+
 
 def bidirectional_edges():
     V = {"L1", "L2", "L3", "L4", "L5"}

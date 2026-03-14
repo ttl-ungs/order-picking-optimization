@@ -1,6 +1,6 @@
 import pyscipopt
 
-from models.opp_location_graph import OPPLocationGraph
+from models.opp.opp_location_graph import OPPLocationGraph
 from observer.observer import Observer
 
 

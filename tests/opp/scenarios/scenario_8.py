@@ -1,8 +1,9 @@
-from models.opp_location_graph import OPPLocationGraph
+from models.opp.opp_location_graph import OPPLocationGraph
 
 """
    Scenario for test 8
 """
+
 
 def test_four_orders_two_locations_two_missions():
     V = {"L1", "L2", "L3", "L4", "L5"}
@@ -13,7 +14,7 @@ def test_four_orders_two_locations_two_missions():
 
     opp_location_graph = OPPLocationGraph("L1", "L5")
 
-    for i in range(1, len(V)+1):
+    for i in range(1, len(V) + 1):
         opp_location_graph.add_vertex(f"L{i}", "picking")
 
     opp_location_graph.add_edge("L1", "L2", 50)

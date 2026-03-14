@@ -2,20 +2,20 @@ import unittest
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from models.opp_location_graph import OPPLocationGraph
+from models.opp.opp_location_graph import OPPLocationGraph
 from utils.output_handler import OutputHandler
-from models.opp_model import OPPModel
+from models.opp.opp_model import OPPModel
 
-from tests.scenarios.scenario_8 import test_four_orders_two_locations_two_missions
+from tests.opp.scenarios.scenario_8 import test_four_orders_two_locations_two_missions
+
 
 class TestOPPModel(unittest.TestCase):
-
     """
-        Test 8: 5 vertex, 4 orders, 2 mission.
-        Purpose: To test the functionality of the model when 
-        there are two missions two orders are linked to two locations.
+    Test 8: 5 vertex, 4 orders, 2 mission.
+    Purpose: To test the functionality of the model when
+    there are two missions two orders are linked to two locations.
     """
 
     def test_four_orders_two_locations_two_missions(self):
@@ -33,11 +33,11 @@ class TestOPPModel(unittest.TestCase):
         a[("O4", "L4")] = 1
 
         y = {(n, h): 0 for n in N for h in H}
-        y[("O1", "M1") ] = 1
+        y[("O1", "M1")] = 1
         y[("O2", "M1")] = 1
-        y[("O3", "M2") ] = 1
+        y[("O3", "M2")] = 1
         y[("O4", "M2")] = 1
-        
+
         cap_n = {"O1": 3.0, "O2": 3.0, "O3": 3.0, "O4": 3.0}
 
         beta_time = 0.5
@@ -93,6 +93,7 @@ class TestOPPModel(unittest.TestCase):
         )
 
         self.assertEqual(output_graph, expected_graph)
+
 
 if __name__ == "__main__":
     # pyscipopt.SCIP_PARAMSETTING_DEFAULT.set("limits/time", 60)

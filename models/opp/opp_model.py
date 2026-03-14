@@ -45,14 +45,10 @@ Variables:
 
 import pyscipopt
 from pyscipopt import quicksum
-from models.model import Model
+from models.base.model import Model
 
-from models.opp_location_graph import OPPLocationGraph
-from models.opp_output_builder import build_output
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from models.opp.opp_location_graph import OPPLocationGraph
+from models.opp.opp_output_builder import build_output
 
 """
 Based on OPP article: A Model for the Joint Optimisation of Order Batching, 

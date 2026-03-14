@@ -2,23 +2,23 @@ import unittest
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from models.opp_location_graph import OPPLocationGraph
+from models.opp.opp_location_graph import OPPLocationGraph
 from utils.output_handler import OutputHandler
-from models.opp_model import OPPModel
+from models.opp.opp_model import OPPModel
 
-from tests.scenarios.scenario_5 import bidirectional_edges
+from tests.opp.scenarios.scenario_5 import bidirectional_edges
+
 
 class TestOPPModel(unittest.TestCase):
+    """
+    Test 5: Add an extra vertex to avoid cicle. 6 vertex, 1 mission, 3 orders, 2 pickers.
+    Purpose: Try to find an optimal solution for Test 4, with and extra vertex that avoid
+    a cicle in the graph.
+    Conclusion: Optimal solution found.
+    """
 
-    """
-        Test 5: Add an extra vertex to avoid cicle. 6 vertex, 1 mission, 3 orders, 2 pickers.
-        Purpose: Try to find an optimal solution for Test 4, with and extra vertex that avoid 
-        a cicle in the graph. 
-        Conclusion: Optimal solution found.
-    """
-        
     def test_repeated_picking_locations_2(self):
         V, H, K, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
             bidirectional_edges()
@@ -30,10 +30,8 @@ class TestOPPModel(unittest.TestCase):
         a[("O1", "L2")] = 1
         a[("O1", "L3")] = 1
 
-        y = {("O1", "M1"): 1, 
-             ("O2", "M1"): 1,
-             ("O3", "M1"): 1}
-        
+        y = {("O1", "M1"): 1, ("O2", "M1"): 1, ("O3", "M1"): 1}
+
         cap_n = {"O1": 3.0, "O2": 3.0, "O3": 15.0}
 
         beta_time = 0.5
@@ -88,6 +86,7 @@ class TestOPPModel(unittest.TestCase):
         )
 
         self.assertEqual(output_graph, expected_graph)
+
 
 if __name__ == "__main__":
     # pyscipopt.SCIP_PARAMSETTING_DEFAULT.set("limits/time", 60)

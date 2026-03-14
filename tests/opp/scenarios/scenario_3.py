@@ -1,8 +1,9 @@
-from models.opp_location_graph import OPPLocationGraph
+from models.opp.opp_location_graph import OPPLocationGraph
 
 """
    Scenario for test 3
 """
+
 
 def test_two_possible_routes():
     V = {"L1", "L2", "L3", "L4", "L5"}
@@ -37,4 +38,3 @@ def test_two_possible_routes():
     cap_vehicle = 5.0
 
     return V, H, K, P, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle, x
-

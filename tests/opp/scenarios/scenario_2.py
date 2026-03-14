@@ -1,8 +1,9 @@
-from models.opp_location_graph import OPPLocationGraph
+from models.opp.opp_location_graph import OPPLocationGraph
 
 """
    Scenario for tests 2.1 and 2.2
 """
+
 
 def two_orders_two_aisles():
     V = {"L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8"}

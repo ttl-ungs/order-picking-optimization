@@ -2,20 +2,21 @@ import unittest
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from models.opp_location_graph import OPPLocationGraph
+from models.opp.opp_location_graph import OPPLocationGraph
 from utils.output_handler import OutputHandler
-from models.opp_model import OPPModel
+from models.opp.opp_model import OPPModel
 
-from tests.scenarios.scenario_2 import two_orders_two_aisles
+from tests.opp.scenarios.scenario_2 import two_orders_two_aisles
 
 
 class TestOPPModel(unittest.TestCase):
     """
-        Test 2.1: Medium. 8 vertex, 8 edges, 2 orders, 2 missions.
-        Purpose: To test the functionality of the model when it has to follow a route.
+    Test 2.1: Medium. 8 vertex, 8 edges, 2 orders, 2 missions.
+    Purpose: To test the functionality of the model when it has to follow a route.
     """
+
     def test_two_orders_two_aisles(self):
         V, H, K, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
             two_orders_two_aisles()
@@ -98,6 +99,7 @@ class TestOPPModel(unittest.TestCase):
         Test 2.2: Medium. 8 vertex, 8 edges, 2 orders, 2 missions.
         Purpose: To test the functionality of the model when we have few vertex assigned to orders.
     """
+
     def test_two_orders_two_aisles_one_picking_point_per_order(self):
         V, H, K, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
             two_orders_two_aisles()
@@ -175,6 +177,7 @@ class TestOPPModel(unittest.TestCase):
     """
         Test 2.3
     """
+
     def test_two_orders_two_aisles_using_one_aisle(self):
         V, H, K, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
             two_orders_two_aisles()
@@ -241,6 +244,7 @@ class TestOPPModel(unittest.TestCase):
         )
 
         self.assertEqual(output_graph, expected_graph)
+
 
 if __name__ == "__main__":
     # pyscipopt.SCIP_PARAMSETTING_DEFAULT.set("limits/time", 60)
