@@ -242,7 +242,7 @@ class OPPModel(Model):
         # (18)
         for h in self.H:
             model.addCons(
-                self.constraint_valid_excecution_time(
+                self.constraint_valid_execution_time(
                     h,
                     t_exec,
                     beta_time,
@@ -338,12 +338,12 @@ class OPPModel(Model):
         return model.getStatus(), output
 
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
-        recolection_time = sum(v[p, k] for p in self.P for k in self.K)
+        recollection_time = sum(v[p, k] for p in self.P for k in self.K)
         advance_time = sum(ea[n] for n in self.N)
         delay_time = sum(ta[n] for n in self.N)
         penalty = gamma * advance_time + delta * delay_time
 
-        return w1 * recolection_time + w2 * penalty
+        return w1 * recollection_time + w2 * penalty
 
     def constraint_start_from_depot(self, z, h):
         """
@@ -481,7 +481,7 @@ class OPPModel(Model):
         """
         return z[i, i, h] == 0 if i != self.location_graph.get_depot() else None
 
-    def constraint_valid_excecution_time(
+    def constraint_valid_execution_time(
         self, h, t_exec, beta_time, beta_setup, beta_picking, cap, y, z
     ):
         """

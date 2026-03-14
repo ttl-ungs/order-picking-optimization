@@ -46,7 +46,7 @@ def bidirectional_edges():
     w1 = 1.0
     w2 = 10.0
     gamma = 1.0
-    delta = 5.0
+    delta = 1.0
 
     x = {(p, k, h): 0 for p in P for k in K for h in H}
     x[("P1", 1, "M1")] = 1
