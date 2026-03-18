@@ -36,8 +36,11 @@ class OPPLocationGraph:
         self.depot_node = OPPLocation(depot_node, "depot") if depot_node else None
         self.final_node = OPPLocation(final_node, "final") if final_node else None
 
-        self.vertices = (
+        self._vertices_set = (
             {self.depot_node, self.final_node} if depot_node and final_node else set()
+        )
+        self._vertices_sorted = (
+            sorted([depot_node, final_node]) if depot_node and final_node else []
         )
 
     def add_vertex(self, vertex, type="picking"):
@@ -46,14 +49,18 @@ class OPPLocationGraph:
             raise ValueError("Vertex type must be 'picking', 'depot', or 'final'.")
 
         opp_location = OPPLocation(vertex, type)
-        self.vertices.add(opp_location)
+        if opp_location not in self._vertices_set:
+            self._vertices_set.add(opp_location)
+            self._vertices_sorted = sorted(
+                v.location_id for v in self._vertices_set
+            )
 
     def add_edge(self, from_vertex, to_vertex, distance: float):
         """Add an edge with distance between two vertices."""
 
         if (
-            OPPLocation(from_vertex) not in self.vertices
-            or OPPLocation(to_vertex) not in self.vertices
+            OPPLocation(from_vertex) not in self._vertices_set
+            or OPPLocation(to_vertex) not in self._vertices_set
         ):
             raise ValueError("Both vertices must be in the graph.")
 
@@ -81,7 +88,7 @@ class OPPLocationGraph:
 
     def get_vertices(self):
         """Get all vertex IDs in the graph."""
-        return {v.location_id for v in self.vertices}
+        return self._vertices_sorted
 
     def __eq__(self, value):
         if not isinstance(value, OPPLocationGraph):

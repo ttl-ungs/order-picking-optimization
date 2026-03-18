@@ -44,7 +44,7 @@ def bidirectional_edges():
     opp_location_graph.add_edge("L5", "LC", 1)
 
     w1 = 1.0
-    w2 = 10.0
+    w2 = 1.0
     gamma = 1.0
     delta = 1.0
 

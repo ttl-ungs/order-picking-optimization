@@ -62,12 +62,12 @@ class OPPModel(Model):
     ):
         super().__init__()
 
-        self.N = N
+        self.N = sorted(N)
         self.location_graph = location_graph
-        self.H = H
-        self.K = K
-        self.P = P
-        self.B = B
+        self.H = sorted(H)
+        self.K = sorted(K)
+        self.P = sorted(P)
+        self.B = sorted(B)
 
     def solve(
         self,
@@ -312,7 +312,7 @@ class OPPModel(Model):
                 for j in self.location_graph.get_vertices():
                     if not (self.location_graph.has_edge(i, j)):
                         model.addCons(
-                            z[i, j, h] == 0, name=f"only_valid_edges_i{j}_j{j}_h{h}"
+                            z[i, j, h] == 0, name=f"only_valid_edges_i{i}_j{j}_h{h}"
                         )
 
         model.optimize()
