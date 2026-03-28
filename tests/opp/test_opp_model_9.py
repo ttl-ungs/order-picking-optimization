@@ -59,7 +59,7 @@ class TestOPPModel(unittest.TestCase):
         beta_picking = 1.0
         M = 1000.0
 
-        # * Idea: test with more orders per vehicle
+        # * Idea for test 10: test with more orders per vehicle
         cap_vehicle = 10.0 # One order per vehicle
         cap_n = {"O1": 10.0, "O2": 10.0, "O3": 10.0,
                  "O4": 10.0, "O5": 10.0, "O6": 10.0,
