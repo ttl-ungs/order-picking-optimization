@@ -4,10 +4,9 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from models.opp.opp_location_graph import OPPLocationGraph
 from utils.output_handler import OutputHandler
 from models.opp.opp_model import OPPModel
-from tests.opp.scenarios.scenario_9 import scenario_six_missions_three_pickers_grid_graph
+from tests.opp.scenarios.six_missions_three_pickers_grid_graph import scenario_six_missions_three_pickers_grid_graph
 
 
 class TestOPPModel(unittest.TestCase):
