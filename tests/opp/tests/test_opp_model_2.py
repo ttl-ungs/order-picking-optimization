@@ -1,4 +1,5 @@
 import unittest
+from tests.opp.tests.opp_test_case import OPPTestCase
 import sys
 import os
 
@@ -11,7 +12,7 @@ from models.opp.opp_model import OPPModel
 from tests.opp.scenarios.scenario_2 import two_orders_two_aisles
 
 
-class TestOPPModel(unittest.TestCase):
+class TestOPPModel(OPPTestCase):
     """
     Test 2.1: Medium. 8 vertex, 8 edges, 2 orders, 2 missions.
     Purpose: To test the functionality of the model when it has to follow a route.
@@ -65,6 +66,7 @@ class TestOPPModel(unittest.TestCase):
                 M,
                 x,
                 y,
+                self.start_time,
             )
         except Exception as e:
             self.fail(f"Model execution failed: {e}")
@@ -144,6 +146,7 @@ class TestOPPModel(unittest.TestCase):
                 M,
                 x,
                 y,
+                self.start_time,
             )
         except Exception as e:
             self.fail(f"Model execution failed: {e}")
@@ -220,6 +223,7 @@ class TestOPPModel(unittest.TestCase):
                 M,
                 x,
                 y,
+                self.start_time,
             )
         except Exception as e:
             self.fail(f"Model execution failed: {e}")

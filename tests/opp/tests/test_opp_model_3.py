@@ -1,4 +1,5 @@
 import unittest
+from tests.opp.tests.opp_test_case import OPPTestCase
 import sys
 import os
 
@@ -11,7 +12,7 @@ from models.opp.opp_model import OPPModel
 from tests.opp.scenarios.scenario_3 import test_two_possible_routes
 
 
-class TestOPPModel(unittest.TestCase):
+class TestOPPModel(OPPTestCase):
     """
     Test 3: Medium. 5 vertex, 6 edges, 2 orders, 2 missions.
     Purpose: To test the functionality of the model when it has to choose between two possible routes.
@@ -59,6 +60,7 @@ class TestOPPModel(unittest.TestCase):
                 M,
                 x,
                 y,
+                self.start_time,
             )
         except Exception as e:
             self.fail(f"Model execution failed: {e}")

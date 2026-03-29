@@ -1,4 +1,5 @@
 import unittest
+from tests.opp.tests.opp_test_case import OPPTestCase
 import sys
 import os
 
@@ -9,13 +10,12 @@ from models.opp.opp_model import OPPModel
 from tests.opp.scenarios.six_missions_three_pickers_grid_graph import scenario_six_missions_three_pickers_two_periods_grid_graph
 
 
-class TestOPPModel(unittest.TestCase):
+class TestOPPModel(OPPTestCase):
     """
     Test 9: 12 orders, 6 missions, 3 pickers. Each picker has two missions, and each mission has two orders.
     """
 
     def test_twelve_orders_six_missions_three_pickers_one_order_per_vehicle(self):
-
         H, K, P, x, opp_location_graph, V, B = scenario_six_missions_three_pickers_two_periods_grid_graph()
         N = {"O1", "O2", "O3", "O4",
              "O5", "O6", "O7", "O8",
@@ -90,6 +90,7 @@ class TestOPPModel(unittest.TestCase):
                 M,
                 x,
                 y,
+                self.start_time,
             )
         except Exception as e:
             self.fail(f"Model execution failed: {e}")

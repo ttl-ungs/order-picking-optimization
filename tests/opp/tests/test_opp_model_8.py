@@ -1,4 +1,5 @@
 import unittest
+from tests.opp.tests.opp_test_case import OPPTestCase
 import sys
 import os
 
@@ -11,7 +12,7 @@ from models.opp.opp_model import OPPModel
 from tests.opp.scenarios.scenario_8 import test_four_orders_two_locations_two_missions
 
 
-class TestOPPModel(unittest.TestCase):
+class TestOPPModel(OPPTestCase):
     """
     Test 8: 5 vertex, 4 orders, 2 mission.
     Purpose: To test the functionality of the model when
@@ -67,6 +68,7 @@ class TestOPPModel(unittest.TestCase):
                 M,
                 x,
                 y,
+                self.start_time,
             )
         except Exception as e:
             self.fail(f"Model execution failed: {e}")

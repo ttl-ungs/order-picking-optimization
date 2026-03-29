@@ -1,4 +1,5 @@
 import unittest
+from tests.opp.tests.opp_test_case import OPPTestCase
 import sys
 import os
 
@@ -11,7 +12,7 @@ from models.opp.opp_model import OPPModel
 from tests.opp.scenarios.scenario_5 import bidirectional_edges
 
 
-class TestOPPModel(unittest.TestCase):
+class TestOPPModel(OPPTestCase):
     """
     Test 5: Add an extra vertex to avoid cicle. 6 vertex, 1 mission, 3 orders, 2 pickers.
     Purpose: Try to find an optimal solution for Test 4, with and extra vertex that avoid
@@ -61,6 +62,7 @@ class TestOPPModel(unittest.TestCase):
                 M,
                 x,
                 y,
+                self.start_time,
             )
         except Exception as e:
             self.fail(f"Model execution failed: {e}")

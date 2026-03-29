@@ -90,6 +90,7 @@ class OPPModel(Model):
         # b: dict,
         x: dict,
         y: dict,
+        start_time: float = None,
     ):
         model = pyscipopt.Model("OPP Model")
         self.model = model
@@ -317,9 +318,9 @@ class OPPModel(Model):
                             z[i, j, h] == 0, name=f"only_valid_edges_i{i}_j{j}_h{h}"
                         )
 
-        start_time = time.time()
+        t0 = start_time if start_time is not None else time.time()
         model.optimize()
-        elapsed = time.time() - start_time
+        elapsed = time.time() - t0
 
         print(f"\nExecution time: {elapsed:.4f}s (solver: {model.getSolvingTime():.4f}s)")
 
