@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 
 from utils.output_handler import OutputHandler
 from models.opp.opp_model import OPPModel
-from tests.opp.scenarios.six_missions_three_pickers_grid_graph import scenario_six_missions_three_pickers_grid_graph
+from tests.opp.scenarios.six_missions_three_pickers_grid_graph import scenario_six_missions_three_pickers_two_periods_grid_graph
 
 
 class TestOPPModel(unittest.TestCase):
@@ -14,9 +14,9 @@ class TestOPPModel(unittest.TestCase):
     Test 9: 12 orders, 6 missions, 3 pickers. Each picker has two missions, and each mission has two orders.
     """
 
-    def test_four_orders_two_locations_two_missions(self):
+    def test_twelve_orders_six_missions_three_pickers_one_order_per_vehicle(self):
 
-        H, K, P, x, opp_location_graph, V, B = scenario_six_missions_three_pickers_grid_graph()
+        H, K, P, x, opp_location_graph, V, B = scenario_six_missions_three_pickers_two_periods_grid_graph()
         N = {"O1", "O2", "O3", "O4",
              "O5", "O6", "O7", "O8",
              "O9", "O10", "O11", "O12"}
@@ -59,7 +59,6 @@ class TestOPPModel(unittest.TestCase):
         beta_picking = 1.0
         M = 1000.0
 
-        # * Idea for test 10: test with more orders per vehicle
         cap_vehicle = 10.0 # One order per vehicle
         cap_n = {"O1": 10.0, "O2": 10.0, "O3": 10.0,
                  "O4": 10.0, "O5": 10.0, "O6": 10.0,

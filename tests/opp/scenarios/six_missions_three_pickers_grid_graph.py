@@ -5,7 +5,7 @@ from tests.opp.graphs.graphs_factory import GraphsFactory
 """
 
 
-def scenario_six_missions_three_pickers_grid_graph():
+def scenario_six_missions_three_pickers_two_periods_grid_graph():
 
     H = {"M1", "M2", "M3", "M4", "M5", "M6"}
     K = {1, 2}
