@@ -43,6 +43,8 @@ Variables:
             i ∈ V y j ∈ V en la misión h ∈ H
 """
 
+import time
+
 import pyscipopt
 from pyscipopt import quicksum
 from models.base.model import Model
@@ -315,7 +317,11 @@ class OPPModel(Model):
                             z[i, j, h] == 0, name=f"only_valid_edges_i{i}_j{j}_h{h}"
                         )
 
+        start_time = time.time()
         model.optimize()
+        elapsed = time.time() - start_time
+
+        print(f"\nExecution time: {elapsed:.4f}s (solver: {model.getSolvingTime():.4f}s)")
 
         # Print solution results, for testing purposes
         super().notify(
