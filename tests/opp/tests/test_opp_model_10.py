@@ -2,22 +2,22 @@ import unittest
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "..")))
 
 from utils.output_handler import OutputHandler
 from models.opp.opp_model import OPPModel
-from tests.opp.scenarios.six_missions_three_pickers_grid_graph import scenario_six_missions_three_pickers_one_period_grid_graph
+from tests.opp.scenarios.six_missions_three_pickers_grid_graph import scenario_six_missions_three_pickers_two_periods_grid_graph
 
 
 class TestOPPModel(unittest.TestCase):
     """
-    Test 11: 12 orders, 6 missions, 3 pickers. Each picker has two missions, and each mission has two orders.
-    One period per picker and two orders per vehicle.
+    Test 10: 12 orders, 6 missions, 3 pickers. Each picker has two missions, and each mission has two orders.
+    Two periods per picker and two orders per vehicle.
     """
 
-    def test_one_period_two_orders_per_vehicle(self):
+    def test_two_periods_two_orders_per_vehicle(self):
 
-        H, K, P, x, opp_location_graph, V, B = scenario_six_missions_three_pickers_one_period_grid_graph()
+        H, K, P, x, opp_location_graph, V, B = scenario_six_missions_three_pickers_two_periods_grid_graph()
         N = {"O1", "O2", "O3", "O4",
              "O5", "O6", "O7", "O8",
              "O9", "O10", "O11", "O12"}

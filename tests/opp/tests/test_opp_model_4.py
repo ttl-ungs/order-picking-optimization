@@ -2,7 +2,7 @@ import unittest
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "..")))
 
 from utils.output_handler import OutputHandler
 from models.opp.opp_model import OPPModel
