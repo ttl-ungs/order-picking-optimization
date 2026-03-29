@@ -15,7 +15,7 @@ class TestOPPModel(unittest.TestCase):
     Two periods per picker and two orders per vehicle.
     """
 
-    def test_one_period_two_orders_per_vehicle(self):
+    def test_two_periods_two_orders_per_vehicle(self):
 
         H, K, P, x, opp_location_graph, V, B = scenario_six_missions_three_pickers_two_periods_grid_graph()
         N = {"O1", "O2", "O3", "O4",
