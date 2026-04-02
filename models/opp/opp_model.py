@@ -208,6 +208,7 @@ class OPPModel(Model):
         # (14)
         for h in self.H:
             for i in self.location_graph.get_vertices():
+                # depot node does not have an input arc
                 if i != depot_node:
                     model.addCons(
                         self.constraint_one_input_arc_per_node(h, i, z),
@@ -217,7 +218,8 @@ class OPPModel(Model):
         # (15)
         for h in self.H:
             for i in self.location_graph.get_vertices():
-                if i != depot_node and i != final_node:
+                # final node does not have an output arc
+                if i != final_node:
                     model.addCons(
                         self.constraint_one_output_arc_per_node(h, i, z),
                         name=f"one_output_arc_per_node_h{h}_i{i}",
@@ -419,6 +421,7 @@ class OPPModel(Model):
         )
 
         # The visit requirement for node 'j' (will be 1 if required, 0 if not)
+        # * requirement = min(1, sum(a[n, j] * y[n, h] for n in self.N))
         requirement = quicksum(a[n, j] * y[n, h] for n in self.N)
 
         return inflow >= requirement
@@ -443,13 +446,13 @@ class OPPModel(Model):
     def constraint_one_input_arc_per_node(self, h, i, z):
         """
         (14): One input arc per node constraint.
-        Ensures that each node has maximum one incoming arc in the mission route.
+        Ensures that each node i has maximum one incoming arc in the mission route.
         """
         return (
             quicksum(
-                z[i, j, h]
+                z[j, i, h]
                 for j in self.location_graph.get_vertices()
-                if j != self.location_graph.get_final()
+                if j != i
             )
             <= 1
         )
@@ -457,13 +460,13 @@ class OPPModel(Model):
     def constraint_one_output_arc_per_node(self, h, i, z):
         """
         (15): One output arc per node constraint.
-        Ensures that each node has maximum one outgoing arc in the mission route.
+        Ensures that each node i has maximum one outgoing arc in the mission route.
         """
         return (
             quicksum(
-                z[i, k, h]
-                for k in self.location_graph.get_vertices()
-                if k != i and i != self.location_graph.final_node
+                z[i, j, h]
+                for j in self.location_graph.get_vertices()
+                if j != i
             )
             <= 1
         )
@@ -507,7 +510,7 @@ class OPPModel(Model):
                     for j in self.location_graph.get_vertices()
                     if i != self.location_graph.get_final()
                     and j != self.location_graph.get_depot()
-                    and j != self.location_graph.get_final()
+                    # * and j != self.location_graph.get_final() --> esta no va
                     and self.location_graph.has_edge(i, j)
                 )
             )
