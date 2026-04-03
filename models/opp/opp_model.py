@@ -175,13 +175,22 @@ class OPPModel(Model):
                 name=f"cant_move_from_end_node_h{h}",
             )
 
-        # (10) y (11)
+        # (10)
         for h in self.H:
             for j in self.location_graph.get_vertices():
                 if j != depot_node and j != final_node:
                     model.addCons(
-                        self.constraint_force_visit(h, j, z, a, y),
-                        name=f"force_visit_h{h}_j{j}",
+                        self.constraint_force_visit_inflow(h, j, z, a, y),
+                        name=f"force_visit_inflow_h{h}_j{j}",
+                    )
+
+        # (11)
+        for h in self.H:
+            for j in self.location_graph.get_vertices():
+                if j != depot_node and j != final_node:
+                    model.addCons(
+                        self.constraint_force_visit_outflow(h, j, z, a, y),
+                        name=f"force_visit_outflow_h{h}_j{j}",
                     )
 
         # (12)
@@ -410,21 +419,31 @@ class OPPModel(Model):
             == 0
         )
 
-    def constraint_force_visit(self, h, j, z, a, y):
+    def constraint_force_visit_inflow(self, h, j, z, a, y):
         """
-        (10) y (11): If mission 'h' must visit location 'j',
+        (10): If mission 'h' must visit location 'j',
         then the sum of arcs entering 'j' must be at least 1.
         """
-        # The inflow to node 'j'
         inflow = quicksum(
             z[i, j, h] for i in self.location_graph.get_vertices() if i != j
         )
 
-        # The visit requirement for node 'j' (will be 1 if required, 0 if not)
-        # * requirement = min(1, sum(a[n, j] * y[n, h] for n in self.N))
         requirement = quicksum(a[n, j] * y[n, h] for n in self.N)
 
         return inflow >= requirement
+
+    def constraint_force_visit_outflow(self, h, j, z, a, y):
+        """
+        (11): If mission 'h' must visit location 'j',
+        then the sum of arcs leaving 'j' must be at least 1.
+        """
+        outflow = quicksum(
+            z[j, i, h] for i in self.location_graph.get_vertices() if i != j
+        )
+
+        requirement = quicksum(a[n, j] * y[n, h] for n in self.N)
+
+        return outflow >= requirement
 
     def constraint_articles_capacity(self, i, j, h, f, cap_vehicle, z):
         """
@@ -510,7 +529,6 @@ class OPPModel(Model):
                     for j in self.location_graph.get_vertices()
                     if i != self.location_graph.get_final()
                     and j != self.location_graph.get_depot()
-                    # * and j != self.location_graph.get_final() --> esta no va
                     and self.location_graph.has_edge(i, j)
                 )
             )
