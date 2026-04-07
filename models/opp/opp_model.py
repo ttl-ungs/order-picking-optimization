@@ -49,7 +49,7 @@ import pyscipopt
 from pyscipopt import quicksum
 from models.base.model import Model
 
-from models.opp.opp_output_builder import build_output
+from models.opp.utils.opp_output_builder import build_output
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.opp_model_dto import OppModelDTO
 

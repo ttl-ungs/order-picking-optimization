@@ -5,7 +5,7 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "..")))
 
-from models.opp.opp_location_graph import OPPLocationGraph
+from models.opp.utils.opp_location_graph import OPPLocationGraph
 from utils.output_handler import OutputHandler
 from models.opp.opp_model import OPPModel
 from dtos.opp.solve_model_dto import SolveModelDTO
