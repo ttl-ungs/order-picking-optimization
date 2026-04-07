@@ -1,4 +1,4 @@
-from tests.opp.graphs.graphs_factory import GraphsFactory
+from graphs.graphs_factory import GraphsFactory
 
 
 def scenario_one_mission_one_picker_grid_graph(rows=4, cols=4, v_weight=4, h_weight=4):

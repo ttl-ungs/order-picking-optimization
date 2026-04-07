@@ -1,4 +1,4 @@
-from tests.opp.graphs.graphs_factory import GraphsFactory
+from graphs.graphs_factory import GraphsFactory
 
 
 def scenario_three_missions_two_pickers_two_periods_grid_graph(
