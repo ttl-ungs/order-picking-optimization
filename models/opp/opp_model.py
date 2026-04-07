@@ -49,8 +49,9 @@ import pyscipopt
 from pyscipopt import quicksum
 from models.base.model import Model
 
-from models.opp.opp_location_graph import OPPLocationGraph
 from models.opp.opp_output_builder import build_output
+from dtos.opp.solve_model_dto import SolveModelDTO
+from dtos.opp.opp_model_dto import OppModelDTO
 
 """
 Based on OPP article: A Model for the Joint Optimisation of Order Batching, 
@@ -59,39 +60,33 @@ Batch Assignment Sequencing and Picking Routing
 
 
 class OPPModel(Model):
-    def __init__(
-        self, N: set, location_graph: OPPLocationGraph, H: set, K: set, P: set, B: set
-    ):
+    def __init__(self, dto: OppModelDTO):
         super().__init__()
 
-        self.N = sorted(N)
-        self.location_graph = location_graph
-        self.H = sorted(H)
-        self.K = sorted(K)
-        self.P = sorted(P)
-        self.B = sorted(B)
+        self.N = sorted(dto.N)
+        self.location_graph = dto.location_graph
+        self.H = sorted(dto.H)
+        self.K = sorted(dto.K)
+        self.P = sorted(dto.P)
+        self.B = sorted(dto.B)
 
-    def solve(
-        self,
-        w1: float,
-        w2: float,
-        gamma: float,
-        delta: float,
-        cap_n: dict,
-        cap_vehicle: float,
-        a: dict,
-        beta_time: float,
-        beta_setup: float,
-        beta_picking: float,
-        due_date: dict,
-        M: float,
-        # dis: dict,
-        # capbatch: dict,
-        # b: dict,
-        x: dict,
-        y: dict,
-        start_time: float = None,
-    ):
+    def solve(self, params: SolveModelDTO):
+        w1 = params.w1
+        w2 = params.w2
+        gamma = params.gamma
+        delta = params.delta
+        cap_n = params.cap_n
+        cap_vehicle = params.cap_vehicle
+        a = params.a
+        beta_time = params.beta_time
+        beta_setup = params.beta_setup
+        beta_picking = params.beta_picking
+        due_date = params.due_date
+        M = params.M
+        x = params.x
+        y = params.y
+        start_time = params.start_time
+
         model = pyscipopt.Model("OPP Model")
         self.model = model
 

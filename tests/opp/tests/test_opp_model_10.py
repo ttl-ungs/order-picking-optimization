@@ -7,6 +7,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 from utils.output_handler import OutputHandler
 from models.opp.opp_model import OPPModel
+from dtos.opp.solve_model_dto import SolveModelDTO
+from dtos.opp.opp_model_dto import OppModelDTO
 from tests.opp.scenarios.six_missions_three_pickers_grid_graph import scenario_six_missions_three_pickers_two_periods_grid_graph
 
 
@@ -71,28 +73,36 @@ class TestOPPModel(OPPTestCase):
                     "O7": 15.0, "O8": 15.0, "O9": 15.0,
                     "O10": 15.0, "O11": 15.0, "O12": 15.0,}
 
-        model = OPPModel(N, opp_location_graph, H, K, P, B)
+        params = SolveModelDTO()
+        params.w1 = w1
+        params.w2 = w2
+        params.gamma = gamma
+        params.delta = delta
+        params.cap_n = cap_n
+        params.cap_vehicle = cap_vehicle
+        params.a = a
+        params.beta_time = beta_time
+        params.beta_setup = beta_setup
+        params.beta_picking = beta_picking
+        params.due_date = due_date
+        params.M = M
+        params.x = x
+        params.y = y
+        params.start_time = self.start_time
+
+        model_dto = OppModelDTO()
+        model_dto.N = N
+        model_dto.location_graph = opp_location_graph
+        model_dto.H = H
+        model_dto.K = K
+        model_dto.P = P
+        model_dto.B = B
+        model = OPPModel(model_dto)
         output_handler = OutputHandler()
         model.attach(output_handler)
 
         try:
-            result, output_graph = model.solve(
-                w1,
-                w2,
-                gamma,
-                delta,
-                cap_n,
-                cap_vehicle,
-                a,
-                beta_time,
-                beta_setup,
-                beta_picking,
-                due_date,
-                M,
-                x,
-                y,
-                self.start_time,
-            )
+            result, output_graph = model.solve(params)
         except Exception as e:
             self.fail(f"Model execution failed: {e}")
 

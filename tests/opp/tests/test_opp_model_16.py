@@ -9,6 +9,8 @@ sys.path.insert(
 
 from utils.output_handler import OutputHandler
 from models.opp.opp_model import OPPModel
+from dtos.opp.solve_model_dto import SolveModelDTO
+from dtos.opp.opp_model_dto import OppModelDTO
 from tests.opp.scenarios.three_missions_two_pickers_grid_graph import (
     scenario_three_missions_two_pickers_two_periods_grid_graph,
 )
@@ -75,28 +77,36 @@ class TestOPPModel(OPPTestCase):
         beta_picking = 1.0
         M = 1000.0
 
-        model = OPPModel(N, self.opp_location_graph, self.H, self.K, self.P, self.B)
+        params = SolveModelDTO()
+        params.w1 = w1
+        params.w2 = w2
+        params.gamma = gamma
+        params.delta = delta
+        params.cap_n = cap_n
+        params.cap_vehicle = cap_vehicle
+        params.a = a
+        params.beta_time = beta_time
+        params.beta_setup = beta_setup
+        params.beta_picking = beta_picking
+        params.due_date = due_date
+        params.M = M
+        params.x = self.x
+        params.y = y
+        params.start_time = self.start_time
+
+        model_dto = OppModelDTO()
+        model_dto.N = N
+        model_dto.location_graph = self.opp_location_graph
+        model_dto.H = self.H
+        model_dto.K = self.K
+        model_dto.P = self.P
+        model_dto.B = self.B
+        model = OPPModel(model_dto)
         output_handler = OutputHandler()
         model.attach(output_handler)
 
         try:
-            result, _ = model.solve(
-                w1,
-                w2,
-                gamma,
-                delta,
-                cap_n,
-                cap_vehicle,
-                a,
-                beta_time,
-                beta_setup,
-                beta_picking,
-                due_date,
-                M,
-                self.x,
-                y,
-                self.start_time,
-            )
+            result, _ = model.solve(params)
         except Exception as e:
             self.fail(f"Model execution failed: {e}")
 
