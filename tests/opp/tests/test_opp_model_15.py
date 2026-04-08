@@ -1,5 +1,5 @@
 import unittest
-from models.opp.utils.opp_location_graph import OPPLocationGraph
+from models.base.opp_location_graph import OPPLocationGraph
 from tests.opp.tests.opp_test_case import OPPTestCase
 import sys
 import os

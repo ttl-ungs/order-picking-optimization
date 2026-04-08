@@ -1,4 +1,4 @@
-from models.opp.utils.opp_location_graph import OPPLocationGraph
+from models.base.opp_location_graph import OPPLocationGraph
 
 """
    Scenario for test 1

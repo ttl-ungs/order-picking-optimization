@@ -1,5 +1,5 @@
 import pyscipopt
-from models.opp.utils.opp_location_graph import OPPLocationGraph
+from models.base.opp_location_graph import OPPLocationGraph
 
 
 def build_output(
