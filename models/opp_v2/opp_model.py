@@ -22,8 +22,8 @@ Parameters:
     M = Entero lo suficientemente grande
     dis_i = Distancia viajada para completar el lote i ∈ B
     capbatch_i = Capacidad requerida para un lote i ∈ B
-    y_pb = 1 si el lote b ∈ B es asignado al picker p ∈ P
-    !!! x_pb = 1 si el lote b ∈ B es asignado al picker p ∈ P
+    y_nb = 1 si el lote b ∈ B contiene a la orden n ∈ N
+    x_pb = 1 si el lote b ∈ B es asignado al picker p ∈ P
 
 Variables:
     ta_n = tardanza de la orden n ∈ N
@@ -57,7 +57,6 @@ class OPPModel(Model):
 
         self.N = sorted(dto.N)
         self.location_graph = dto.location_graph
-        self.K = sorted(dto.K)
         self.P = sorted(dto.P)
         self.B = sorted(dto.B)
         self.start_time = dto.start_time
@@ -135,116 +134,116 @@ class OPPModel(Model):
         final_node = self.location_graph.get_final()
 
         # (6)
-        for h in self.H:
+        for b in self.B:
             model.addCons(
-                self.constraint_start_from_depot(z, h),
-                name=f"start_from_depot_h{h}",
+                self.constraint_start_from_depot(z, b),
+                name=f"start_from_depot_b{b}",
             )
 
         # (7)
-        for h in self.H:
+        for b in self.B:
             model.addCons(
-                self.constraint_finish_at_end(z, h),
-                name=f"finish_at_end_h{h}",
+                self.constraint_finish_at_end(z, b),
+                name=f"finish_at_end_b{b}",
             )
 
         # (8)
-        for h in self.H:
+        for b in self.B:
             model.addCons(
-                self.constraint_cant_go_back_to_depot(z, h),
-                name=f"cant_go_back_to_depot_h{h}",
+                self.constraint_cant_go_back_to_depot(z, b),
+                name=f"cant_go_back_to_depot_b{b}",
             )
 
         # (9)
-        for h in self.H:
+        for b in self.B:
             model.addCons(
-                self.constraint_cant_move_from_end_node(z, h),
-                name=f"cant_move_from_end_node_h{h}",
+                self.constraint_cant_move_from_end_node(z, b),
+                name=f"cant_move_from_end_node_b{b}",
             )
 
         # (10)
-        for h in self.H:
+        for b in self.B:
             for j in self.location_graph.get_vertices():
                 if j != depot_node and j != final_node:
                     model.addCons(
-                        self.constraint_force_visit_inflow(h, j, z, a, y),
-                        name=f"force_visit_inflow_h{h}_j{j}",
+                        self.constraint_force_visit_inflow(b, j, z, a, y),
+                        name=f"force_visit_inflow_b{b}_j{j}",
                     )
 
         # (11)
-        for h in self.H:
+        for b in self.B:
             for j in self.location_graph.get_vertices():
                 if j != depot_node and j != final_node:
                     model.addCons(
-                        self.constraint_force_visit_outflow(h, j, z, a, y),
-                        name=f"force_visit_outflow_h{h}_j{j}",
+                        self.constraint_force_visit_outflow(b, j, z, a, y),
+                        name=f"force_visit_outflow_b{b}_j{j}",
                     )
 
         # (12)
-        for h in self.H:
+        for b in self.B:
             for i in self.location_graph.get_vertices():
                 for j in self.location_graph.get_vertices():
                     if i != final_node and j != depot_node:
                         model.addCons(
                             self.constraint_articles_capacity(
-                                i, j, h, f, cap_vehicle, z
+                                i, j, b, f, cap_vehicle, z
                             ),
-                            name=f"articles_capacity_h{h}_i{i}_j{j}",
+                            name=f"articles_capacity_b{b}_i{i}_j{j}",
                         )
 
         # (13)
-        for h in self.H:
+        for b in self.B:
             for i in self.location_graph.get_vertices():
                 if i != depot_node and i != final_node:
                     model.addCons(
-                        self.constraint_flow_conservation(z, h, i),
-                        name=f"flow_conservation_h{h}_i{i}",
+                        self.constraint_flow_conservation(z, b, i),
+                        name=f"flow_conservation_b{b}_i{i}",
                     )
 
         # (14)
-        for h in self.H:
+        for b in self.B:
             for i in self.location_graph.get_vertices():
                 # depot node does not have an input arc
                 if i != depot_node:
                     model.addCons(
-                        self.constraint_one_input_arc_per_node(h, i, z),
-                        name=f"one_input_arc_per_node_h{h}_i{i}",
+                        self.constraint_one_input_arc_per_node(b, i, z),
+                        name=f"one_input_arc_per_node_b{b}_i{i}",
                     )
 
         # (15)
-        for h in self.H:
+        for b in self.B:
             for i in self.location_graph.get_vertices():
                 # final node does not have an output arc
                 if i != final_node:
                     model.addCons(
-                        self.constraint_one_output_arc_per_node(h, i, z),
-                        name=f"one_output_arc_per_node_h{h}_i{i}",
+                        self.constraint_one_output_arc_per_node(b, i, z),
+                        name=f"one_output_arc_per_node_b{b}_i{i}",
                     )
 
         # (16)
-        for h in self.H:
+        for b in self.B:
             for n in self.N:
                 for i in self.location_graph.get_vertices():
                     if i != depot_node:
                         model.addCons(
-                            self.constraint_avoid_subtours_cycles(f, i, h, a, y, n),
-                            name=f"avoid_subtours_cycles_h{h}_n{n}_i{i}",
+                            self.constraint_avoid_subtours_cycles(f, i, b, a, y, n),
+                            name=f"avoid_subtours_cycles_b{b}_n{n}_i{i}",
                         )
 
         # (17)
-        for h in self.H:
+        for b in self.B:
             for i in self.location_graph.get_vertices():
                 if i != depot_node:
                     model.addCons(
-                        self.constraint_no_loops(h, i, z),
-                        name=f"no_loops_h{h}_i{i}",
+                        self.constraint_no_loops(b, i, z),
+                        name=f"no_loops_b{b}_i{i}",
                     )
 
         # (18)
-        for h in self.H:
+        for b in self.B:
             model.addCons(
                 self.constraint_valid_execution_time(
-                    h,
+                    b,
                     t_exec,
                     beta_time,
                     beta_setup,
@@ -253,17 +252,16 @@ class OPPModel(Model):
                     y,
                     z,
                 ),
-                name=f"valid_execution_time_h{h}",
+                name=f"valid_execution_time_b{b}",
             )
 
         # (19)
-        for p in self.P:
-            for k in self.K:
-                for h in self.H:
-                    model.addCons(
-                        self.constraint_batch_execution_time(p, k, h, t_exec, M, x, u),
-                        name=f"batch_execution_time_p{p}_k{k}_h{h}",
-                    )
+        # for p in self.P:
+        #     for b in self.B:
+        #         model.addCons(
+        #             self.constraint_batch_execution_time(p, b, t_exec, M, x, u),
+        #             name=f"batch_execution_time_p{p}_b{b}",
+        #         )
 
         # (20)
         for p in self.P:
@@ -273,37 +271,35 @@ class OPPModel(Model):
             )
 
         # (21)
-        for p in self.P:
-            for k in self.K:
-                if k >= 2:
-                    model.addCons(
-                        self.constraint_completition_batch_time(u, v, p, k),
-                        name=f"completition_batch_time_p{p}_k{k}",
-                    )
+        # for p in self.P:
+        #     for b in self.B:
+        #         if b >= 2:
+        #             model.addCons(
+        #                 self.constraint_completition_batch_time(u, v, p, b),
+        #                 name=f"completition_batch_time_p{p}_k{b}",
+        #             )
 
         # (22)
         for p in self.P:
-            for k in self.K:
-                for h in self.H:
-                    for n in self.N:
-                        model.addCons(
-                            self.constraint_tardiness_definition(
-                                v, p, k, due_date, n, M, h, x, y, ta
-                            ),
-                            name=f"tardiness_definition_p{p}_k{k}_n{n}_h{h}",
-                        )
+            for b in self.B:
+                for n in self.N:
+                    model.addCons(
+                        self.constraint_tardiness_definition(
+                            v, p, due_date, n, M, b, x, y, ta
+                        ),
+                        name=f"tardiness_definition_p{p}_n{n}_b{b}",
+                    )
 
         # (23)
         for p in self.P:
-            for k in self.K:
-                for h in self.H:
-                    for n in self.N:
-                        model.addCons(
-                            self.constraint_earliness_definition(
-                                v, p, k, due_date, n, M, h, x, y, ea
-                            ),
-                            name=f"earliness_definition_p{p}_k{k}_n{n}_h{h}",
-                        )
+            for b in self.B:
+                for n in self.N:
+                    model.addCons(
+                        self.constraint_earliness_definition(
+                            v, p, due_date, n, M, b, x, y, ea
+                        ),
+                        name=f"earliness_definition_p{p}_n{n}_b{b}",
+                    )
 
         # (24), (25), (26), (27), (28), (29), (30), (31) and (32) are implicit in the definition of the variables
 
@@ -350,155 +346,155 @@ class OPPModel(Model):
 
         return w1 * recollection_time + w2 * penalty
 
-    def constraint_start_from_depot(self, z, h):
+    def constraint_start_from_depot(self, z, b):
         """
         (6): Each mission must start from the depot.
         """
-        # The sum of the arcs z(depot, j, h) for all destinations 'j' must be 1.
+        # The sum of the arcs z(depot, j, b) for all destinations 'j' must be 1.
         return (
             quicksum(
-                z[self.location_graph.get_depot(), j, h]
+                z[self.location_graph.get_depot(), j, b]
                 for j in self.location_graph.get_vertices()
                 if j != self.location_graph.get_depot()
             )
             == 1
         )
 
-    def constraint_finish_at_end(self, z, h):
+    def constraint_finish_at_end(self, z, b):
         """
         (7): Each mission must finish at the final node.
         """
-        # The sum of the arcs z(i, final_node, h) for all origins 'i' must be 1.
+        # The sum of the arcs z(i, final_node, b) for all origins 'i' must be 1.
         return (
             quicksum(
-                z[i, self.location_graph.get_final(), h]
+                z[i, self.location_graph.get_final(), b]
                 for i in self.location_graph.get_vertices()
                 if i != self.location_graph.get_final()
             )
             == 1
         )
 
-    def constraint_cant_go_back_to_depot(self, z, h):
+    def constraint_cant_go_back_to_depot(self, z, b):
         """
         (8): A picker cannot return to the depot after leaving it.
         """
-        # The sum of the arcs z(i, depot, h) for all origins 'i' must be 0.
+        # The sum of the arcs z(i, depot, b) for all origins 'i' must be 0.
         return (
             quicksum(
-                z[i, self.location_graph.get_depot(), h]
+                z[i, self.location_graph.get_depot(), b]
                 for i in self.location_graph.get_vertices()
                 if i != self.location_graph.get_depot()
             )
             == 0
         )
 
-    def constraint_cant_move_from_end_node(self, z, h):
+    def constraint_cant_move_from_end_node(self, z, b):
         """
         (9): A picker cannot leave the final node.
         """
-        # The sum of the arcs z(final_node, j, h) for all destinations 'j' must be 0.
+        # The sum of the arcs z(final_node, j, b) for all destinations 'j' must be 0.
         return (
             quicksum(
-                z[self.location_graph.get_final(), j, h]
+                z[self.location_graph.get_final(), j, b]
                 for j in self.location_graph.get_vertices()
                 if j != self.location_graph.get_final()
             )
             == 0
         )
 
-    def constraint_force_visit_inflow(self, h, j, z, a, y):
+    def constraint_force_visit_inflow(self, b, j, z, a, y):
         """
-        (10): If mission 'h' must visit location 'j',
+        (10): If an order from batch 'b' must visit location 'j',
         then the sum of arcs entering 'j' must be at least 1.
         """
         inflow = quicksum(
-            z[i, j, h] for i in self.location_graph.get_vertices() if i != j
+            z[i, j, b] for i in self.location_graph.get_vertices() if i != j
         )
 
-        requirement = quicksum(a[n, j] * y[n, h] for n in self.N)
+        requirement = quicksum(a[n, j] * y[n, b] for n in self.N)
 
         return inflow >= requirement
 
-    def constraint_force_visit_outflow(self, h, j, z, a, y):
+    def constraint_force_visit_outflow(self, b, j, z, a, y):
         """
-        (11): If mission 'h' must visit location 'j',
+        (11): If an order from batch 'b' must visit location 'j',
         then the sum of arcs leaving 'j' must be at least 1.
         """
         outflow = quicksum(
-            z[j, i, h] for i in self.location_graph.get_vertices() if i != j
+            z[j, i, b] for i in self.location_graph.get_vertices() if i != j
         )
 
-        requirement = quicksum(a[n, j] * y[n, h] for n in self.N)
+        requirement = quicksum(a[n, j] * y[n, b] for n in self.N)
 
         return outflow >= requirement
 
-    def constraint_articles_capacity(self, i, j, h, f, cap_vehicle, z):
+    def constraint_articles_capacity(self, i, j, b, f, cap_vehicle, z):
         """
         (12): Articles capacity constraint.
-        Ensures that the total capacity of articles assigned to a mission does
+        Ensures that the total capacity of articles of a batch b does
         not exceed the vehicle's capacity.
         """
-        return f[i, j, h] - float(cap_vehicle) * z[i, j, h] <= 0
+        return f[i, j, b] - float(cap_vehicle) * z[i, j, b] <= 0
 
-    def constraint_flow_conservation(self, z, h, i):
+    def constraint_flow_conservation(self, z, b, i):
         """
         (13): Flow conservation constraint.
         Ensures that the flow of articles is conserved at each location.
         """
         return quicksum(
-            z[g, i, h] for g in self.location_graph.get_vertices() if g != i
-        ) == quicksum(z[i, j, h] for j in self.location_graph.get_vertices() if j != i)
+            z[g, i, b] for g in self.location_graph.get_vertices() if g != i
+        ) == quicksum(z[i, j, b] for j in self.location_graph.get_vertices() if j != i)
 
-    def constraint_one_input_arc_per_node(self, h, i, z):
+    def constraint_one_input_arc_per_node(self, b, i, z):
         """
         (14): One input arc per node constraint.
-        Ensures that each node i has maximum one incoming arc in the mission route.
+        Ensures that each node i has maximum one incoming arc in the route.
         """
         return (
             quicksum(
-                z[j, i, h]
+                z[j, i, b]
                 for j in self.location_graph.get_vertices()
                 if j != i
             )
             <= 1
         )
 
-    def constraint_one_output_arc_per_node(self, h, i, z):
+    def constraint_one_output_arc_per_node(self, b, i, z):
         """
         (15): One output arc per node constraint.
-        Ensures that each node i has maximum one outgoing arc in the mission route.
+        Ensures that each node i has maximum one outgoing arc in the route.
         """
         return (
             quicksum(
-                z[i, j, h]
+                z[i, j, b]
                 for j in self.location_graph.get_vertices()
                 if j != i
             )
             <= 1
         )
 
-    def constraint_avoid_subtours_cycles(self, f, i, h, a, y, n):
+    def constraint_avoid_subtours_cycles(self, f, i, b, a, y, n):
         """
         (16): Subtour elimination constraint.
         Ensures that the route does not contain subtours or cycles.
         """
         flow_in = quicksum(
-            f[g, i, h]
+            f[g, i, b]
             for g in self.location_graph.get_vertices()
             if g != self.location_graph.get_final()
         )
-        required_flow = a[n, i] * y[n, h]
+        required_flow = a[n, i] * y[n, b]
         return flow_in >= required_flow
 
-    def constraint_no_loops(self, h, i, z):
+    def constraint_no_loops(self, b, i, z):
         """
         (17): No loops constraint.
         Ensures that the route does not contain loops.
         """
-        return z[i, i, h] == 0 if i != self.location_graph.get_depot() else None
+        return z[i, i, b] == 0 if i != self.location_graph.get_depot() else None
 
     def constraint_valid_execution_time(
-        self, h, t_exec, beta_time, beta_setup, beta_picking, cap, y, z
+        self, b, t_exec, beta_time, beta_setup, beta_picking, cap, y, z
     ):
         """
         (18): Valid execution time constraint.
@@ -507,11 +503,11 @@ class OPPModel(Model):
         """
         return (
             beta_setup
-            + beta_picking * quicksum(cap[n] * y[n, h] for n in self.N)
+            + beta_picking * quicksum(cap[n] * y[n, b] for n in self.N)
             + beta_time
             * (
                 quicksum(
-                    self.location_graph.get_distance(i, j) * z[i, j, h]
+                    self.location_graph.get_distance(i, j) * z[i, j, b]
                     for i in self.location_graph.get_vertices()
                     for j in self.location_graph.get_vertices()
                     if i != self.location_graph.get_final()
@@ -519,49 +515,48 @@ class OPPModel(Model):
                     and self.location_graph.has_edge(i, j)
                 )
             )
-            <= t_exec[h]
+            <= t_exec[b]
         )
 
-    def constraint_batch_execution_time(self, p, k, h, t_exec, M, x, u):
+    # def constraint_batch_execution_time(self, p, b, t_exec, M, x, u):
         """
         (19): Batch execution time constraint.
-        Ensures that the processing time of a batch assigned to a position
-        of a picker is less or equal to the execution time of the mission
+        Ensures that the processing time of a batch assigned to a picker is less or 
+        equal to the execution time of the batch
         assigned to that position.
         """
-        return t_exec[h] - M * (1 - x[p, k, h]) <= u[p, k]
+        # return t_exec[b] - M * (1 - x[p, b]) <= u[p, b]
 
     def constraint_processing_time(self, p, u, v):
         """
         (20): Completion time constraint.
         Ensures that the processing time is less or equal to the completion time
-        for each position of a picker.
+        for each batch of a picker.
         """
         return u[p, 1] <= v[p, 1]
 
-    def constraint_completition_batch_time(self, u, v, p, k):
+    # def constraint_completition_batch_time(self, u, v, p, b):
         """
         (21): Completion time of batch constraint.
-        Ensures that the completion time of a batch assigned to a position
-        of a picker is correctly calculated based on the processing time
-        of that batch.
+        Ensures that the completion time of a batch assigned to a picker is 
+        correctly calculated based on the processing time of that batch.
         """
-        return u[p, k] + v[p, k - 1] <= v[p, k]
+        # return u[p, b] + v[p, b - 1] <= v[p, b]
 
-    def constraint_tardiness_definition(self, v, p, k, due_date, n, M, h, x, y, ta):
+    def constraint_tardiness_definition(self, v, p, due_date, n, M, b, x, y, ta):
         """
         (22): Tardiness definition constraint.
         Ensures that the tardiness of an order is correctly calculated
-        based on the due date and the completion time of the mission
+        based on the due date and the completion time of the batch
         to which the order is assigned.
         """
-        return v[p, k] - due_date[n] - M * (2 - x[p, k, h] - y[n, h]) <= ta[n]
+        return v[p, b] - due_date[n] - M * (2 - x[p, b] - y[n, b]) <= ta[n]
 
-    def constraint_earliness_definition(self, v, p, k, due_date, n, M, h, x, y, ea):
+    def constraint_earliness_definition(self, v, p, due_date, n, M, b, x, y, ea):
         """
         (23): Earliness definition constraint.
         Ensures that the earliness of an order is correctly calculated
-        based on the due date and the completion time of the mission
+        based on the due date and the completion time of the batch
         to which the order is assigned.
         """
-        return due_date[n] - v[p, k] - M * (2 - x[p, k, h] - y[n, h]) <= ea[n]
+        return due_date[n] - v[p, b] - M * (2 - x[p, b] - y[n, b]) <= ea[n]
