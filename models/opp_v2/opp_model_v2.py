@@ -43,7 +43,6 @@ import pyscipopt
 from pyscipopt import quicksum
 from models.base.model import Model
 
-from models.opp.utils.opp_output_builder import build_output
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.opp_model_dto import OppModelDTO
 
@@ -263,10 +262,11 @@ class OPPModelV2(Model):
 
         # (20)
         for p in self.P:
-            model.addCons(
-                self.constraint_processing_time(p, u, v),
-                name=f"processing_time_p{p}_k1",
-            )
+            for b in self.B:
+                model.addCons(
+                    self.constraint_processing_time(p, u, v, b),
+                    name=f"processing_time_p{p}_b{b}",
+                )
 
         # (21)
         # for p in self.P:
@@ -317,21 +317,24 @@ class OPPModelV2(Model):
         print(f"\nExecution time: {elapsed:.4f}s (solver: {model.getSolvingTime():.4f}s)")
 
         # Print solution results, for testing purposes
-        super().notify(
-            model=model,
-            N=self.N,
-            V=self.location_graph.get_vertices(),
-            P=self.P,
-            ta=ta,
-            ea=ea,
-            t_exec=t_exec,
-            v=v,
-            z=z,
-            depot_vertex=depot_node,
-            final_vertex=final_node,
-        )
-
-        # TODO: output = build_output(model, self.location_graph, z)
+        # TODO
+        # super().notify(
+        #     model=model,
+        #     N=self.N,
+        #     V=self.location_graph.get_vertices(),
+        #     P=self.P,
+        #     ta=ta,
+        #     ea=ea,
+        #     t_exec=t_exec,
+        #     v=v,
+        #     z=z,
+        #     depot_vertex=depot_node,
+        #     final_vertex=final_node,
+        #     H=None,
+        #     K=None
+        # )
+        #
+        # output = build_output(model, self.location_graph, self.B, z)
         return model.getStatus()
 
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
@@ -523,13 +526,13 @@ class OPPModelV2(Model):
         """
         # return t_exec[b] - M * (1 - x[p, b]) <= u[p, b]
 
-    def constraint_processing_time(self, p, u, v):
+    def constraint_processing_time(self, p, u, v, b):
         """
         (20): Completion time constraint.
         Ensures that the processing time is less or equal to the completion time
         for each batch of a picker.
         """
-        return u[p, 1] <= v[p, 1]
+        return u[p, b] <= v[p, b]
 
     # def constraint_completition_batch_time(self, u, v, p, b):
         """
