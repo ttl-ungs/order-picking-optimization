@@ -45,6 +45,7 @@ from models.base.model import Model
 
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.opp_model_dto import OppModelDTO
+from models.utils.output_builder import build_output
 
 """
 Version of OPP model without concept of "missions" (H) and "periods" (K)
@@ -317,25 +318,23 @@ class OPPModelV2(Model):
         print(f"\nExecution time: {elapsed:.4f}s (solver: {model.getSolvingTime():.4f}s)")
 
         # Print solution results, for testing purposes
-        # TODO
-        # super().notify(
-        #     model=model,
-        #     N=self.N,
-        #     V=self.location_graph.get_vertices(),
-        #     P=self.P,
-        #     ta=ta,
-        #     ea=ea,
-        #     t_exec=t_exec,
-        #     v=v,
-        #     z=z,
-        #     depot_vertex=depot_node,
-        #     final_vertex=final_node,
-        #     H=None,
-        #     K=None
-        # )
-        #
-        # output = build_output(model, self.location_graph, self.B, z)
-        return model.getStatus()
+        super().notify(
+            model=model,
+            N=self.N,
+            V=self.location_graph.get_vertices(),
+            P=self.P,
+            B=self.B,
+            ta=ta,
+            ea=ea,
+            t_exec=t_exec,
+            v=v,
+            z=z,
+            depot_vertex=depot_node,
+            final_vertex=final_node,
+        )
+
+        output = build_output(model, self.location_graph, self.B, z)
+        return model.getStatus(), output
 
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
         recollection_time = sum(v[p, b] for p in self.P for b in self.B)

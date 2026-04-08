@@ -8,9 +8,9 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "..")))
 
 from models.base.opp_location_graph import OPPLocationGraph
-from utils.output_handler import OutputHandler
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.opp_model_dto import OppModelDTO
+from models.opp_v2.utils.output_handler import OutputHandler
 
 from tests.opp_v2.scenarios.scenario_1 import basic_two_orders_capacity_limit
 
@@ -69,7 +69,7 @@ class TestOPPModel(OPPTestCase):
         model.attach(output_handler)
 
         try:
-            result = model.solve(params)
+            result, output_graph = model.solve(params)
         except Exception as e:
             self.fail(f"Model execution failed: {e}")
 
@@ -93,8 +93,7 @@ class TestOPPModel(OPPTestCase):
             "The model did not find a solution.",
         )
 
-        # TODO
-        # self.assertEqual(output_graph, expected_graph)
+        self.assertEqual(output_graph, expected_graph)
 
 
 if __name__ == "__main__":
