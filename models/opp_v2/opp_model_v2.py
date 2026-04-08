@@ -50,7 +50,7 @@ from dtos.opp.opp_model_dto import OppModelDTO
 """
 Version of OPP model without concept of "missions" (H) and "periods" (K)
 """
-class OPPModel(Model):
+class OPPModelV2(Model):
     def __init__(self, dto: OppModelDTO):
         # TODO: Create DTOs without H and K
         super().__init__()
