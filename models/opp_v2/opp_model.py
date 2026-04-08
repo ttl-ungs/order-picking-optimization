@@ -48,7 +48,7 @@ from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.opp_model_dto import OppModelDTO
 
 """
-Version of OPP model without concept of "missions" (H)
+Version of OPP model without concept of "missions" (H) and "periods" (K)
 """
 class OPPModel(Model):
     def __init__(self, dto: OppModelDTO):
@@ -90,16 +90,14 @@ class OPPModel(Model):
         # t_(exec_b) = execution time of mission b ∈ B
         t_exec = {b: model.addVar(name=f"t_exec_{b}", lb=0) for b in self.B}
 
-        # u_pb = processing time of the batch assigned to position k ∈ K
-        #        of picker p ∈ P
+        # u_pb = processing time of the batch b ∈ B of picker p ∈ P
         u = {
             (p, b): model.addVar(name=f"u_{p}_{b}", lb=0)
             for p in self.P
             for b in self.B
         }
 
-        # v_pb = completion time for the batch assigned to position k ∈ K
-        #        of picker p ∈ P
+        # v_pb = completion time of the batch b ∈ B of picker p ∈ P
         v = {
             (p, b): model.addVar(name=f"v_{p}_{b}", lb=0)
             for p in self.P
@@ -304,12 +302,12 @@ class OPPModel(Model):
         # (24), (25), (26), (27), (28), (29), (30), (31) and (32) are implicit in the definition of the variables
 
         # Extra: Allow only paths between neighbors
-        for h in self.H:
+        for b in self.B:
             for i in self.location_graph.get_vertices():
                 for j in self.location_graph.get_vertices():
                     if not (self.location_graph.has_edge(i, j)):
                         model.addCons(
-                            z[i, j, h] == 0, name=f"only_valid_edges_i{i}_j{j}_h{h}"
+                            z[i, j, b] == 0, name=f"only_valid_edges_i{i}_j{j}_b{b}"
                         )
 
         t0 = start_time if start_time is not None else time.time()
@@ -323,9 +321,7 @@ class OPPModel(Model):
             model=model,
             N=self.N,
             V=self.location_graph.get_vertices(),
-            H=self.H,
             P=self.P,
-            K=self.K,
             ta=ta,
             ea=ea,
             t_exec=t_exec,
@@ -335,11 +331,11 @@ class OPPModel(Model):
             final_vertex=final_node,
         )
 
-        output = build_output(model, self.location_graph, self.H, z)
-        return model.getStatus(), output
+        # TODO: output = build_output(model, self.location_graph, z)
+        return model.getStatus()
 
     def objective_function(self, w1, v, w2, ea, gamma, delta, ta):
-        recollection_time = sum(v[p, k] for p in self.P for k in self.K)
+        recollection_time = sum(v[p, b] for p in self.P for b in self.B)
         advance_time = sum(ea[n] for n in self.N)
         delay_time = sum(ta[n] for n in self.N)
         penalty = gamma * advance_time + delta * delay_time
