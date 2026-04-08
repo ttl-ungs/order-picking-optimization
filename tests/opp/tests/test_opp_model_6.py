@@ -56,7 +56,6 @@ class TestOPPModel(OPPTestCase):
         params.M = M
         params.x = x
         params.y = y
-        params.start_time = self.start_time
 
         model_dto = OppModelDTO()
         model_dto.N = N
@@ -65,6 +64,7 @@ class TestOPPModel(OPPTestCase):
         model_dto.K = K
         model_dto.P = P
         model_dto.B = B
+        model_dto.start_time = self.start_time
         model = OPPModel(model_dto)
         output_handler = OutputHandler()
         model.attach(output_handler)

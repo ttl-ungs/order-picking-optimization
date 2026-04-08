@@ -57,8 +57,6 @@ from dtos.opp.opp_model_dto import OppModelDTO
 Based on OPP article: A Model for the Joint Optimisation of Order Batching, 
 Batch Assignment Sequencing and Picking Routing 
 """
-
-
 class OPPModel(Model):
     def __init__(self, dto: OppModelDTO):
         super().__init__()
@@ -69,6 +67,7 @@ class OPPModel(Model):
         self.K = sorted(dto.K)
         self.P = sorted(dto.P)
         self.B = sorted(dto.B)
+        self.start_time = dto.start_time
 
     def solve(self, params: SolveModelDTO):
         w1 = params.w1
@@ -85,7 +84,7 @@ class OPPModel(Model):
         M = params.M
         x = params.x
         y = params.y
-        start_time = params.start_time
+        start_time = self.start_time
 
         model = pyscipopt.Model("OPP Model")
         self.model = model

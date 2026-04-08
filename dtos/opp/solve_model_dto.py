@@ -14,7 +14,6 @@ class SolveModelDTO:
         self._M: float = None
         self._x: dict = None
         self._y: dict = None
-        self._start_time: float = None
 
     @property
     def w1(self) -> float:
@@ -128,10 +127,3 @@ class SolveModelDTO:
     def y(self, value: dict):
         self._y = value
 
-    @property
-    def start_time(self) -> float:
-        return self._start_time
-
-    @start_time.setter
-    def start_time(self, value: float):
-        self._start_time = value

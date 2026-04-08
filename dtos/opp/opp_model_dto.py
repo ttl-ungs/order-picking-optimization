@@ -9,6 +9,7 @@ class OppModelDTO:
         self._K: set = None
         self._P: set = None
         self._B: set = None
+        self._start_time: float = None
 
     @property
     def N(self) -> set:
@@ -57,3 +58,11 @@ class OppModelDTO:
     @B.setter
     def B(self, value: set):
         self._B = value
+
+    @property
+    def start_time(self) -> float:
+        return self._start_time
+
+    @start_time.setter
+    def start_time(self, value: float):
+        self._start_time = value
