@@ -3,7 +3,9 @@ from tests.opp.tests.opp_test_case import OPPTestCase
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "..")))
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
+)
 
 from models.opp.utils.output_handler import OutputHandler
 from models.opp.opp_model import OPPModel
@@ -70,7 +72,7 @@ class TestOPPModel(OPPTestCase):
         model.attach(output_handler)
 
         try:
-            result, output_graph = model.solve(params)
+            result, _ = model.solve(params)
         except Exception as e:
             self.fail(f"Model execution failed: {e}")
 
@@ -78,6 +80,7 @@ class TestOPPModel(OPPTestCase):
             result in ("infeasible"),
             "The model did find a solution.",
         )
+
 
 if __name__ == "__main__":
     # pyscipopt.SCIP_PARAMSETTING_DEFAULT.set("limits/time", 60)
