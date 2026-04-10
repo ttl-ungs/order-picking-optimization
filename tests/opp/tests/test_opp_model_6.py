@@ -3,7 +3,9 @@ from tests.opp.tests.opp_test_case import OPPTestCase
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "..")))
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
+)
 
 from models.base.opp_location_graph import OPPLocationGraph
 from models.opp.utils.output_handler import OutputHandler
@@ -88,7 +90,7 @@ class TestOPPModel(OPPTestCase):
         expected_graph.add_edge("L2", "L4", location_graph.get_distance("L2", "L4"))
 
         self.assertTrue(
-            result in ("optimal", "feasible", "infeasible", "unbounded"),
+            result in ("optimal", "feasible"),
             "The model did not find a solution.",
         )
 
