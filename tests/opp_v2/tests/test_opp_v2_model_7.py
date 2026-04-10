@@ -97,6 +97,9 @@ class TestOPPModel(OPPTestCase):
 
         self.assertEqual(output_graph, expected_graph)
 
+        print("Output graph:", output_graph.to_string())
+        print("Expected graph:", expected_graph.to_string())
+
 
 if __name__ == "__main__":
     # pyscipopt.SCIP_PARAMSETTING_DEFAULT.set("limits/time", 60)

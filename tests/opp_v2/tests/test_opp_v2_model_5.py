@@ -92,13 +92,13 @@ class TestOPPModel(OPPTestCase):
         expected_graph.add_edge("L3", "LC", location_graph.get_distance("L3", "L4"))
         expected_graph.add_edge("LC", "L5", location_graph.get_distance("LC", "L5"))
 
-        print("Output graph:", output_graph.to_string())
-        print("Expected graph:", expected_graph.to_string())
-
         self.assertTrue(
             result in ("optimal", "feasible"),
             "The model did not find a solution.",
         )
+
+        print("Output graph:", output_graph.to_string())
+        print("Expected graph:", expected_graph.to_string())
 
         self.assertEqual(output_graph, expected_graph)
 
