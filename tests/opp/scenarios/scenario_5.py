@@ -50,7 +50,6 @@ def bidirectional_edges():
 
     x = {(p, k, h): 0 for p in P for k in K for h in H}
     x[("P1", 1, "M1")] = 1
-    x[("P2", 1, "M2")] = 1
 
     cap_vehicle = 5.0
 
