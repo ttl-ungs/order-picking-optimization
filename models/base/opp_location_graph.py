@@ -88,6 +88,28 @@ class OPPLocationGraph:
         """Get all vertex IDs in the graph."""
         return self._vertices_sorted
 
+    def _find_paths(self, origin_vertex, destination_vertex, visited=None):
+        """Find all paths from origin to destination using DFS."""
+        if visited is None:
+            visited = set()
+
+        visited.add(origin_vertex)
+
+        if origin_vertex == destination_vertex:
+            return [[origin_vertex]]
+
+        paths = []
+        for (from_v, to_v), _ in self.distances.items():
+            if from_v.location_id == origin_vertex and to_v not in visited:
+                sub_paths = self._find_paths(
+                    to_v.location_id, destination_vertex, visited
+                )
+                for sub_path in sub_paths:
+                    paths.append([origin_vertex] + sub_path)
+
+        visited.remove(origin_vertex)
+        return paths
+
     def __eq__(self, value):
         if not isinstance(value, OPPLocationGraph):
             return NotImplemented
@@ -101,9 +123,21 @@ class OPPLocationGraph:
 
     def to_string(self):
         """String representation of the graph."""
-        vertices_str = ", ".join(self.get_vertices())
         edges_str = ", ".join(
             f"{from_v.location_id} -{dist}-> {to_v.location_id}"
             for (from_v, to_v), dist in self.distances.items()
         )
-        return f"OPPLocationGraph(Depot: {self.get_depot()}, Final: {self.get_final()}, Edges: {{{edges_str}}})"
+
+        paths_str = ""
+        start = self.get_depot()
+        end = self.get_final()
+        if start and end:
+            all_paths = self._find_paths(start, end)
+            paths_str = ", ".join(" -> ".join(path) for path in all_paths)
+
+        return f"""OPPLocationGraph(
+                        Depot: {self.get_depot()}, 
+                        Final: {self.get_final()}, 
+                        Edges: {{{edges_str}}}, 
+                        Paths: {{{paths_str}}}
+                )"""
