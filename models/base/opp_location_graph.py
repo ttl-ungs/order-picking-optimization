@@ -51,9 +51,7 @@ class OPPLocationGraph:
         opp_location = OPPLocation(vertex, type)
         if opp_location not in self._vertices_set:
             self._vertices_set.add(opp_location)
-            self._vertices_sorted = sorted(
-                v.location_id for v in self._vertices_set
-            )
+            self._vertices_sorted = sorted(v.location_id for v in self._vertices_set)
 
     def add_edge(self, from_vertex, to_vertex, distance: float):
         """Add an edge with distance between two vertices."""
@@ -100,3 +98,12 @@ class OPPLocationGraph:
             and self.get_vertices() == value.get_vertices()
             and self.distances == value.distances
         )
+
+    def to_string(self):
+        """String representation of the graph."""
+        vertices_str = ", ".join(self.get_vertices())
+        edges_str = ", ".join(
+            f"{from_v.location_id} -{dist}-> {to_v.location_id}"
+            for (from_v, to_v), dist in self.distances.items()
+        )
+        return f"OPPLocationGraph(Depot: {self.get_depot()}, Final: {self.get_final()}, Edges: {{{edges_str}}})"
