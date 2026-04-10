@@ -12,4 +12,24 @@ if __name__ == "__main__":
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
 
+    print("\n" + "=" * 60)
+    print("FINAL SUMMARY")
+    print("=" * 60)
+    print(f"Ran: {result.testsRun}")
+    print(f"Failures: {len(result.failures)}")
+    print(f"Errors: {len(result.errors)}")
+
+    if result.failures:
+        print("\nFailed tests:")
+        for test, _ in result.failures:
+            print(f" - {test.id()}")
+
+    if result.errors:
+        print("\nTests with errors:")
+        for test, _ in result.errors:
+            print(f" - {test.id()}")
+
+    if not result.failures and not result.errors:
+        print("\nAll tests passed.")
+
     sys.exit(0 if result.wasSuccessful() else 1)
