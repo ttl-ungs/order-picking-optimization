@@ -104,6 +104,9 @@ class TestOPPModel(OPPTestCase):
             "The model did not find a solution.",
         )
 
+        print("Output graph:", output_graph.to_string())
+        print("Expected graph:", expected_graph.to_string())
+
         self.assertEqual(output_graph, expected_graph)
 
 
