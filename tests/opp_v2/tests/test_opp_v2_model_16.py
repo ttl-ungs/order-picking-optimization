@@ -94,8 +94,6 @@ class TestOPPModel(OPPTestCase):
         model_dto = OppModelDTO()
         model_dto.N = N
         model_dto.location_graph = self.opp_location_graph
-        model_dto.H = self.H
-        model_dto.K = self.K
         model_dto.P = self.P
         model_dto.B = self.B
         model_dto.start_time = self.start_time
