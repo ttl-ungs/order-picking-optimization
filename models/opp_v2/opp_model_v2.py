@@ -219,14 +219,27 @@ class OPPModelV2(Model):
                     )
 
         # (16)
+        # for b in self.B:
+        #     for n in self.N:
+        #         for i in self.location_graph.get_vertices():
+        #             if i != depot_node:
+        #                 model.addCons(
+        #                     self.constraint_avoid_subtours_cycles(f, i, b, a, y, n),
+        #                     name=f"avoid_subtours_cycles_b{b}_n{n}_i{i}",
+        #                 )
+
+        # (16) - Gavish-Graves subtour elimination
         for b in self.B:
-            for n in self.N:
-                for i in self.location_graph.get_vertices():
-                    if i != depot_node:
-                        model.addCons(
-                            self.constraint_avoid_subtours_cycles(f, i, b, a, y, n),
-                            name=f"avoid_subtours_cycles_b{b}_n{n}_i{i}",
-                        )
+            model.addCons(
+                self.constraint_f_depot_source(b, f, a, y),
+                name=f"f_depot_source_b{b}",
+            )
+            for i in self.location_graph.get_vertices():
+                if i != depot_node and i != final_node:
+                    model.addCons(
+                        self.constraint_f_flow_conservation(i, b, f, a, y),
+                        name=f"f_flow_conservation_b{b}_i{i}",
+                    )
 
         # (17)
         for b in self.B:
@@ -254,12 +267,12 @@ class OPPModelV2(Model):
             )
 
         # (19)
-        # for p in self.P:
-        #     for b in self.B:
-        #         model.addCons(
-        #             self.constraint_batch_execution_time(p, b, t_exec, M, x, u),
-        #             name=f"batch_execution_time_p{p}_b{b}",
-        #         )
+        for p in self.P:
+            for b in self.B:
+                model.addCons(
+                    self.constraint_batch_execution_time(p, b, t_exec, M, x, u),
+                    name=f"batch_execution_time_p{p}_b{b}",
+                )
 
         # (20)
         for p in self.P:
@@ -275,7 +288,7 @@ class OPPModelV2(Model):
         #         if b >= 2:
         #             model.addCons(
         #                 self.constraint_completition_batch_time(u, v, p, b),
-        #                 name=f"completition_batch_time_p{p}_k{b}",
+        #                 name=f"completition_batch_time_p{p}_b{b}",
         #             )
 
         # (22)
@@ -471,18 +484,66 @@ class OPPModelV2(Model):
             <= 1
         )
 
-    def constraint_avoid_subtours_cycles(self, f, i, b, a, y, n):
+    # def constraint_avoid_subtours_cycles(self, f, i, b, a, y, n):
+    #     """
+    #     (16): Subtour elimination constraint.
+    #     Ensures that the route does not contain subtours or cycles.
+    #     """
+    #     flow_in = quicksum(
+    #         f[g, i, b]
+    #         for g in self.location_graph.get_vertices()
+    #         if g != self.location_graph.get_final()
+    #     )
+    #     required_flow = a[n, i] * y[n, b]
+    #     return flow_in >= required_flow
+
+    def constraint_f_depot_source(self, b, f, a, y):
         """
-        (16): Subtour elimination constraint.
-        Ensures that the route does not contain subtours or cycles.
+        Depot sends out exactly required_nodes units.
         """
-        flow_in = quicksum(
+        # How many required_nodes batch b must visit
+        required_nodes = sum(
+            min(1, sum(a[n, i] * y[n, b] for n in self.N))
+            for i in self.location_graph.get_vertices()
+            if i != self.location_graph.get_depot()
+            and i != self.location_graph.get_final()
+        )
+        # How much flow goes from depot_node to any node of batch b
+        outflow = quicksum(
+            f[self.location_graph.get_depot(), j, b]
+            for j in self.location_graph.get_vertices()
+            if j != self.location_graph.get_depot()
+        )
+
+        # outflow must be exactly required_flow
+        return outflow == required_nodes
+
+
+    def constraint_f_flow_conservation(self, i, b, f, a, y):
+        """
+        Gavish-Graves balance:
+        inflow - outflow = demand at each intermediate node.
+        Required nodes consume 1 unit, non-required nodes conserve flow.
+        """
+        # Inflow to node i (i != final_node)
+        inflow = quicksum(
             f[g, i, b]
             for g in self.location_graph.get_vertices()
             if g != self.location_graph.get_final()
         )
-        required_flow = a[n, i] * y[n, b]
-        return flow_in >= required_flow
+
+        # Outflow of node i (i != depot_node)
+        outflow = quicksum(
+            f[i, j, b]
+            for j in self.location_graph.get_vertices()
+            if j != self.location_graph.get_depot()
+        )
+
+        # 1 if node i must be visited in batch b, else 0
+        demand = min(1, sum(a[n, i] * y[n, b] for n in self.N))
+
+        # If node i must be visited consumes 1 flow unit. Else, consumes 0 flow units.
+        return inflow - outflow == demand
 
     def constraint_no_loops(self, b, i, z):
         """
@@ -516,14 +577,14 @@ class OPPModelV2(Model):
             <= t_exec[b]
         )
 
-    # def constraint_batch_execution_time(self, p, b, t_exec, M, x, u):
+    def constraint_batch_execution_time(self, p, b, t_exec, M, x, u):
         """
         (19): Batch execution time constraint.
-        Ensures that the processing time of a batch assigned to a picker is less or 
+        Ensures that the processing time of a batch assigned to a picker is less or
         equal to the execution time of the batch
         assigned to that position.
         """
-        # return t_exec[b] - M * (1 - x[p, b]) <= u[p, b]
+        return t_exec[b] - M * (1 - x[p, b]) <= u[p, b]
 
     def constraint_processing_time(self, p, u, v, b):
         """
@@ -534,12 +595,12 @@ class OPPModelV2(Model):
         return u[p, b] <= v[p, b]
 
     # def constraint_completition_batch_time(self, u, v, p, b):
-        """
-        (21): Completion time of batch constraint.
-        Ensures that the completion time of a batch assigned to a picker is 
-        correctly calculated based on the processing time of that batch.
-        """
-        # return u[p, b] + v[p, b - 1] <= v[p, b]
+    #     """
+    #     (21): Completion time of batch constraint.
+    #     Ensures that the completion time of a batch assigned to a picker is
+    #     correctly calculated based on the processing time of that batch.
+    #     """
+    #     return u[p, b] + v[p, b - 1] <= v[p, b]
 
     def constraint_tardiness_definition(self, v, p, due_date, n, M, b, x, y, ta):
         """
