@@ -33,20 +33,20 @@ class TestOPPModel(OPPTestCase):
         a[("O1", "V2")] = 1
         a[("O1", "V6")] = 1
 
-        a[("O2", "V2")] = 1
+        # a[("O2", "V2")] = 1
         a[("O2", "V7")] = 1
 
         a[("O3", "V5")] = 1
         a[("O3", "V9")] = 1
 
-        a[("O4", "V6")] = 1
+        # a[("O4", "V6")] = 1
         a[("O4", "V14")] = 1
 
         a[("O5", "V4")] = 1
         a[("O5", "V8")] = 1
 
         a[("O6", "V11")] = 1
-        a[("O6", "V14")] = 1
+        # a[("O6", "V14")] = 1
 
         y = {(n, b): 0 for n in orders for b in self.B}
         y[("O1", "B1")] = 1
@@ -62,7 +62,7 @@ class TestOPPModel(OPPTestCase):
         N, a, y = self.get_orders()
 
         cap_vehicle = 25
-        cap_n = {"O1": 10, "O2": 10, "O3": 10, "O4": 10, "O5": 10, "O6": 10}
+        cap_n = {"O1": 20, "O2": 5, "O3": 10, "O4": 10, "O5": 10, "O6": 5}
         due_date = {"O1": 30, "O2": 30, "O3": 30, "O4": 30, "O5": 30, "O6": 30}
 
         w1 = 9.0
