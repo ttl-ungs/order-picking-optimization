@@ -44,14 +44,14 @@ from pyscipopt import quicksum
 from models.base.model import Model
 
 from dtos.opp.solve_model_dto import SolveModelDTO
-from dtos.opp.opp_model_dto import OppModelDTO
+from dtos.opp.model_dto import ModelDTO
 from models.utils.output_builder import build_output
 
 """
 Version of OPP model without concept of "missions" (H) and "periods" (K)
 """
 class OPPModelV2(Model):
-    def __init__(self, dto: OppModelDTO):
+    def __init__(self, dto: ModelDTO):
         # TODO: Create DTOs without H and K
         super().__init__()
 

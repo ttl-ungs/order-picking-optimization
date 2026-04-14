@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from models.opp.utils.output_handler import OutputHandler
 from models.opp.opp_model import OPPModel
 from dtos.opp.solve_model_dto import SolveModelDTO
-from dtos.opp.opp_model_dto import OppModelDTO
+from dtos.opp.model_dto import ModelDTO
 from tests.opp.scenarios.six_missions_three_pickers_grid_graph import scenario_six_missions_three_pickers_two_periods_grid_graph
 
 
@@ -90,7 +90,7 @@ class TestOPPModel(OPPTestCase):
         params.x = x
         params.y = y
 
-        model_dto = OppModelDTO()
+        model_dto = ModelDTO()
         model_dto.N = N
         model_dto.location_graph = opp_location_graph
         model_dto.H = H

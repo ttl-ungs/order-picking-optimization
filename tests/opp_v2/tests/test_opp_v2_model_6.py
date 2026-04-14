@@ -10,7 +10,7 @@ sys.path.insert(
 
 from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.solve_model_dto import SolveModelDTO
-from dtos.opp.opp_model_dto import OppModelDTO
+from dtos.opp.model_dto import ModelDTO
 from models.opp_v2.utils.output_handler import OutputHandler
 
 from tests.opp_v2.scenarios.scenario_6 import test_two_orders_two_locations
@@ -59,7 +59,7 @@ class TestOPPModel(OPPTestCase):
         params.x = x
         params.y = y
 
-        model_dto = OppModelDTO()
+        model_dto = ModelDTO()
         model_dto.N = N
         model_dto.location_graph = location_graph
         model_dto.P = P

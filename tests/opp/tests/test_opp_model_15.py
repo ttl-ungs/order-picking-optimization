@@ -11,7 +11,7 @@ sys.path.insert(
 from models.opp.utils.output_handler import OutputHandler
 from models.opp.opp_model import OPPModel
 from dtos.opp.solve_model_dto import SolveModelDTO
-from dtos.opp.opp_model_dto import OppModelDTO
+from dtos.opp.model_dto import ModelDTO
 from tests.opp.scenarios.one_mission_one_picker_grid_graph import (
     scenario_one_mission_one_picker_grid_graph,
 )
@@ -126,7 +126,7 @@ class TestOPPModel(OPPTestCase):
         params.x = self.x
         params.y = y
 
-        model_dto = OppModelDTO()
+        model_dto = ModelDTO()
         model_dto.N = N
         model_dto.location_graph = self.opp_location_graph
         model_dto.H = self.H

@@ -50,7 +50,7 @@ from pyscipopt import quicksum
 from models.base.model import Model
 
 from dtos.opp.solve_model_dto import SolveModelDTO
-from dtos.opp.opp_model_dto import OppModelDTO
+from dtos.opp.model_dto import ModelDTO
 from models.utils.output_builder import build_output
 
 """
@@ -58,7 +58,7 @@ Based on OPP article: A Model for the Joint Optimisation of Order Batching,
 Batch Assignment Sequencing and Picking Routing 
 """
 class OPPModel(Model):
-    def __init__(self, dto: OppModelDTO):
+    def __init__(self, dto: ModelDTO):
         super().__init__()
 
         self.N = sorted(dto.N)

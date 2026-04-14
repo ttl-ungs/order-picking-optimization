@@ -1,6 +1,6 @@
 import unittest
 
-from dtos import SolveModelDTO, OppModelDTO
+from dtos import SolveModelDTO, ModelDTO
 from models.opp_v2.opp_model_v2 import OPPModelV2
 from models.opp_v2.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
@@ -91,7 +91,7 @@ class TestOPPModel(OPPTestCase):
         params.x = self.x
         params.y = y
 
-        model_dto = OppModelDTO()
+        model_dto = ModelDTO()
         model_dto.N = N
         model_dto.location_graph = self.opp_location_graph
         model_dto.P = self.P
