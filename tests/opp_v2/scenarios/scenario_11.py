@@ -17,8 +17,11 @@ def longer_single_mission_route():
     opp_location_graph.add_edge("L2", "L3", 2)
     opp_location_graph.add_edge("L3", "L2", 2)
 
-    opp_location_graph.add_edge("L3", "L5", 2)
-    opp_location_graph.add_edge("L5", "L3", 2)
+    opp_location_graph.add_edge("L3", "L4", 2)
+    opp_location_graph.add_edge("L4", "L3", 2)
+
+    opp_location_graph.add_edge("L4", "L5", 2)
+    opp_location_graph.add_edge("L5", "L4", 2)
 
     opp_location_graph.add_edge("L5", "L6", 2)
     opp_location_graph.add_edge("L6", "L5", 2)
@@ -32,14 +35,14 @@ def longer_single_mission_route():
     opp_location_graph.add_edge("L2", "L4", 5)
     opp_location_graph.add_edge("L4", "L2", 5)
 
-    opp_location_graph.add_edge("L3", "L4", 5)
-    opp_location_graph.add_edge("L4", "L3", 5)
+    opp_location_graph.add_edge("L3", "L5", 5)
+    opp_location_graph.add_edge("L5", "L3", 5)
 
-    opp_location_graph.add_edge("L4", "L5", 5)
-    opp_location_graph.add_edge("L5", "L4", 5)
+    opp_location_graph.add_edge("L4", "L6", 5)
+    opp_location_graph.add_edge("L6", "L4", 5)
 
-    opp_location_graph.add_edge("L5", "L8", 5)
-    opp_location_graph.add_edge("L8", "L5", 5)
+    opp_location_graph.add_edge("L5", "L7", 5)
+    opp_location_graph.add_edge("L7", "L5", 5)
 
     opp_location_graph.add_edge("L8", "L9", 5)
     opp_location_graph.add_edge("L9", "L8", 5)

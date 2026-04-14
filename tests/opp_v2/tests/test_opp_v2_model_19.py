@@ -25,10 +25,10 @@ class TestOPPModel(OPPTestCase):
         a = {(n, v): 0 for n in N for v in V}
         a[("O1", "L2")] = 1
         a[("O2", "L3")] = 1
-        a[("O3", "L5")] = 1
-        a[("O4", "L6")] = 1
-        a[("O5", "L7")] = 1
-        a[("O6", "L5")] = 1
+        a[("O3", "L4")] = 1
+        a[("O4", "L5")] = 1
+        a[("O5", "L6")] = 1
+        a[("O6", "L7")] = 1
 
         y = {
             ("O1", "B1"): 1,
@@ -71,7 +71,9 @@ class TestOPPModel(OPPTestCase):
             self.fail(f"Model execution failed: {e}")
 
         self.assertEqual(result, "optimal")
-        assert_route_covers_orders(self, output_graph, {"L2", "L3", "L5", "L6", "L7"})
+        assert_route_covers_orders(
+            self, output_graph, {"L2", "L3", "L4", "L5", "L6", "L7"}
+        )
 
 
 if __name__ == "__main__":
