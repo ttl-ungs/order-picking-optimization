@@ -6,7 +6,7 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
 )
 
-from dtos.opp.opp_model_dto import OppModelDTO
+from dtos.opp.model_dto import ModelDTO
 from dtos.opp.solve_model_dto import SolveModelDTO
 from models.opp_v2.opp_model_v2 import OPPModelV2
 from models.opp_v2.utils.output_handler import OutputHandler
@@ -54,7 +54,7 @@ class TestOPPModel(OPPTestCase):
         params.x = x
         params.y = y
 
-        model_dto = OppModelDTO()
+        model_dto = ModelDTO()
         model_dto.N = N
         model_dto.location_graph = location_graph
         model_dto.P = P
