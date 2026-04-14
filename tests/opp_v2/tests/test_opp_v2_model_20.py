@@ -1,0 +1,243 @@
+import os
+import sys
+import unittest
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
+)
+
+from dtos.opp.opp_model_dto import OppModelDTO
+from dtos.opp.solve_model_dto import SolveModelDTO
+from models.opp_v2.opp_model_v2 import OPPModelV2
+from models.opp_v2.utils.output_handler import OutputHandler
+from tests.opp.tests.opp_test_case import OPPTestCase
+from tests.opp_v2.scenarios.scenario_12 import grid_5x3_two_pickers_four_batches
+from tests.opp_v2.tests.route_assertions import assert_batch_routes_cover_locations
+
+
+class TestOPPModelGrid(OPPTestCase):
+    def _solve_grid(self, N, a, y, cap_n, cap_vehicle_override=None):
+        V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
+            grid_5x3_two_pickers_four_batches()
+        )
+
+        if cap_vehicle_override is not None:
+            cap_vehicle = cap_vehicle_override
+
+        params = SolveModelDTO()
+        params.w1 = w1
+        params.w2 = w2
+        params.gamma = gamma
+        params.delta = delta
+        params.cap_n = cap_n
+        params.cap_vehicle = cap_vehicle
+        params.a = a
+        params.beta_time = 0.5
+        params.beta_setup = 1.0
+        params.beta_picking = 1.0
+        params.due_date = {n: 25.0 for n in N}
+        params.M = 1000.0
+        params.x = x
+        params.y = y
+
+        model_dto = OppModelDTO()
+        model_dto.N = N
+        model_dto.location_graph = location_graph
+        model_dto.P = P
+        model_dto.B = B
+        model_dto.start_time = self.start_time
+        model = OPPModelV2(model_dto)
+        model.attach(OutputHandler())
+
+        result, _ = model.solve(params)
+
+        return result, model, location_graph, B, V
+
+    def test_grid_multi_location_orders(self):
+        V, _, B, _, _, _, _, _, _, _ = grid_5x3_two_pickers_four_batches()
+
+        N = {f"O{i}" for i in range(1, 13)}
+        a = {(n, v): 0 for n in N for v in V}
+
+        a[("O1", "V2")] = 1
+        a[("O1", "V7")] = 1
+        a[("O2", "V3")] = 1
+        a[("O3", "V8")] = 1
+        a[("O4", "V4")] = 1
+        a[("O5", "V9")] = 1
+        a[("O6", "V10")] = 1
+        a[("O7", "V5")] = 1
+        a[("O8", "V11")] = 1
+        a[("O9", "V12")] = 1
+        a[("O10", "V6")] = 1
+        a[("O11", "V13")] = 1
+        a[("O12", "V14")] = 1
+
+        y = {(n, b): 0 for n in N for b in B}
+        y[("O1", "B1")] = 1
+        y[("O2", "B1")] = 1
+        y[("O3", "B1")] = 1
+        y[("O4", "B2")] = 1
+        y[("O5", "B2")] = 1
+        y[("O6", "B2")] = 1
+        y[("O7", "B3")] = 1
+        y[("O8", "B3")] = 1
+        y[("O9", "B3")] = 1
+        y[("O10", "B4")] = 1
+        y[("O11", "B4")] = 1
+        y[("O12", "B4")] = 1
+
+        cap_n = {n: 2.0 for n in N}
+        result, model, location_graph, batches, _ = self._solve_grid(N, a, y, cap_n)
+
+        self.assertIn(result, ("optimal", "feasible"))
+
+        required_by_batch = {
+            "B1": {"V2", "V7", "V3", "V8"},
+            "B2": {"V4", "V9", "V10"},
+            "B3": {"V5", "V11", "V12"},
+            "B4": {"V6", "V13", "V14"},
+        }
+
+        assert_batch_routes_cover_locations(
+            self,
+            model.model,
+            batches,
+            location_graph.get_depot(),
+            location_graph.get_final(),
+            required_by_batch,
+        )
+
+    def test_grid_shared_locations_across_batches(self):
+        V, _, B, _, _, _, _, _, _, _ = grid_5x3_two_pickers_four_batches()
+
+        N = {f"O{i}" for i in range(1, 13)}
+        a = {(n, v): 0 for n in N for v in V}
+
+        a[("O1", "V2")] = 1
+        a[("O2", "V7")] = 1
+        a[("O3", "V11")] = 1
+        a[("O4", "V3")] = 1
+        a[("O5", "V8")] = 1
+        a[("O6", "V12")] = 1
+        a[("O7", "V4")] = 1
+        a[("O8", "V7")] = 1
+        a[("O9", "V13")] = 1
+        a[("O10", "V5")] = 1
+        a[("O11", "V8")] = 1
+        a[("O12", "V14")] = 1
+
+        y = {(n, b): 0 for n in N for b in B}
+        y[("O1", "B1")] = 1
+        y[("O2", "B1")] = 1
+        y[("O3", "B1")] = 1
+        y[("O4", "B2")] = 1
+        y[("O5", "B2")] = 1
+        y[("O6", "B2")] = 1
+        y[("O7", "B3")] = 1
+        y[("O8", "B3")] = 1
+        y[("O9", "B3")] = 1
+        y[("O10", "B4")] = 1
+        y[("O11", "B4")] = 1
+        y[("O12", "B4")] = 1
+
+        cap_n = {n: 2.0 for n in N}
+        result, model, location_graph, batches, _ = self._solve_grid(N, a, y, cap_n)
+
+        self.assertIn(result, ("optimal", "feasible"))
+
+        required_by_batch = {
+            "B1": {"V2", "V7", "V11"},
+            "B2": {"V3", "V8", "V12"},
+            "B3": {"V4", "V7", "V13"},
+            "B4": {"V5", "V8", "V14"},
+        }
+
+        assert_batch_routes_cover_locations(
+            self,
+            model.model,
+            batches,
+            location_graph.get_depot(),
+            location_graph.get_final(),
+            required_by_batch,
+        )
+
+    def test_grid_duplicate_location_within_batch_infeasible(self):
+        V, _, B, _, _, _, _, _, _, _ = grid_5x3_two_pickers_four_batches()
+
+        N = {f"O{i}" for i in range(1, 13)}
+        a = {(n, v): 0 for n in N for v in V}
+
+        a[("O1", "V2")] = 1
+        a[("O2", "V2")] = 1
+        a[("O3", "V7")] = 1
+        a[("O4", "V3")] = 1
+        a[("O5", "V8")] = 1
+        a[("O6", "V12")] = 1
+        a[("O7", "V4")] = 1
+        a[("O8", "V9")] = 1
+        a[("O9", "V13")] = 1
+        a[("O10", "V5")] = 1
+        a[("O11", "V10")] = 1
+        a[("O12", "V14")] = 1
+
+        y = {(n, b): 0 for n in N for b in B}
+        y[("O1", "B1")] = 1
+        y[("O2", "B1")] = 1
+        y[("O3", "B1")] = 1
+        y[("O4", "B2")] = 1
+        y[("O5", "B2")] = 1
+        y[("O6", "B2")] = 1
+        y[("O7", "B3")] = 1
+        y[("O8", "B3")] = 1
+        y[("O9", "B3")] = 1
+        y[("O10", "B4")] = 1
+        y[("O11", "B4")] = 1
+        y[("O12", "B4")] = 1
+
+        cap_n = {n: 2.0 for n in N}
+        result, _, _, _, _ = self._solve_grid(N, a, y, cap_n)
+
+        self.assertEqual(result, "infeasible")
+
+    def test_grid_infeasible_capacity(self):
+        V, _, B, _, _, _, _, _, _, _ = grid_5x3_two_pickers_four_batches()
+
+        N = {f"O{i}" for i in range(1, 13)}
+        a = {(n, v): 0 for n in N for v in V}
+
+        a[("O1", "V2")] = 1
+        a[("O2", "V7")] = 1
+        a[("O3", "V11")] = 1
+        a[("O4", "V3")] = 1
+        a[("O5", "V8")] = 1
+        a[("O6", "V12")] = 1
+        a[("O7", "V4")] = 1
+        a[("O8", "V9")] = 1
+        a[("O9", "V13")] = 1
+        a[("O10", "V5")] = 1
+        a[("O11", "V10")] = 1
+        a[("O12", "V14")] = 1
+
+        y = {(n, b): 0 for n in N for b in B}
+        y[("O1", "B1")] = 1
+        y[("O2", "B1")] = 1
+        y[("O3", "B1")] = 1
+        y[("O4", "B2")] = 1
+        y[("O5", "B2")] = 1
+        y[("O6", "B2")] = 1
+        y[("O7", "B3")] = 1
+        y[("O8", "B3")] = 1
+        y[("O9", "B3")] = 1
+        y[("O10", "B4")] = 1
+        y[("O11", "B4")] = 1
+        y[("O12", "B4")] = 1
+
+        cap_n = {n: 2.0 for n in N}
+        result, _, _, _, _ = self._solve_grid(N, a, y, cap_n, cap_vehicle_override=2.0)
+
+        self.assertEqual(result, "infeasible")
+
+
+if __name__ == "__main__":
+    unittest.main()
