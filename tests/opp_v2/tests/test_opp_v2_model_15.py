@@ -33,11 +33,11 @@ class TestOPPModel(OPPTestCase):
         a[("O1", "V10")] = 1
 
         a[("O2", "V3")] = 1
-        # a[("O2", "V10")] = 1
+        a[("O2", "V10")] = 1
 
-        # a[("O3", "V1")] = 1
+        a[("O3", "V1")] = 1
         a[("O3", "V2")] = 1
-        # a[("O3", "V3")] = 1
+        a[("O3", "V3")] = 1
         a[("O3", "V7")] = 1
         a[("O3", "V9")] = 1
 
@@ -95,7 +95,7 @@ class TestOPPModel(OPPTestCase):
         N, a, y = self.get_orders()
 
         cap_vehicle = 60
-        cap_n = {"O1": 25, "O2": 10, "O3": 15}
+        cap_n = {"O1": 30, "O2": 10, "O3": 15}
         due_date = {"O1": 10, "O2": 5, "O3": 8}
 
         w1 = 9.0  # cumplimiento peso alto

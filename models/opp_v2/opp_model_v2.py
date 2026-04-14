@@ -415,27 +415,27 @@ class OPPModelV2(Model):
 
     def constraint_force_visit_inflow(self, b, j, z, a, y):
         """
-        (10): If an order from batch 'b' must visit location 'j',
+        (10): If any order from batch 'b' must visit location 'j',
         then the sum of arcs entering 'j' must be at least 1.
         """
         inflow = quicksum(
             z[i, j, b] for i in self.location_graph.get_vertices() if i != j
         )
 
-        requirement = quicksum(a[n, j] * y[n, b] for n in self.N)
+        requirement = min(1, sum(a[n, j] * y[n, b] for n in self.N))
 
         return inflow >= requirement
 
     def constraint_force_visit_outflow(self, b, j, z, a, y):
         """
-        (11): If an order from batch 'b' must visit location 'j',
+        (11): If any order from batch 'b' must visit location 'j',
         then the sum of arcs leaving 'j' must be at least 1.
         """
         outflow = quicksum(
             z[j, i, b] for i in self.location_graph.get_vertices() if i != j
         )
 
-        requirement = quicksum(a[n, j] * y[n, b] for n in self.N)
+        requirement = min(1, sum(a[n, j] * y[n, b] for n in self.N))
 
         return outflow >= requirement
 
