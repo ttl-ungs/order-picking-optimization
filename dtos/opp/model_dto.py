@@ -1,7 +1,7 @@
 from models.base.opp_location_graph import OPPLocationGraph
 
 
-class OppModelDTO:
+class ModelDTO:
     def __init__(self):
         self._N: set = None
         self._location_graph: OPPLocationGraph = None
