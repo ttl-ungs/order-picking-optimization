@@ -315,7 +315,7 @@ class OPPModelV2(Model):
 
         # (24), (25), (26), (27), (28), (29), (30), (31) and (32) are implicit in the definition of the variables
 
-        # Extra: Allow only paths between neighbors
+        # Allow only paths between neighbors
         for b in self.B:
             for i in self.location_graph.get_vertices():
                 for j in self.location_graph.get_vertices():
@@ -323,6 +323,14 @@ class OPPModelV2(Model):
                         model.addCons(
                             z[i, j, b] == 0, name=f"only_valid_edges_i{i}_j{j}_b{b}"
                         )
+
+        # batch loading capacity
+        for b in self.B:
+            model.addCons(
+                quicksum(cap_n[n] * y[n, b] for n in self.N) <= cap_vehicle,
+                name=f"batch_capacity_b{b}",
+                )
+
 
         t0 = start_time if start_time is not None else time.time()
         model.optimize()
