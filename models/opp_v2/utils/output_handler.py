@@ -32,7 +32,7 @@ class OutputHandler(Observer):
             print("Batch Execution Times (t_exec_h):")
             for b in B:
                 val_t_exec = model.getVal(t_exec[b])
-                print(f"  t_exec_{b} (Mission {b}): {val_t_exec:.4f}")
+                print(f"  t_exec_{b} (Batch {b}): {val_t_exec:.4f}")
             print("-" * 50)
 
             print("Batch Completion Times (v_pk):")

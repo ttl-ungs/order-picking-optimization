@@ -100,7 +100,7 @@ class TestOPPModel(OPPTestCase):
         expected_graph.add_edge("L4", "L5", location_graph.get_distance("L4", "L5"))
 
         self.assertTrue(
-            result in ("optimal", "feasible", "infeasible", "unbounded"),
+            result in ("optimal", "feasible"),
             "The model did not find a solution.",
         )
 
