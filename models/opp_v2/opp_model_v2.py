@@ -321,13 +321,14 @@ class OPPModelV2(Model):
                 for j in self.location_graph.get_vertices():
                     if not (self.location_graph.has_edge(i, j)):
                         model.addCons(
-                            z[i, j, b] == 0, name=f"only_valid_edges_i{i}_j{j}_b{b}"
+                            self.constraint_only_valid_edges(i, j, b, z),
+                            name=f"only_valid_edges_i{i}_j{j}_b{b}",
                         )
 
-        # batch loading capacity
+        # Batch loading capacity
         for b in self.B:
             model.addCons(
-                quicksum(cap_n[n] * y[n, b] for n in self.N) <= cap_vehicle,
+                self.constraint_batch_capacity(cap_n, y, b, self.N, cap_vehicle),
                 name=f"batch_capacity_b{b}",
                 )
 
@@ -627,3 +628,13 @@ class OPPModelV2(Model):
         to which the order is assigned.
         """
         return due_date[n] - v[p, b] - M * (2 - x[p, b] - y[n, b]) <= ea[n]
+
+    def constraint_batch_capacity(self, cap_n, y, b, N, cap_vehicle):
+        return quicksum(cap_n[n] * y[n, b] for n in N) <= cap_vehicle,
+
+    def constraint_only_valid_edges(self, i, j, b, z):
+        """
+        Extra: Allow only paths between neighbors.
+        Ensures that arcs between non-adjacent locations cannot be used.
+        """
+        return z[i, j, b] == 0
