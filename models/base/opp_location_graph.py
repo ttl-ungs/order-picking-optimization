@@ -88,6 +88,15 @@ class OPPLocationGraph:
         """Get all vertex IDs in the graph."""
         return self._vertices_sorted
 
+    def getPaths(self, origin_vertex, destination_vertex):
+        """Public method to get all paths from origin to destination."""
+        if (
+            origin_vertex not in self.get_vertices()
+            or destination_vertex not in self.get_vertices()
+        ):
+            raise ValueError("Both vertices must be in the graph.")
+        return self._find_paths(origin_vertex, destination_vertex)
+
     def _find_paths(self, origin_vertex, destination_vertex, visited=None):
         """Find all paths from origin to destination using DFS."""
         if visited is None:

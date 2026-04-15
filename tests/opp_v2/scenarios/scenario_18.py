@@ -32,14 +32,14 @@ def detour_single_mission_route():
     opp_location_graph.add_edge("L2", "L5", 5)
     opp_location_graph.add_edge("L5", "L2", 5)
 
-    opp_location_graph.add_edge("L3", "L4", 5)
-    opp_location_graph.add_edge("L4", "L3", 5)
+    opp_location_graph.add_edge("L3", "L4", 2)
+    opp_location_graph.add_edge("L4", "L3", 2)
 
     opp_location_graph.add_edge("L5", "L7", 5)
     opp_location_graph.add_edge("L7", "L5", 5)
 
-    opp_location_graph.add_edge("L7", "L8", 5)
-    opp_location_graph.add_edge("L8", "L7", 5)
+    opp_location_graph.add_edge("L7", "L8", 3)
+    opp_location_graph.add_edge("L8", "L7", 3)
 
     w1 = 1.0
     w2 = 10.0

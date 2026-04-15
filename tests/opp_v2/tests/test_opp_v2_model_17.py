@@ -2,6 +2,8 @@ import os
 import sys
 import unittest
 
+from models.base.opp_location_graph import OPPLocationGraph
+
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
 )
@@ -11,8 +13,11 @@ from dtos.opp.solve_model_dto import SolveModelDTO
 from models.opp_v2.opp_model_v2 import OPPModelV2
 from models.opp_v2.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
-from tests.opp_v2.scenarios.scenario_9 import branched_single_mission_route
-from tests.opp_v2.tests.route_assertions import assert_route_covers_orders
+from tests.opp_v2.scenarios.scenario_17 import branched_single_mission_route
+from tests.opp_v2.tests.route_assertions import (
+    assert_correct_path,
+    assert_route_covers_orders,
+)
 
 
 class TestOPPModel(OPPTestCase):
@@ -63,6 +68,25 @@ class TestOPPModel(OPPTestCase):
 
         self.assertEqual(result, "optimal")
         assert_route_covers_orders(self, output_graph, {"L2", "L3", "L5", "L6"})
+
+        expected_graph = OPPLocationGraph("L1", "L7")
+        expected_graph.add_vertex("L2", "picking")
+        expected_graph.add_vertex("L3", "picking")
+        expected_graph.add_vertex("L4", "picking")
+        expected_graph.add_vertex("L5", "picking")
+        expected_graph.add_vertex("L6", "picking")
+        expected_graph.add_edge("L1", "L2", location_graph.get_distance("L1", "L2"))
+        expected_graph.add_edge("L2", "L3", location_graph.get_distance("L2", "L3"))
+        expected_graph.add_edge("L3", "L5", location_graph.get_distance("L3", "L5"))
+        expected_graph.add_edge("L5", "L6", location_graph.get_distance("L5", "L6"))
+        expected_graph.add_edge("L6", "L7", location_graph.get_distance("L6", "L7"))
+
+        self.assertEqual(output_graph, expected_graph)
+        print(f"Expected graph: {expected_graph.to_string()}")
+        print(f"Output graph: {output_graph.to_string()}")
+
+        expected_path = ["L1", "L2", "L3", "L5", "L6", "L7"]
+        assert_correct_path(self, output_graph, expected_path)
 
 
 if __name__ == "__main__":

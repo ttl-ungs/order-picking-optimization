@@ -1,3 +1,13 @@
+def assert_correct_path(testcase, output_graph, expected_path):
+    paths = output_graph.getPaths(output_graph.get_depot(), output_graph.get_final())
+    testcase.assertEqual(
+        len(paths), 1, f"Expected exactly one path, but found {len(paths)}: {paths}"
+    )
+    testcase.assertEqual(
+        paths[0], expected_path, f"Expected path {expected_path}, but found {paths[0]}"
+    )
+
+
 def reconstruct_route(output_graph):
     active_edges = []
     for (origin, destination), _ in output_graph.distances.items():

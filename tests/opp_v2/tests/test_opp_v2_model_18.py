@@ -2,6 +2,8 @@ import os
 import sys
 import unittest
 
+from models.base.opp_location_graph import OPPLocationGraph
+
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
 )
@@ -11,8 +13,11 @@ from dtos.opp.solve_model_dto import SolveModelDTO
 from models.opp_v2.opp_model_v2 import OPPModelV2
 from models.opp_v2.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
-from tests.opp_v2.scenarios.scenario_10 import detour_single_mission_route
-from tests.opp_v2.tests.route_assertions import assert_route_covers_orders
+from tests.opp_v2.scenarios.scenario_18 import detour_single_mission_route
+from tests.opp_v2.tests.route_assertions import (
+    assert_correct_path,
+    assert_route_covers_orders,
+)
 
 
 class TestOPPModel(OPPTestCase):
@@ -26,7 +31,7 @@ class TestOPPModel(OPPTestCase):
         a[("O1", "L2")] = 1
         a[("O2", "L3")] = 1
         a[("O3", "L5")] = 1
-        a[("O4", "L6")] = 1
+        a[("O4", "L7")] = 1
         a[("O5", "L4")] = 1
 
         y = {
@@ -69,7 +74,10 @@ class TestOPPModel(OPPTestCase):
             self.fail(f"Model execution failed: {e}")
 
         self.assertEqual(result, "optimal")
-        assert_route_covers_orders(self, output_graph, {"L2", "L3", "L4", "L5", "L6"})
+        assert_route_covers_orders(self, output_graph, {"L2", "L3", "L4", "L5", "L7"})
+
+        expected_path = ["L1", "L2", "L3", "L4", "L6", "L5", "L7", "L8"]
+        assert_correct_path(self, output_graph, expected_path)
 
 
 if __name__ == "__main__":
