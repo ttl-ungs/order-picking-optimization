@@ -70,9 +70,6 @@ class TestOPPModel(OPPTestCase):
         self.assertGreater(capture.ta["O1"], 0.0, "Expected positive tardiness")
         self.assertAlmostEqual(capture.ea["O1"], 0.0, places=4, msg="Expected zero earliness")
 
-    def single_order_params(self, due_date_value):
-        pass
-
 
 if __name__ == "__main__":
     unittest.main()
