@@ -630,11 +630,16 @@ class OPPModelV2(Model):
         return due_date[n] - v[p, b] - M * (2 - x[p, b] - y[n, b]) <= ea[n]
 
     def constraint_batch_capacity(self, cap_n, y, b, N, cap_vehicle):
-        return quicksum(cap_n[n] * y[n, b] for n in N) <= cap_vehicle,
+        """
+        Batch loading capacity constraint.
+        Ensures that the total capacity required by orders assigned to a batch
+        does not exceed the vehicle's capacity.
+        """
+        return quicksum(cap_n[n] * y[n, b] for n in N) <= cap_vehicle
 
     def constraint_only_valid_edges(self, i, j, b, z):
         """
-        Extra: Allow only paths between neighbors.
+        Allows only paths between neighbors.
         Ensures that arcs between non-adjacent locations cannot be used.
         """
         return z[i, j, b] == 0
