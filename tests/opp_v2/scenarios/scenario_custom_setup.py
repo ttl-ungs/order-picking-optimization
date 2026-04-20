@@ -10,14 +10,14 @@ def scenario_custom_setup(
 
     # Example:  B1 --> P1, B2 --> P2, B3 --> P1, B4 --> P2, etc
     x = {(p, b): 0 for p in P for b in B}
-    sorted_pickers = sorted(P.keys())
-    for i, b in enumerate(sorted(B.keys())):
+    sorted_pickers = sorted(P)
+    for i, b in enumerate(sorted(B)):
         x[(sorted_pickers[i % len(sorted_pickers)], b)] = 1
 
     # Example: O1 --> B1, O2 --> B2, O3 --> B1, O4 --> B2, etc
     y = {(o, b): 0 for o in N for b in B}
-    sorted_orders = sorted(N.keys())
-    for i, b in enumerate(sorted(B.keys())):
+    sorted_orders = sorted(N)
+    for i, b in enumerate(sorted(B)):
         y[(sorted_orders[i % len(sorted_orders)], b)] = 1
 
     factory = GraphsFactory()
