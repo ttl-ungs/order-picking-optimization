@@ -25,4 +25,9 @@ def scenario_custom_setup(
 
     a = {(n, v): 0 for n in N for v in V}
 
+    # Example: O1 --> V1, O2 --> V2, O3 --> V1, O4 --> V2, etc
+    sorted_locations = sorted(V)
+    for i, o in enumerate(sorted(N)):
+        a[(o, sorted_locations[i % len(sorted_locations)])] = 1
+
     return opp_location_graph, V, B, P, N, x, y, a

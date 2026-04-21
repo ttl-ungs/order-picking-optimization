@@ -24,9 +24,6 @@ class TestOPPModel(OPPTestCase):
             scenario_custom_setup(25, 25, 100, 10, 10)
         )
 
-        for n in range(1, len(N)+1):
-            a[(f"O{n}", f"V{n}")] = 1
-
         cap_n = {f"O{n}": 10 for n in range(1, len(N) + 1)}
         due_date = {f"O{n}": 30 for n in range(1, len(N) + 1)}
 
