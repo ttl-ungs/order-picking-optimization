@@ -16,7 +16,7 @@ sys.path.insert(
 
 class TestOPPModel(OPPTestCase):
     """
-    Test 24: 25 orders per batch. 4 batches per picker. One order per location.
+    Test 25: 25 orders per batch. 4 batches per picker. One order per location.
     """
 
     def test_25_orders_per_batch(self):
@@ -27,7 +27,7 @@ class TestOPPModel(OPPTestCase):
         cap_n = {f"O{n}": 10 for n in range(1, len(N) + 1)}
         due_date = {f"O{n}": 30 for n in range(1, len(N) + 1)}
 
-        cap_vehicle = 25
+        cap_vehicle = 250
         w1 = 9.0
         w2 = 1.0
         gamma = 1.0

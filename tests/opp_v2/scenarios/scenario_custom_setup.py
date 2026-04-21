@@ -16,9 +16,9 @@ def scenario_custom_setup(
 
     # Example: O1 --> B1, O2 --> B2, O3 --> B1, O4 --> B2, etc
     y = {(o, b): 0 for o in N for b in B}
-    sorted_orders = sorted(N)
-    for i, b in enumerate(sorted(B)):
-        y[(sorted_orders[i % len(sorted_orders)], b)] = 1
+    sorted_batches = sorted(B)
+    for i, o in enumerate(sorted(N)):
+        y[(o, sorted_batches[i % len(sorted_batches)])] = 1
 
     factory = GraphsFactory()
     opp_location_graph, V = factory.get_graph(rows, cols, v_weight, h_weight)
