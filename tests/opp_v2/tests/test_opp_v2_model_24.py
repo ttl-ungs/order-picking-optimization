@@ -16,7 +16,7 @@ sys.path.insert(
 
 class TestOPPModel(OPPTestCase):
     """
-    Test 24: 4 orders per batch. 1 batch per picker. One order per location.
+    Test 24: 4 orders per batch. 1 batch per picker. Each order has a location.
     """
 
     def test_4_orders_per_batch(self):

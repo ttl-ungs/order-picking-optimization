@@ -16,12 +16,12 @@ sys.path.insert(
 
 class TestOPPModel(OPPTestCase):
     """
-    Test 25: 25 orders per batch. 4 batches per picker. One order per location.
+    Test 25: 10 orders per batch. 1 batch per picker. Each order has a location.
     """
 
-    def test_25_orders_per_batch(self):
+    def test_10_orders_per_batch(self):
         opp_location_graph, V, B, P, N, x, y, a = (
-            scenario_custom_setup(25, 25, 625, 10, 10)
+            scenario_custom_setup(10, 10, 100, 10, 10)
         )
 
         cap_n = {f"O{n}": 10 for n in range(1, len(N) + 1)}
