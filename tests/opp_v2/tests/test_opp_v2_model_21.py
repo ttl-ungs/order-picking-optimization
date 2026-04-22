@@ -19,7 +19,19 @@ from tests.opp_v2.tests.route_assertions import assert_batch_routes_cover_locati
 
 
 class TestOPPModelBridge(OPPTestCase):
-    def _solve_bridge(self, N, a, y, cap_n, disconnected=False):
+    def _solve_bridge(
+        self,
+        N,
+        a,
+        y,
+        cap_n,
+        disconnected=False,
+        due_date_override=None,
+        w1_override=None,
+        w2_override=None,
+        gamma_override=None,
+        delta_override=None,
+    ):
         if disconnected:
             V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
                 bridge_graph_disconnected()
@@ -28,6 +40,19 @@ class TestOPPModelBridge(OPPTestCase):
             V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
                 bridge_graph_two_pickers_four_batches()
             )
+
+        w1, w2, gamma, delta = self.apply_weight_overrides(
+            w1,
+            w2,
+            gamma,
+            delta,
+            w1_override,
+            w2_override,
+            gamma_override,
+            delta_override,
+        )
+
+        due_date_by_order = self.normalize_due_dates(N, due_date_override)
 
         params = SolveModelDTO()
         params.w1 = w1
@@ -40,7 +65,7 @@ class TestOPPModelBridge(OPPTestCase):
         params.beta_time = 0.5
         params.beta_setup = 1.0
         params.beta_picking = 1.0
-        params.due_date = {n: 25.0 for n in N}
+        params.due_date = due_date_by_order
         params.M = 1000.0
         params.x = x
         params.y = y
@@ -115,6 +140,75 @@ class TestOPPModelBridge(OPPTestCase):
         for batch, route in routes_by_batch.items():
             self.assertIn("L6", route, f"Batch {batch} did not cross bridge L6")
             self.assertIn("L7", route, f"Batch {batch} did not cross bridge L7")
+
+    def test_bridge_penalties(self):
+        V, _, B, _, _, _, _, _, _, _ = bridge_graph_two_pickers_four_batches()
+
+        N = {f"O{i}" for i in range(1, 13)}
+        a = {(n, v): 0 for n in N for v in V}
+
+        a[("O1", "L2")] = 1
+        a[("O2", "L8")] = 1
+        a[("O3", "L9")] = 1
+        a[("O4", "L3")] = 1
+        a[("O5", "L10")] = 1
+        a[("O6", "L11")] = 1
+        a[("O7", "L4")] = 1
+        a[("O8", "L8")] = 1
+        a[("O9", "L10")] = 1
+        a[("O10", "L5")] = 1
+        a[("O11", "L9")] = 1
+        a[("O12", "L11")] = 1
+
+        y = {(n, b): 0 for n in N for b in B}
+        y[("O1", "B1")] = 1
+        y[("O2", "B1")] = 1
+        y[("O3", "B1")] = 1
+        y[("O4", "B2")] = 1
+        y[("O5", "B2")] = 1
+        y[("O6", "B2")] = 1
+        y[("O7", "B3")] = 1
+        y[("O8", "B3")] = 1
+        y[("O9", "B3")] = 1
+        y[("O10", "B4")] = 1
+        y[("O11", "B4")] = 1
+        y[("O12", "B4")] = 1
+
+        cap_n = {n: 2.0 for n in N}
+
+        result_low, model_low, _, _, _ = self._solve_bridge(
+            N,
+            a,
+            y,
+            cap_n,
+            due_date_override=0.0,
+            w1_override=0.0,
+            w2_override=1.0,
+            gamma_override=0.0,
+            delta_override=1.0,
+        )
+
+        self.assertIn(result_low, ("optimal", "feasible"))
+
+        total_tardiness_low = self.sum_vars_with_prefix(model_low.model, "ta_")
+        self.assertGreater(total_tardiness_low, 1e-6)
+
+        result_high, model_high, _, _, _ = self._solve_bridge(
+            N,
+            a,
+            y,
+            cap_n,
+            due_date_override=100.0,
+            w1_override=0.0,
+            w2_override=1.0,
+            gamma_override=0.0,
+            delta_override=1.0,
+        )
+
+        self.assertIn(result_high, ("optimal", "feasible"))
+
+        total_tardiness_high = self.sum_vars_with_prefix(model_high.model, "ta_")
+        self.assertLessEqual(total_tardiness_high, 1e-6)
 
     def test_bridge_disconnected_required_location(self):
         V, _, B, _, _, _, _, _, _, _ = bridge_graph_disconnected()
