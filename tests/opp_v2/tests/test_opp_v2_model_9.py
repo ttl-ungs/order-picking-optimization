@@ -104,8 +104,8 @@ class TestOPPModel(OPPTestCase):
             self.fail(f"Model execution failed: {e}")
 
         self.assertTrue(
-            result in ("optimal", "feasible", "infeasible", "unbounded"),
-            "The model did not find a solution.",
+            result in ("infeasible"),
+            "The model did find a solution.",
         )
 
 if __name__ == "__main__":
