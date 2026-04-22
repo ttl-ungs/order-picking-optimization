@@ -132,7 +132,7 @@ class TestOPPModelGrid(OPPTestCase):
             required_by_batch,
         )
 
-    def test_grid_penalties(self):
+    def test_grid_penalties_due_date(self):
         V, _, B, _, _, _, _, _, _, _ = grid_5x3_two_pickers_four_batches()
 
         N = {f"O{i}" for i in range(1, 13)}
@@ -201,6 +201,76 @@ class TestOPPModelGrid(OPPTestCase):
 
         total_tardiness_high = self.sum_vars_with_prefix(model_high.model, "ta_")
         self.assertLessEqual(total_tardiness_high, 1e-6)
+
+    def test_grid_penalties_order_size(self):
+        V, _, B, _, _, _, _, _, _, _ = grid_5x3_two_pickers_four_batches()
+
+        N = {f"O{i}" for i in range(1, 13)}
+        a = {(n, v): 0 for n in N for v in V}
+
+        a[("O1", "V2")] = 1
+        a[("O1", "V7")] = 1
+        a[("O2", "V3")] = 1
+        a[("O3", "V8")] = 1
+        a[("O4", "V4")] = 1
+        a[("O5", "V9")] = 1
+        a[("O6", "V10")] = 1
+        a[("O7", "V5")] = 1
+        a[("O8", "V11")] = 1
+        a[("O9", "V12")] = 1
+        a[("O10", "V6")] = 1
+        a[("O11", "V13")] = 1
+        a[("O12", "V14")] = 1
+
+        y = {(n, b): 0 for n in N for b in B}
+        y[("O1", "B1")] = 1
+        y[("O2", "B1")] = 1
+        y[("O3", "B1")] = 1
+        y[("O4", "B2")] = 1
+        y[("O5", "B2")] = 1
+        y[("O6", "B2")] = 1
+        y[("O7", "B3")] = 1
+        y[("O8", "B3")] = 1
+        y[("O9", "B3")] = 1
+        y[("O10", "B4")] = 1
+        y[("O11", "B4")] = 1
+        y[("O12", "B4")] = 1
+
+        cap_n_small = {n: 1.0 for n in N}
+        cap_n_large = {n: 10.0 for n in N}
+
+        result_small, model_small, _, _, _ = self._solve_grid(
+            N,
+            a,
+            y,
+            cap_n_small,
+            due_date_override=10.0,
+            w1_override=0.0,
+            w2_override=1.0,
+            gamma_override=0.0,
+            delta_override=1.0,
+        )
+
+        self.assertIn(result_small, ("optimal", "feasible"))
+
+        total_tardiness_small = self.sum_vars_with_prefix(model_small.model, "ta_")
+
+        result_large, model_large, _, _, _ = self._solve_grid(
+            N,
+            a,
+            y,
+            cap_n_large,
+            due_date_override=10.0,
+            w1_override=0.0,
+            w2_override=1.0,
+            gamma_override=0.0,
+            delta_override=1.0,
+        )
+
+        self.assertIn(result_large, ("optimal", "feasible"))
+
+        total_tardiness_large = self.sum_vars_with_prefix(model_large.model, "ta_")
+        self.assertGreater(total_tardiness_large, total_tardiness_small + 1e-6)
 
     def test_grid_shared_locations_across_batches(self):
         V, _, B, _, _, _, _, _, _, _ = grid_5x3_two_pickers_four_batches()
