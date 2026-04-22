@@ -16,13 +16,37 @@ from tests.opp_v2.tests.route_assertions import assert_batch_routes_cover_locati
 
 
 class TestOPPModelGrid(OPPTestCase):
-    def _solve_grid(self, N, a, y, cap_n, cap_vehicle_override=None):
+    def _solve_grid(
+        self,
+        N,
+        a,
+        y,
+        cap_n,
+        cap_vehicle_override=None,
+        due_date_override=None,
+        w1_override=None,
+        w2_override=None,
+        gamma_override=None,
+        delta_override=None,
+    ):
         V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
             grid_5x3_two_pickers_four_batches()
         )
 
         if cap_vehicle_override is not None:
             cap_vehicle = cap_vehicle_override
+        w1, w2, gamma, delta = self.apply_weight_overrides(
+            w1,
+            w2,
+            gamma,
+            delta,
+            w1_override,
+            w2_override,
+            gamma_override,
+            delta_override,
+        )
+
+        due_date_by_order = self.normalize_due_dates(N, due_date_override)
 
         params = SolveModelDTO()
         params.w1 = w1
@@ -35,7 +59,7 @@ class TestOPPModelGrid(OPPTestCase):
         params.beta_time = 0.5
         params.beta_setup = 1.0
         params.beta_picking = 1.0
-        params.due_date = {n: 25.0 for n in N}
+        params.due_date = due_date_by_order
         params.M = 1000.0
         params.x = x
         params.y = y
@@ -107,6 +131,76 @@ class TestOPPModelGrid(OPPTestCase):
             location_graph.get_final(),
             required_by_batch,
         )
+
+    def test_grid_penalties(self):
+        V, _, B, _, _, _, _, _, _, _ = grid_5x3_two_pickers_four_batches()
+
+        N = {f"O{i}" for i in range(1, 13)}
+        a = {(n, v): 0 for n in N for v in V}
+
+        a[("O1", "V2")] = 1
+        a[("O1", "V7")] = 1
+        a[("O2", "V3")] = 1
+        a[("O3", "V8")] = 1
+        a[("O4", "V4")] = 1
+        a[("O5", "V9")] = 1
+        a[("O6", "V10")] = 1
+        a[("O7", "V5")] = 1
+        a[("O8", "V11")] = 1
+        a[("O9", "V12")] = 1
+        a[("O10", "V6")] = 1
+        a[("O11", "V13")] = 1
+        a[("O12", "V14")] = 1
+
+        y = {(n, b): 0 for n in N for b in B}
+        y[("O1", "B1")] = 1
+        y[("O2", "B1")] = 1
+        y[("O3", "B1")] = 1
+        y[("O4", "B2")] = 1
+        y[("O5", "B2")] = 1
+        y[("O6", "B2")] = 1
+        y[("O7", "B3")] = 1
+        y[("O8", "B3")] = 1
+        y[("O9", "B3")] = 1
+        y[("O10", "B4")] = 1
+        y[("O11", "B4")] = 1
+        y[("O12", "B4")] = 1
+
+        cap_n = {n: 2.0 for n in N}
+
+        result_low, model_low, _, _, _ = self._solve_grid(
+            N,
+            a,
+            y,
+            cap_n,
+            due_date_override=0.0,
+            w1_override=0.0,
+            w2_override=1.0,
+            gamma_override=0.0,
+            delta_override=1.0,
+        )
+
+        self.assertIn(result_low, ("optimal", "feasible"))
+
+        total_tardiness_low = self.sum_vars_with_prefix(model_low.model, "ta_")
+        self.assertGreater(total_tardiness_low, 1e-6)
+
+        result_high, model_high, _, _, _ = self._solve_grid(
+            N,
+            a,
+            y,
+            cap_n,
+            due_date_override=100.0,
+            w1_override=0.0,
+            w2_override=1.0,
+            gamma_override=0.0,
+            delta_override=1.0,
+        )
+
+        self.assertIn(result_high, ("optimal", "feasible"))
+
+        total_tardiness_high = self.sum_vars_with_prefix(model_high.model, "ta_")
+        self.assertLessEqual(total_tardiness_high, 1e-6)
 
     def test_grid_shared_locations_across_batches(self):
         V, _, B, _, _, _, _, _, _, _ = grid_5x3_two_pickers_four_batches()
