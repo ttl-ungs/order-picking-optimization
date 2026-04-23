@@ -9,6 +9,7 @@
     - [Current Repository Structure](#current-repository-structure)
     - [How the Observer Pattern Is Used](#how-the-observer-pattern-is-used)
     - [Optimization approach](#optimization-approach)
+    - [Model parameters](#model-parameters)
   - [Requirements](#requirements)
     - [Installation](#installation)
   - [How to Run the Tests](#how-to-run-the-tests)
@@ -92,6 +93,29 @@ The objective combines:
 
 - total collection/completion time, and
 - weighted penalties for earliness and tardiness.
+
+### Model parameters
+
+Common parameters used by the OPP/OPP v2 models:
+
+- `w1`: weight of completion time (sum of `v[p,b]`).
+- `w2`: weight of penalty term (earliness + tardiness).
+- `gamma`: weight of earliness sum.
+- `delta`: weight of tardiness sum.
+- `cap_n`: capacity required by each order `n`.
+- `cap_vehicle`: vehicle capacity per batch.
+- `a[n,i]`: 1 if order `n` must visit location `i`.
+- `beta_time`: time per distance unit traveled.
+- `beta_setup`: setup time per batch.
+- `beta_picking`: time per unit picked (multiplies sum of `cap_n`).
+- `due_date[n]`: due date for each order `n`.
+- `M`: big-M constant used in timing constraints.
+- `x[p,b]`: 1 if batch `b` is assigned to picker `p`.
+- `y[n,b]`: 1 if order `n` is assigned to batch `b`.
+
+Graph parameters are provided by the location graph:
+
+- `d(i,j)`: distance between locations `i` and `j` (from the graph weights).
 
 ## Requirements
 

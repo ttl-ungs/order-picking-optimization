@@ -1,75 +1,87 @@
 # Tests
 
-Este documento describe un flujo de trabajo para disenar y mantener los tests de OPP (v1 y v2) de manera consistente.
+This document describes a workflow to design and maintain OPP (v1 and v2) tests consistently.
 
-## Objetivo
+## Objectives
 
-- Validar rutas factibles en grafos representativos.
-- Verificar penalizaciones por tardanza/adelanto con escenarios controlados.
-- Cubrir casos multi picker y multi lote.
-- Incluir casos infeasible con causas claras.
+- Validate feasible routes on representative graphs.
+- Verify penalties for tardiness/earliness with controlled scenarios.
+- Cover multi picker and multi batch cases.
+- Include infeasible cases with clear causes.
 
-## Estructura
+## Structure
 
-- tests/opp_v2/scenarios: definicion de grafos y asignaciones base.
-- tests/opp_v2/tests: casos de prueba por grafo (happy path, penalizaciones, etc).
-- tests/opp/tests: helpers compartidos.
-- tests/opp_v2/tests/route_assertions.py: utilidades para validar rutas y lotes.
+- tests/opp_v2/scenarios: definition of graphs and base assignments.
+- tests/opp_v2/tests: test cases per graph (happy path, penalties, etc).
+- tests/opp/tests: shared helpers.
+- tests/opp_v2/tests/route_assertions.py: utilities to validate routes and batches.
 
-## Flujo por grafo (recomendado)
+## Workflow per graph (recommended)
 
 1) Happy path
-- Usar un set minimo de ordenes que active nodos clave.
-- Validar que la ruta visite todas las ubicaciones requeridas.
-- Para un solo lote, usar assert_route_covers_orders.
-- Para multiples lotes, usar assert_batch_routes_cover_locations.
+- Use a minimal set of orders that activates key nodes.
+- Validate that the route visits all required locations.
+- For a single batch, use `assert_route_covers_orders`.
+- For multiple batches, use `assert_batch_routes_cover_locations`.
 
-2) Penalizaciones (tardanza/adelanto)
-- Reutilizar el mismo grafo y asignaciones (N, a, y) para estabilidad.
-- Aislar la penalizacion:
+2) Penalties (tardiness/earliness)
+- Reuse the same graph and assignments (N, a, y) for stability.
+- Isolate the penalty term:
   - w1 = 0.0, w2 = 1.0
-  - gamma = 0.0 (ignorar adelanto)
+  - gamma = 0.0 (ignore earliness)
   - delta = 1.0
-- Caso con tardanza:
-  - due_date muy baja (ej. 0.0) para forzar ta_n > 0.
-- Caso mejor:
-  - due_date alta (ej. 100.0) para esperar ta_n ~= 0.
-- Medir sumatoria con OPPTestCase.sum_vars_with_prefix(model, "ta_").
+- Tardiness case:
+  - due_date very low (e.g. 0.0) to force ta_n > 0.
+- Best case:
+  - due_date high (e.g. 100.0) to expect ta_n ~= 0.
+- Measure the sum with `OPPTestCase.sum_vars_with_prefix(model, "ta_")`.
 
-3) Multi picker / multi lote
-- Definir x y y de modo que cada picker tenga 1+ lotes.
-- Verificar rutas por lote (assert_batch_routes_cover_locations).
-- Permitir ubicaciones compartidas entre lotes si el caso lo necesita.
+3) Multi picker / multi batch
+- Define x and y so each picker has 1+ batches.
+- Validate routes per batch (`assert_batch_routes_cover_locations`).
+- Allow shared locations across batches when the case needs it.
 
 4) Infeasible
-- Forzar una causa especifica:
-  - Duplicar una ubicacion dentro del mismo lote.
-  - Capacidad del vehiculo demasiado baja.
-  - Grafo desconectado en una ubicacion requerida.
-- Validar status "infeasible".
+- Force a specific cause:
+  - Duplicate a location within the same batch.
+  - Vehicle capacity too low.
+  - Disconnected graph for a required location.
+- Validate status "infeasible".
 
-## Helpers recomendados
+### Test Parameter Combinations
 
-- OPPTestCase.normalize_due_dates(orders, override, default)
-- OPPTestCase.apply_weight_overrides(w1, w2, gamma, delta, ...)
-- OPPTestCase.sum_vars_with_prefix(model, prefix)
+Suggested parameter mixes to exercise different behaviors in tests:
 
-Usar estos helpers evita duplicacion y hace mas facil mantener los tests.
+- Baseline feasibility: `w1=1`, `w2=1`, `gamma=1`, `delta=1`, moderate `due_date`, and `cap_vehicle` >= sum of `cap_n` per batch.
+- Tardiness sensitivity (no `due_date` change): fix `due_date`, set `w1=0`, `w2=1`, `gamma=0`, `delta=1`, and vary `beta_picking` or `cap_n`.
+- Earliness sensitivity: fix high `due_date`, set `w1=0`, `w2=1`, `gamma=1`, `delta=0`, and lower `cap_n` or `beta_time`.
+- Route/time emphasis: set `w1>0`, `w2=0`, then vary graph weights (`d(i,j)`) or `beta_time`.
+- Capacity infeasible: set `cap_vehicle` below the sum of `cap_n` for a batch.
+- Assignment stress: use multiple batches per picker and shared locations across batches.
+- Disconnected graph: remove a required edge so at least one required node is unreachable.
 
-## Consideraciones
+## Recommended helpers
 
-Los layouts más comunes, según gemini, son de tipo:
+- `OPPTestCase.normalize_due_dates(orders, override, default)`
+- `OPPTestCase.apply_weight_overrides(w1, w2, gamma, delta, ...)`
+- `OPPTestCase.sum_vars_with_prefix(model, prefix)`
 
-| Distribución | Estructura del Grafo | Uso Común |
+Using these helpers avoids duplication and makes tests easier to maintain.
+
+## Considerations
+
+Common layouts (per Gemini) are:
+
+| Distribution | Graph Structure | Common Use |
 | --- | --- | --- |
-| Bloque Único | Grilla simple (m×n). | Almacenes pequeños, fácil implementación. |
-| Multibloque | Grillas conectadas por nodos intermedios. | Centros de distribución grandes (Amazon, centros logísticos). |
-| No Tradicional | Grafos con aristas diagonales (Fishbone). | Almacenes de alta densidad con picking intensivo. |
+| Single block | Simple grid (m x n). | Small warehouses, easy implementation. |
+| Multi block | Grids connected by intermediate nodes. | Large distribution centers (Amazon, logistics hubs). |
+| Non traditional | Graphs with diagonal edges (Fishbone). | High density warehouses with intensive picking. |
 
-Sería interesante investigar un poco más del tema.
+It would be useful to research this further.
 
-## Ejecucion
+## Execution
 
-Desde la raiz del repo:
+From the repository root:
 
-python -m unittest tests.opp_v2.tests.test_opp_v2_model_{numero}
+python -m unittest tests.opp_v2.tests.test_opp_v2_model_{number}
