@@ -31,6 +31,9 @@ class TestOPPModelBridge(OPPTestCase):
         w2_override=None,
         gamma_override=None,
         delta_override=None,
+        beta_time_override=None,
+        beta_setup_override=None,
+        beta_picking_override=None,
     ):
         if disconnected:
             V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
@@ -54,6 +57,16 @@ class TestOPPModelBridge(OPPTestCase):
 
         due_date_by_order = self.normalize_due_dates(N, due_date_override)
 
+        beta_time = 0.5
+        beta_setup = 1.0
+        beta_picking = 1.0
+        if beta_time_override is not None:
+            beta_time = beta_time_override
+        if beta_setup_override is not None:
+            beta_setup = beta_setup_override
+        if beta_picking_override is not None:
+            beta_picking = beta_picking_override
+
         params = SolveModelDTO()
         params.w1 = w1
         params.w2 = w2
@@ -62,9 +75,9 @@ class TestOPPModelBridge(OPPTestCase):
         params.cap_n = cap_n
         params.cap_vehicle = cap_vehicle
         params.a = a
-        params.beta_time = 0.5
-        params.beta_setup = 1.0
-        params.beta_picking = 1.0
+        params.beta_time = beta_time
+        params.beta_setup = beta_setup
+        params.beta_picking = beta_picking
         params.due_date = due_date_by_order
         params.M = 1000.0
         params.x = x
@@ -141,7 +154,7 @@ class TestOPPModelBridge(OPPTestCase):
             self.assertIn("L6", route, f"Batch {batch} did not cross bridge L6")
             self.assertIn("L7", route, f"Batch {batch} did not cross bridge L7")
 
-    def test_bridge_penalties(self):
+    def test_bridge_tardiness_beta_picking(self):
         V, _, B, _, _, _, _, _, _, _ = bridge_graph_two_pickers_four_batches()
 
         N = {f"O{i}" for i in range(1, 13)}
@@ -176,39 +189,114 @@ class TestOPPModelBridge(OPPTestCase):
 
         cap_n = {n: 2.0 for n in N}
 
-        result_low, model_low, _, _, _ = self._solve_bridge(
+        result_fast, model_fast, _, _, _ = self._solve_bridge(
             N,
             a,
             y,
             cap_n,
-            due_date_override=0.0,
+            due_date_override=10.0,
             w1_override=0.0,
             w2_override=1.0,
             gamma_override=0.0,
             delta_override=1.0,
+            beta_picking_override=0.5,
         )
 
-        self.assertIn(result_low, ("optimal", "feasible"))
+        self.assertIn(result_fast, ("optimal", "feasible"))
 
-        total_tardiness_low = self.sum_vars_with_prefix(model_low.model, "ta_")
-        self.assertGreater(total_tardiness_low, 1e-6)
+        total_tardiness_fast = self.sum_vars_with_prefix(model_fast.model, "ta_")
 
-        result_high, model_high, _, _, _ = self._solve_bridge(
+        result_slow, model_slow, _, _, _ = self._solve_bridge(
             N,
             a,
             y,
             cap_n,
+            due_date_override=10.0,
+            w1_override=0.0,
+            w2_override=1.0,
+            gamma_override=0.0,
+            delta_override=1.0,
+            beta_picking_override=2.0,
+        )
+
+        self.assertIn(result_slow, ("optimal", "feasible"))
+
+        total_tardiness_slow = self.sum_vars_with_prefix(model_slow.model, "ta_")
+        self.assertGreater(total_tardiness_slow, total_tardiness_fast + 1e-6)
+
+    def test_bridge_earliness_order_size(self):
+        V, _, B, _, _, _, _, _, _, _ = bridge_graph_two_pickers_four_batches()
+
+        N = {f"O{i}" for i in range(1, 13)}
+        a = {(n, v): 0 for n in N for v in V}
+
+        a[("O1", "L2")] = 1
+        a[("O2", "L8")] = 1
+        a[("O3", "L9")] = 1
+        a[("O4", "L3")] = 1
+        a[("O5", "L10")] = 1
+        a[("O6", "L11")] = 1
+        a[("O7", "L4")] = 1
+        a[("O8", "L8")] = 1
+        a[("O9", "L10")] = 1
+        a[("O10", "L5")] = 1
+        a[("O11", "L9")] = 1
+        a[("O12", "L11")] = 1
+
+        y = {(n, b): 0 for n in N for b in B}
+        y[("O1", "B1")] = 1
+        y[("O2", "B1")] = 1
+        y[("O3", "B1")] = 1
+        y[("O4", "B2")] = 1
+        y[("O5", "B2")] = 1
+        y[("O6", "B2")] = 1
+        y[("O7", "B3")] = 1
+        y[("O8", "B3")] = 1
+        y[("O9", "B3")] = 1
+        y[("O10", "B4")] = 1
+        y[("O11", "B4")] = 1
+        y[("O12", "B4")] = 1
+
+        cap_n_small = {n: 1.0 for n in N}
+        cap_n_large = {n: 10.0 for n in N}
+
+        result_small, model_small, _, _, _ = self._solve_bridge(
+            N,
+            a,
+            y,
+            cap_n_small,
             due_date_override=100.0,
             w1_override=0.0,
             w2_override=1.0,
-            gamma_override=0.0,
-            delta_override=1.0,
+            gamma_override=1.0,
+            delta_override=0.0,
         )
 
-        self.assertIn(result_high, ("optimal", "feasible"))
+        self.assertIn(result_small, ("optimal", "feasible"))
 
-        total_tardiness_high = self.sum_vars_with_prefix(model_high.model, "ta_")
-        self.assertLessEqual(total_tardiness_high, 1e-6)
+        total_earliness_small = self.sum_vars_with_prefix(model_small.model, "ea_")
+        total_tardiness_small = self.sum_vars_with_prefix(model_small.model, "ta_")
+
+        result_large, model_large, _, _, _ = self._solve_bridge(
+            N,
+            a,
+            y,
+            cap_n_large,
+            due_date_override=100.0,
+            w1_override=0.0,
+            w2_override=1.0,
+            gamma_override=1.0,
+            delta_override=0.0,
+        )
+
+        self.assertIn(result_large, ("optimal", "feasible"))
+
+        total_earliness_large = self.sum_vars_with_prefix(model_large.model, "ea_")
+        total_tardiness_large = self.sum_vars_with_prefix(model_large.model, "ta_")
+
+        self.assertLessEqual(total_tardiness_small, 1e-6)
+        self.assertLessEqual(total_tardiness_large, 1e-6)
+        self.assertGreater(total_earliness_small, total_earliness_large + 1e-6)
 
     def test_bridge_disconnected_required_location(self):
         V, _, B, _, _, _, _, _, _, _ = bridge_graph_disconnected()
