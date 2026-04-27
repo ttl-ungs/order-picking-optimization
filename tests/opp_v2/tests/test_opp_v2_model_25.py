@@ -1,4 +1,10 @@
 import unittest
+import sys
+import os
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
+)
 
 from dtos import SolveModelDTO, ModelDTO
 from models.opp_v2.opp_model_v2 import OPPModelV2
@@ -7,12 +13,8 @@ from tests.opp.tests.opp_test_case import OPPTestCase
 import sys
 import os
 
-from tests.opp_v2.scenarios.scenario_custom_setup import \
-    scenario_custom_setup
+from tests.opp_v2.scenarios.scenario_custom_setup import scenario_custom_setup
 
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
-)
 
 class TestOPPModel(OPPTestCase):
     """
@@ -20,8 +22,8 @@ class TestOPPModel(OPPTestCase):
     """
 
     def test_10_orders_per_batch(self):
-        opp_location_graph, V, B, P, N, x, y, a = (
-            scenario_custom_setup(10, 10, 100, 10, 10)
+        opp_location_graph, V, B, P, N, x, y, a = scenario_custom_setup(
+            10, 10, 100, 10, 10
         )
 
         cap_n = {f"O{n}": 10 for n in range(1, len(N) + 1)}

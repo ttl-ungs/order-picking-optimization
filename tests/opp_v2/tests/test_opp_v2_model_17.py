@@ -2,12 +2,11 @@ import os
 import sys
 import unittest
 
-from models.base.opp_location_graph import OPPLocationGraph
-
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
 )
 
+from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.model_dto import ModelDTO
 from dtos.opp.solve_model_dto import SolveModelDTO
 from models.opp_v2.opp_model_v2 import OPPModelV2

@@ -1,18 +1,24 @@
 import unittest
+import sys
+import os
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
+)
 
 from dtos import SolveModelDTO, ModelDTO
 from models.opp_v2.opp_model_v2 import OPPModelV2
 from models.opp_v2.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
-import sys
-import os
 
-from tests.opp_v2.scenarios.three_missions_two_pickers_grid_graph import \
-    scenario_three_missions_two_pickers_two_periods_grid_graph
+from tests.opp_v2.scenarios.three_missions_two_pickers_grid_graph import (
+    scenario_three_missions_two_pickers_two_periods_grid_graph,
+)
 
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
 )
+
 
 class TestOPPModel(OPPTestCase):
     """

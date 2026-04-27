@@ -1,14 +1,20 @@
 import unittest
+import sys
+import os
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
+)
 
 from dtos import SolveModelDTO, ModelDTO
 from models.base.opp_location_graph import OPPLocationGraph
 from models.opp_v2.opp_model_v2 import OPPModelV2
 from models.opp_v2.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
-import sys
-import os
 
-from tests.opp_v2.scenarios.one_mission_one_picker_grid_graph import scenario_one_mission_one_picker_grid_graph
+from tests.opp_v2.scenarios.one_mission_one_picker_grid_graph import (
+    scenario_one_mission_one_picker_grid_graph,
+)
 
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
@@ -20,9 +26,7 @@ class TestOPPModel(OPPTestCase):
     Test 15: 3 orders, 1 mission, 1 picker. Each order is assigned to the same mission and picker. 4x4 graph.
     """
 
-    P, x, opp_location_graph, V, B = scenario_one_mission_one_picker_grid_graph(
-        4, 4
-    )
+    P, x, opp_location_graph, V, B = scenario_one_mission_one_picker_grid_graph(4, 4)
 
     def get_orders(self):
         orders = {"O1", "O2", "O3"}

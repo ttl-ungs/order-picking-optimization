@@ -1,16 +1,19 @@
 import unittest
+import sys
+import os
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
+)
 
 from dtos import SolveModelDTO, ModelDTO
 from models.opp_v2.opp_model_v2 import OPPModelV2
 from models.opp_v2.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
-import sys
-import os
 
-from tests.opp_v2.scenarios.six_missions_three_pickers_grid_graph import \
-    scenario_six_missions_three_pickers_two_periods_grid_graph
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "..")))
+from tests.opp_v2.scenarios.six_missions_three_pickers_grid_graph import (
+    scenario_six_missions_three_pickers_two_periods_grid_graph,
+)
 
 
 class TestOPPModel(OPPTestCase):
@@ -20,10 +23,10 @@ class TestOPPModel(OPPTestCase):
     """
 
     def test_two_periods_two_orders_per_vehicle(self):
-        P, x, opp_location_graph, V, B = scenario_six_missions_three_pickers_two_periods_grid_graph()
-        N = {"O1", "O2", "O3", "O4",
-             "O5", "O6", "O7", "O8",
-             "O9", "O10", "O11", "O12"}
+        P, x, opp_location_graph, V, B = (
+            scenario_six_missions_three_pickers_two_periods_grid_graph()
+        )
+        N = {"O1", "O2", "O3", "O4", "O5", "O6", "O7", "O8", "O9", "O10", "O11", "O12"}
         a = {(n, v): 0 for n in N for v in V}
 
         a[("O1", "V6")] = 1
@@ -53,26 +56,46 @@ class TestOPPModel(OPPTestCase):
         y[("O11", "B6")] = 1
         y[("O12", "B6")] = 1
 
-        w1 = 9.0 # cumplimiento peso alto
-        w2 = 1.0 # demoras y adelanto peso bajp
-        gamma = 1.0 # peso del adelanto bajo
-        delta = 1.0 # peso de demora bajo
+        w1 = 9.0  # cumplimiento peso alto
+        w2 = 1.0  # demoras y adelanto peso bajp
+        gamma = 1.0  # peso del adelanto bajo
+        delta = 1.0  # peso de demora bajo
 
         beta_time = 0.5
         beta_setup = 1.0
         beta_picking = 1.0
         M = 1000.0
 
-        cap_vehicle = 20.0 # Two orders per vehicle
-        cap_n = {"O1": 10.0, "O2": 10.0, "O3": 10.0,
-                 "O4": 10.0, "O5": 10.0, "O6": 10.0,
-                 "O7": 10.0, "O8": 10.0, "O9": 10.0,
-                 "O10": 10.0, "O11": 10.0, "O12": 10.0 }
+        cap_vehicle = 20.0  # Two orders per vehicle
+        cap_n = {
+            "O1": 10.0,
+            "O2": 10.0,
+            "O3": 10.0,
+            "O4": 10.0,
+            "O5": 10.0,
+            "O6": 10.0,
+            "O7": 10.0,
+            "O8": 10.0,
+            "O9": 10.0,
+            "O10": 10.0,
+            "O11": 10.0,
+            "O12": 10.0,
+        }
 
-        due_date = {"O1": 15.0, "O2": 15.0, "O3": 15.0,
-                    "O4": 15.0, "O5": 15.0, "O6": 15.0,
-                    "O7": 15.0, "O8": 15.0, "O9": 15.0,
-                    "O10": 15.0, "O11": 15.0, "O12": 15.0,}
+        due_date = {
+            "O1": 15.0,
+            "O2": 15.0,
+            "O3": 15.0,
+            "O4": 15.0,
+            "O5": 15.0,
+            "O6": 15.0,
+            "O7": 15.0,
+            "O8": 15.0,
+            "O9": 15.0,
+            "O10": 15.0,
+            "O11": 15.0,
+            "O12": 15.0,
+        }
 
         params = SolveModelDTO()
         params.w1 = w1
@@ -109,6 +132,7 @@ class TestOPPModel(OPPTestCase):
             result in ("optimal", "feasible"),
             "The model did not find a solution.",
         )
+
 
 if __name__ == "__main__":
     # pyscipopt.SCIP_PARAMSETTING_DEFAULT.set("limits/time", 60)

@@ -1,6 +1,4 @@
 import unittest
-from models.opp_v2.opp_model_v2 import OPPModelV2
-from tests.opp.tests.opp_test_case import OPPTestCase
 import sys
 import os
 
@@ -8,6 +6,8 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
 )
 
+from models.opp_v2.opp_model_v2 import OPPModelV2
+from tests.opp.tests.opp_test_case import OPPTestCase
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
 from models.opp_v2.utils.output_handler import OutputHandler
