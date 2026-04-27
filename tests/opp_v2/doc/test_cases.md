@@ -162,6 +162,36 @@ graph LR
     N16 --> E((End))
 ```
 
+Graph G11 (IDs: 29)
+```mermaid
+graph LR
+    V1((V1)) ----|2| V2((V2))
+    V2 ----|2| V3((V3))
+    V3 ----|2| V4((V4))
+    V5((V5)) ----|2| V6((V6))
+    V6 ----|2| V7((V7))
+    V7 ----|2| V8((V8))
+    V9((V9)) ----|2| V10((V10))
+    V10 ----|2| V11((V11))
+    V11 ----|2| V12((V12))
+    V13((V13)) ----|2| V14((V14))
+    V14 ----|2| V15((V15))
+    V15 ----|2| V16((V16))
+
+    V1 ----|3| V5
+    V5 ----|3| V9
+    V9 ----|3| V13
+    V2 ----|3| V6
+    V6 ----|3| V10
+    V10 ----|3| V14
+    V3 ----|3| V7
+    V7 ----|3| V11
+    V11 ----|3| V15
+    V4 ----|3| V8
+    V8 ----|3| V12
+    V12 ----|3| V16
+```
+
 **Test Cases**
 | ID | Name | Key | Description | Orders | Locations | Lots | Pickers | LotsFeasible | Expected | Obtained | Status | Time | Notes | Graph |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -205,3 +235,6 @@ graph LR
 | 25 | test_10_orders_per_batch | Estres | Cada picker tiene un lote. Cada lote tiene 10 ordenes. Grafo 10x10. | 100 | 10x10 | 10 | 10 | - | Feasible | Feasible | Pass | 2 minutos | - | - |
 | 25 | test_4_orders_per_batch_10_pickers | Estres | - | 100 | 10x10 | 25 | 10 | - | Feasible | Feasible | Pass |  +20 minutos (no termine de ejecutarlo) | - | - |
 | 25 | test_10_orders_per_batch_25_pickers | Estres | - | 100 | 10x10 | 10 | 25 | - | Feasible | Feasible | Pass | 5 minutos | En conclusion: la cantidad de lotes impacta mucho en el resultado, puede que hasta mas que la cantidad de ordenes. Idea: testear 25 lotes con 25 o 50 ordenes, a ver que tanto baja el tiempo de ejecucion | - |
+| 29.1 | test_grid_empty_batch_has_route | Grid - edge cases | B4 has no orders; it must still produce a depot-to-final route while other batches cover their locations. | 12 | 4x4 | 4 | 2 | 4 | Feasible; empty batch has route | - | - | - | - | G11 |
+| 29.2 | test_grid_all_orders_single_batch_tight_capacity | Grid - edge cases | All orders are assigned to B1 with sum cap_n == cap_vehicle; B2-B4 are empty routes. | 12 | 4x4 | 4 | 2 | 4 | Feasible; empty batches have routes | - | - | - | - | G11 |
+| 29.3 | test_grid_orders_without_locations | Grid - edge cases | B4 has orders with no required locations; route still exists while other batches cover locations. | 15 | 4x4 | 4 | 2 | 4 | Feasible; no-location orders do not block routing | - | - | - | - | G11 |
