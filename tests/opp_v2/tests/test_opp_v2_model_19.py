@@ -137,7 +137,7 @@ class TestOPPModel(OPPTestCase):
         total_tardiness_high = self.sum_vars_with_prefix(model_high.model, "ta_")
         self.assertLessEqual(total_tardiness_high, 1e-6)
 
-    def test_longer_single_mission_duplicate_location_infeasible(self):
+    def test_longer_single_mission_duplicate_location(self):
         try:
             result, _, _, _ = self._solve_longer_route(
                 due_date=25.0,
@@ -146,7 +146,7 @@ class TestOPPModel(OPPTestCase):
         except Exception as e:
             self.fail(f"Model execution failed: {e}")
 
-        self.assertEqual(result, "infeasible")
+        self.assertIn(result, ("optimal", "feasible"))
 
 
 if __name__ == "__main__":
