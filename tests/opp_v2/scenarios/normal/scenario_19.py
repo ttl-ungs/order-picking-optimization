@@ -54,6 +54,6 @@ def longer_single_mission_route():
 
     x = {("P1", "B1"): 1}
 
-    cap_vehicle = 10.0
+    cap_vehicle = 12.0
 
     return V, P, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle, x
