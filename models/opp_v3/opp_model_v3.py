@@ -85,26 +85,6 @@ class OPPModelV3(Model):
         # t_(exec_b) = execution time of mission b ∈ B
         t_exec = {b: model.addVar(name=f"t_exec_{b}", lb=0) for b in self.B}
 
-        # # u_pb = processing time of the batch b ∈ B of picker p ∈ P
-        # u = {
-        #     (p, b): model.addVar(name=f"u_{p}_{b}", lb=0)
-        #     for p in self.P
-        #     for b in self.B
-        # }
-
-        # u_pb = processing time of the batch b ∈ B
-        # u = {
-        #     b: model.addVar(name=f"u_{b}", lb=0)
-        #     for b in self.B
-        # }
-
-        # # v_pb = completion time of the batch b ∈ B of picker p ∈ P
-        # v = {
-        #     (p, b): model.addVar(name=f"v_{p}_{b}", lb=0)
-        #     for p in self.P
-        #     for b in self.B
-        # }
-
         # v_pb = completion time of the batch b ∈ B of picker p ∈ P
         v = {
             b: model.addVar(name=f"v_{b}", lb=0)
@@ -264,12 +244,6 @@ class OPPModelV3(Model):
             )
 
         # (19)
-        # for p in self.P:
-        #     for b in self.B:
-        #         model.addCons(
-        #             self.constraint_batch_execution_time(p, b, t_exec, M, x, u),
-        #             name=f"batch_execution_time_p{p}_b{b}",
-        #         )
         for idx, b in enumerate(self.B):
             prev_b = self.B[idx - 1] if idx > 0 else None
 
@@ -278,29 +252,7 @@ class OPPModelV3(Model):
                 name=f"batch_sequence_b{b}"
             )
 
-        # (20)
-        # for p in self.P:
-        #     for b in self.B:
-        #         model.addCons(
-        #             self.constraint_processing_time(p, u, v, b),
-        #             name=f"processing_time_p{p}_b{b}",
-        #         )
-        # for b in self.B:
-        #     model.addCons(
-        #         self.constraint_processing_time(v, b),
-        #         name=f"processing_time_b{b}",
-        #     )
-
         # (22)
-        # for p in self.P:
-        #     for b in self.B:
-        #         for n in self.N:
-        #             model.addCons(
-        #                 self.constraint_tardiness_definition(
-        #                     v, p, due_date, n, M, b, x, y, ta
-        #                 ),
-        #                 name=f"tardiness_definition_p{p}_n{n}_b{b}",
-        #             )
         for b in self.B:
             for n in self.N:
                 model.addCons(
@@ -311,15 +263,6 @@ class OPPModelV3(Model):
                 )
 
         # (23)
-        # for p in self.P:
-        #     for b in self.B:
-        #         for n in self.N:
-        #             model.addCons(
-        #                 self.constraint_earliness_definition(
-        #                     v, p, due_date, n, M, b, x, y, ea
-        #                 ),
-        #                 name=f"earliness_definition_p{p}_n{n}_b{b}",
-        #             )
         for b in self.B:
             for n in self.N:
                 model.addCons(
@@ -508,19 +451,6 @@ class OPPModelV3(Model):
             <= 1
         )
 
-    # def constraint_avoid_subtours_cycles(self, f, i, b, a, y, n):
-    #     """
-    #     (16): Subtour elimination constraint.
-    #     Ensures that the route does not contain subtours or cycles.
-    #     """
-    #     flow_in = quicksum(
-    #         f[g, i, b]
-    #         for g in self.location_graph.get_vertices()
-    #         if g != self.location_graph.get_final()
-    #     )
-    #     required_flow = a[n, i] * y[n, b]
-    #     return flow_in >= required_flow
-
     def constraint_f_depot_source(self, b, f, a, y):
         """
         Depot sends out exactly required_nodes units.
@@ -612,14 +542,6 @@ class OPPModelV3(Model):
         else:
             # Para los lotes siguientes: Fin_actual >= Fin_anterior + Duracion_actual
             return v[b] >= v[prev_b] + t_exec[b]
-
-    # def constraint_processing_time(self, v, b):
-    #     """
-    #     (20): Completion time constraint.
-    #     Ensures that the processing time is less or equal to the completion time
-    #     for each batch of a picker.
-    #     """
-    #     return u[b] <= v[b]
 
     def constraint_tardiness_definition(self, v, due_date, n, M, b, x, y, ta):
         """
