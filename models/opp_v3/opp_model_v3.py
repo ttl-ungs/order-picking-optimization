@@ -7,8 +7,8 @@ Sets:
 Parameters:
     w_1 = Peso del tiempo de cumplimiento
     w_2 = Peso asociado a la suma pesada de las demoras y los adelantos
-    γ = Peso asociado al adelanto total
-    δ = Peso asociado a la demora total
+    γ = Peso asociado al adelanto total (gamma)
+    δ = Peso asociado a la demora total (delta)
     d_(i,j) = Distancia entre localizaciones de picking i ∈ V y j ∈ V
     cap_n = Capacidad requerida para una órden n ∈ N
     cap_vehicle = Capacidad del vehículo de picking

@@ -263,11 +263,11 @@ class TestOPPModelBridge(OPPTestCase):
             a,
             y,
             cap_n_small,
-            due_date_override=100.0,
-            w1_override=0.0,
+            due_date_override=5000.0,
+            w1_override=1.0, # El tiempo de cumplimiento importa --> queremos terminar lo antes posible
             w2_override=1.0,
-            gamma_override=1.0,
-            delta_override=0.0,
+            gamma_override=0.0, # El adelanto no cuesta --> no forzamos que no haya delanto
+            delta_override=1.0,
         )
 
         self.assertIn(result_small, ("optimal", "feasible"))
@@ -280,11 +280,11 @@ class TestOPPModelBridge(OPPTestCase):
             a,
             y,
             cap_n_large,
-            due_date_override=100.0,
-            w1_override=0.0,
+            due_date_override=5000.0,  # El tiempo de cumplimiento importa --> queremos terminar lo antes posible
+            w1_override=1.0,
             w2_override=1.0,
-            gamma_override=1.0,
-            delta_override=0.0,
+            gamma_override=0.0, # El adelanto no cuesta --> no forzamos que no haya delanto
+            delta_override=1.0,
         )
 
         self.assertIn(result_large, ("optimal", "feasible"))
@@ -295,8 +295,7 @@ class TestOPPModelBridge(OPPTestCase):
         self.assertLessEqual(total_tardiness_small, 1e-6)
         self.assertLessEqual(total_tardiness_large, 1e-6)
 
-        # TODO: por que son iguales? Deberia ser mayor el de cap 1.0 no?
-        self.assertEqual(total_earliness_small, total_earliness_large)
+        self.assertGreater(total_earliness_small, total_earliness_large)
 
     def test_bridge_disconnected_required_location(self):
         V, B, _, _, _, _, _, _ = bridge_graph_disconnected()
