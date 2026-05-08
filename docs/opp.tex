@@ -1,0 +1,178 @@
+% Configuración de página y márgenes
+\setuplayout[backspace=20mm, topspace=20mm, width=middle, height=middle, header=0mm, footer=10mm]
+
+% Numeración continua y soporte para salto de página
+\setupformulas[way=bytext, prefix=no, split=yes]
+\setupmathalignment[split=yes]
+
+% Estilo de títulos
+\setuphead[section][style=\bfb]
+\setuphead[subsection][style=\bfa, after=\blank]
+
+% Macros ajustadas para evitar desbordamiento de margen
+\define[1]\Cond{\framed[width=2.8cm, frame=off, align=normal, offset=0pt, location=middle]{\tfx #1}}
+\define[1]\Desc{\framed[width=4.5cm, frame=off, align=normal, offset=0pt, location=middle]{\tfx #1}}
+
+\starttext
+
+\centerline{\tfd Modelo OPP - Order Picking Problem}
+\blank[small]
+\centerline{\tfa Soria, Lucía; Ebertz, Ximena}
+\blank[2*big]
+
+\startsection[title={Primera Versión: OPP con misiones}]
+
+Utilizamos el modelo completo y lo simplificamos, considerando las tareas relacionadas con el \italic{batch} como parámetros y no como variables, que podrían ser obtenidas mediante metaheurísticas en un preprocesamiento por zonas. De esta forma, obtenemos el siguiente modelo:
+
+\startsubsection[title={Sean los conjuntos}]
+\startformula
+\startalign
+    \NC \mathcal{N} \NC = \text{Órdenes de clientes} \NR
+    \NC \mathcal{V} \NC = \text{Locaciones totales} \NR
+    \NC \mathcal{H} \NC = \text{Misiones que se pueden completar} \NR
+    \NC \mathcal{K} \NC = \text{Períodos por picker en los que se recolecta un lote} \NR
+    \NC \mathcal{P} \NC = \text{Pickers} \NR
+    \NC \mathcal{B} \NC = \text{Lotes de pedidos factibles} \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Sean los parámetros}]
+\startformula
+\startalign
+    \NC w_{1} \NC = \text{Peso del tiempo de cumplimiento} \NR
+    \NC w_{2} \NC = \text{Peso asociado a la suma pesada de demoras y adelantos} \NR
+    \NC \gamma \NC = \text{Peso asociado al adelanto total} \NR
+    \NC \delta \NC = \text{Peso asociado a la demora total} \NR
+    \NC d_{i,j} \NC = \text{Distancia entre locaciones de picking } i \in V \text{ y } j \in V \NR
+    \NC cap_{n} \NC = \text{Capacidad requerida para una orden } n \in N \NR
+    \NC Cap_{vehicle} \NC = \text{Capacidad del vehículo de picking} \NR
+    \NC a_{ni} \NC = \startmathcases
+                    \NC 1 \MC \text{si la orden } n \text{ requiere visitar la locación } i \in V \NR
+                    \NC 0 \MC \text{en otro caso} \NR
+              \stopmathcases \NR
+    \NC \beta^{time} \NC = \text{Tiempo requerido para viajar una unidad de distancia} \NR
+    \NC \beta^{setup} \NC = \text{Tiempo de preparación (setup) de una misión o lote} \NR
+    \NC \beta^{picking} \NC = \text{Tiempo requerido para recolectar una unidad de artículo} \NR
+    \NC M \NC = \text{Un número positivo suficientemente grande (Big M)} \NR
+    \NC dis_i \NC = \text{Distancia viajada para completar el lote } i \in B \NR
+    \NC capbatch_i \NC = \text{Capacidad requerida para un lote } i \in B \NR
+    \NC x_{pkh} \NC = \startmathcases
+                    \NC 1 \MC \text{si la misión } h \in H \text{ es asignada a la posición } k \in K \text{ del picker } p \in P \NR
+                    \NC 0 \MC \text{en otro caso} \NR
+                \stopmathcases \NR
+    \NC y_{nh} \NC = \startmathcases
+                    \NC 1 \MC \text{si la la órden } n \in N \text{ es asignada a la misión } h \in H \NR
+                    \NC 0 \MC \text{en otro caso} \NR
+                \stopmathcases \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Sean las variables}]
+\startformula
+\startalign
+    \NC ta_{n} \NC = \text{Tardanza de la orden } n \in N \NR
+    \NC ea_{n} \NC = \text{Adelanto de la orden } n \in N \NR
+    \NC t\_exec_{h} \NC = \text{Tiempo de ejecución de la misión } h \in H \NR
+    \NC u_{pk} \NC = \text{Tiempo de procesamiento del lote asignado a la posición } k \in K \text{ del picker } p \in P \NR
+    \NC v_{pk} \NC = \text{Tiempo de completitud para el lote asignado a la posición } k \in K \text{ del picker } p \in P \NR
+    \NC z_{ijh} \NC = \startmathcases
+                \NC 1 \MC \text{si el arco entre las locaciones } i \in V \text{ y } j \in V \text{ está en la misión } h \in H \NR
+                \NC 0 \MC \text{en otro caso} \NR
+              \stopmathcases \NR
+    \NC f_{ijh} \NC = \text{Número de unidades pasando por el arco } (i, j) \text{ en la misión } h \in H \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Objetivo}]
+\placeformula
+\startformula
+\min \left( w_{1} \cdot \left( \sum_{p=1}^{N} \sum_{k=1}^{K} v_{pk} \right) + w_{2} \cdot \left( \gamma \cdot \sum_{n=1}^{N} ea_{n} + \delta \cdot \sum_{n=1}^{N} ta_{n} \right) \right)
+\stopformula
+
+{\bf Siendo}
+\startformula
+\startalign
+    \NC \text{Tiempo de recolección} \NC = \sum_{p=1}^{N} \sum_{k=1}^K v_{pk} \NR
+    \NC \text{Adelantos totales} \NC = \sum_{n=1}^{N} ea_n \NR
+    \NC \text{Peso de adelantos totales} \NC = \gamma * \sum_{n=1}^{N} ea_n \NR
+    \NC \text{Demoras totales} \NC = \sum_{n=1}^{N} ta_n \NR
+    \NC \text{Peso de demoras totales} \NC = \delta * \sum_{n=1}^{N} ta_n \NR
+    \NC \text{Peso de penalizaciones} \NC = w_2 * (\text{peso adelantos totales} + \text{peso de demoras totales}) \NR
+\stopalign
+\stopformula
+
+{\bf Esta función objetivo se traduce en}
+\startformula
+    \min w_1 * \text{\bf tiempo de recolección } + w_2 * \text{\bf peso de penalizaciones} 
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Restricciones}]
+\startformula 
+\startalign[n=3, align={left, left, left}, number=yes]
+    \NC \sum_{h\in H}x_{pkh}\le1; \NC \Cond{$\forall p \in P,$ \crlf $k \in K$} \NC \Desc{(\overstrike{Cada misión es asignada a lo sumo a un picker en un periodo})} \NR
+    
+    \NC \sum_{p\in P}\sum_{k\in K}x_{pkh}=1; \NC \Cond{$\forall h \in H$} \NC \Desc{(\overstrike{Cada misión es asignada exactamente una vez a un único picker en una única posición})} \NR
+    
+    \NC \sum_{h\in H}y_{nh}=1; \NC \Cond{$\forall n \in N$} \NC \Desc{(\overstrike{Cada órden es asignada a una misión})} \NR
+    
+    \NC \sum_{n\in N}cap_{n} \cdot y_{nh} \le Cap_{vehicle}; \NC \Cond{$\forall h \in H$} \NC \Desc{(\overstrike{La capacidad de las órdenes asignades a la misión $\le$ la del vehículo})} \NR
+    
+    \NC \sum_{j \in V \setminus \{v_i\}} z_{v_i,j,h} = 1; \NC \Cond{$\forall h \in H$} \NC \Desc{(La ruta sale una vez del depósito inicial)} \NR
+    
+    \NC \sum_{i \in V \setminus \{v_f\}} z_{i, v_f, h} = 1; \NC \Cond{$\forall h \in H$} \NC \Desc{(La ruta entra una vez al depósito final)} \NR
+    
+    \NC \sum_{i \in V \setminus \{v_i\}, h} z_{i,v_i,h} = 0; \NC \NC \Desc{(No se puede volver al inicio)} \NR
+    
+    \NC \sum_{j \in V \setminus \{v_f\}, h} z_{v_f,j,h} = 0; \NC \NC \Desc{(No se puede ir a otro lado desde el final)} \NR
+    
+    \NC \sum_{i \in V \setminus \{v_f\}} z_{ijh} \ge a_{nj} \cdot y_{nh}; \NC \Cond{$\forall h \in H,$ \crlf $n \in N,$ \crlf $j \in V \setminus \{v_i\}$} \NC \Desc{(Si una orden requiere pasar por una locación, la ruta de esa misión tiene un camino que entra a esa locación)} \NR
+\stopalign
+\stopformula
+
+\startformula 
+\startalign[n=3, align={left, left, left}, number=yes]
+    \NC \sum_{j \in V \setminus \{v_i\}} z_{ijh} \ge a_{ni} \cdot y_{nh}; \NC \Cond{$\forall h \in H,$ \crlf $n \in N,$ \crlf $i \in V \setminus \{v_f\}$} \NC \Desc{(Si una orden requiere pasar por una locación, la ruta de esa misión tiene un camino que salga de esa locación)} \NR
+    
+    \NC f_{ijh} \le Cap_{vehicle} \cdot z_{ijh}; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_f\},$ \crlf $j \in V \setminus \{v_i\}$} \NC \Desc{(Los artículos entran en el vehículo)} \NR
+    
+    \NC \sum_{g \in V \setminus \{v_f\}} z_{gih} = \sum_{j \in V \setminus \{v_i\}} z_{ijh}; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(Para cualquier nodo intermedio $i$, la suma de todos los arcos que entran debe ser igual a la suma de todos los arcos que salen)} \NR
+    
+    \NC \sum_{g \in V \setminus \{v_f\}} z_{gih} \le 1; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(Se elige a lo sumo un arco por vecino de g)} \NR
+    
+    \NC \sum_{j \in V \setminus \{v_i\}} z_{ihj} \le 1; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(Se elige a lo sumo un arco desde i a cualquier otro vértice)} \NR
+    
+    \NC \sum_{g \in V \setminus \{v_f\}} f_{gih} = \sum_{j \in V \setminus \{v_i\}} f_{ijh} \ge a_{ni} \cdot y_{nh}; \NC \Cond{$\forall h \in H, n \in N,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(El número de unidades del inicio al final es el mismo que es del final al inicio, y se refiere a la cantidad de unidades de la misión. Evita subrutas y ciclos)} \NR
+    
+    \NC z_{iih} = 0; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(No hay ciclos)} \NR
+    
+    \NC t\_exec_{h} = \beta^{setup} + \beta^{picking} \cdot \left( \sum_{n \in N} cap_n \cdot y_{nh} \right) \NC \NC \NR[-]
+    \NC \quad + \beta^{time} \cdot \left( \sum_{i,j,h} d_{ij} \cdot z_{ijh} \right); \NC \Cond{$\forall h \in H$} \NC \Desc{(El tiempo de setup + picking + viaje definen el tiempo total de ejecución)} \NR
+    
+    \NC t\_exec_{h} - M \cdot (1 - x_{pkh}) \le u_{pk}; \NC \Cond{$\forall p, k, h$} \NC \Desc{(\overstrike{Cuando se asigna una mision a un picker, el tiempo de ejecución es $\le$ al lote})} \NR
+\stopalign
+\stopformula
+
+\startformula 
+\startalign[n=3, align={left, left, left}, number=yes]
+    \NC u_{p1} \le v_{p1}; \NC \Cond{$\forall p \in P$} \NC \Desc{(El tiempo de procesamiento es $\le$ al tiempo de completitud de un lote)} \NR
+    
+    \NC u_{pk} + v_{p,k-1} \le v_{pk}; \NC \Cond{$\forall p \in P, k \ge 2$} \NC \Desc{(El tiempo de procesamiento + completitud del lote previo es $\le$ al tiempo actual)} \NR
+    
+    \NC v_{pk} - due\_date_{n} - M \cdot (2 - x - y) \le ta_{n}; \NC \Cond{$\forall p, k, h, n$} \NC \Desc{(Si se completa después de la fecha de entrega, la diferencia es $ta_n$)} \NR
+    
+    \NC due\_date_{n} - v_{pk} - M \cdot (2 - x - y) \le ea_{n}; \NC \Cond{$\forall p, k, h, n$} \NC \Desc{(Si se completa antes de la fecha de entrega, la diferencia es $ea_n$)} \NR
+    
+    \NC x_{pkh}, y_{nh}, z_{ijh} \in \{0, 1\}; \NC \NC \Desc{(Variables binarias)} \NR
+    
+    \NC t\_exec, ta, ea, u, v, f \ge 0; \NC \NC \Desc{(Variables no negativas)} \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\stopsection
+
+\stoptext
