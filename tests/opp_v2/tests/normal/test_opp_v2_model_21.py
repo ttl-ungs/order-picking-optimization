@@ -297,7 +297,9 @@ class TestOPPModelBridge(OPPTestCase):
         self.assertLessEqual(total_tardiness_small, 1e-6)
         self.assertLessEqual(total_tardiness_large, 1e-6)
 
-        # TODO: por que son iguales? Deberia ser mayor el de cap 1.0 no?
+        # TODO: por que son iguales? Deberia ser mayor el de cap 1.0 no? --> los dos son 0. Como el costo del adelanto es muy alto,
+        # el solver hace que el tiempo sea exactamente igual al due_date. Si ponemos w1_override=100.0 o gamma_override=0.0, entonces
+        # si pasa que total_earliness_small > total_earliness_large
         self.assertEqual(total_earliness_small, total_earliness_large)
 
     def test_bridge_disconnected_required_location(self):
