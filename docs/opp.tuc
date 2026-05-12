@@ -115,6 +115,62 @@ utilitydata.structures.sections.collected={
   ["separatorset"]="default",
   ["set"]="all",
  },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=7,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=8,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=9,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=10,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=11,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=12,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=13,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
 }
 
 if not utilitydata.structures then utilitydata.structures = { } end
@@ -140,7 +196,7 @@ utilitydata.structures.counters.collected={
   { 0 },
  },
  ["formula"]={
-  { 1 },
+  { 2 },
  },
  ["graphic"]={
   { 0 },
@@ -149,7 +205,7 @@ utilitydata.structures.counters.collected={
   { 0 },
  },
  ["itemgroup:itemize"]={
-  { 0 },
+  { 0, 2 },
  },
  ["itemgroup:itemize:note"]={
   { 0 },
@@ -167,10 +223,10 @@ utilitydata.structures.counters.collected={
   { 0 },
  },
  ["realpage"]={
-  { 5 },
+  { 10 },
  },
  ["subpage"]={
-  { 5 },
+  { 10 },
  },
  ["table"]={
   { 0 },
@@ -179,7 +235,7 @@ utilitydata.structures.counters.collected={
   { 0 },
  },
  ["userpage"]={
-  { 5 },
+  { 10 },
  },
 }
 
@@ -188,8 +244,8 @@ if not utilitydata.structures.lists then utilitydata.structures.lists = { } end
 
 utilitydata.structures.lists.collected={
  {
-  ["metadata"]=7,
-  ["numberdata"]=8,
+  ["metadata"]=14,
+  ["numberdata"]=15,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=1,
@@ -202,8 +258,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=9,
-  ["numberdata"]=10,
+  ["metadata"]=16,
+  ["numberdata"]=17,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=2,
@@ -216,8 +272,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=9,
-  ["numberdata"]=11,
+  ["metadata"]=16,
+  ["numberdata"]=18,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=3,
@@ -230,8 +286,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=9,
-  ["numberdata"]=12,
+  ["metadata"]=16,
+  ["numberdata"]=19,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=4,
@@ -244,8 +300,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=9,
-  ["numberdata"]=13,
+  ["metadata"]=16,
+  ["numberdata"]=20,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=5,
@@ -258,8 +314,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=9,
-  ["numberdata"]=14,
+  ["metadata"]=16,
+  ["numberdata"]=21,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=6,
@@ -271,6 +327,104 @@ utilitydata.structures.lists.collected={
    ["title"]="Restricciones",
   },
  },
+ {
+  ["metadata"]=14,
+  ["numberdata"]=22,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=7,
+   ["realpage"]=5,
+   ["section"]=7,
+  },
+  ["titledata"]={
+   ["label"]="section",
+   ["title"]="Segunda Versión: OPP sin misiones",
+  },
+ },
+ {
+  ["metadata"]=16,
+  ["numberdata"]=23,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=8,
+   ["realpage"]=5,
+   ["section"]=8,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Sean los conjuntos",
+  },
+ },
+ {
+  ["metadata"]=16,
+  ["numberdata"]=24,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=9,
+   ["realpage"]=6,
+   ["section"]=9,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Sean los parámetros",
+  },
+ },
+ {
+  ["metadata"]=16,
+  ["numberdata"]=25,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=10,
+   ["realpage"]=6,
+   ["section"]=10,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Sean las variables",
+  },
+ },
+ {
+  ["metadata"]=16,
+  ["numberdata"]=26,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=11,
+   ["realpage"]=6,
+   ["section"]=11,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Objetivo",
+  },
+ },
+ {
+  ["metadata"]=16,
+  ["numberdata"]=27,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=12,
+   ["realpage"]=8,
+   ["section"]=12,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Restricciones",
+  },
+ },
+ {
+  ["metadata"]=16,
+  ["numberdata"]=28,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=13,
+   ["realpage"]=9,
+   ["section"]=13,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Modificaciones realizadas",
+  },
+ },
 }
 
 if not utilitydata.structures then utilitydata.structures = { } end
@@ -280,36 +434,71 @@ utilitydata.structures.pages.collected={
  {
   ["block"]="bodypart",
   ["number"]=1,
-  ["numberdata"]=15,
-  ["prefixdata"]=16,
+  ["numberdata"]=29,
+  ["prefixdata"]=30,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=2,
-  ["numberdata"]=15,
-  ["prefixdata"]=16,
+  ["numberdata"]=29,
+  ["prefixdata"]=30,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=3,
-  ["numberdata"]=15,
-  ["prefixdata"]=16,
+  ["numberdata"]=29,
+  ["prefixdata"]=30,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=4,
-  ["numberdata"]=15,
-  ["prefixdata"]=16,
+  ["numberdata"]=29,
+  ["prefixdata"]=30,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=5,
-  ["numberdata"]=15,
-  ["prefixdata"]=16,
+  ["numberdata"]=29,
+  ["prefixdata"]=30,
+  ["state"]="start",
+ },
+ {
+  ["block"]="bodypart",
+  ["number"]=6,
+  ["numberdata"]=29,
+  ["prefixdata"]=30,
+  ["state"]="start",
+ },
+ {
+  ["block"]="bodypart",
+  ["number"]=7,
+  ["numberdata"]=29,
+  ["prefixdata"]=30,
+  ["state"]="start",
+ },
+ {
+  ["block"]="bodypart",
+  ["number"]=8,
+  ["numberdata"]=29,
+  ["prefixdata"]=30,
+  ["state"]="start",
+ },
+ {
+  ["block"]="bodypart",
+  ["number"]=9,
+  ["numberdata"]=29,
+  ["prefixdata"]=30,
+  ["state"]="start",
+ },
+ {
+  ["block"]="bodypart",
+  ["number"]=10,
+  ["numberdata"]=29,
+  ["prefixdata"]=30,
   ["state"]="start",
  },
 }
@@ -342,6 +531,11 @@ if not utilitydata.structures then utilitydata.structures = { } end
 if not utilitydata.structures.itemgroups then utilitydata.structures.itemgroups = { } end
 
 utilitydata.structures.itemgroups.collected={
+ ["itemize"]={
+  {
+   { 2, 0 },
+  },
+ },
 }
 
 if not utilitydata.structures then utilitydata.structures = { } end
@@ -405,6 +599,13 @@ utilitydata.job.packed={
   { 0, 0, 1, 3 },
   { 0, 0, 1, 4 },
   { 0, 0, 1, 5 },
+  { 0, 0, 2 },
+  { 0, 0, 2, 1 },
+  { 0, 0, 2, 2 },
+  { 0, 0, 2, 3 },
+  { 0, 0, 2, 4 },
+  { 0, 0, 2, 5 },
+  { 0, 0, 2, 6 },
   {
    ["catcodes"]=9,
    ["coding"]="tex",
@@ -466,6 +667,62 @@ utilitydata.job.packed={
    ["conversionset"]="default",
    ["language"]="en",
    ["numbers"]=6,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=7,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=8,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=9,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=10,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=11,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=12,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=13,
    ["separatorset"]="default",
    ["set"]="all",
   },

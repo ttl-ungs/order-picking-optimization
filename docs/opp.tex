@@ -175,4 +175,209 @@ Utilizamos el modelo completo y lo simplificamos, considerando las tareas relaci
 
 \stopsection
 
+\startsection[title={Segunda Versión: OPP sin misiones}]
+
+Simplificamos el modelo de la primera versión, eliminando las misiones y considerando directamente los lotes como variables de decisión. 
+A parte, simplificamos el uso de las posiciones. % TODO: ampliar. 
+De esta forma, obtenemos el siguiente modelo:
+
+\startsubsection[title={Sean los conjuntos}]
+\startformula
+\startalign
+    \NC \mathcal{N} \NC = \text{Órdenes de clientes} \NR
+    \NC \mathcal{V} \NC = \text{Locaciones totales} \NR
+    \NC \mathcal{H} \NC = \text{Misiones que se pueden completar} \NR
+    \NC \mathcal{K} \NC = \text{Períodos por picker en los que se recolecta un lote} \NR
+    \NC \mathcal{P} \NC = \text{Pickers} \NR
+    \NC \mathcal{B} \NC = \text{Lotes de pedidos factibles} \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Sean los parámetros}]
+\startformula
+\startalign
+    \NC w_{1} \NC = \text{Peso del tiempo de cumplimiento} \NR
+    \NC w_{2} \NC = \text{Peso asociado a la suma pesada de demoras y adelantos} \NR
+    \NC \gamma \NC = \text{Peso asociado al adelanto total} \NR
+    \NC \delta \NC = \text{Peso asociado a la demora total} \NR
+    \NC d_{i,j} \NC = \text{Distancia entre locaciones de picking } i \in V \text{ y } j \in V \NR
+    \NC cap_{n} \NC = \text{Capacidad requerida para una orden } n \in N \NR
+    \NC Cap_{vehicle} \NC = \text{Capacidad del vehículo de picking} \NR
+    \NC a_{ni} \NC = \startmathcases
+                    \NC 1 \MC \text{si la orden } n \text{ requiere visitar la locación } i \in V \NR
+                    \NC 0 \MC \text{en otro caso} \NR
+              \stopmathcases \NR
+    \NC \beta^{time} \NC = \text{Tiempo requerido para viajar una unidad de distancia} \NR
+    \NC \beta^{setup} \NC = \text{Tiempo de preparación (setup) de una misión o lote} \NR
+    \NC \beta^{picking} \NC = \text{Tiempo requerido para recolectar una unidad de artículo} \NR
+    \NC M \NC = \text{Un número positivo suficientemente grande (Big M)} \NR
+    \NC dis_i \NC = \text{Distancia viajada para completar el lote } i \in B \NR
+    \NC capbatch_i \NC = \text{Capacidad requerida para un lote } i \in B \NR
+    \NC x_{pkb} \NC = \startmathcases
+                    \NC 1 \MC \text{si el lote } b \in B \text{ es asignado al período } k \in K \text{ del picker } p \in P \NR
+                    \NC 0 \MC \text{en otro caso} \NR
+                \stopmathcases \NR
+    %\NC y_{nh} \NC = \startmathcases
+    %                \NC 1 \MC \text{si la la órden } n \in N \text{ es asignada a la misión } h \in H \NR
+    %                \NC 0 \MC \text{en otro caso} \NR
+    %            \stopmathcases \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Sean las variables}]
+\startformula
+\startalign
+    \NC ta_{n} \NC = \text{Tardanza de la orden } n \in N \NR
+    \NC ea_{n} \NC = \text{Adelanto de la orden } n \in N \NR
+    \NC t\_exec_{b} \NC = \text{Tiempo de ejecución del lote } b \in B \NR
+    \NC u_{pb} \NC = \text{Tiempo de procesamiento del lote } b \in B \text{ del picker } p \in P \NR
+    \NC v_{pb} \NC = \text{Tiempo de completitud para el lote } b \in B \text{ del picker } p \in P \NR
+    \NC z_{ijb} \NC = \startmathcases
+                \NC 1 \MC \text{si el arco entre las locaciones } i \in V \text{ y } j \in V \text{ están el el lote } b \in B \NR
+                \NC 0 \MC \text{en otro caso} \NR
+              \stopmathcases \NR
+    \NC f_{ijb} \NC = \text{Número de unidades pasando por el arco } (i, j) \text{ en el lote } b \in B \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Objetivo}]
+
+{\bf El objetivo es el mismo que en la primera versión, pero con las variables de misión reemplazadas por las de lote.}
+\placeformula
+\startformula
+\min \left( w_{1} \cdot \left( \sum_{p=1}^{N} \sum_{b=1}^{B} v_{pb} \right) + w_{2} \cdot \left( \gamma \cdot \sum_{n=1}^{N} ea_{n} + \delta \cdot \sum_{n=1}^{N} ta_{n} \right) \right)
+\stopformula
+
+{\bf Siendo}
+\startformula
+\startalign
+    \NC \text{Tiempo de recolección} \NC = \sum_{p=1}^{N} \sum_{b=1}^{B} v_{pb} \NR
+    \NC \text{Adelantos totales} \NC = \sum_{n=1}^{N} ea_n \NR
+    \NC \text{Peso de adelantos totales} \NC = \gamma * \sum_{n=1}^{N} ea_n \NR
+    \NC \text{Demoras totales} \NC = \sum_{n=1}^{N} ta_n \NR
+    \NC \text{Peso de demoras totales} \NC = \delta * \sum_{n=1}^{N} ta_n \NR
+    \NC \text{Peso de penalizaciones} \NC = w_2 * (\text{peso adelantos totales} + \text{peso de demoras totales}) \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Restricciones}]
+\startformula 
+\startalign[n=3, align={left, left, left}, number=yes]
+    % (3)
+    \NC \sum_{b\in B}x_{pb}=1; \NC \Cond{$\forall p \in P$} \NC \Desc{(Cada loter es asignado a un picker)} \NR
+    
+    % (4)
+    \NC \sum_{b\in B}y_{bn}=1; \NC \Cond{$\forall n \in N$} \NC \Desc{(Cada orden es asignada a un lote)} \NR
+
+    % (5) tachada
+    \NC \sum_{n\in N}cap_{n} \cdot y_{bn} \le Cap_{vehicle}; \NC \Cond{$\forall b \in B$} \NC \Desc{(La capacidad de las órdenes asignades a un lote $\le$ la del vehículo)} \NR
+    
+    % (6) tachada
+    \NC \sum_{j \in V \setminus \{v_i\}} z_{1jb} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta sale una vez del depósito inicial)} \NR
+    
+    % (7) constraint_start_from_depot
+    \NC \sum_{i \in V \setminus \{v_f\}} z_{i,v_f,b} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta entra una vez al depósito final)} \NR
+    
+    % (8) constraint_finish_at_end
+    \NC \sum_{i \in V \setminus \{v_i\}} \sum_{b \in B} z_{i1b} = 0; \NC \NC \Desc{(No se puede volver al inicio)} \NR
+    
+    % (9) constraint_cant_go_back_to_depot
+    \NC \sum_{j \in V \setminus \{v_f\}} \sum_{b \in B} z_{v_f,j,b} = 0; \NC \NC \Desc{(No se puede ir a otro lado desde el final)} \NR
+    
+    % (10) constraint_cant_move_from_end_node
+    \NC \sum_{j \in V \setminus \{v_f\}} z_{ijb} \ge a_{ni} \cdot y_{bn}; \NC \Cond{$\forall b \in B,$ \crlf $n \in N,$ \crlf $i \in V \setminus \{v_f\}$} \NC \Desc{(Si una orden requiere pasar por una locación, la ruta de esa misión tiene un camino que entra a esa locación)} \NR
+
+    % (11) constraint_force_visit
+    % (12)
+    % (13) constraint_articles_capacity
+    % (14) constraint_flow_conservation
+    % (15) constraint_one_input_arc_per_node
+    % (16) constraint_one_output_arc_per_node
+    % (17) constraint_avoid_subtours_cycles
+    % (18) constraint_no_loops
+
+    \NC \sum_{i \in V, i \neq j} z_{jib} \ge \min(1, \sum_{n \in N} a_{nj} \cdot y_{nb}) \NC \NC \Desc{(Si una orden en el lote requiere una locación, la ruta debe salir de ella) } \NR
+    \NC f_{ijb} \le Cap_{vehicle} \cdot z_{ijb} \NC \NC \Desc{(Los artículos deben caber en la capacidad del vehículo) } \NR
+    \NC \sum_{g \in V, g \neq i} z_{gib} = \sum_{j \in V, j \neq i} z_{ijb} \NC \NC \Desc{(Conservación de flujo: lo que entra a un nodo intermedio debe salir) } \NR
+    \NC \sum_{g \in V, g < num_loc} z_{gib} \le 1 \NC \NC \Desc{(Se elige a lo sumo un arco de entrada por cada nodo) } \NR
+    \NC \sum_{j \in V, j > 2} z_{ijb} \le 1 \NC \NC \Desc{(Se elige a lo sumo un arco de salida por cada nodo) } \NR
+    \NC \sum_{j \in V, j \neq v_1} f_{v_1jb} = R_{b} \NC \NC \Desc{(El flujo que sale del depósito es igual a las locaciones requeridas) } \NR
+    \NC \sum_{g \in V, g \neq v_f} f_{gib} - \sum_{j \in V, j \neq v_1} f_{ijb} = \dots \NC \NC \Desc{(Cada nodo requerido consume exactamente una unidad de flujo) } \NR
+    \NC z_{iib} = 0 \NC \NC \Desc{(No se permiten bucles o ciclos sobre el mismo nodo) } \NR
+    \NC t_exec_{b} \ge \beta_{setup} + \beta_{pick} + \beta_{trav} \NC \NC \Desc{(El tiempo total es la suma de preparación, recolección y viaje) } \NR
+\stopalign
+\stopformula
+
+\startformula
+\startalign[n=3, align={left, left, left}, number=yes]
+    \NC t_exec_{b} - M \cdot (1 - x_{pb}) \le u_{pb} \NC \NC \Desc{(Cuando se asigna un lote a un picker, su tiempo de ejecución es $\le$ al de procesamiento)}  \NR
+    \NC u_{p1} \le v_{p1} \NC \NC \Desc{(El tiempo de procesamiento es menor o igual al tiempo de completitud de un lote)}  \NR
+    \NC u_{pb} + v_{pb-1} \le v_{pb} \NC \NC \Desc{(El tiempo de procesamiento + el del lote previo es $\le$ al tiempo de completitud del lote)}  \NR
+    \NC v_{pb} - due_date_{n} - M \cdot (2 - x_{pb} - y_{bn}) \le ta_{n} \NC \NC \Desc{(Si el lote termina después de la fecha de entrega, la diferencia se asigna a tardanza)}  \NR
+    \NC due_date_{n} - v_{pb} - M \cdot (2 - x_{pb} - y_{bn}) \le ea_{n} \NC \NC \Desc{(Si la fecha de entrega es mayor al tiempo de finalización, la diferencia se asigna a adelanto)}  \NR
+    \NC x_{pb} \in {0, 1} \NC \NC \Desc{($x$ es binaria)} \NR \NC y_{bn} \in {0, 1} \NC \NC \Desc{($y$ es binaria)} \NR 
+    \NC z_{ijb} \in {0, 1} \NC \NC \Desc{($z$ es binaria)} \NR
+    \NC t_exec_{b} \ge 0 \NC \Cond{$\forall b \in B$} \NC \Desc{(El tiempo de ejecución es positivo o 0)} \NR 
+    \NC ta_{n} \ge 0 \NC \NC \Desc{(La tardanza es positiva o 0)} \NR 
+    \NC ea_{n} \ge 0 \NC \NC \Desc{(El adelanto es positivo o 0)} \NR 
+    \NC u_{pb} \ge 0 \NC \NC \Desc{(El tiempo de procesamiento no es negativo)} \NR 
+    \NC v_{pb} \ge 0 \NC \NC \Desc{(El tiempo de completitud no es negativo)} \NR 
+    \NC f_{ijb} \ge 0 \NC \NC \Desc{(El número de unidades para los arcos internos no es negativo)} \NR 
+
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Modificaciones realizadas}]
+
+{\bf Control de flujo} 
+
+Luego de reemplazar el uso de misiones (H) de la primera versión del modelo por el uso de 
+lotes (B), se plantearon las siguientes modificaciones al modelo Opp_v2. La restricción 16 (eliminación de ciclos) es insuficiente para prevenir la formación de los 
+mismos, y también para controlar el flujo dentro de la ruta solución. Por lo tanto, esta 
+restricción fue eliminada y reemplazada por otra. Esta nueva restricción se define de la 
+siguiente forma:
+
+\startformula
+\startalign[n=3, align={left, left, left}, number=yes]
+    \NC R_{b} \NC = \sum_{i \in V, i \notin \{v_1, v_f\}} \min(1, \sum_{n \in N} a_{ni} \cdot y_{nb}) \NC \Desc{(R es el número de locaciones requeridas por el lote $b$)} \NR
+    \NC \sum_{j \in V, j \neq v_1} f_{v_1jb} \NC = R_{b} \NC \Desc{(El flujo que sale del depósito es igual a las locaciones requeridas)} \NR
+    \NC \sum_{g \in V, g \neq v_f} f_{gib} - \sum_{j \in V, j \neq v_1} f_{ijb} \NC = \min(1, \sum_{n \in N} a_{ni} \cdot y_{nb}) \NC \Desc{(Cada nodo requerido consume exactamente una unidad de flujo)} \NR
+\stopalign
+\stopformula
+
+Estas restricciones están basadas en el "balance Gavish-Graves". La idea central es modelar el flujo como un commodity que el depósito inyecta y cada nodo requerido consume. El depósito emite $|V|-1$ unidades, y cada nodo consume exactamente 1. Esta formulación fue adaptada para permitir dos aspectos del problema abordado:
+
+\startitemize[bullet]
+    \item No es necesario recorrer todos los nodos, sino solo los requeridos por el lote a procesar. En el problema TCP original todos los nodos deben ser visitados.
+    \item El nodo final es distinto al inicial. En el problema TCP original el nodo inicial y el final son el mismo, ya que el recorrido comienza y finaliza en el mismo lugar.
+\stopitemize
+
+{\bf Permitir más de una órden por locación}
+
+Se modificaron las restricciones (10) y (11) para que la restricción considere el mínimo entre 1 y la cantidad de veces que esa locación es requerida. Esto permite que en un mismo 
+recorrido se recolecten ordenes distintas en la misma locación.  
+
+{\bf Nota: antes la restricción exigía que la cantidad de caminos entrantes/salientes de la 
+locación requerida sea igual a la cantidad de veces que esa locación es requerida. Esto 
+chocaba con las restricciones que limitan la cantidad de caminos entrantes/salientes de una 
+locación a 1. }
+
+\startformula
+\startalign[n=3, align={left, left, left}, number=yes]
+    \NC \sum_{i \in V, i \neq j} z_{ijb} \ge \min(1, \sum_{n \in N} a_{nj} \cdot y_{nb}) \NC \NC \Desc{(Si una orden en el lote requiere una locación, la ruta debe entrar a ella) } \NR
+    \NC \sum_{j \in V, j \neq i} z_{jib} \ge \min(1, \sum_{n \in N} a_{ni} \cdot y_{nb}) \NC \NC \Desc{(Si una orden en el lote requiere una locación, la ruta debe salir de ella) } \NR
+\stopalign
+\stopformula
+
+\stopsubsection
+
+\stopsubsection
+
+\stopsection
+
 \stoptext
