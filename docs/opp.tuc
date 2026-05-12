@@ -171,6 +171,54 @@ utilitydata.structures.sections.collected={
   ["separatorset"]="default",
   ["set"]="all",
  },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=14,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=15,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=16,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=17,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=18,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=19,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
 }
 
 if not utilitydata.structures then utilitydata.structures = { } end
@@ -196,7 +244,7 @@ utilitydata.structures.counters.collected={
   { 0 },
  },
  ["formula"]={
-  { 2 },
+  { 3 },
  },
  ["graphic"]={
   { 0 },
@@ -223,10 +271,10 @@ utilitydata.structures.counters.collected={
   { 0 },
  },
  ["realpage"]={
-  { 10 },
+  { 13 },
  },
  ["subpage"]={
-  { 10 },
+  { 13 },
  },
  ["table"]={
   { 0 },
@@ -235,7 +283,7 @@ utilitydata.structures.counters.collected={
   { 0 },
  },
  ["userpage"]={
-  { 10 },
+  { 13 },
  },
 }
 
@@ -244,8 +292,8 @@ if not utilitydata.structures.lists then utilitydata.structures.lists = { } end
 
 utilitydata.structures.lists.collected={
  {
-  ["metadata"]=14,
-  ["numberdata"]=15,
+  ["metadata"]=20,
+  ["numberdata"]=21,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=1,
@@ -258,8 +306,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=16,
-  ["numberdata"]=17,
+  ["metadata"]=22,
+  ["numberdata"]=23,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=2,
@@ -272,8 +320,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=16,
-  ["numberdata"]=18,
+  ["metadata"]=22,
+  ["numberdata"]=24,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=3,
@@ -286,8 +334,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=16,
-  ["numberdata"]=19,
+  ["metadata"]=22,
+  ["numberdata"]=25,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=4,
@@ -300,8 +348,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=16,
-  ["numberdata"]=20,
+  ["metadata"]=22,
+  ["numberdata"]=26,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=5,
@@ -314,8 +362,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=16,
-  ["numberdata"]=21,
+  ["metadata"]=22,
+  ["numberdata"]=27,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=6,
@@ -328,8 +376,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=14,
-  ["numberdata"]=22,
+  ["metadata"]=20,
+  ["numberdata"]=28,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=7,
@@ -342,8 +390,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=16,
-  ["numberdata"]=23,
+  ["metadata"]=22,
+  ["numberdata"]=29,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=8,
@@ -356,8 +404,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=16,
-  ["numberdata"]=24,
+  ["metadata"]=22,
+  ["numberdata"]=30,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=9,
@@ -370,8 +418,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=16,
-  ["numberdata"]=25,
+  ["metadata"]=22,
+  ["numberdata"]=31,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=10,
@@ -384,8 +432,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=16,
-  ["numberdata"]=26,
+  ["metadata"]=22,
+  ["numberdata"]=32,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=11,
@@ -398,8 +446,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=16,
-  ["numberdata"]=27,
+  ["metadata"]=22,
+  ["numberdata"]=33,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=12,
@@ -412,8 +460,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=16,
-  ["numberdata"]=28,
+  ["metadata"]=22,
+  ["numberdata"]=34,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=13,
@@ -425,6 +473,90 @@ utilitydata.structures.lists.collected={
    ["title"]="Modificaciones realizadas",
   },
  },
+ {
+  ["metadata"]=20,
+  ["numberdata"]=35,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=14,
+   ["realpage"]=10,
+   ["section"]=14,
+  },
+  ["titledata"]={
+   ["label"]="section",
+   ["title"]="Tercera Versión: OPP sin pickers (OPP v3)",
+  },
+ },
+ {
+  ["metadata"]=22,
+  ["numberdata"]=36,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=15,
+   ["realpage"]=10,
+   ["section"]=15,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Sean los conjuntos",
+  },
+ },
+ {
+  ["metadata"]=22,
+  ["numberdata"]=37,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=16,
+   ["realpage"]=11,
+   ["section"]=16,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Sean los parámetros",
+  },
+ },
+ {
+  ["metadata"]=22,
+  ["numberdata"]=38,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=17,
+   ["realpage"]=11,
+   ["section"]=17,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Sean las variables",
+  },
+ },
+ {
+  ["metadata"]=22,
+  ["numberdata"]=39,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=18,
+   ["realpage"]=11,
+   ["section"]=18,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Objetivo",
+  },
+ },
+ {
+  ["metadata"]=22,
+  ["numberdata"]=40,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=19,
+   ["realpage"]=12,
+   ["section"]=19,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Restricciones",
+  },
+ },
 }
 
 if not utilitydata.structures then utilitydata.structures = { } end
@@ -434,71 +566,92 @@ utilitydata.structures.pages.collected={
  {
   ["block"]="bodypart",
   ["number"]=1,
-  ["numberdata"]=29,
-  ["prefixdata"]=30,
+  ["numberdata"]=41,
+  ["prefixdata"]=42,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=2,
-  ["numberdata"]=29,
-  ["prefixdata"]=30,
+  ["numberdata"]=41,
+  ["prefixdata"]=42,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=3,
-  ["numberdata"]=29,
-  ["prefixdata"]=30,
+  ["numberdata"]=41,
+  ["prefixdata"]=42,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=4,
-  ["numberdata"]=29,
-  ["prefixdata"]=30,
+  ["numberdata"]=41,
+  ["prefixdata"]=42,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=5,
-  ["numberdata"]=29,
-  ["prefixdata"]=30,
+  ["numberdata"]=41,
+  ["prefixdata"]=42,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=6,
-  ["numberdata"]=29,
-  ["prefixdata"]=30,
+  ["numberdata"]=41,
+  ["prefixdata"]=42,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=7,
-  ["numberdata"]=29,
-  ["prefixdata"]=30,
+  ["numberdata"]=41,
+  ["prefixdata"]=42,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=8,
-  ["numberdata"]=29,
-  ["prefixdata"]=30,
+  ["numberdata"]=41,
+  ["prefixdata"]=42,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=9,
-  ["numberdata"]=29,
-  ["prefixdata"]=30,
+  ["numberdata"]=41,
+  ["prefixdata"]=42,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=10,
-  ["numberdata"]=29,
-  ["prefixdata"]=30,
+  ["numberdata"]=41,
+  ["prefixdata"]=42,
+  ["state"]="start",
+ },
+ {
+  ["block"]="bodypart",
+  ["number"]=11,
+  ["numberdata"]=41,
+  ["prefixdata"]=42,
+  ["state"]="start",
+ },
+ {
+  ["block"]="bodypart",
+  ["number"]=12,
+  ["numberdata"]=41,
+  ["prefixdata"]=42,
+  ["state"]="start",
+ },
+ {
+  ["block"]="bodypart",
+  ["number"]=13,
+  ["numberdata"]=41,
+  ["prefixdata"]=42,
   ["state"]="start",
  },
 }
@@ -606,6 +759,12 @@ utilitydata.job.packed={
   { 0, 0, 2, 4 },
   { 0, 0, 2, 5 },
   { 0, 0, 2, 6 },
+  { 0, 0, 3 },
+  { 0, 0, 3, 1 },
+  { 0, 0, 3, 2 },
+  { 0, 0, 3, 3 },
+  { 0, 0, 3, 4 },
+  { 0, 0, 3, 5 },
   {
    ["catcodes"]=9,
    ["coding"]="tex",
@@ -723,6 +882,54 @@ utilitydata.job.packed={
    ["conversionset"]="default",
    ["language"]="en",
    ["numbers"]=13,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=14,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=15,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=16,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=17,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=18,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=19,
    ["separatorset"]="default",
    ["set"]="all",
   },

@@ -376,6 +376,105 @@ locación a 1. }
 
 \stopsubsection
 
+\stopsection
+
+\startsection[title={Tercera Versión: OPP sin pickers (OPP v3)}]
+
+En esta versión se elimina el concepto de picker y se trabaja con lotes predefinidos. El grafo de locaciones tiene un depósito inicial $v_1$ y un nodo final $v_f$.
+
+\startsubsection[title={Sean los conjuntos}]
+\startformula
+\startalign
+    \NC \mathcal{N} \NC = \text{Órdenes de clientes} \NR
+    \NC \mathcal{V} \NC = \text{Locaciones del almacén} \NR
+    \NC \mathcal{B} \NC = \text{Lotes factibles, ordenados como } b_1, \dots, b_{|B|} \NR
+    \NC \mathcal{E} \NC = \text{Arcos válidos del grafo de locaciones} \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Sean los parámetros}]
+\startformula
+\startalign
+    \NC w_{1} \NC = \text{Peso del tiempo de cumplimiento} \NR
+    \NC w_{2} \NC = \text{Peso asociado a la suma pesada de demoras y adelantos} \NR
+    \NC \gamma \NC = \text{Peso asociado al adelanto total} \NR
+    \NC \delta \NC = \text{Peso asociado a la demora total} \NR
+    \NC d_{ij} \NC = \text{Distancia entre locaciones } i, j \in V \NR
+    \NC cap_{n} \NC = \text{Capacidad requerida para una orden } n \in N \NR
+    \NC Cap_{vehicle} \NC = \text{Capacidad del vehículo de picking} \NR
+    \NC a_{ni} \NC = \startmathcases
+                    \NC 1 \MC \text{si la orden } n \text{ requiere visitar la locación } i \in V \NR
+                    \NC 0 \MC \text{en otro caso} \NR
+              \stopmathcases \NR
+    \NC \beta^{time} \NC = \text{Tiempo requerido para viajar una unidad de distancia} \NR
+    \NC \beta^{setup} \NC = \text{Tiempo de preparación (setup) del lote} \NR
+    \NC \beta^{picking} \NC = \text{Tiempo requerido para recolectar una unidad} \NR
+    \NC due\_date_{n} \NC = \text{Fecha de entrega de la orden } n \in N \NR
+    \NC M \NC = \text{Un número positivo suficientemente grande (Big M)} \NR
+    \NC y_{nb} \NC = \startmathcases
+                    \NC 1 \MC \text{si la orden } n \text{ pertenece al lote } b \in B \NR
+                    \NC 0 \MC \text{en otro caso} \NR
+                \stopmathcases \NR
+    \NC v_1, v_f \NC = \text{Depósito inicial y nodo final, respectivamente} \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Sean las variables}]
+\startformula
+\startalign
+    \NC ta_{n} \NC = \text{Tardanza de la orden } n \in N \NR
+    \NC ea_{n} \NC = \text{Adelanto de la orden } n \in N \NR
+    \NC t\_exec_{b} \NC = \text{Tiempo de ejecución del lote } b \in B \NR
+    \NC v_{b} \NC = \text{Tiempo de completitud del lote } b \in B \NR
+    \NC z_{ijb} \NC = \startmathcases
+                \NC 1 \MC \text{si el arco } (i, j) \text{ está en el lote } b \NR
+                \NC 0 \MC \text{en otro caso} \NR
+              \stopmathcases \NR
+    \NC f_{ijb} \NC = \text{Unidades que pasan por el arco } (i, j) \text{ en el lote } b \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Objetivo}]
+\placeformula
+\startformula
+\min \left( w_{1} \cdot \sum_{b \in B} v_{b} + w_{2} \cdot \left( \gamma \cdot \sum_{n \in N} ea_{n} + \delta \cdot \sum_{n \in N} ta_{n} \right) \right)
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Restricciones}]
+\startformula
+\startalign[n=3, align={left, left, left}, number=yes]
+    \NC \sum_{j \in V \setminus \{v_1\}} z_{v_1 j b} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta sale una vez del depósito)} \NR
+    \NC \sum_{i \in V \setminus \{v_f\}} z_{i v_f b} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta entra una vez al nodo final)} \NR
+    \NC \sum_{i \in V \setminus \{v_1\}} z_{i v_1 b} = 0; \NC \Cond{$\forall b \in B$} \NC \Desc{(No se puede volver al depósito)} \NR
+    \NC \sum_{j \in V \setminus \{v_f\}} z_{v_f j b} = 0; \NC \Cond{$\forall b \in B$} \NC \Desc{(No se puede salir del nodo final)} \NR
+    \NC \sum_{i \in V, i \neq j} z_{i j b} \ge \min(1, \sum_{n \in N} a_{n j} \cdot y_{n b}); \NC \Cond{$\forall b \in B,$ \crlf $j \in V \setminus \{v_1, v_f\}$} \NC \Desc{(Si una locación es requerida, debe tener arco de entrada)} \NR
+    \NC \sum_{i \in V, i \neq j} z_{j i b} \ge \min(1, \sum_{n \in N} a_{n j} \cdot y_{n b}); \NC \Cond{$\forall b \in B,$ \crlf $j \in V \setminus \{v_1, v_f\}$} \NC \Desc{(Si una locación es requerida, debe tener arco de salida)} \NR
+    \NC f_{i j b} \le Cap_{vehicle} \cdot z_{i j b}; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_f\},$ \crlf $j \in V \setminus \{v_1\}$} \NC \Desc{(El flujo respeta la capacidad)} \NR
+    \NC \sum_{g \in V, g \neq i} z_{g i b} = \sum_{j \in V, j \neq i} z_{i j b}; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1, v_f\}$} \NC \Desc{(Conservación de flujo en la ruta)} \NR
+    \NC \sum_{j \in V, j \neq i} z_{j i b} \le 1; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1\}$} \NC \Desc{(A lo sumo un arco de entrada)} \NR
+    \NC \sum_{j \in V, j \neq i} z_{i j b} \le 1; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_f\}$} \NC \Desc{(A lo sumo un arco de salida)} \NR
+    \NC z_{i i b} = 0; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1\}$} \NC \Desc{(No hay bucles)} \NR
+\stopalign
+\stopformula
+
+\startformula
+\startalign[n=3, align={left, left, left}, number=yes]
+    \NC R_{b} = \sum_{i \in V, i \notin \{v_1, v_f\}} \min(1, \sum_{n \in N} a_{n i} \cdot y_{n b}); \NC \Cond{$\forall b \in B$} \NC \Desc{(Locaciones requeridas)} \NR
+    \NC \sum_{j \in V \setminus \{v_1\}} f_{v_1 j b} = R_{b}; \NC \Cond{$\forall b \in B$} \NC \Desc{(Flujo total desde el depósito)} \NR
+    \NC \sum_{g \in V \setminus \{v_f\}} f_{g i b} - \sum_{j \in V \setminus \{v_1\}} f_{i j b} = \min(1, \sum_{n \in N} a_{n i} \cdot y_{n b}); \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1, v_f\}$} \NC \Desc{(Balance Gavish-Graves)} \NR
+    \NC t\_exec_{b} \ge \beta^{setup} + \beta^{picking} \cdot \left(\sum_{n \in N} cap_n \cdot y_{n b}\right) + \beta^{time} \cdot \left(\sum_{(i,j) \in \mathcal{E}} d_{ij} \cdot z_{i j b}\right); \NC \Cond{$\forall b \in B$} \NC \Desc{(Tiempo de ejecución del lote)} \NR
+    \NC v_{b_1} \ge t\_exec_{b_1}; \NC \Cond{$b_1 \text{ es el primer lote}$} \NC \Desc{(Inicio de la secuencia)} \NR
+    \NC v_{b_k} \ge v_{b_{k-1}} + t\_exec_{b_k}; \NC \Cond{$\forall k \ge 2$} \NC \Desc{(Secuencia de lotes)} \NR
+    \NC v_{b} - due\_date_{n} - M \cdot (1 - y_{n b}) \le ta_{n}; \NC \Cond{$\forall b \in B,$ \crlf $n \in N$} \NC \Desc{(Definición de tardanza)} \NR
+    \NC due\_date_{n} - v_{b} - M \cdot (1 - y_{n b}) \le ea_{n}; \NC \Cond{$\forall b \in B,$ \crlf $n \in N$} \NC \Desc{(Definición de adelanto)} \NR
+    \NC \sum_{n \in N} cap_n \cdot y_{n b} \le Cap_{vehicle}; \NC \Cond{$\forall b \in B$} \NC \Desc{(Capacidad del lote)} \NR
+    \NC z_{i j b} = 0; \NC \Cond{$\forall b \in B,$ \crlf $(i, j) \notin \mathcal{E}$} \NC \Desc{(Solo arcos válidos)} \NR
+\stopalign
+\stopformula
 \stopsubsection
 
 \stopsection
