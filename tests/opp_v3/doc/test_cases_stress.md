@@ -14,3 +14,5 @@ This document mirrors the "test_opp_v3" sheet in [tests/opp_v3/Test cases.xlsx](
 | 8 | test_shared_hotspots | Estres | Shared hot-spot locations. 30 orders, 10 batches. 10x10 grid. | 30 | 10x10 | 10 | - | - | Feasible | Feasible | Pass | 7.98 s | - | - |
 | 9 | test_infeasible_capacity | Estres | Infeasible capacity. 10 orders, 2 batches. 4x4 grid. | 10 | 4x4 | 2 | - | - | Infeasible | Infeasible | Pass | 0.36 s | - | - |
 | 10 | test_disconnected_graph | Estres | Disconnected multigrid. 6 orders, 12 batches. 5x5 + 3x3. | 6 | 5x5 + 3x3 | 12 | - | - | Infeasible | Infeasible | Pass | 1.35 s | - | - |
+| 11 | test_25_orders_per_batch_30_batches_10x10 | Estres | 25 orders per batch. 30 batches, 750 orders. 10x10 grid. | 750 | 10x10 | 30 | - | - | Feasible | - | - | - | - | - |
+| 12 | test_25_orders_per_batch_30_batches_25x25 | Estres | 25 orders per batch. 30 batches, 750 orders. 25x25 grid. | 750 | 25x25 | 30 | - | - | Feasible | - | - | - | - | - |
