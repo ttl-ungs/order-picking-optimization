@@ -47,6 +47,8 @@ from models.utils.output_builder import build_output
 """
 Version of OPP model V2 without concept of "pickers" (P)
 """
+
+
 class OPPModelV3(Model):
     def __init__(self, dto: ModelDTO):
         super().__init__()
@@ -86,10 +88,7 @@ class OPPModelV3(Model):
         t_exec = {b: model.addVar(name=f"t_exec_{b}", lb=0) for b in self.B}
 
         # v_pb = completion time of the batch b ∈ B of picker p ∈ P
-        v = {
-            b: model.addVar(name=f"v_{b}", lb=0)
-            for b in self.B
-        }
+        v = {b: model.addVar(name=f"v_{b}", lb=0) for b in self.B}
 
         # z_ijb = 1 if the arc connecting locations i ∈ V and j ∈ V are
         #         included in mission b ∈ B, 0 otherwise
@@ -249,7 +248,7 @@ class OPPModelV3(Model):
 
             model.addCons(
                 self.constraint_batch_execution_time(b, prev_b, t_exec, v),
-                name=f"batch_sequence_b{b}"
+                name=f"batch_sequence_b{b}",
             )
 
         # (22)
@@ -289,14 +288,15 @@ class OPPModelV3(Model):
             model.addCons(
                 self.constraint_batch_capacity(cap_n, y, b, self.N, cap_vehicle),
                 name=f"batch_capacity_b{b}",
-                )
-
+            )
 
         t0 = start_time if start_time is not None else time.time()
         model.optimize()
         elapsed = time.time() - t0
 
-        print(f"\nExecution time: {elapsed:.4f}s (solver: {model.getSolvingTime():.4f}s)")
+        print(
+            f"\nExecution time: {elapsed:.4f}s (solver: {model.getSolvingTime():.4f}s)"
+        )
 
         # Print solution results, for testing purposes
         super().notify(
@@ -429,11 +429,7 @@ class OPPModelV3(Model):
         Ensures that each node i has maximum one incoming arc in the route.
         """
         return (
-            quicksum(
-                z[j, i, b]
-                for j in self.location_graph.get_vertices()
-                if j != i
-            )
+            quicksum(z[j, i, b] for j in self.location_graph.get_vertices() if j != i)
             <= 1
         )
 
@@ -443,11 +439,7 @@ class OPPModelV3(Model):
         Ensures that each node i has maximum one outgoing arc in the route.
         """
         return (
-            quicksum(
-                z[i, j, b]
-                for j in self.location_graph.get_vertices()
-                if j != i
-            )
+            quicksum(z[i, j, b] for j in self.location_graph.get_vertices() if j != i)
             <= 1
         )
 
@@ -471,7 +463,6 @@ class OPPModelV3(Model):
 
         # outflow must be exactly required_flow
         return outflow == required_nodes
-
 
     def constraint_f_flow_conservation(self, i, b, f, a, y):
         """
@@ -506,6 +497,9 @@ class OPPModelV3(Model):
         """
         return z[i, i, b] == 0 if i != self.location_graph.get_depot() else None
 
+    # TODO: Esto no considera tiempos de parada para órdenes que requieren visitar
+    # más de una locación. Esto no refleja bien el calculo de los tiempos y permite
+    # que se apliquen menos penalizaciones
     def constraint_valid_execution_time(
         self, b, t_exec, beta_time, beta_setup, beta_picking, cap, y, z
     ):
