@@ -16,3 +16,7 @@ This document mirrors the "test_opp_v3" sheet in [tests/opp_v3/Test cases.xlsx](
 | 10 | test_disconnected_graph | Estres | Disconnected multigrid. 6 orders, 12 batches. 5x5 + 3x3. | 6 | 5x5 + 3x3 | 12 | - | - | Infeasible | Infeasible | Pass | 1.35 s | - | - |
 | 11 | test_25_orders_per_batch_30_batches_10x10 | Estres | 25 orders per batch. 30 batches, 750 orders. 10x10 grid. | 750 | 10x10 | 30 | - | - | Feasible | - | - | - | - | - |
 | 12 | test_25_orders_per_batch_30_batches_25x25 | Estres | 25 orders per batch. 30 batches, 750 orders. 25x25 grid. | 750 | 25x25 | 30 | - | - | Feasible | - | - | - | - | - |
+| 13 | test_25_orders_per_batch_30_batches_100x100 | Estres | 25 orders per batch. 30 batches, 750 orders. 100x100 grid. | 750 | 100x100 | 30 | - | - | Feasible | - | - | - | - | - |
+| 14 | test_30_orders_per_batch_20_batches_100x100 | Estres | 30 orders per batch. 20 batches, 600 orders. 100x100 grid. | 600 | 100x100 | 20 | - | - | Feasible | - | - | - | - | - |
+| 15 | test_25_orders_per_batch_30_batches_double_50x50 | Estres | 25 orders per batch. 30 batches, 750 orders. Two 50x50 grids with connectors. | 750 | 50x50 + 50x50 | 30 | - | - | Feasible | - | - | - | - | - |
+| 16 | test_20_orders_per_batch_40_batches_double_50x50 | Estres | 20 orders per batch. 40 batches, 800 orders. Two 50x50 grids with connectors. | 800 | 50x50 + 50x50 | 40 | - | - | Feasible | - | - | - | - | - |
