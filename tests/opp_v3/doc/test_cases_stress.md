@@ -20,3 +20,7 @@ This document contains only stress tests. The graph catalog is maintained in tes
 | 14 | test_30_orders_per_batch_20_batches_100x100 | Estres | 30 orders per batch. 20 batches, 600 orders. 100x100 grid. | 600 | 100x100 | 20 | - | - | Feasible | Feasible | Pass | 0.10 s | - | - |
 | 15 | test_25_orders_per_batch_30_batches_double_50x50 | Estres | 25 orders per batch. 30 batches, 750 orders. Two 50x50 grids with connectors. | 750 | 50x50 + 50x50 | 30 | - | - | Feasible | Feasible | Pass | 0.10 s | - | - |
 | 16 | test_20_orders_per_batch_40_batches_double_50x50 | Estres | 20 orders per batch. 40 batches, 800 orders. Two 50x50 grids with connectors. | 800 | 50x50 + 50x50 | 40 | - | - | Feasible | Feasible | Pass | 0.09 s | - | - |
+| 17 | test_40_orders_per_batch_50_batches_100x100 | Estres | 40 orders per batch. 50 batches, 2000 orders. 100x100 grid. | 2000 | 100x100 | 50 | - | - | Feasible | Pending | Pending | - | - | - |
+| 18 | test_40_orders_per_batch_50_batches_double_50x50 | Estres | 40 orders per batch. 50 batches, 2000 orders. Two 50x50 grids with connectors. | 2000 | 50x50 + 50x50 | 50 | - | - | Feasible | Pending | Pending | - | - | - |
+| 19 | test_extremely_linear_grid | Estres | Extremely linear grid edge case. 50 orders per batch. 20 batches, 1000 orders. 2x500 grid. | 1000 | 2x500 | 20 | - | - | Feasible | Pending | Pending | - | - | - |
+| 20 | test_extreme_density | Estres | Extreme density edge case. 20 orders per batch. 100 batches, 2000 orders. 5x5 grid. | 2000 | 5x5 | 100 | - | - | Feasible | Pending | Pending | - | - | - |
