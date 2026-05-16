@@ -64,7 +64,7 @@ class TestOPPModel(OPPTestCase):
         beta_picking = 1.0
         M = 1000.0
 
-        cap_vehicle = 10.0
+        cap_vehicle = 20.0
         cap_n = {n: 10.0 for n in N}
         due_date = {n: 15.0 for n in N}
 
