@@ -28,7 +28,7 @@ class TestOPPModel(OPPTestCase):
         cap_n = {f"O{n}": 10 for n in range(1, len(N) + 1)}
         due_date = {f"O{n}": 30 for n in range(1, len(N) + 1)}
 
-        cap_vehicle = 500 # more capacity to allow 50 orders per batch
+        cap_vehicle = 500
         w1 = 9.0
         w2 = 1.0
         gamma = 1.0
