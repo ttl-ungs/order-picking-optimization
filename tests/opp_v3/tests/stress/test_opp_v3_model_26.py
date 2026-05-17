@@ -13,26 +13,19 @@ from tests.opp.tests.opp_test_case import OPPTestCase
 
 from tests.opp_v3.scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
-)
-
 
 class TestOPPModel(OPPTestCase):
-    """
-    Test 27: 50 orders per batch. Each order has a location.
-    """
 
-    def test_50_orders_per_batch(self):
+    def test_20_orders_per_batch_5_x_5(self):
         opp_location_graph, V, B, N, y, a = scenario_custom_setup(
-            10, 500, 10, 10
+            25, 500, 5, 5
         )
 
         cap_n = {f"O{n}": 10 for n in range(1, len(N) + 1)}
         due_date = {f"O{n}": 30 for n in range(1, len(N) + 1)}
 
-        cap_vehicle = 500 # more capacity to allow 50 orders per batch
-        w1 = 9.0
+        cap_vehicle = 100
+        w1 = 9.0 # Mucho peso del tiempo de cumplimiento
         w2 = 1.0
         gamma = 1.0
         delta = 1.0
@@ -40,7 +33,7 @@ class TestOPPModel(OPPTestCase):
         beta_time = 0.5
         beta_setup = 1.0
         beta_picking = 1.0
-        M = 10000.0
+        M = 1000.0
 
         params = SolveModelDTO()
         params.w1 = w1

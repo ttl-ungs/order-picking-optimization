@@ -15,20 +15,17 @@ from tests.opp_v3.scenarios.stress.scenario_custom_setup import scenario_custom_
 
 
 class TestOPPModel(OPPTestCase):
-    """
-    Test 25: 10 orders per batch. Each order has a location.
-    """
 
-    def test_10_orders_per_batch(self):
+    def test_10_orders_per_batch_5_x_5(self):
         opp_location_graph, V, B, N, y, a = scenario_custom_setup(
-            10, 100, 10, 10
+            10, 100, 5, 5
         )
 
         cap_n = {f"O{n}": 10 for n in range(1, len(N) + 1)}
         due_date = {f"O{n}": 30 for n in range(1, len(N) + 1)}
 
-        cap_vehicle = 250
-        w1 = 9.0
+        cap_vehicle = 40
+        w1 = 9.0 # Mucho peso del tiempo de cumplimiento
         w2 = 1.0
         gamma = 1.0
         delta = 1.0

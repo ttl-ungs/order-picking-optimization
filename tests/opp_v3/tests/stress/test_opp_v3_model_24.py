@@ -15,13 +15,10 @@ from tests.opp_v3.scenarios.stress.scenario_custom_setup import scenario_custom_
 
 
 class TestOPPModel(OPPTestCase):
-    """
-    Test 24: 4 orders per batch. Each order has a location.
-    """
 
-    def test_4_orders_per_batch(self):
+    def test_4_orders_per_batch_5_x_5(self):
         opp_location_graph, V, B, N, y, a = scenario_custom_setup(
-            25, 100, 10, 10
+            25, 100, 5, 5
         )
 
         cap_n = {f"O{n}": 10 for n in range(1, len(N) + 1)}
