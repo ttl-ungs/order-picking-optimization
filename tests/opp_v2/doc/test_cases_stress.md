@@ -1,5 +1,5 @@
 **Overview**
-This document mirrors the "test_opp_v2" sheet in [tests/opp_v2/Test cases.xlsx](tests/opp_v2/Test%20cases.xlsx). It contains only stress tests. The graph catalog is maintained in test_cases_normal.md.
+This document contains only stress tests. The graph catalog is maintained in test_cases_normal.md.
 
 **Test Cases**
 | ID | Name | Key | Description | Orders | Locations | Lots | Pickers | LotsFeasible | Expected | Obtained | Status | Time | Notes | Graph |
