@@ -24,3 +24,13 @@ This document contains only stress tests. The graph catalog is maintained in tes
 | 18 | test_40_orders_per_batch_50_batches_double_50x50 | Estres | 40 orders per batch. 50 batches, 2000 orders. Two 50x50 grids with connectors. | 2000 | 50x50 + 50x50 | 50 | - | - | Feasible | Pending | Pending | - | - | - |
 | 19 | test_extremely_linear_grid | Estres | Extremely linear grid edge case. 50 orders per batch. 20 batches, 1000 orders. 2x500 grid. | 1000 | 2x500 | 20 | - | - | Feasible | Pending | Pending | - | - | - |
 | 20 | test_extreme_density | Estres | Extreme density edge case. 20 orders per batch. 100 batches, 2000 orders. 5x5 grid. | 2000 | 5x5 | 100 | - | - | Feasible | Pending | Pending | - | - | - |
+| 21 | test_4_orders_per_batch_10_x_10 | Estres | Cada lote tiene 4 ordenes. | 100 | 10x10 | 25 | - | - | Feasible | Feasible | Pass | 12 s | - | - |
+| 22 | test_10_orders_per_batch_10_x_10 | Estres | Cada lote tiene 10 ordenes. | 100 | 10x10 | 10 | - | - | Feasible | Feasible | Pass | 3 min | - | - |
+| 23 | test_50_orders_per_batch_10_x_10 | Estres | Cada lote tiene 50 ordenes. | 500 | 10x10 | 10 | - | - | Feasible | Feasible | Pass | 2.5 min | - | - |
+| 24 | test_4_orders_per_batch_5_x_5 | Estres | - | 100 | 5x5 | 25 | - | - | Feasible | Feasible | Pass | 6 s | - | - |
+| 25 | test_10_orders_per_batch_5_x_5 | Estres | - | 100 | 5x5 | 10 | - | - | Feasible | Feasible | Pass | 15 s | - | - |
+| 26 | test_20_orders_per_batch_5_x_5 | Estres | - | 500 | 5x5 | 25 | - | - | Feasible | Feasible | Pass | 4 min | - | - |
+| 27 | test_50_orders_per_batch_5_x_5 | Estres | - | 500 | 5x5 | 10 | - | - | Feasible | Feasible | Pass | 16 s | - | - |
+| 28 | test_20_orders_per_batch_10_x_10 | Estres | - | 500 | 10x10 | 25 | - | - | Feasible | Feasible | Pass | +35 min | No lo dejé seguir más. | - |
+| 29 | test_20_orders_per_batch_20_x_20 | Estres | - | 500 | 20x20 | 25 | - | - | Feasible | Feasible | Pass | - | Tardó mucho más en empezar el presolving. | - |
+| 30 | test_10_orders_per_batch_10_x_10 | Estres | - | 500 | 10x10 | 50 | - | - | Feasible | Feasible | Pass | +35 min | No lo dejé seguir más. | - |
