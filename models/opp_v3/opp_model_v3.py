@@ -69,6 +69,7 @@ class OPPModelV3(Model):
         beta_time = params.beta_time
         beta_setup = params.beta_setup
         beta_picking = params.beta_picking
+        s = params.s
         due_date = params.due_date
         M = params.M
         x = params.x
@@ -238,6 +239,7 @@ class OPPModelV3(Model):
                     cap_n,
                     y,
                     z,
+                    s,
                 ),
                 name=f"valid_execution_time_b{b}",
             )
@@ -501,27 +503,43 @@ class OPPModelV3(Model):
     # más de una locación. Esto no refleja bien el calculo de los tiempos y permite
     # que se apliquen menos penalizaciones
     def constraint_valid_execution_time(
-        self, b, t_exec, beta_time, beta_setup, beta_picking, cap, y, z
+        self, b, t_exec, beta_time, beta_setup, beta_picking, cap, y, z, s
     ):
         """
         (18): Valid execution time constraint.
         Ensures that the execution time of a mission is correctly calculated
         based on travel time, setup time, and picking time.
         """
+        # travel distance term
+        travel = quicksum(
+            self.location_graph.get_distance(i, j) * z[i, j, b]
+            for i in self.location_graph.get_vertices()
+            for j in self.location_graph.get_vertices()
+            if i != self.location_graph.get_final()
+            and j != self.location_graph.get_depot()
+            and self.location_graph.has_edge(i, j)
+        )
+
+        # service time term: sum_i s[i] * sum_j z[i,j,b]
+        depot = self.location_graph.get_depot()
+        final = self.location_graph.get_final()
+        # handle missing or partial `s` by using 0 as default service time
+        service_time = quicksum(
+            (s.get(i, 0) if isinstance(s, dict) else 0)
+            * quicksum(
+                z[i, j, b]
+                for j in self.location_graph.get_vertices()
+                if j != i and self.location_graph.has_edge(i, j)
+            )
+            for i in self.location_graph.get_vertices()
+            if i != depot and i != final
+        )
+
         return (
             beta_setup
             + beta_picking * quicksum(cap[n] * y[n, b] for n in self.N)
-            + beta_time
-            * (
-                quicksum(
-                    self.location_graph.get_distance(i, j) * z[i, j, b]
-                    for i in self.location_graph.get_vertices()
-                    for j in self.location_graph.get_vertices()
-                    if i != self.location_graph.get_final()
-                    and j != self.location_graph.get_depot()
-                    and self.location_graph.has_edge(i, j)
-                )
-            )
+            + beta_time * travel
+            + service_time
             <= t_exec[b]
         )
 

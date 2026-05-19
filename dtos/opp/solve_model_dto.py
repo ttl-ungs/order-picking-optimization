@@ -10,6 +10,7 @@ class SolveModelDTO:
         self._beta_time: float = None
         self._beta_setup: float = None
         self._beta_picking: float = None
+        self._s: dict = None
         self._due_date: dict = None
         self._M: float = None
         self._x: dict = None
@@ -96,6 +97,14 @@ class SolveModelDTO:
         self._beta_picking = value
 
     @property
+    def s(self) -> dict:
+        return self._s
+
+    @s.setter
+    def s(self, value: dict):
+        self._s = value
+
+    @property
     def due_date(self) -> dict:
         return self._due_date
 
@@ -126,4 +135,3 @@ class SolveModelDTO:
     @y.setter
     def y(self, value: dict):
         self._y = value
-
