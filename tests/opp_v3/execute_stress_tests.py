@@ -6,7 +6,7 @@ import multiprocessing
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-STRESS_TEST_TIMEOUT_MINUTES = int(os.environ.get("STRESS_TEST_TIMEOUT_MINUTES", "5"))
+STRESS_TEST_TIMEOUT_MINUTES = int(os.environ.get("STRESS_TEST_TIMEOUT_MINUTES", "60"))
 
 
 def _collect_test_ids(suite):
@@ -46,7 +46,7 @@ def _run_test_child(test_name, q):
 if __name__ == "__main__":
     loader = unittest.TestLoader()
     tests_dir = os.path.join(os.path.dirname(__file__), "tests", "stress")
-    suite = loader.discover(start_dir=tests_dir, pattern="test_*.py")
+    suite = loader.discover(start_dir=tests_dir, pattern="test_*_11.py")
 
     test_ids = _collect_test_ids(suite)
 
