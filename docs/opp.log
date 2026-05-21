@@ -103,29 +103,29 @@ system          >   stp     100000    1000000     100000     100000    5000000  
 system          > 
 system          >   mem     150000    1027814     150000              10000000    2000000    1000000      10000        500       1000      20000      10000        250        250         50         25         10
 system          >   itm         16          1         16                     9          8          1         32         32         80          4         16          8          8         28         56         80
-system          >   ext          0          0          0          0          0          0          0          0          0          0          0          0    2592104         96          0          0          0
-system          >   all    2400000    1027814    2400000          1   90000000   16000000    1000000     320000      16000      80000      80000     160000    2594104       2096       1400       1400        800
+system          >   ext          0          0          0          0          0          0          0          0          0          0          0          0    2592112         96          0          0          0
+system          >   all    2400000    1027814    2400000          1   90000000   16000000    1000000     320000      16000      80000      80000     160000    2594112       2096       1400       1400        800
 system          > 
 system          >   ini    2149683    1008960          0      52514          0     580743                                                                                       0                                 
-system          >   ptr      53294                  7949      53277                489671          0          0          0          0          0          0          9          0         28         11          0
+system          >   ptr      53294                  7949      53277                489572          0          0          0          0          0          0          9          0         28         11          0
 system          >   top      53295                938218     262146     103067     591593        467         38          5         16         39        395        250        250         50         25         10
 system          >   ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 system          > 
 system          >   current input type    : initial
 system          > 
-system          >   approximate memory    : 119037518 (113 MB)
+system          >   approximate memory    : 119037526 (113 MB)
 system          > 
 system          >   expansion depth       : min: 10000, max: 1000000, set: 10000, top: 10
 system          > 
 system          >   luabytecode registers : 1031
 system          >   luabytecode bytes     : 16512 (0 MB)
-system          >   luastate bytes now    : 84559558 (80 MB)
-system          >   luastate bytes max    : 84559558 (80 MB)
+system          >   luastate bytes now    : 84574619 (80 MB)
+system          >   luastate bytes max    : 84574619 (80 MB)
 system          > 
 system          >   file callbacks        : 625
 system          >   saved callbacks       : 3049
 system          >   direct callbacks      : 5
-system          >   function callbacks    : 3174
+system          >   function callbacks    : 3175
 system          >   value callbacks       : 464
 system          >   message callbacks     : 0
 system          >   bytecode callbacks    : 637
@@ -137,7 +137,7 @@ system          >   mp text callbacks     : 0
 system          >   mp script callbacks   : 0
 system          >   mp log callbacks      : 0
 system          > 
-system          >   total callbacks       : 7954
+system          >   total callbacks       : 7955
 system          >   mp total callbacks    : 0
 system          >   backend callbacks     : 0
 system          > 
@@ -156,27 +156,27 @@ system          >   hyphenation state     : words          1017
 system          > 
 mkxl run stats  > used config file: selfautoparent:/texmfcnf.lua;selfautoparent:/texmf-dist/web2c/texmfcnf.lua
 mkxl run stats  > used cache path: C:/texlive/2025/texmf-var/luametatex-cache/context/a86c089b384a3076dc514ba966a1fac9
-mkxl run stats  > resource resolver: loadtime 0.160 seconds, 0 scans with scantime 0.000 seconds, 0 shared scans, 19 found files, scanned paths: <none>
-mkxl run stats  > stored bytecode data: 531 modules (0.444 sec), 106 tables (0.010 sec), 637 chunks (0.454 sec)
+mkxl run stats  > resource resolver: loadtime 0.196 seconds, 0 scans with scantime 0.000 seconds, 0 shared scans, 19 found files, scanned paths: <none>
+mkxl run stats  > stored bytecode data: 531 modules (0.482 sec), 106 tables (0.015 sec), 637 chunks (0.497 sec)
 mkxl run stats  > traced context lua functions: maxstack: 1885, freed: 0, unreachable: 1885
 mkxl run stats  > cleaned up reserved nodes: 76 nodes, 7 lists of 444
 mkxl run stats  > node memory usage: 11 attribute, 12 fontspec, 2 glue, 135 gluespec, 1 kern, 661 mathspec, 2 penalty, 29 specification, 2 temp
 mkxl run stats  > node list callback tasks: 17 unique task lists, 15 instances (re)created, 3028 calls
-mkxl run stats  > driver time: 0.050 seconds 
+mkxl run stats  > driver time: 0.052 seconds 
 mkxl run stats  > used backend: pdf
 mkxl run stats  > randomizer: resumed with value 0.33475496773835212
-mkxl run stats  > jobdata time: 0.005 seconds saving, 0.002 seconds loading
-mkxl run stats  > callbacks: file: 625, saved: 3049, direct: 5, function: 3174, value: 464, message: 0, bytecode: 637, late 0, total: 7954 (612 per page)
+mkxl run stats  > jobdata time: 0.003 seconds saving, 0.001 seconds loading
+mkxl run stats  > callbacks: file: 625, saved: 3049, direct: 5, function: 3175, value: 464, message: 0, bytecode: 637, late 0, total: 7955 (612 per page)
 mkxl run stats  > loaded tex modules: 1 requested, all found (*-texlive)
 mkxl run stats  > loaded patterns: en::1, load time: 0.000
 mkxl run stats  > loaded fonts: 5 files: latinmodernmathcompanion-regular.otf, latinmodern-math.otf, lmroman10-bold.otf, lmroman10-italic.otf, lmroman10-regular.otf
-mkxl run stats  > font engine: otf 3.145, afm 1.541, tfm 1.000, 7 instances, 2 shared in backend, 2 common vectors, 0 common hashes, load time 0.118 seconds 
-mkxl run stats  > math tweaking time: 0.033 seconds, 6 math goodie tables
-mkxl run stats  > font embedding time: 0.021 seconds, 5 fonts
+mkxl run stats  > font engine: otf 3.145, afm 1.541, tfm 1.000, 7 instances, 2 shared in backend, 2 common vectors, 0 common hashes, load time 0.106 seconds 
+mkxl run stats  > math tweaking time: 0.027 seconds, 6 math goodie tables
+mkxl run stats  > font embedding time: 0.016 seconds, 5 fonts
 mkxl run stats  > result saved in file: .\\opp.pdf, compresslevel 1, objectcompresslevel 3, 29 streams, 0 uncompressed, 28 compressed, 1 not compressed, threshold 40
 mkxl run stats  > positions: 4 collected, 0 deltas, 0 shared partials, 0 partial entries
 mkxl run stats  > used platform: win64, type: windows, binary subtree: bin
 mkxl run stats  > used engine: luametatex version: 2.11.08, functionality level: 20250925, format id: 723, compiler: gcc
 mkxl run stats  > tex properties: 938218 hash slots used of 2097152, 53277 control sequences, approximate memory usage: 113 MB
 mkxl run stats  > lua properties: engine: lua 5.5, format 1, used memory: 84 MB, ctx: 80 MB, max: 80 MB, symbol mask: utf (τεχ)
-mkxl run stats  > runtime: 1.109 seconds, 13 processed pages, 13 shipped pages, 11.724 pages/second
+mkxl run stats  > runtime: 1.117 seconds, 13 processed pages, 13 shipped pages, 11.640 pages/second
