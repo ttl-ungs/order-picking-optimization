@@ -267,66 +267,71 @@ De esta forma, obtenemos el siguiente modelo:
 \startsubsection[title={Restricciones}]
 \startformula 
 \startalign[n=3, align={left, left, left}, number=yes]
-    % (3)
-    \NC \sum_{b\in B}x_{pb}=1; \NC \Cond{$\forall p \in P$} \NC \Desc{(Cada loter es asignado a un picker)} \NR
+    % (3) tachada
+    \NC \sum_{b\in B}x_{pb}=1; \NC \Cond{$\forall p \in P$} \NC \Desc{(\overstrike{Cada lote es asignado a un picker})} \NR
     
-    % (4)
-    \NC \sum_{b\in B}y_{bn}=1; \NC \Cond{$\forall n \in N$} \NC \Desc{(Cada orden es asignada a un lote)} \NR
-
-    % (5) tachada
-    \NC \sum_{n\in N}cap_{n} \cdot y_{bn} \le Cap_{vehicle}; \NC \Cond{$\forall b \in B$} \NC \Desc{(La capacidad de las órdenes asignades a un lote $\le$ la del vehículo)} \NR
+    % (4) tachada
+    \NC \sum_{b\in B}y_{bn}=1; \NC \Cond{$\forall n \in N$} \NC \Desc{(\overstrike{Cada orden es asignada a un lote})} \NR
     
-    % (6) tachada
+    % (6) constraint_start_from_depot
     \NC \sum_{j \in V \setminus \{v_i\}} z_{1jb} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta sale una vez del depósito inicial)} \NR
     
-    % (7) constraint_start_from_depot
+    % (7) constraint_finish_at_end
     \NC \sum_{i \in V \setminus \{v_f\}} z_{i,v_f,b} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta entra una vez al depósito final)} \NR
-    
-    % (8) constraint_finish_at_end
+    % (8) constraint_cant_go_back_to_depot
     \NC \sum_{i \in V \setminus \{v_i\}} \sum_{b \in B} z_{i1b} = 0; \NC \NC \Desc{(No se puede volver al inicio)} \NR
-    
-    % (9) constraint_cant_go_back_to_depot
+    % (9) constraint_cant_move_from_end_node
     \NC \sum_{j \in V \setminus \{v_f\}} \sum_{b \in B} z_{v_f,j,b} = 0; \NC \NC \Desc{(No se puede ir a otro lado desde el final)} \NR
-    
-    % (10) constraint_cant_move_from_end_node
+    % (10) constraint_force_visit_inflow
     \NC \sum_{j \in V \setminus \{v_f\}} z_{ijb} \ge a_{ni} \cdot y_{bn}; \NC \Cond{$\forall b \in B,$ \crlf $n \in N,$ \crlf $i \in V \setminus \{v_f\}$} \NC \Desc{(Si una orden requiere pasar por una locación, la ruta de esa misión tiene un camino que entra a esa locación)} \NR
-
-    % (11) constraint_force_visit
-    % (12)
-    % (13) constraint_articles_capacity
-    % (14) constraint_flow_conservation
-    % (15) constraint_one_input_arc_per_node
-    % (16) constraint_one_output_arc_per_node
-    % (17) constraint_avoid_subtours_cycles
-    % (18) constraint_no_loops
-
+    % (11) constraint_force_visit_outflow
     \NC \sum_{i \in V, i \neq j} z_{jib} \ge \min(1, \sum_{n \in N} a_{nj} \cdot y_{nb}) \NC \NC \Desc{(Si una orden en el lote requiere una locación, la ruta debe salir de ella) } \NR
+    % (12) constraint_articles_capacity
     \NC f_{ijb} \le Cap_{vehicle} \cdot z_{ijb} \NC \NC \Desc{(Los artículos deben caber en la capacidad del vehículo) } \NR
+    % (13) constraint_flow_conservation
     \NC \sum_{g \in V, g \neq i} z_{gib} = \sum_{j \in V, j \neq i} z_{ijb} \NC \NC \Desc{(Conservación de flujo: lo que entra a un nodo intermedio debe salir) } \NR
+    % (14) constraint_one_input_arc_per_node
     \NC \sum_{g \in V, g < num_loc} z_{gib} \le 1 \NC \NC \Desc{(Se elige a lo sumo un arco de entrada por cada nodo) } \NR
+    % (15) constraint_one_output_arc_per_node
     \NC \sum_{j \in V, j > 2} z_{ijb} \le 1 \NC \NC \Desc{(Se elige a lo sumo un arco de salida por cada nodo) } \NR
+    % (16) constraint_f_depot_source
     \NC \sum_{j \in V, j \neq v_1} f_{v_1jb} = R_{b} \NC \NC \Desc{(El flujo que sale del depósito es igual a las locaciones requeridas) } \NR
+    % (16) constraint_f_flow_conservation
     \NC \sum_{g \in V, g \neq v_f} f_{gib} - \sum_{j \in V, j \neq v_1} f_{ijb} = \dots \NC \NC \Desc{(Cada nodo requerido consume exactamente una unidad de flujo) } \NR
+    % (17) constraint_no_loops
     \NC z_{iib} = 0 \NC \NC \Desc{(No se permiten bucles o ciclos sobre el mismo nodo) } \NR
+    % (18) constraint_valid_execution_time
     \NC t_exec_{b} \ge \beta_{setup} + \beta_{pick} + \beta_{trav} \NC \NC \Desc{(El tiempo total es la suma de preparación, recolección y viaje) } \NR
 \stopalign
 \stopformula
 
 \startformula
 \startalign[n=3, align={left, left, left}, number=yes]
+    % (19) constraint_batch_execution_time
     \NC t_exec_{b} - M \cdot (1 - x_{pb}) \le u_{pb} \NC \NC \Desc{(Cuando se asigna un lote a un picker, su tiempo de ejecución es $\le$ al de procesamiento)}  \NR
+    % (20) constraint_processing_time
     \NC u_{p1} \le v_{p1} \NC \NC \Desc{(El tiempo de procesamiento es menor o igual al tiempo de completitud de un lote)}  \NR
+    % (21) constraint_completition_batch_time (function commented in code)
     \NC u_{pb} + v_{pb-1} \le v_{pb} \NC \NC \Desc{(El tiempo de procesamiento + el del lote previo es $\le$ al tiempo de completitud del lote)}  \NR
+    % (22) constraint_tardiness_definition
     \NC v_{pb} - due_date_{n} - M \cdot (2 - x_{pb} - y_{bn}) \le ta_{n} \NC \NC \Desc{(Si el lote termina después de la fecha de entrega, la diferencia se asigna a tardanza)}  \NR
+    % (23) constraint_earliness_definition
     \NC due_date_{n} - v_{pb} - M \cdot (2 - x_{pb} - y_{bn}) \le ea_{n} \NC \NC \Desc{(Si la fecha de entrega es mayor al tiempo de finalización, la diferencia se asigna a adelanto)}  \NR
+    % (24) constraint_batch_capacity
+    \NC \sum_{n\in N}cap_{n} \cdot y_{bn} \le Cap_{vehicle}; \NC \Cond{$\forall b \in B$} \NC \Desc{(La capacidad de las órdenes asignades a un lote $\le$ la del vehículo)} \NR
+    % (25) constraint_only_valid_edges
+    \NC z_{ijb} \eq 0 \NC \Cond{$\forall b \in B,$ \crlf $i, j \in V$ \crlf $d_{ij} = \infty$} \NC \Desc{(Solo se pueden usar arcos entre locaciones conectadas)} \NR
+    % (n/a) x and y are parameters in `opp_model_v2` (no constraint function)
     \NC x_{pb} \in {0, 1} \NC \NC \Desc{($x$ es binaria)} \NR \NC y_{bn} \in {0, 1} \NC \NC \Desc{($y$ es binaria)} \NR 
+    % (vars) z created as binary in `opp_model_v2.solve()` -> see variable `z`
     \NC z_{ijb} \in {0, 1} \NC \NC \Desc{($z$ es binaria)} \NR
+    % (vars) non-negativity enforced via variable lower-bounds in code (lb=0)
     \NC t_exec_{b} \ge 0 \NC \Cond{$\forall b \in B$} \NC \Desc{(El tiempo de ejecución es positivo o 0)} \NR 
     \NC ta_{n} \ge 0 \NC \NC \Desc{(La tardanza es positiva o 0)} \NR 
     \NC ea_{n} \ge 0 \NC \NC \Desc{(El adelanto es positivo o 0)} \NR 
     \NC u_{pb} \ge 0 \NC \NC \Desc{(El tiempo de procesamiento no es negativo)} \NR 
     \NC v_{pb} \ge 0 \NC \NC \Desc{(El tiempo de completitud no es negativo)} \NR 
-    \NC f_{ijb} \ge 0 \NC \NC \Desc{(El número de unidades para los arcos internos no es negativo)} \NR 
+    \NC f_{ijb} \ge 0 \NC \NC \Desc{(El número de unidades para los arcos internos no es negativo)} \NR
 
 \stopalign
 \stopformula
@@ -410,6 +415,7 @@ En esta versión se elimina el concepto de picker y se trabaja con lotes predefi
     \NC \beta^{time} \NC = \text{Tiempo requerido para viajar una unidad de distancia} \NR
     \NC \beta^{setup} \NC = \text{Tiempo de preparación (setup) del lote} \NR
     \NC \beta^{picking} \NC = \text{Tiempo requerido para recolectar una unidad} \NR
+    \NC s_{i} \NC = \text{Tiempo de servicio en la locación } i \in V \text{ (p. ej. mayor en estanterías, menor en piso)} \NR
     \NC due\_date_{n} \NC = \text{Fecha de entrega de la orden } n \in N \NR
     \NC M \NC = \text{Un número positivo suficientemente grande (Big M)} \NR
     \NC y_{nb} \NC = \startmathcases
@@ -447,31 +453,55 @@ En esta versión se elimina el concepto de picker y se trabaja con lotes predefi
 \startsubsection[title={Restricciones}]
 \startformula
 \startalign[n=3, align={left, left, left}, number=yes]
+    % (6) constraint_start_from_depot
     \NC \sum_{j \in V \setminus \{v_1\}} z_{v_1 j b} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta sale una vez del depósito)} \NR
+    % (7) constraint_finish_at_end
     \NC \sum_{i \in V \setminus \{v_f\}} z_{i v_f b} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta entra una vez al nodo final)} \NR
+    % (8) constraint_cant_go_back_to_depot
     \NC \sum_{i \in V \setminus \{v_1\}} z_{i v_1 b} = 0; \NC \Cond{$\forall b \in B$} \NC \Desc{(No se puede volver al depósito)} \NR
+    % (9) constraint_cant_move_from_end_node
     \NC \sum_{j \in V \setminus \{v_f\}} z_{v_f j b} = 0; \NC \Cond{$\forall b \in B$} \NC \Desc{(No se puede salir del nodo final)} \NR
+    % (10) constraint_force_visit_inflow
     \NC \sum_{i \in V, i \neq j} z_{i j b} \ge \min(1, \sum_{n \in N} a_{n j} \cdot y_{n b}); \NC \Cond{$\forall b \in B,$ \crlf $j \in V \setminus \{v_1, v_f\}$} \NC \Desc{(Si una locación es requerida, debe tener arco de entrada)} \NR
+    % (11) constraint_force_visit_outflow
     \NC \sum_{i \in V, i \neq j} z_{j i b} \ge \min(1, \sum_{n \in N} a_{n j} \cdot y_{n b}); \NC \Cond{$\forall b \in B,$ \crlf $j \in V \setminus \{v_1, v_f\}$} \NC \Desc{(Si una locación es requerida, debe tener arco de salida)} \NR
+    % (12) constraint_articles_capacity
     \NC f_{i j b} \le Cap_{vehicle} \cdot z_{i j b}; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_f\},$ \crlf $j \in V \setminus \{v_1\}$} \NC \Desc{(El flujo respeta la capacidad)} \NR
+    % (13) constraint_flow_conservation
     \NC \sum_{g \in V, g \neq i} z_{g i b} = \sum_{j \in V, j \neq i} z_{i j b}; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1, v_f\}$} \NC \Desc{(Conservación de flujo en la ruta)} \NR
+    % (14) constraint_one_input_arc_per_node
     \NC \sum_{j \in V, j \neq i} z_{j i b} \le 1; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1\}$} \NC \Desc{(A lo sumo un arco de entrada)} \NR
+    % (15) constraint_one_output_arc_per_node
     \NC \sum_{j \in V, j \neq i} z_{i j b} \le 1; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_f\}$} \NC \Desc{(A lo sumo un arco de salida)} \NR
+    % (17) constraint_no_loops
     \NC z_{i i b} = 0; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1\}$} \NC \Desc{(No hay bucles)} \NR
 \stopalign
 \stopformula
 
 \startformula
 \startalign[n=3, align={left, left, left}, number=yes]
+    % (16) constraint_f_depot_source
     \NC R_{b} = \sum_{i \in V, i \notin \{v_1, v_f\}} \min(1, \sum_{n \in N} a_{n i} \cdot y_{n b}); \NC \Cond{$\forall b \in B$} \NC \Desc{(Locaciones requeridas)} \NR
+    % (16) constraint_f_depot_source - continuación
     \NC \sum_{j \in V \setminus \{v_1\}} f_{v_1 j b} = R_{b}; \NC \Cond{$\forall b \in B$} \NC \Desc{(Flujo total desde el depósito)} \NR
+    % (16) constraint_f_flow_conservation
     \NC \sum_{g \in V \setminus \{v_f\}} f_{g i b} - \sum_{j \in V \setminus \{v_1\}} f_{i j b} = \min(1, \sum_{n \in N} a_{n i} \cdot y_{n b}); \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1, v_f\}$} \NC \Desc{(Balance Gavish-Graves)} \NR
-    \NC t\_exec_{b} \ge \beta^{setup} + \beta^{picking} \cdot \left(\sum_{n \in N} cap_n \cdot y_{n b}\right) + \beta^{time} \cdot \left(\sum_{(i,j) \in \mathcal{E}} d_{ij} \cdot z_{i j b}\right); \NC \Cond{$\forall b \in B$} \NC \Desc{(Tiempo de ejecución del lote)} \NR
+    % (17) constraint_no_loops
+    \NC z_{i i b} = 0; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1\}$} \NC \Desc{(No se permiten bucles)} \NR
+    % (18) constraint_valid_execution_time
+    \NC t\_exec_{b} \ge \beta^{setup} + \beta^{picking} \cdot \left(\sum_{n \in N} cap_n \cdot y_{n b}\right) + \beta^{time} \cdot \left(\sum_{(i,j) \in \mathcal{E}} d_{ij} \cdot z_{i j b}\right) \NC \NR
+    \NC \quad + \sum_{i \in V, i \notin \{v_1, v_f\}} s_{i} \cdot \left( \sum_{j:\ (i,j) \in \mathcal{E}} z_{i j b} \right); \NC \Cond{$\forall b \in B$} \NC \Desc{(Tiempo de ejecución del lote: setup + picking + viaje + servicio)} \NR
+    % (19) constraint_batch_execution_time
     \NC v_{b_1} \ge t\_exec_{b_1}; \NC \Cond{$b_1 \text{ es el primer lote}$} \NC \Desc{(Inicio de la secuencia)} \NR
+    % (19) constraint_batch_execution_time
     \NC v_{b_k} \ge v_{b_{k-1}} + t\_exec_{b_k}; \NC \Cond{$\forall k \ge 2$} \NC \Desc{(Secuencia de lotes)} \NR
+    % (22) constraint_tardiness_definition
     \NC v_{b} - due\_date_{n} - M \cdot (1 - y_{n b}) \le ta_{n}; \NC \Cond{$\forall b \in B,$ \crlf $n \in N$} \NC \Desc{(Definición de tardanza)} \NR
+    % (23) constraint_earliness_definition
     \NC due\_date_{n} - v_{b} - M \cdot (1 - y_{n b}) \le ea_{n}; \NC \Cond{$\forall b \in B,$ \crlf $n \in N$} \NC \Desc{(Definición de adelanto)} \NR
+    % (24) constraint_batch_capacity
     \NC \sum_{n \in N} cap_n \cdot y_{n b} \le Cap_{vehicle}; \NC \Cond{$\forall b \in B$} \NC \Desc{(Capacidad del lote)} \NR
+    % (25) constraint_only_valid_edges
     \NC z_{i j b} = 0; \NC \Cond{$\forall b \in B,$ \crlf $(i, j) \notin \mathcal{E}$} \NC \Desc{(Solo arcos válidos)} \NR
 \stopalign
 \stopformula

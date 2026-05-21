@@ -447,7 +447,7 @@ class OPPModelV3(Model):
 
     def constraint_f_depot_source(self, b, f, a, y):
         """
-        Depot sends out exactly required_nodes units.
+        (16): Depot sends out exactly required_nodes units.
         """
         # How many required_nodes batch b must visit
         required_nodes = sum(
@@ -545,8 +545,8 @@ class OPPModelV3(Model):
 
     def constraint_batch_execution_time(self, b, prev_b, t_exec, v):
         """
-        Asegura que el lote 'b' termine después de que haya pasado su
-        propio tiempo de ejecución t_exec[b], contando desde que terminó el anterior.
+        (19): Batch execution time constraint.
+        Ensures that the batch 'b' finishes after its own execution time t_exec[b], counting from when the previous batch finished.
         """
         if prev_b is None:
             # Para el primer lote de la lista
@@ -575,7 +575,7 @@ class OPPModelV3(Model):
 
     def constraint_batch_capacity(self, cap_n, y, b, N, cap_vehicle):
         """
-        Batch loading capacity constraint.
+        (24): Batch loading capacity constraint.
         Ensures that the total capacity required by orders assigned to a batch
         does not exceed the vehicle's capacity.
         """
@@ -583,6 +583,7 @@ class OPPModelV3(Model):
 
     def constraint_only_valid_edges(self, i, j, b, z):
         """
+        (25): Only valid edges constraint.
         Allows only paths between neighbors.
         Ensures that arcs between non-adjacent locations cannot be used.
         """
