@@ -493,7 +493,7 @@ utilitydata.structures.lists.collected={
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=15,
-   ["realpage"]=10,
+   ["realpage"]=11,
    ["section"]=15,
   },
   ["titledata"]={
@@ -535,7 +535,7 @@ utilitydata.structures.lists.collected={
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=18,
-   ["realpage"]=11,
+   ["realpage"]=12,
    ["section"]=18,
   },
   ["titledata"]={
