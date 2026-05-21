@@ -34,3 +34,7 @@ This document contains only stress tests. The graph catalog is maintained in tes
 | 28 | test_20_orders_per_batch_10_x_10 | Estres | - | 500 | 10x10 | 25 | - | - | Feasible | Feasible | Pass | +35 min | No lo dejé seguir más. | - |
 | 29 | test_20_orders_per_batch_20_x_20 | Estres | - | 500 | 20x20 | 25 | - | - | Feasible | Feasible | Pass | - | Tardó mucho más en empezar el presolving. | - |
 | 30 | test_10_orders_per_batch_10_x_10 | Estres | - | 500 | 10x10 | 50 | - | - | Feasible | Feasible | Pass | +35 min | No lo dejé seguir más. | - |
+| 31 | test_10_orders_per_batch_5_x_5_250_orders | Estres | - | 250 | 5x5 | 25 | - | - | Feasible | Feasible | Pass | 1 min | - | - |
+| 32 | test_10_orders_per_batch_5_x_5_500_orders | Estres | - | 500 | 5x5 | 50 | - | - | Feasible | Feasible | Pass | 15 min 45 sec | - | - |
+| 33 | test_10_orders_per_batch_7_x_7_500_orders | Estres | - | 500 | 7x7 | 50 | - | - | Feasible | Feasible | Pass | +1hora | - | - |
+| 34 | test_8_orders_per_batch_7_x_7_320_orders | Estres | - | 320 | 7x7 | 40 | - | - | Feasible | Feasible | Pass | 15 min 30 sec | - | - |
