@@ -50,6 +50,8 @@ from models.utils.output_builder import build_output
 """
 Version of OPP model without concept of "missions" (H) and "periods" (K)
 """
+
+
 class OPPModelV2(Model):
     def __init__(self, dto: ModelDTO):
         super().__init__()
@@ -329,14 +331,15 @@ class OPPModelV2(Model):
             model.addCons(
                 self.constraint_batch_capacity(cap_n, y, b, self.N, cap_vehicle),
                 name=f"batch_capacity_b{b}",
-                )
-
+            )
 
         t0 = start_time if start_time is not None else time.time()
         model.optimize()
         elapsed = time.time() - t0
 
-        print(f"\nExecution time: {elapsed:.4f}s (solver: {model.getSolvingTime():.4f}s)")
+        print(
+            f"\nExecution time: {elapsed:.4f}s (solver: {model.getSolvingTime():.4f}s)"
+        )
 
         # Print solution results, for testing purposes
         super().notify(
@@ -470,11 +473,7 @@ class OPPModelV2(Model):
         Ensures that each node i has maximum one incoming arc in the route.
         """
         return (
-            quicksum(
-                z[j, i, b]
-                for j in self.location_graph.get_vertices()
-                if j != i
-            )
+            quicksum(z[j, i, b] for j in self.location_graph.get_vertices() if j != i)
             <= 1
         )
 
@@ -484,11 +483,7 @@ class OPPModelV2(Model):
         Ensures that each node i has maximum one outgoing arc in the route.
         """
         return (
-            quicksum(
-                z[i, j, b]
-                for j in self.location_graph.get_vertices()
-                if j != i
-            )
+            quicksum(z[i, j, b] for j in self.location_graph.get_vertices() if j != i)
             <= 1
         )
 
@@ -507,7 +502,7 @@ class OPPModelV2(Model):
 
     def constraint_f_depot_source(self, b, f, a, y):
         """
-        Depot sends out exactly required_nodes units.
+        (16) Depot sends out exactly required_nodes units.
         """
         # How many required_nodes batch b must visit
         required_nodes = sum(
@@ -526,10 +521,9 @@ class OPPModelV2(Model):
         # outflow must be exactly required_flow
         return outflow == required_nodes
 
-
     def constraint_f_flow_conservation(self, i, b, f, a, y):
         """
-        Gavish-Graves balance:
+        (16) Gavish-Graves balance:
         inflow - outflow = demand at each intermediate node.
         Required nodes consume 1 unit, non-required nodes conserve flow.
         """
@@ -630,7 +624,7 @@ class OPPModelV2(Model):
 
     def constraint_batch_capacity(self, cap_n, y, b, N, cap_vehicle):
         """
-        Batch loading capacity constraint.
+        (24): Batch loading capacity constraint.
         Ensures that the total capacity required by orders assigned to a batch
         does not exceed the vehicle's capacity.
         """
@@ -638,6 +632,7 @@ class OPPModelV2(Model):
 
     def constraint_only_valid_edges(self, i, j, b, z):
         """
+        (25): Only valid edges constraint.
         Allows only paths between neighbors.
         Ensures that arcs between non-adjacent locations cannot be used.
         """
