@@ -415,6 +415,7 @@ En esta versión se elimina el concepto de picker y se trabaja con lotes predefi
     \NC \beta^{time} \NC = \text{Tiempo requerido para viajar una unidad de distancia} \NR
     \NC \beta^{setup} \NC = \text{Tiempo de preparación (setup) del lote} \NR
     \NC \beta^{picking} \NC = \text{Tiempo requerido para recolectar una unidad} \NR
+    \NC s_{i} \NC = \text{Tiempo de servicio en la locación } i \in V \text{ (p. ej. mayor en estanterías, menor en piso)} \NR
     \NC due\_date_{n} \NC = \text{Fecha de entrega de la orden } n \in N \NR
     \NC M \NC = \text{Un número positivo suficientemente grande (Big M)} \NR
     \NC y_{nb} \NC = \startmathcases
@@ -488,7 +489,8 @@ En esta versión se elimina el concepto de picker y se trabaja con lotes predefi
     % (17) constraint_no_loops
     \NC z_{i i b} = 0; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1\}$} \NC \Desc{(No se permiten bucles)} \NR
     % (18) constraint_valid_execution_time
-    \NC t\_exec_{b} \ge \beta^{setup} + \beta^{picking} \cdot \left(\sum_{n \in N} cap_n \cdot y_{n b}\right) + \beta^{time} \cdot \left(\sum_{(i,j) \in \mathcal{E}} d_{ij} \cdot z_{i j b}\right); \NC \Cond{$\forall b \in B$} \NC \Desc{(Tiempo de ejecución del lote)} \NR
+    \NC t\_exec_{b} \ge \beta^{setup} + \beta^{picking} \cdot \left(\sum_{n \in N} cap_n \cdot y_{n b}\right) + \beta^{time} \cdot \left(\sum_{(i,j) \in \mathcal{E}} d_{ij} \cdot z_{i j b}\right) \NC \NR
+    \NC \quad + \sum_{i \in V, i \notin \{v_1, v_f\}} s_{i} \cdot \left( \sum_{j:\ (i,j) \in \mathcal{E}} z_{i j b} \right); \NC \Cond{$\forall b \in B$} \NC \Desc{(Tiempo de ejecución del lote: setup + picking + viaje + servicio)} \NR
     % (19) constraint_batch_execution_time
     \NC v_{b_1} \ge t\_exec_{b_1}; \NC \Cond{$b_1 \text{ es el primer lote}$} \NC \Desc{(Inicio de la secuencia)} \NR
     % (19) constraint_batch_execution_time
