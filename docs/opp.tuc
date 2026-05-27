@@ -219,6 +219,78 @@ utilitydata.structures.sections.collected={
   ["separatorset"]="default",
   ["set"]="all",
  },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=20,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=21,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=22,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=23,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=24,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=25,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=26,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=27,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
+ {
+  ["block"]="bodypart",
+  ["conversionset"]="default",
+  ["language"]="en",
+  ["numbers"]=28,
+  ["separatorset"]="default",
+  ["set"]="all",
+ },
 }
 
 if not utilitydata.structures then utilitydata.structures = { } end
@@ -253,7 +325,7 @@ utilitydata.structures.counters.collected={
   { 0 },
  },
  ["itemgroup:itemize"]={
-  { 0, 2 },
+  { 0, 2, 4, 2, 3, 3, 2, 4, 4, 4, 3, 6 },
  },
  ["itemgroup:itemize:note"]={
   { 0 },
@@ -271,10 +343,10 @@ utilitydata.structures.counters.collected={
   { 0 },
  },
  ["realpage"]={
-  { 13 },
+  { 17 },
  },
  ["subpage"]={
-  { 13 },
+  { 17 },
  },
  ["table"]={
   { 0 },
@@ -283,7 +355,7 @@ utilitydata.structures.counters.collected={
   { 0 },
  },
  ["userpage"]={
-  { 13 },
+  { 17 },
  },
 }
 
@@ -292,8 +364,8 @@ if not utilitydata.structures.lists then utilitydata.structures.lists = { } end
 
 utilitydata.structures.lists.collected={
  {
-  ["metadata"]=20,
-  ["numberdata"]=21,
+  ["metadata"]=29,
+  ["numberdata"]=30,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=1,
@@ -306,8 +378,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=23,
+  ["metadata"]=31,
+  ["numberdata"]=32,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=2,
@@ -320,8 +392,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=24,
+  ["metadata"]=31,
+  ["numberdata"]=33,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=3,
@@ -334,8 +406,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=25,
+  ["metadata"]=31,
+  ["numberdata"]=34,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=4,
@@ -348,8 +420,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=26,
+  ["metadata"]=31,
+  ["numberdata"]=35,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=5,
@@ -362,8 +434,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=27,
+  ["metadata"]=31,
+  ["numberdata"]=36,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=6,
@@ -376,8 +448,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=20,
-  ["numberdata"]=28,
+  ["metadata"]=29,
+  ["numberdata"]=37,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=7,
@@ -390,8 +462,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=29,
+  ["metadata"]=31,
+  ["numberdata"]=38,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=8,
@@ -404,8 +476,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=30,
+  ["metadata"]=31,
+  ["numberdata"]=39,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=9,
@@ -418,8 +490,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=31,
+  ["metadata"]=31,
+  ["numberdata"]=40,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=10,
@@ -432,8 +504,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=32,
+  ["metadata"]=31,
+  ["numberdata"]=41,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=11,
@@ -446,8 +518,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=33,
+  ["metadata"]=31,
+  ["numberdata"]=42,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=12,
@@ -460,8 +532,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=34,
+  ["metadata"]=31,
+  ["numberdata"]=43,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=13,
@@ -474,8 +546,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=20,
-  ["numberdata"]=35,
+  ["metadata"]=29,
+  ["numberdata"]=44,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=14,
@@ -488,8 +560,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=36,
+  ["metadata"]=31,
+  ["numberdata"]=45,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=15,
@@ -502,8 +574,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=37,
+  ["metadata"]=31,
+  ["numberdata"]=46,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=16,
@@ -516,8 +588,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=38,
+  ["metadata"]=31,
+  ["numberdata"]=47,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=17,
@@ -530,8 +602,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=39,
+  ["metadata"]=31,
+  ["numberdata"]=48,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=18,
@@ -544,8 +616,8 @@ utilitydata.structures.lists.collected={
   },
  },
  {
-  ["metadata"]=22,
-  ["numberdata"]=40,
+  ["metadata"]=31,
+  ["numberdata"]=49,
   ["references"]={
    ["block"]="bodypart",
    ["internal"]=19,
@@ -557,6 +629,132 @@ utilitydata.structures.lists.collected={
    ["title"]="Restricciones",
   },
  },
+ {
+  ["metadata"]=29,
+  ["numberdata"]=50,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=20,
+   ["realpage"]=13,
+   ["section"]=20,
+  },
+  ["titledata"]={
+   ["label"]="section",
+   ["title"]="Cuarta Versión: Heurística Hill Climbing para OPP",
+  },
+ },
+ {
+  ["metadata"]=31,
+  ["numberdata"]=51,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=21,
+   ["realpage"]=13,
+   ["section"]=21,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Motivación",
+  },
+ },
+ {
+  ["metadata"]=31,
+  ["numberdata"]=52,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=22,
+   ["realpage"]=14,
+   ["section"]=22,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Algoritmo",
+  },
+ },
+ {
+  ["metadata"]=31,
+  ["numberdata"]=53,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=23,
+   ["realpage"]=14,
+   ["section"]=23,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Pseudocódigo",
+  },
+ },
+ {
+  ["metadata"]=31,
+  ["numberdata"]=54,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=24,
+   ["realpage"]=14,
+   ["section"]=24,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Componentes principales",
+  },
+ },
+ {
+  ["metadata"]=31,
+  ["numberdata"]=55,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=25,
+   ["realpage"]=15,
+   ["section"]=25,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Arquitectura del Código",
+  },
+ },
+ {
+  ["metadata"]=31,
+  ["numberdata"]=56,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=26,
+   ["realpage"]=16,
+   ["section"]=26,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Interfaz de Uso",
+  },
+ },
+ {
+  ["metadata"]=31,
+  ["numberdata"]=57,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=27,
+   ["realpage"]=16,
+   ["section"]=27,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Comparación con Solver Exacto",
+  },
+ },
+ {
+  ["metadata"]=31,
+  ["numberdata"]=58,
+  ["references"]={
+   ["block"]="bodypart",
+   ["internal"]=28,
+   ["realpage"]=16,
+   ["section"]=28,
+  },
+  ["titledata"]={
+   ["label"]="subsection",
+   ["title"]="Extensiones Futuras",
+  },
+ },
 }
 
 if not utilitydata.structures then utilitydata.structures = { } end
@@ -566,92 +764,120 @@ utilitydata.structures.pages.collected={
  {
   ["block"]="bodypart",
   ["number"]=1,
-  ["numberdata"]=41,
-  ["prefixdata"]=42,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=2,
-  ["numberdata"]=41,
-  ["prefixdata"]=42,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=3,
-  ["numberdata"]=41,
-  ["prefixdata"]=42,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=4,
-  ["numberdata"]=41,
-  ["prefixdata"]=42,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=5,
-  ["numberdata"]=41,
-  ["prefixdata"]=42,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=6,
-  ["numberdata"]=41,
-  ["prefixdata"]=42,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=7,
-  ["numberdata"]=41,
-  ["prefixdata"]=42,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=8,
-  ["numberdata"]=41,
-  ["prefixdata"]=42,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=9,
-  ["numberdata"]=41,
-  ["prefixdata"]=42,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=10,
-  ["numberdata"]=41,
-  ["prefixdata"]=42,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=11,
-  ["numberdata"]=41,
-  ["prefixdata"]=42,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=12,
-  ["numberdata"]=41,
-  ["prefixdata"]=42,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
   ["state"]="start",
  },
  {
   ["block"]="bodypart",
   ["number"]=13,
-  ["numberdata"]=41,
-  ["prefixdata"]=42,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
+  ["state"]="start",
+ },
+ {
+  ["block"]="bodypart",
+  ["number"]=14,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
+  ["state"]="start",
+ },
+ {
+  ["block"]="bodypart",
+  ["number"]=15,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
+  ["state"]="start",
+ },
+ {
+  ["block"]="bodypart",
+  ["number"]=16,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
+  ["state"]="start",
+ },
+ {
+  ["block"]="bodypart",
+  ["number"]=17,
+  ["numberdata"]=59,
+  ["prefixdata"]=60,
   ["state"]="start",
  },
 }
@@ -687,6 +913,36 @@ utilitydata.structures.itemgroups.collected={
  ["itemize"]={
   {
    { 2, 0 },
+  },
+  {
+   { 4, 0 },
+  },
+  {
+   { 2, 0 },
+  },
+  {
+   { 3, 0 },
+  },
+  {
+   { 3, 0 },
+  },
+  {
+   { 2, 0 },
+  },
+  {
+   { 4, 0 },
+  },
+  {
+   { 4, 0 },
+  },
+  {
+   { 4, 0 },
+  },
+  {
+   { 3, 0 },
+  },
+  {
+   { 6, 0 },
   },
  },
 }
@@ -765,6 +1021,15 @@ utilitydata.job.packed={
   { 0, 0, 3, 3 },
   { 0, 0, 3, 4 },
   { 0, 0, 3, 5 },
+  { 0, 0, 4 },
+  { 0, 0, 4, 1 },
+  { 0, 0, 4, 2 },
+  { 0, 0, 4, 3 },
+  { 0, 0, 4, 4 },
+  { 0, 0, 4, 5 },
+  { 0, 0, 4, 6 },
+  { 0, 0, 4, 7 },
+  { 0, 0, 4, 8 },
   {
    ["catcodes"]=9,
    ["coding"]="tex",
@@ -930,6 +1195,78 @@ utilitydata.job.packed={
    ["conversionset"]="default",
    ["language"]="en",
    ["numbers"]=19,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=20,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=21,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=22,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=23,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=24,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=25,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=26,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=27,
+   ["separatorset"]="default",
+   ["set"]="all",
+  },
+  {
+   ["block"]="bodypart",
+   ["conversionset"]="default",
+   ["language"]="en",
+   ["numbers"]=28,
    ["separatorset"]="default",
    ["set"]="all",
   },
