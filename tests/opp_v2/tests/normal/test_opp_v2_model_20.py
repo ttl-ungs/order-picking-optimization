@@ -49,20 +49,20 @@ class TestOPPModelGrid(OPPTestCase):
         due_date_by_order = self.normalize_due_dates(N, due_date_override)
 
         params = SolveModelDTO()
-        params.w1 = w1
-        params.w2 = w2
-        params.gamma = gamma
-        params.delta = delta
-        params.cap_n = cap_n
-        params.cap_vehicle = cap_vehicle
-        params.a = a
-        params.beta_time = 0.5
-        params.beta_setup = 1.0
-        params.beta_picking = 1.0
-        params.due_date = due_date_by_order
+        params.W_full = w1
+        params.W_ea_ta = w2
+        params.W_ea = gamma
+        params.W_ta = delta
+        params.C_n = cap_n
+        params.C_v = cap_vehicle
+        params.A = a
+        params.B_time = 0.5
+        params.B_setup = 1.0
+        params.B_picking = 1.0
+        params.Dd = due_date_by_order
         params.M = 1000.0
         params.x = x
-        params.y = y
+        params.Bn = y
 
         model_dto = ModelDTO()
         model_dto.N = N

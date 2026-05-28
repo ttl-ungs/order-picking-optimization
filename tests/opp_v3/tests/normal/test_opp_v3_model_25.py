@@ -43,19 +43,19 @@ class TestEmptyBatch(OPPTestCase):
         cap_n = {n: 5.0 for n in N}
 
         params = SolveModelDTO()
-        params.w1 = 1.0
-        params.w2 = 1.0
-        params.gamma = 1.0
-        params.delta = 1.0
-        params.cap_n = cap_n
-        params.cap_vehicle = cap_vehicle
-        params.a = a
-        params.beta_time = 0.5
-        params.beta_setup = 1.0
-        params.beta_picking = 1.0
-        params.due_date = {n: 100.0 for n in N}
+        params.W_full = 1.0
+        params.W_ea_ta = 1.0
+        params.W_ea = 1.0
+        params.W_ta = 1.0
+        params.C_n = cap_n
+        params.C_v = cap_vehicle
+        params.A = a
+        params.B_time = 0.5
+        params.B_setup = 1.0
+        params.B_picking = 1.0
+        params.Dd = {n: 100.0 for n in N}
         params.M = 1000.0
-        params.y = y
+        params.Bn = y
 
         model_dto = ModelDTO()
         model_dto.N = N

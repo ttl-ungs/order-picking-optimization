@@ -63,20 +63,20 @@ class OPPModelV2(Model):
         self.start_time = dto.start_time
 
     def solve(self, params: SolveModelDTO):
-        w1 = params.w1
-        w2 = params.w2
-        gamma = params.gamma
-        delta = params.delta
-        cap_n = params.cap_n
-        cap_vehicle = params.cap_vehicle
-        a = params.a
-        beta_time = params.beta_time
-        beta_setup = params.beta_setup
-        beta_picking = params.beta_picking
-        due_date = params.due_date
+        w1 = params.W_full
+        w2 = params.W_ea_ta
+        gamma = params.W_ea
+        delta = params.W_ta
+        cap_n = params.C_n
+        cap_vehicle = params.C_v
+        a = params.A
+        beta_time = params.B_time
+        beta_setup = params.B_setup
+        beta_picking = params.B_picking
+        due_date = params.Dd
         M = params.M
         x = params.x
-        y = params.y
+        y = params.Bn
         start_time = self.start_time
 
         model = pyscipopt.Model("OPP Model Version 2")
@@ -555,7 +555,7 @@ class OPPModelV2(Model):
         return z[i, i, b] == 0 if i != self.location_graph.get_depot() else None
 
     def constraint_valid_execution_time(
-        self, b, t_exec, beta_time, beta_setup, beta_picking, cap, y, z
+        self, b, t_exec, beta_time, beta_setup, beta_picking, cap_n, y, z
     ):
         """
         (18): Valid execution time constraint.
@@ -564,7 +564,7 @@ class OPPModelV2(Model):
         """
         return (
             beta_setup
-            + beta_picking * quicksum(cap[n] * y[n, b] for n in self.N)
+            + beta_picking * quicksum(cap_n[n] * y[n, b] for n in self.N)
             + beta_time
             * (
                 quicksum(

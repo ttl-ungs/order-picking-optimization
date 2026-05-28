@@ -85,7 +85,7 @@ class TestServiceTimeEdgeCases(OPPTestCase):
         for k, v in base_params.items():
             setattr(params, k, v)
         some = list(sorted(V))[: max(1, len(V) // 2)]
-        params.s = {v: 1.0 for v in some}
+        params.S = {v: 1.0 for v in some}
         self._run_model(params, model_dto)
 
     def test_non_dict_s_values(self):
@@ -95,7 +95,7 @@ class TestServiceTimeEdgeCases(OPPTestCase):
             params = SolveModelDTO()
             for k, v in base_params.items():
                 setattr(params, k, v)
-            params.s = bad
+            params.S = bad
             self._run_model(params, model_dto)
 
     def test_large_and_fractional_s(self):
@@ -103,7 +103,7 @@ class TestServiceTimeEdgeCases(OPPTestCase):
         params = SolveModelDTO()
         for k, v in base_params.items():
             setattr(params, k, v)
-        params.s = {v: (i * 0.75 + 0.5) for i, v in enumerate(sorted(V))}
+        params.S = {v: (i * 0.75 + 0.5) for i, v in enumerate(sorted(V))}
         self._run_model(params, model_dto)
 
     def test_depot_and_final_ignored_in_service_time(self):
@@ -114,7 +114,7 @@ class TestServiceTimeEdgeCases(OPPTestCase):
             setattr(params, k, v)
         # fill s for all vertices (model should ignore depot/final in service term)
         all_vs = list(model_dto.location_graph.get_vertices())
-        params.s = {v: 1e6 for v in all_vs}
+        params.S = {v: 1e6 for v in all_vs}
         self._run_model(params, model_dto)
 
     def test_negative_s_values_do_not_crash(self):
@@ -122,7 +122,7 @@ class TestServiceTimeEdgeCases(OPPTestCase):
         params = SolveModelDTO()
         for k, v in base_params.items():
             setattr(params, k, v)
-        params.s = {v: (-1.0 if i % 2 == 0 else 0.5) for i, v in enumerate(sorted(V))}
+        params.S = {v: (-1.0 if i % 2 == 0 else 0.5) for i, v in enumerate(sorted(V))}
         self._run_model(params, model_dto)
 
 

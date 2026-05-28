@@ -68,19 +68,19 @@ class TestOPPModelBridge(OPPTestCase):
             beta_picking = beta_picking_override
 
         params = SolveModelDTO()
-        params.w1 = w1
-        params.w2 = w2
-        params.gamma = gamma
-        params.delta = delta
-        params.cap_n = cap_n
-        params.cap_vehicle = cap_vehicle
-        params.a = a
-        params.beta_time = beta_time
-        params.beta_setup = beta_setup
-        params.beta_picking = beta_picking
-        params.due_date = due_date_by_order
+        params.W_full = w1
+        params.W_ea_ta = w2
+        params.W_ea = gamma
+        params.W_ta = delta
+        params.C_n = cap_n
+        params.C_v = cap_vehicle
+        params.A = a
+        params.B_time = beta_time
+        params.B_setup = beta_setup
+        params.B_picking = beta_picking
+        params.Dd = due_date_by_order
         params.M = 1000.0
-        params.y = y
+        params.Bn = y
 
         model_dto = ModelDTO()
         model_dto.N = N

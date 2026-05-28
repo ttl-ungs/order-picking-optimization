@@ -17,99 +17,99 @@ class SolveModelDTO:
         self._y: dict = None
 
     @property
-    def w1(self) -> float:
+    def W_full(self) -> float:
         return self._w1
 
-    @w1.setter
-    def w1(self, value: float):
+    @W_full.setter
+    def W_full(self, value: float):
         self._w1 = value
 
     @property
-    def w2(self) -> float:
+    def W_ea_ta(self) -> float:
         return self._w2
 
-    @w2.setter
-    def w2(self, value: float):
+    @W_ea_ta.setter
+    def W_ea_ta(self, value: float):
         self._w2 = value
 
     @property
-    def gamma(self) -> float:
+    def W_ea(self) -> float:
         return self._gamma
 
-    @gamma.setter
-    def gamma(self, value: float):
+    @W_ea.setter
+    def W_ea(self, value: float):
         self._gamma = value
 
     @property
-    def delta(self) -> float:
+    def W_ta(self) -> float:
         return self._delta
 
-    @delta.setter
-    def delta(self, value: float):
+    @W_ta.setter
+    def W_ta(self, value: float):
         self._delta = value
 
     @property
-    def cap_n(self) -> dict:
+    def C_n(self) -> dict:
         return self._cap_n
 
-    @cap_n.setter
-    def cap_n(self, value: dict):
+    @C_n.setter
+    def C_n(self, value: dict):
         self._cap_n = value
 
     @property
-    def cap_vehicle(self) -> float:
+    def C_v(self) -> float:
         return self._cap_vehicle
 
-    @cap_vehicle.setter
-    def cap_vehicle(self, value: float):
+    @C_v.setter
+    def C_v(self, value: float):
         self._cap_vehicle = value
 
     @property
-    def a(self) -> dict:
+    def A(self) -> dict:
         return self._a
 
-    @a.setter
-    def a(self, value: dict):
+    @A.setter
+    def A(self, value: dict):
         self._a = value
 
     @property
-    def beta_time(self) -> float:
+    def B_time(self) -> float:
         return self._beta_time
 
-    @beta_time.setter
-    def beta_time(self, value: float):
+    @B_time.setter
+    def B_time(self, value: float):
         self._beta_time = value
 
     @property
-    def beta_setup(self) -> float:
+    def B_setup(self) -> float:
         return self._beta_setup
 
-    @beta_setup.setter
-    def beta_setup(self, value: float):
+    @B_setup.setter
+    def B_setup(self, value: float):
         self._beta_setup = value
 
     @property
-    def beta_picking(self) -> float:
+    def B_picking(self) -> float:
         return self._beta_picking
 
-    @beta_picking.setter
-    def beta_picking(self, value: float):
+    @B_picking.setter
+    def B_picking(self, value: float):
         self._beta_picking = value
 
     @property
-    def s(self) -> dict:
+    def S(self) -> dict:
         return self._s
 
-    @s.setter
-    def s(self, value: dict):
+    @S.setter
+    def S(self, value: dict):
         self._s = value
 
     @property
-    def due_date(self) -> dict:
+    def Dd(self) -> dict:
         return self._due_date
 
-    @due_date.setter
-    def due_date(self, value: dict):
+    @Dd.setter
+    def Dd(self, value: dict):
         self._due_date = value
 
     @property
@@ -129,9 +129,9 @@ class SolveModelDTO:
         self._x = value
 
     @property
-    def y(self) -> dict:
+    def Bn(self) -> dict:
         return self._y
 
-    @y.setter
-    def y(self, value: dict):
+    @Bn.setter
+    def Bn(self, value: dict):
         self._y = value

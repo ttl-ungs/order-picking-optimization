@@ -40,19 +40,19 @@ class TestServiceTimeVariations(OPPTestCase):
         due_date = {"O1": 15.0, "O2": 15.0}
 
         params = SolveModelDTO()
-        params.w1 = w1
-        params.w2 = w2
-        params.gamma = gamma
-        params.delta = delta
-        params.cap_n = cap_n
-        params.cap_vehicle = cap_vehicle
-        params.a = a
-        params.beta_time = beta_time
-        params.beta_setup = beta_setup
-        params.beta_picking = beta_picking
-        params.due_date = due_date
+        params.W_full = w1
+        params.W_ea_ta = w2
+        params.W_ea = gamma
+        params.W_ta = delta
+        params.C_n = cap_n
+        params.C_v = cap_vehicle
+        params.A = a
+        params.B_time = beta_time
+        params.B_setup = beta_setup
+        params.B_picking = beta_picking
+        params.Dd = due_date
         params.M = M
-        params.y = y
+        params.Bn = y
 
         model_dto = ModelDTO()
         model_dto.N = N
@@ -73,12 +73,12 @@ class TestServiceTimeVariations(OPPTestCase):
 
     def test_service_time_zero(self):
         params, model_dto, V, _ = self._build_common()
-        params.s = {v: 0.0 for v in V}
+        params.S = {v: 0.0 for v in V}
         self._run_and_assert(params, model_dto)
 
     def test_service_time_one(self):
         params, model_dto, V, _ = self._build_common()
-        params.s = {v: 1.0 for v in V}
+        params.S = {v: 1.0 for v in V}
         self._run_and_assert(params, model_dto)
 
     def test_service_time_mixed(self):
@@ -87,7 +87,7 @@ class TestServiceTimeVariations(OPPTestCase):
         s = {}
         for i, v in enumerate(sorted(V)):
             s[v] = 0.5 + (i % 3) * 0.5
-        params.s = s
+        params.S = s
         self._run_and_assert(params, model_dto)
 
 
