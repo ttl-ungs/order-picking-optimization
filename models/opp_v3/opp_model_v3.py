@@ -72,7 +72,6 @@ class OPPModelV3(Model):
         s = params.s
         due_date = params.due_date
         M = params.M
-        x = params.x
         y = params.y
         start_time = self.start_time
 
@@ -258,7 +257,7 @@ class OPPModelV3(Model):
             for n in self.N:
                 model.addCons(
                     self.constraint_tardiness_definition(
-                        v, due_date, n, M, b, x, y, ta
+                        v, due_date, n, M, b, y, ta
                     ),
                     name=f"tardiness_definition_n{n}_b{b}",
                 )
@@ -268,7 +267,7 @@ class OPPModelV3(Model):
             for n in self.N:
                 model.addCons(
                     self.constraint_earliness_definition(
-                        v, due_date, n, M, b, x, y, ea
+                        v, due_date, n, M, b, y, ea
                     ),
                     name=f"earliness_definition_n{n}_b{b}",
                 )
@@ -499,9 +498,6 @@ class OPPModelV3(Model):
         """
         return z[i, i, b] == 0 if i != self.location_graph.get_depot() else None
 
-    # TODO: Esto no considera tiempos de parada para órdenes que requieren visitar
-    # más de una locación. Esto no refleja bien el calculo de los tiempos y permite
-    # que se apliquen menos penalizaciones
     def constraint_valid_execution_time(
         self, b, t_exec, beta_time, beta_setup, beta_picking, cap, y, z, s
     ):
@@ -555,7 +551,7 @@ class OPPModelV3(Model):
             # Para los lotes siguientes: Fin_actual >= Fin_anterior + Duracion_actual
             return v[b] >= v[prev_b] + t_exec[b]
 
-    def constraint_tardiness_definition(self, v, due_date, n, M, b, x, y, ta):
+    def constraint_tardiness_definition(self, v, due_date, n, M, b, y, ta):
         """
         (22): Tardiness definition constraint.
         Ensures that the tardiness of an order is correctly calculated
@@ -564,7 +560,7 @@ class OPPModelV3(Model):
         """
         return v[b] - due_date[n] - M * (1 - y[n, b]) <= ta[n]
 
-    def constraint_earliness_definition(self, v, due_date, n, M, b, x, y, ea):
+    def constraint_earliness_definition(self, v, due_date, n, M, b, y, ea):
         """
         (23): Earliness definition constraint.
         Ensures that the earliness of an order is correctly calculated
