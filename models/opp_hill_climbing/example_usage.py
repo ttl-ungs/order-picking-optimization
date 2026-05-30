@@ -5,6 +5,12 @@ This script demonstrates how to use the hill climbing solver
 with the same input format as the exact solver (opp_model_v3).
 """
 
+from pathlib import Path
+import sys
+
+if __package__ is None or __package__ == "":
+    sys.path.append(str(Path(__file__).resolve().parents[2]))
+
 from models.opp_hill_climbing import OPPHillClimbing
 from dtos.opp.model_dto import ModelDTO
 from dtos.opp.solve_model_dto import SolveModelDTO
