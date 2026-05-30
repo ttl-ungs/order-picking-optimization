@@ -509,33 +509,50 @@ En esta versión se elimina el concepto de picker y se trabaja con lotes predefi
 
 \stopsection
 
-\startsection[title={Cuarta Versión: Heurística Hill Climbing para OPP}]
+\startsection[title={Cuarta Versión: Heurística Hill Climbing para Optimización de Rutas (OPP HC V3)}]
 
-Además del modelo exacto OPP v3, se desarrolló una heurística de búsqueda local denominada \italic{Hill Climbing} (HC) para resolver el mismo problema de forma más rápida, aunque sin garantía de optimalidad. Esta heurística es especialmente útil para instancias grandes donde el tiempo de resolución del modelo exacto puede ser prohibitivo.
+Además del modelo exacto OPP v3, se desarrolló una heurística de búsqueda local denominada \italic{Hill Climbing} (HC) que resuelve el \bold{mismo problema exacto}, pero mediante un enfoque heurístico más rápido.
+
+\startsubsection[title={Definición del Problema}]
+
+A diferencia de lo que se podría esperar, la heurística \bold{NO} asigna órdenes a lotes. En su lugar:
+
+\startitemize[bullet]
+    \item \bold{Input}: Asignación fija de órdenes a lotes (parámetro $y_{nb}$ del modelo exacto).
+    \item \bold{Variables de decisión}: Las rutas dentro de cada lote ($z_{ijb}$, arcos utilizados).
+    \item \bold{Objetivo}: Minimizar la función objetivo original.
+    \item \bold{Output}: Grafo de rutas compatible con el formato del solver exacto.
+\stopitemize
+
+Es decir, el Hill Climbing optimiza \bold{dónde ir dentro de cada lote}, no \bold{qué órdenes van en cada lote}.
+
+\stopsubsection
 
 \startsubsection[title={Motivación}]
 
-El modelo exacto OPP v3 utiliza programación lineal entera con el solver SCIP, lo que garantiza soluciones óptimas pero puede requerir mucho tiempo computacional para instancias grandes. El Hill Climbing proporciona:
+El modelo exacto OPP v3 usa programación lineal entera con SCIP, garantizando optimalidad pero requiriendo tiempo computacional significativo. El Hill Climbing proporciona:
 
 \startitemize[bullet]
     \item \bold{Velocidad}: Típicamente 10-100x más rápido que el solver exacto.
-    \item \bold{Escalabilidad}: Puede manejar instancias más grandes.
-    \item \bold{Anytime}: Se puede detener en cualquier momento con la mejor solución encontrada hasta ese momento.
-    \item \bold{Simplicidad}: Algoritmo fácil de entender y modificar.
+    \item \bold{Escalabilidad}: Maneja instancias más grandes con tiempo predecible.
+    \item \bold{Compatibilidad}: Recibe y retorna el mismo formato que el solver exacto.
+    \item \bold{Anytime}: Se puede detener en cualquier momento con la mejor solución.
 \stopitemize
 
 \stopsubsection
 
 \startsubsection[title={Algoritmo}]
 
-El Hill Climbing es un algoritmo de búsqueda local que mejora iterativamente una solución inicial mediante movimientos a soluciones vecinas.
+El Hill Climbing es un algoritmo de búsqueda local que mejora iterativamente una solución inicial mediante movimientos a soluciones vecinas (en este caso, routes).
 
 \startsubsection[title={Pseudocódigo}]
 
 \starttyping
-procedure HillClimbing
-  solución_actual ← GenerarSoluciónInicial()
-  costo_actual ← Evaluar(solución_actual)
+procedure HillClimbing(Bn_fijo)
+  // Bn es la asignación fija de órdenes a lotes
+
+  solución ← GenerarSoluciónInicial(Bn_fijo)
+  costo ← Evaluar(solución)
 
   iteración ← 0
   sin_mejora ← 0
@@ -543,97 +560,106 @@ procedure HillClimbing
   mientras iteración < máx_iteraciones Y sin_mejora < máx_sin_mejora hacer
     iteración ← iteración + 1
 
-    solución_vecino ← GenerarVecino(solución_actual)
-    OptimizarRutas(solución_vecino)
-    costo_vecino ← Evaluar(solución_vecino)
+    vecino ← GenerarVecino(solución)  // Modifica rutas con 2-opt
+    costo_vecino ← Evaluar(vecino)
 
-    si costo_vecino < costo_actual entonces
-      solución_actual ← solución_vecino
-      costo_actual ← costo_vecino
+    si costo_vecino < costo entonces
+      solución ← vecino
+      costo ← costo_vecino
       sin_mejora ← 0
     sino
       sin_mejora ← sin_mejora + 1
     fin si
   fin mientras
 
-  devolver solución_actual
+  devolver solución
 fin procedure
 \stoptyping
 
 \stopsubsection
 
-\startsubsection[title={Componentes principales}]
+\startsubsection[title={Componentes Principales}]
 
-{\bf 1. Solución Inicial}
+{\bf 1. Representación de Solución}
 
-Se genera una solución inicial usando una heurística greedy:
+Una solución es un conjunto de rutas, una para cada lote:
+
 \startitemize[bullet]
-    \item Ordenar órdenes por capacidad (descendente).
-    \item Asignar cada orden al primer lote con capacidad disponible.
+    \item \bold{routes[b]} = lista ordenada de locaciones a visitar en lote $b$.
+    \item Ejemplo: routes[``B1''] = [``L1'', ``L3'', ``L2''] significa: depósito → L1 → L3 → L2 → final.
 \stopitemize
 
-Esta estrategia produce soluciones factibles pero no necesariamente de buena calidad, proporcionando un punto de partida para la mejora local.
+{\bf 2. Solución Inicial}
 
-{\bf 2. Generación de Vecinos}
+Para cada lote, se genera una ruta usando heurística de vecino más cercano:
 
-Los vecinos se generan mediante movimientos simples:
 \startitemize[bullet]
-    \item Seleccionar aleatoriamente una orden.
-    \item Remover la orden de su lote actual (si está asignada).
-    \item Asignar la orden a un lote diferente aleatorio.
+    \item Identificar todas las locaciones que deben visitarse (aquellas requeridas por las órdenes del lote).
+    \item Comenzar en el depósito.
+    \item Iterativamente visitar la locación no visitada más cercana.
+    \item Terminar en el nodo final.
 \stopitemize
 
-Este operador de movimiento explora el espacio de soluciones manteniendo la complejidad computacional baja.
+{\bf 3. Generación de Vecinos}
 
-{\bf 3. Evaluación}
+Los vecinos se generan mediante el operador \bold{2-opt}:
 
-La función objetivo es la misma del modelo exacto:
+\startitemize[bullet]
+    \item Seleccionar aleatoriamente un lote.
+    \item Seleccionar dos posiciones $i < j$ en su ruta.
+    \item Invertir el segmento entre $i$ y $j$: route[i:j+1] = reverse(route[i:j+1]).
+\stopitemize
+
+Esto es la operación estándar de mejora de rutas usada en TSP heurísticos.
+
+{\bf 4. Evaluación}
+
+La función objetivo es exactamente la misma del modelo exacto:
 
 \startformula
 \min \left( w_{1} \cdot \sum_{b \in B} v_{b} + w_{2} \cdot \left( \gamma \cdot \sum_{n \in N} ea_{n} + \delta \cdot \sum_{n \in N} ta_{n} \right) \right)
 \stopformula
 
-Sin embargo, el cálculo se simplifica:
-\startitemize[bullet]
-    \item \bold{Tiempo de ejecución del lote}: Se estima considerando tiempo de setup, picking, y una aproximación del viaje basada en la cantidad de locaciones a visitar.
-    \item \bold{Distancia de viaje}: Se aproxima linealmente con el número de locaciones en el lote (simplificación del TSP).
-    \item \bold{Tiempo de servicio}: Se suma directamente para cada locación visitada.
-\stopitemize
+Donde:
+\startformula
+\startalign
+    \NC v_{b} \NC = \text{Tiempo de completitud del lote } b \NR
+    \NC t\_exec_b \NC = \beta^{setup} + \beta^{picking} \cdot \sum_{n} cap_n + \beta^{time} \cdot distancia(ruta) + servicio \NR
+\stopalign
+\stopformula
 
-{\bf 4. Criterio de Parada}
+Los tiempos de adelanto ($ea_n$) y tardanza ($ta_n$) se calculan respecto a las fechas de entrega de cada orden.
+
+{\bf 5. Criterio de Parada}
 
 El algoritmo termina cuando:
 \startitemize[bullet]
-    \item Se alcanza el número máximo de iteraciones (defecto: 1000), O
-    \item No hay mejora en N iteraciones consecutivas (defecto: 50).
+    \item Se alcanza el número máximo de iteraciones (defecto: 500), O
+    \item No hay mejora en N iteraciones consecutivas (defecto: 30).
 \stopitemize
 
 \stopsubsection
 
 \startsubsection[title={Arquitectura del Código}]
 
-La implementación se organiza en los siguientes módulos:
-
 \starttyping
 models/opp_hill_climbing/
-  ├── __init__.py                    # Exporta OPPHillClimbing
+  ├── __init__.py                    # Exporta OPPHillClimbingV3
   ├── opp_hill_climbing.py           # Clase principal del solver
-  ├── README.md                      # Documentación de la heurística
+  ├── README.md                      # Documentación completa
   ├── example_usage.py               # Ejemplo de uso
   └── utils/
       ├── __init__.py
-      ├── solution.py                # Representación de soluciones
-      ├── evaluator.py               # Función objetivo
-      └── route_optimizer.py         # Optimización de rutas
+      ├── route_solution.py          # Representación de rutas
+      └── route_evaluator.py         # Cálculo de objetivo
 \stoptyping
 
 \bold{Clases principales}:
 
 \startitemize[bullet]
-    \item \bold{OPPHillClimbing}: Clase principal que hereda de Model. Implementa solve() con el algoritmo HC.
-    \item \bold{Solution}: Representa la asignación de órdenes a lotes. Mantiene mappings bidireccionales.
-    \item \bold{Evaluator}: Calcula la función objetivo dada una solución.
-    \item \bold{RouteOptimizer}: Optimiza rutas dentro de lotes (actualmente stub).
+    \item \bold{OPPHillClimbingV3}: Solver principal (hereda de Model). Implementa `solve(params)`.
+    \item \bold{RouteSolution}: Representa una solución como rutas para cada lote. Incluye método `to_z_dict()` para convertir al formato de arcos.
+    \item \bold{RouteEvaluator}: Calcula la función objetivo exacta del modelo OPP v3 dada una solución de rutas.
 \stopitemize
 
 \stopsubsection
@@ -643,56 +669,66 @@ models/opp_hill_climbing/
 La heurística utiliza los mismos DTOs que el modelo exacto:
 
 \starttyping
-from models.opp_hill_climbing import OPPHillClimbing
+from models.opp_hill_climbing import OPPHillClimbingV3
 from dtos.opp.model_dto import ModelDTO
 from dtos.opp.solve_model_dto import SolveModelDTO
 
-solver = OPPHillClimbing(model_dto)
-status, solution = solver.solve(solve_dto)
+solver = OPPHillClimbingV3(model_dto)
+status, output_graph = solver.solve(solve_dto)
 \stoptyping
 
-Esto permite usar la heurística como reemplazo directo del solver exacto con los mismos inputs.
+\bold{Diferencia clave}: El parámetro `solve_dto.Bn` debe contener la \bold{asignación fija} de órdenes a lotes. Este es un parámetro de entrada, no una variable de decisión.
+
+\stopsubsection
+
+\startsubsection[title={Formato de Salida}]
+
+La salida es un objeto `OPPLocationGraph` que contiene:
+\startitemize[bullet]
+    \item Todos los vértices (locaciones).
+    \item Todos los arcos $(i, j, b)$ donde $z_{ijb} = 1$ en la solución.
+\stopitemize
+
+Este formato es completamente compatible con el método `build_output()` del solver exacto, permitiendo comparación directa y visualización idéntica.
 
 \stopsubsection
 
 \startsubsection[title={Comparación con Solver Exacto}]
 
-\bold{Ventajas de Hill Climbing}:
+\bold{Ventajas del Hill Climbing}:
 \startitemize[bullet]
-    \item Mucho más rápido (10-100x).
-    \item Escalable a instancias grandes.
-    \item Determinista respecto a tiempo de ejecución.
-    \item Fácil de modificar y extender.
+    \item \bold{Velocidad}: 10-100x más rápido.
+    \item \bold{Predecible}: Tiempo de ejecución controlable mediante parámetros.
+    \item \bold{Escalable}: Maneja instancias grandes sin problema.
+    \item \bold{Compatible}: Mismo formato de entrada/salida que el solver exacto.
 \stopitemize
 
-\bold{Desventajas de Hill Climbing}:
+\bold{Desventajas del Hill Climbing}:
 \startitemize[bullet]
-    \item No garantiza optimalidad global (converge a óptimos locales).
-    \item Calidad de la solución depende de la solución inicial y la exploración del vecindario.
-    \item Resultados pueden variar entre ejecuciones (debido a aleatoriedad).
-    \item Aproximaciones en el cálculo de distancias de viaje.
+    \item \bold{No óptimo}: Converge a óptimos locales, no globales.
+    \item \bold{Aleatorio}: Resultados varían entre ejecuciones (debido a selecciones aleatorias).
+    \item \bold{Sensible}: Calidad depende de la solución inicial y la estructura del vecindario.
 \stopitemize
 
 \bold{Recomendaciones de uso}:
 \startitemize[bullet]
-    \item Usar el solver exacto para instancias pequeñas (< 50 órdenes, < 10 lotes).
-    \item Usar Hill Climbing para instancias medianas-grandes (> 100 órdenes).
-    \item Usar Hill Climbing como solución inicial para algoritmos más sofisticados (Variable Neighborhood Search, Simulated Annealing).
+    \item Usar \bold{Exacto} para instancias pequeñas (< 50 órdenes, < 5 lotes).
+    \item Usar \bold{Hill Climbing} para instancias medianas-grandes (> 100 órdenes).
+    \item Usar \bold{Hill Climbing como baseline} para algoritmos más sofisticados.
+    \item Usar \bold{ambos} y comparar para entender trade-off calidad-tiempo.
 \stopitemize
 
 \stopsubsection
 
-\startsubsection[title={Extensiones Futuras}]
-
-Mejoras posibles para aumentar la calidad de las soluciones:
+\startsubsection[title={Posibles Mejoras}]
 
 \startitemize[bullet]
-    \item \bold{Multi-start}: Ejecutar múltiples veces con diferentes soluciones iniciales.
-    \item \bold{Variable Neighborhood Search}: Explorar múltiples estructuras de vecindario.
-    \item \bold{Simulated Annealing}: Aceptar soluciones peores con probabilidad decreciente para escapar óptimos locales.
-    \item \bold{Tabu Search}: Mantener lista de movimientos tabú para evitar ciclos.
-    \item \bold{2-opt / 3-opt}: Movimientos más complejos dentro de lotes.
-    \item \bold{Cálculo exacto de distancias}: Resolver TSP exacto o aproximado para cada lote.
+    \item \bold{Inicial mejor}: Savings algorithm, Christofides, LKH.
+    \item \bold{Mejores movimientos}: 3-opt, Or-opt, Lin-Kernighan.
+    \item \bold{Escape de óptimos locales}: Simulated Annealing, Tabu Search, Variable Neighborhood Search.
+    \item \bold{Multi-start}: Ejecutar múltiples veces y retornar mejor.
+    \item \bold{Paralelización}: Ejecutar múltiples búsquedas locales en paralelo.
+    \item \bold{Perturbaciones controladas}: Iterated Local Search (ILS).
 \stopitemize
 
 \stopsubsection

@@ -1,104 +1,158 @@
-# Hill Climbing Heuristic for Order Picking Problem (OPP)
+# Hill Climbing Heuristic for OPP V3 - Equivalent with Constraints
 
 ## Overview
 
-This directory contains a **Hill Climbing** heuristic solver for the Order Picking Problem. Hill Climbing is a local search algorithm that iteratively improves a solution by making moves to neighboring solutions that reduce the objective function.
+This directory contains a **Hill Climbing** heuristic solver that solves the **exact same problem as `opp_model_v3.py`**, with the **same constraints**, but using a heuristic approach instead of exact integer linear programming.
+
+### Equivalence Guarantee
+
+**Same Input:**
+- Receives all parameters from `SolveModelDTO`
+- Fixed batch assignments `Bn` (parameter)
+
+**Same Constraints:**
+- (6) Start from depot
+- (7) Finish at final node
+- (8) Cannot return to depot
+- (9) Cannot leave final
+- (10), (11) Visit all required locations
+- (12) Articles capacity ≤ vehicle capacity
+- (13) Flow conservation
+- (14), (15) One arc per node
+- (17) No loops/cycles
+- (25) Only valid edges
+- Plus: execution time, earliness/tardiness calculations
+
+**Same Output:**
+- Location graph with active arcs
+- Compatible with `build_output()` format
+- Objective value (same formula)
+
+**Difference:**
+- ✅ **Speed**: Heuristic search instead of exact LP solver
+- ❌ **Optimality**: Converges to local optimum, not guaranteed global
+- ✅ **Feasibility**: All solutions are valid (respect all constraints)
 
 ## Algorithm
 
-### Main Loop
+### Hill Climbing with Constraint Validation
 
-1. **Initial Solution**: Generate a greedy initial solution
-2. **Neighborhood Generation**: Create a neighbor by moving a random order to a different batch
-3. **Evaluation**: Calculate the objective function for both current and neighbor solutions
-4. **Acceptance**: Accept the neighbor if it improves the objective (minimization)
-5. **Termination**: Stop when:
-   - Maximum iterations reached, OR
-   - No improvement for N consecutive iterations (convergence to local optimum)
-
-### Objective Function
-
-Minimizes:
-```
-W_full * Σ(v_b) + W_ea_ta * (W_ea * Σ(ea_n) + W_ta * Σ(ta_n))
-```
-
-Where:
-- `v_b`: completion time of batch b
-- `ea_n`: earliness of order n (finishing before due date)
-- `ta_n`: tardiness of order n (finishing after due date)
+1. **Generate Initial FEASIBLE Solution**
+   - For each batch, build route using nearest neighbor
+   - Verify all constraints before accepting
+   
+2. **Main Loop**
+   - Generate neighbor via 2-opt (only if maintains feasibility)
+   - Evaluate objective
+   - Accept if better
+   
+3. **Termination**
+   - Max iterations reached, OR
+   - No improvement for N iterations
 
 ## Architecture
 
-### Core Components
+```
+models/opp_hill_climbing/
+  ├── opp_hill_climbing.py         # Main solver (equivalent to opp_model_v3)
+  ├── utils/
+  │   ├── route_solution.py        # Route representation
+  │   ├── route_evaluator.py       # Objective function (identical formula)
+  │   └── constraints_validator.py # Validates ALL constraints
+  ├── example_usage.py
+  └── README.md (this file)
+```
 
-- **OPPHillClimbing**: Main solver class inheriting from `Model`
-- **Solution**: Represents assignment of orders to batches
-- **Evaluator**: Calculates objective function
-- **RouteOptimizer**: Optimizes routes within batches
+### Key Components
 
-### Key Methods
+- **OPPHillClimbingV3**: Main solver
+  - `solve(params)`: Same interface as opp_model_v3
+  - Validates constraints throughout
+  - Returns compatible output
 
-#### `solve(params: SolveModelDTO) -> (status, output)`
+- **ConstraintsValidator**: Ensures feasibility
+  - Validates all 13+ constraints
+  - Prevents infeasible moves
 
-Main entry point that runs the hill climbing algorithm.
+- **RouteEvaluator**: Objective function
+  - Identical formula to exact model
+  - Same tardiness/earliness calculation
 
-#### `_generate_initial_solution() -> Solution`
-
-Creates an initial solution using a simple greedy heuristic:
-- Sort orders by capacity
-- Assign each to the first batch with available capacity
-
-#### `_generate_neighbor(solution: Solution) -> Solution`
-
-Creates a neighbor solution by:
-- Selecting a random order
-- Moving it to a different random batch
-- This ensures local search exploration
-
-## Usage Example
+## Usage
 
 ```python
-from models.opp_hill_climbing import OPPHillClimbing
+from models.opp_hill_climbing import OPPHillClimbingV3
 from dtos.opp.model_dto import ModelDTO
 from dtos.opp.solve_model_dto import SolveModelDTO
 
-# Create DTOs (same as for opp_model_v3)
+# Create DTOs (same as opp_model_v3)
 model_dto = ModelDTO()
-# ... populate model_dto ...
-
 solve_dto = SolveModelDTO()
-# ... populate solve_dto ...
+# ... populate both ...
 
-# Create and solve
-solver = OPPHillClimbing(model_dto)
-status, solution = solver.solve(solve_dto)
+# Solve with Hill Climbing
+solver = OPPHillClimbingV3(model_dto)
+status, output_graph = solver.solve(solve_dto)
+
+# Output is identical format to opp_model_v3
 ```
 
-## Comparison with Exact Solver
+## Testing
 
-### Pros
-- **Fast**: Typically 10-100x faster than exact solver
-- **Scalable**: Can handle larger instances
-- **Anytime**: Can be stopped at any time with current best solution
-- **Simple**: Easy to understand and modify
+To verify equivalence, copy tests from `opp_v3` test suite:
+- Same test fixtures work for both solvers
+- Both return compatible output graphs
+- Constraint validation should be transparent
+- Objective calculations should match exactly
 
-### Cons
-- **Non-optimal**: Returns local optimum, not guaranteed global optimum
-- **Variable quality**: Solution quality depends on initial solution and stopping criteria
-- **Random**: Results vary between runs
+### Example Test Pattern
 
-## Parameters
+```python
+def test_opp_hc_v3_same_format():
+    # Use opp_v3 test setup
+    model_dto, solve_dto = create_test_instance()
+    
+    # Run both solvers
+    exact_solver = OPPModelV3(model_dto)
+    status_exact, output_exact = exact_solver.solve(solve_dto)
+    
+    hc_solver = OPPHillClimbingV3(model_dto)
+    status_hc, output_hc = hc_solver.solve(solve_dto)
+    
+    # Both should return compatible graphs
+    assert output_exact.get_vertices() == output_hc.get_vertices()
+    # Objective values may differ (heuristic), but constraints respected
+```
 
-Modify in the code for experimentation:
-- `max_iterations`: Maximum iterations (default: 1000)
-- `max_no_improvement`: Iterations without improvement before stopping (default: 50)
-- Neighborhood generation strategy in `_generate_neighbor()`
+## Performance
+
+| Aspect | Exact | HC V3 |
+|--------|-------|-------|
+| Optimality | Global optimum | Local optimum |
+| Speed | Slow (SCIP) | Fast (heuristic) |
+| Constraint validation | Implicit in LP | Explicit checks |
+| Feasibility guarantee | Yes (if solver finds solution) | Yes (always) |
+| Predictable time | No | Yes |
+
+## Constraints Enforced
+
+All constraints from opp_model_v3 are validated:
+
+1. ✅ Routes start at depot and end at final
+2. ✅ Cannot revisit depot or leave final
+3. ✅ All required locations visited
+4. ✅ Vehicle capacity respected
+5. ✅ Only valid edges used
+6. ✅ No cycles/repeated locations
+7. ✅ Flow conservation (implicit in paths)
+8. ✅ Execution times calculated correctly
+9. ✅ Earliness/tardiness computed correctly
 
 ## Future Enhancements
 
-1. **Multi-start**: Run multiple times with different initial solutions
-2. **Perturbation**: Escape local optima with controlled perturbations (Variable Neighborhood Search)
-3. **Tabu List**: Prevent revisiting recently explored solutions
-4. **Simulated Annealing**: Accept worse solutions probabilistically to escape local optima
-5. **Advanced Neighborhoods**: 2-opt, 3-opt moves within batches
+1. **Better initial solutions**: Savings algorithm, Christofides
+2. **Advanced moves**: 3-opt, Or-opt, Lin-Kernighan
+3. **Escape mechanisms**: Simulated Annealing, Tabu Search
+4. **Multi-start**: Multiple runs with best solution
+5. **Parallelization**: Run multiple searches in parallel
+

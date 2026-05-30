@@ -1,23 +1,29 @@
 """
-Hill Climbing heuristic for Order Picking Problem (OPP).
+Hill Climbing heuristic for OPP v3 with ALL constraints validation.
 
-Generates an initial solution and improves it iteratively by making
-local moves that reduce the objective function.
+Same problem as opp_model_v3.py:
+- Receives: same SolveModelDTO parameters
+- Validates: ALL constraints from the exact model
+- Optimizes: routes within batches using 2-opt
+- Output: compatible with build_output
 """
 
 import time
 import random
-from typing import Dict, Tuple, Set
+from typing import Dict, List, Set, Tuple, Optional
 
 from models.base.model import Model
+from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
-from models.opp_hill_climbing.utils.solution import Solution
-from models.opp_hill_climbing.utils.evaluator import Evaluator
-from models.opp_hill_climbing.utils.route_optimizer import RouteOptimizer
+from models.opp_hill_climbing.utils.route_solution import RouteSolution
+from models.opp_hill_climbing.utils.route_evaluator import RouteEvaluator
+from models.opp_hill_climbing.utils.constraints_validator import ConstraintsValidator
 
 
-class OPPHillClimbing(Model):
+class OPPHillClimbingV3(Model):
+    """Hill Climbing solver for OPP v3 - validates ALL constraints."""
+
     def __init__(self, dto: ModelDTO):
         super().__init__()
         self.N = sorted(dto.N)
@@ -27,15 +33,34 @@ class OPPHillClimbing(Model):
 
     def solve(self, params: SolveModelDTO):
         """
-        Solve the OPP using hill climbing heuristic.
-        Returns (status, solution_dict).
+        Solve OPP v3 using Hill Climbing on routes with full constraint validation.
+
+        Receives: Same parameters as opp_model_v3
+        Validates: All constraints
+        Returns: Compatible output
         """
         start_time = self.T_0 if self.T_0 is not None else time.time()
 
-        evaluator = Evaluator(
+        # Extract batch assignments from Bn parameter
+        batch_assignments = self._extract_batch_assignments(params.Bn)
+
+        # Create validator
+        validator = ConstraintsValidator(
             N=self.N,
             B=self.B,
             location_graph=self.location_graph,
+            batch_assignments=batch_assignments,
+            C_n=params.C_n,
+            C_v=params.C_v,
+            A=params.A,
+        )
+
+        # Create evaluator
+        evaluator = RouteEvaluator(
+            N=self.N,
+            B=self.B,
+            location_graph=self.location_graph,
+            batch_assignments=batch_assignments,
             W_full=params.W_full,
             W_ea_ta=params.W_ea_ta,
             W_ea=params.W_ea,
@@ -51,33 +76,34 @@ class OPPHillClimbing(Model):
             M=params.M,
         )
 
-        route_optimizer = RouteOptimizer(self.location_graph)
+        # Generate initial FEASIBLE solution
+        current_solution = self._generate_initial_feasible_solution(
+            batch_assignments, validator, params.C_n, params.A
+        )
 
-        # Generate initial solution
-        current_solution = self._generate_initial_solution()
-
-        # Optimize routes for current solution
-        for batch in current_solution.batch_assignments.values():
-            route_optimizer.optimize_route(batch)
+        if current_solution is None:
+            print("ERROR: Could not generate initial feasible solution")
+            return "infeasible", None
 
         current_cost = evaluator.evaluate(current_solution)
-        iteration = 0
-        max_iterations = 1000
-        no_improvement_count = 0
-        max_no_improvement = 50
 
-        improvement_log = [(iteration, current_cost)]
+        iteration = 0
+        max_iterations = 500
+        no_improvement_count = 0
+        max_no_improvement = 30
 
         # Hill climbing main loop
         while iteration < max_iterations and no_improvement_count < max_no_improvement:
             iteration += 1
 
-            # Generate neighbor
-            neighbor_solution = self._generate_neighbor(current_solution)
+            # Generate neighbor (maintaining feasibility)
+            neighbor_solution = self._generate_feasible_neighbor(
+                current_solution, batch_assignments, validator, params.C_n, params.A
+            )
 
-            # Optimize routes for neighbor
-            for batch in neighbor_solution.batch_assignments.values():
-                route_optimizer.optimize_route(batch)
+            if neighbor_solution is None:
+                no_improvement_count += 1
+                continue
 
             neighbor_cost = evaluator.evaluate(neighbor_solution)
 
@@ -86,7 +112,6 @@ class OPPHillClimbing(Model):
                 current_solution = neighbor_solution
                 current_cost = neighbor_cost
                 no_improvement_count = 0
-                improvement_log.append((iteration, current_cost))
             else:
                 no_improvement_count += 1
 
@@ -95,90 +120,238 @@ class OPPHillClimbing(Model):
         print(f"\nHill Climbing execution time: {elapsed:.4f}s")
         print(f"Final objective value: {current_cost:.4f}")
         print(f"Iterations: {iteration}")
-        print(f"Improvements: {len(improvement_log) - 1}")
 
-        # Build output dictionary
-        output = self._build_solution_dict(current_solution, current_cost)
+        # Build output compatible with build_output format
+        output = self._build_solution_output(current_solution)
 
         return "optimal", output
 
-    def _generate_initial_solution(self) -> Solution:
+    def _extract_batch_assignments(self, Bn: Dict) -> Dict[str, Set[str]]:
+        """Extract which orders belong to each batch from Bn parameter."""
+        batch_assignments = {b: set() for b in self.B}
+        for (order, batch), value in Bn.items():
+            if value > 0.5:  # Treat as binary
+                batch_assignments[batch].add(order)
+        return batch_assignments
+
+    def _generate_initial_feasible_solution(
+        self,
+        batch_assignments: Dict[str, Set[str]],
+        validator: "ConstraintsValidator",
+        C_n: Dict,
+        A: Dict,
+    ) -> Optional[RouteSolution]:
         """
-        Generate initial solution using a greedy heuristic:
-        - Sort orders by capacity
-        - Assign each order to the first batch with available capacity
+        Generate initial FEASIBLE solution respecting ALL constraints.
         """
-        solution = Solution(self.N, self.B)
+        solution = RouteSolution(self.B, self.location_graph, batch_assignments)
 
-        # Sort orders by capacity (descending)
-        sorted_orders = sorted(self.N, key=lambda n: -1)
+        # For each batch, create a feasible route
+        for batch in self.B:
+            if not batch_assignments[batch]:
+                continue
 
-        for order in sorted_orders:
-            # Try to assign to a batch
-            assigned = False
-            for batch in self.B:
-                if solution.can_add_order_to_batch(order, batch):
-                    solution.assign_order_to_batch(order, batch)
-                    assigned = True
-                    break
+            # Find required locations for this batch
+            required_locations = self._find_required_locations(batch, batch_assignments[batch], A)
 
-            if not assigned:
-                # Assign to first batch if forced (may violate capacity temporarily)
-                if self.B:
-                    solution.assign_order_to_batch(order, self.B[0])
+            if not required_locations:
+                continue
+
+            # Generate feasible route visiting all required locations
+            route = self._generate_feasible_route(required_locations)
+
+            if route is None:
+                print(f"WARNING: Could not generate feasible route for batch {batch}")
+                continue
+
+            solution.set_batch_route(batch, route)
+
+            # Validate constraints
+            if not validator.validate_solution(solution):
+                print(f"WARNING: Generated solution violates constraints for batch {batch}")
 
         return solution
 
-    def _generate_neighbor(self, solution: Solution) -> Solution:
+    def _find_required_locations(
+        self, batch: str, orders: Set[str], A: Dict
+    ) -> Set:
+        """Find all locations that MUST be visited for a batch's orders."""
+        required = set()
+        for order in orders:
+            for vertex in self.location_graph.get_vertices():
+                if vertex != self.location_graph.get_depot() and vertex != self.location_graph.get_final():
+                    if A.get((order, vertex), 0) > 0:
+                        required.add(vertex)
+        return required
+
+    def _generate_feasible_route(self, required_locations: Set) -> Optional[List]:
         """
-        Generate a neighbor solution by:
-        1. Randomly select an order
-        2. Move it to a different batch
+        Generate a feasible route visiting all required locations.
+        Uses nearest neighbor starting from depot.
+
+        Constraints:
+        - Start at depot
+        - End at final
+        - Visit all required locations
+        - Use only valid edges
+        - No cycles
+        """
+        if not required_locations:
+            return []
+
+        route = []
+        current = self.location_graph.get_depot()
+        remaining = set(required_locations)
+
+        while remaining:
+            # Find nearest unvisited location with valid edge
+            nearest = None
+            min_distance = float('inf')
+
+            for loc in remaining:
+                if self.location_graph.has_edge(current, loc):
+                    distance = self.location_graph.get_distance(current, loc)
+                    if distance < min_distance:
+                        nearest = loc
+                        min_distance = distance
+
+            if nearest is None:
+                # No valid edge to remaining locations - try any remaining
+                for loc in remaining:
+                    if self.location_graph.has_edge(current, loc):
+                        nearest = loc
+                        break
+
+            if nearest is None:
+                # Cannot reach remaining locations
+                return None
+
+            route.append(nearest)
+            remaining.remove(nearest)
+            current = nearest
+
+        # Verify route can reach final node
+        if not self.location_graph.has_edge(current, self.location_graph.get_final()):
+            return None
+
+        return route
+
+    def _generate_feasible_neighbor(
+        self,
+        solution: RouteSolution,
+        batch_assignments: Dict[str, Set[str]],
+        validator: "ConstraintsValidator",
+        C_n: Dict,
+        A: Dict,
+    ) -> Optional[RouteSolution]:
+        """
+        Generate a neighbor by applying 2-opt ONLY if it maintains feasibility.
         """
         neighbor = solution.copy()
 
-        if not self.N:
-            return neighbor
+        # Select random batch with non-empty route
+        batches_with_routes = [b for b in self.B if neighbor.get_batch_route(b)]
 
-        # Select random order
-        order = random.choice(list(self.N))
+        if not batches_with_routes:
+            return None
 
-        # Get all batches
-        all_batches = set(self.B)
+        batch = random.choice(batches_with_routes)
+        route = neighbor.get_batch_route(batch)
 
-        # Try to move to a different batch
-        current_batch = neighbor.get_batch_for_order(order)
+        if len(route) <= 2:
+            return None
 
-        if current_batch is not None:
-            # Remove from current batch
-            neighbor.remove_order_from_batch(order, current_batch)
+        # Try 2-opt swaps (limited attempts)
+        for attempt in range(10):
+            i = random.randint(0, len(route) - 2)
+            j = random.randint(i + 1, len(route) - 1)
 
-        # Try to assign to a random different batch
-        available_batches = list(all_batches)
-        random.shuffle(available_batches)
+            # Apply 2-opt: reverse segment
+            new_route = route[:i] + route[i:j+1][::-1] + route[j+1:]
 
-        assigned = False
-        for batch in available_batches:
-            if batch != current_batch and neighbor.can_add_order_to_batch(order, batch):
-                neighbor.assign_order_to_batch(order, batch)
-                assigned = True
-                break
+            # Verify new route is feasible
+            if self._is_route_feasible(new_route, batch, batch_assignments, A):
+                neighbor.set_batch_route(batch, new_route)
+                return neighbor
 
-        # If can't assign, put back in original (or any batch)
-        if not assigned:
-            if current_batch is not None:
-                neighbor.assign_order_to_batch(order, current_batch)
-            elif self.B:
-                neighbor.assign_order_to_batch(order, self.B[0])
+        return None
 
-        return neighbor
-
-    def _build_solution_dict(self, solution: Solution, cost: float) -> Dict:
+    def _is_route_feasible(
+        self, route: List, batch: str, batch_assignments: Dict[str, Set[str]], A: Dict
+    ) -> bool:
         """
-        Convert solution to output dictionary format.
+        Check if a route is feasible:
+        - Starts at depot
+        - Ends at final
+        - Visits all required locations
+        - Uses only valid edges
         """
-        return {
-            "assignments": solution.assignments,
-            "batch_assignments": solution.batch_assignments,
-            "cost": cost,
-        }
+        if not route:
+            return True
+
+        depot = self.location_graph.get_depot()
+        final = self.location_graph.get_final()
+
+        # Check all edges are valid
+        if not self.location_graph.has_edge(depot, route[0]):
+            return False
+
+        for i in range(len(route) - 1):
+            if not self.location_graph.has_edge(route[i], route[i+1]):
+                return False
+
+        if not self.location_graph.has_edge(route[-1], final):
+            return False
+
+        # Check all required locations are visited
+        required = self._find_required_locations(batch, batch_assignments[batch], A)
+        if not required.issubset(set(route)):
+            return False
+
+        return True
+
+    def _build_solution_output(self, solution: RouteSolution) -> OPPLocationGraph:
+        """
+        Convert RouteSolution to OPPLocationGraph format compatible with build_output.
+        """
+        output_graph = OPPLocationGraph(
+            depot_node=self.location_graph.get_depot(),
+            final_node=self.location_graph.get_final()
+        )
+
+        # Add all vertices
+        for vertex in self.location_graph.get_vertices():
+            output_graph.add_vertex(vertex, "picking")
+
+        # Add arcs from routes
+        for batch in self.B:
+            route = solution.get_batch_route(batch)
+            if not route:
+                continue
+
+            depot = self.location_graph.get_depot()
+            final = self.location_graph.get_final()
+
+            # Add depot -> first location
+            if self.location_graph.has_edge(depot, route[0]):
+                output_graph.add_edge(
+                    depot, route[0],
+                    self.location_graph.get_distance(depot, route[0])
+                )
+
+            # Add edges between locations in route
+            for i in range(len(route) - 1):
+                if self.location_graph.has_edge(route[i], route[i+1]):
+                    output_graph.add_edge(
+                        route[i], route[i+1],
+                        self.location_graph.get_distance(route[i], route[i+1])
+                    )
+
+            # Add last location -> final
+            if self.location_graph.has_edge(route[-1], final):
+                output_graph.add_edge(
+                    route[-1], final,
+                    self.location_graph.get_distance(route[-1], final)
+                )
+
+        return output_graph

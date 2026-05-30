@@ -1,8 +1,10 @@
 """
-Example usage of OPP Hill Climbing heuristic.
+Example usage of OPP Hill Climbing V3 heuristic.
 
-This script demonstrates how to use the hill climbing solver
-with the same input format as the exact solver (opp_model_v3).
+This script demonstrates how to use the Hill Climbing solver with the same input
+format as the exact solver (opp_model_v3). The key difference:
+- Input: Fixed batch assignments (Bn parameter)
+- Optimize: Routes within each batch
 """
 
 from pathlib import Path
@@ -11,7 +13,7 @@ import sys
 if __package__ is None or __package__ == "":
     sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from models.opp_hill_climbing import OPPHillClimbing
+from models.opp_hill_climbing import OPPHillClimbingV3
 from dtos.opp.model_dto import ModelDTO
 from dtos.opp.solve_model_dto import SolveModelDTO
 from models.base.opp_location_graph import OPPLocationGraph
@@ -19,34 +21,42 @@ from models.base.opp_location_graph import OPPLocationGraph
 
 def example_small_instance():
     """
-    Example with a small instance.
-    Creates model DTO and solve DTO, then runs the hill climbing solver.
+    Example with fixed batch assignments.
     """
 
     # Create model DTO
     model_dto = ModelDTO()
 
-    # Example: 5 orders, 3 batches
+    # Orders and batches
     model_dto.N = {"O1", "O2", "O3", "O4", "O5"}
-    model_dto.B = {"B1", "B2", "B3"}
+    model_dto.B = {"B1", "B2"}
 
     # Create location graph
     location_graph = OPPLocationGraph(depot_node="D", final_node="F")
 
-    # Add vertices (depot, picking locations, final)
+    # Add vertices
     location_graph.add_vertex("D", "depot")
     location_graph.add_vertex("L1", "picking")
     location_graph.add_vertex("L2", "picking")
     location_graph.add_vertex("L3", "picking")
     location_graph.add_vertex("F", "final")
 
-    # Add edges (distances)
-    for i in ["D", "L1", "L2", "L3"]:
-        for j in ["D", "L1", "L2", "L3", "F"]:
-            if i != j:
-                # Example distances
-                distance = 10.0
-                location_graph.add_edge(i, j, distance)
+    # Add edges
+    distances = {
+        ("D", "L1"): 10,
+        ("D", "L2"): 15,
+        ("D", "L3"): 20,
+        ("L1", "L2"): 5,
+        ("L1", "L3"): 12,
+        ("L2", "L3"): 8,
+        ("L1", "F"): 10,
+        ("L2", "F"): 12,
+        ("L3", "F"): 15,
+    }
+
+    for (i, j), dist in distances.items():
+        location_graph.add_edge(i, j, dist)
+        location_graph.add_edge(j, i, dist)  # Undirected
 
     model_dto.location_graph = location_graph
     model_dto.start_time = 0.0
@@ -55,16 +65,16 @@ def example_small_instance():
     solve_dto = SolveModelDTO()
 
     # Objective weights
-    solve_dto.W_full = 1.0  # Weight for completion time
-    solve_dto.W_ea_ta = 1.0  # Weight for earliness/tardiness penalties
-    solve_dto.W_ea = 0.1  # Weight for earliness
-    solve_dto.W_ta = 0.5  # Weight for tardiness (usually higher)
+    solve_dto.W_full = 1.0
+    solve_dto.W_ea_ta = 1.0
+    solve_dto.W_ea = 0.1
+    solve_dto.W_ta = 0.5
 
     # Capacity
     solve_dto.C_n = {"O1": 5, "O2": 3, "O3": 4, "O4": 2, "O5": 6}
-    solve_dto.C_v = 20.0  # Vehicle capacity
+    solve_dto.C_v = 20.0
 
-    # Assignment matrix: A[order, location] = 1 if order must visit location
+    # Assignment matrix: which orders need which locations
     solve_dto.A = {
         ("O1", "L1"): 1, ("O1", "L2"): 0, ("O1", "L3"): 0,
         ("O2", "L1"): 0, ("O2", "L2"): 1, ("O2", "L3"): 0,
@@ -74,35 +84,40 @@ def example_small_instance():
     }
 
     # Time parameters
-    solve_dto.B_time = 0.5  # Travel time per unit distance
-    solve_dto.B_setup = 5.0  # Setup time per batch
-    solve_dto.B_picking = 0.1  # Time per unit capacity
-    solve_dto.S = {"L1": 2.0, "L2": 3.0, "L3": 1.5}  # Service times
+    solve_dto.B_time = 0.5
+    solve_dto.B_setup = 5.0
+    solve_dto.B_picking = 0.1
+    solve_dto.S = {"L1": 2.0, "L2": 3.0, "L3": 1.5}
 
-    # Due dates for each order
+    # Due dates
     solve_dto.Dd = {
-        "O1": 100.0,
-        "O2": 80.0,
-        "O3": 120.0,
-        "O4": 90.0,
-        "O5": 110.0,
+        "O1": 100.0, "O2": 80.0, "O3": 120.0, "O4": 90.0, "O5": 110.0,
     }
 
-    # Big M for linearization
+    # Big M
     solve_dto.M = 1000.0
 
-    # Create solver and solve
-    solver = OPPHillClimbing(model_dto)
-    status, solution = solver.solve(solve_dto)
+    # FIXED batch assignments (Bn parameter)
+    # This is the key difference: routes are optimized WITHIN these fixed assignments
+    solve_dto.Bn = {
+        ("O1", "B1"): 1, ("O2", "B1"): 1, ("O3", "B1"): 0,
+        ("O4", "B2"): 1, ("O5", "B2"): 1, ("O3", "B2"): 1,
+        # All other combinations are 0 (implicit)
+    }
+
+    # Solve
+    solver = OPPHillClimbingV3(model_dto)
+    status, output_graph = solver.solve(solve_dto)
 
     print(f"\nSolution Status: {status}")
-    print(f"Solution: {solution}")
+    print(f"Output graph vertices: {output_graph.get_vertices()}")
+    print(f"Output graph edges: {[(i, j) for i in output_graph.get_vertices() for j in output_graph.get_vertices() if output_graph.has_edge(i, j)]}")
 
-    return solution
+    return output_graph
 
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("OPP Hill Climbing Example")
+    print("OPP Hill Climbing V3 Example")
     print("=" * 60)
     example_small_instance()

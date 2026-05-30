@@ -1,3 +1,3 @@
 """
-Utility modules for OPP Hill Climbing.
+Utilities for OPP Hill Climbing.
 """
