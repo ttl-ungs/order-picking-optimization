@@ -124,6 +124,10 @@ class OPPHillClimbingV3(Model):
         # Build output compatible with build_output format
         output = self._build_solution_output(current_solution)
 
+        # Notify observers with solution information
+        solution_info = self._build_solution_info(current_solution, current_cost, params)
+        super().notify(solution_info=solution_info)
+
         return "optimal", output
 
     def _extract_batch_assignments(self, Bn: Dict) -> Dict[str, Set[str]]:
@@ -355,3 +359,90 @@ class OPPHillClimbingV3(Model):
                 )
 
         return output_graph
+
+    def _build_solution_info(self, solution: RouteSolution, objective_value: float, params: SolveModelDTO) -> dict:
+        """
+        Build solution information dictionary for OutputHandler.
+        Compatible with the format expected by opp_hill_climbing OutputHandler.
+        """
+        solution_info = {
+            "status": "optimal",
+            "objective_value": objective_value,
+            "batch_times": {},
+            "batch_completions": {},
+            "tardiness": {},
+            "earliness": {},
+            "routes": {}
+        }
+
+        # Calculate times for each batch
+        current_time = self.T_0 if self.T_0 is not None else 0
+
+        for batch in self.B:
+            route = solution.get_batch_route(batch)
+            if not route:
+                continue
+
+            # Calculate execution time for this batch
+            t_exec_b = self._calculate_batch_execution_time(batch, route, params)
+            current_time += t_exec_b
+
+            solution_info["batch_times"][batch] = t_exec_b
+            solution_info["batch_completions"][batch] = current_time
+            solution_info["routes"][batch] = route
+
+        # Calculate tardiness and earliness for each order
+        batch_assignments = self._extract_batch_assignments(params.Bn)
+        for order in self.N:
+            # Find which batch this order belongs to
+            order_batch = None
+            for batch, orders in batch_assignments.items():
+                if order in orders:
+                    order_batch = batch
+                    break
+
+            if order_batch is not None and order_batch in solution_info["batch_completions"]:
+                completion_time = solution_info["batch_completions"][order_batch]
+                due_date = params.Dd.get(order, float('inf'))
+
+                if completion_time > due_date:
+                    solution_info["tardiness"][order] = completion_time - due_date
+                    solution_info["earliness"][order] = 0
+                else:
+                    solution_info["tardiness"][order] = 0
+                    solution_info["earliness"][order] = due_date - completion_time
+
+        return solution_info
+
+    def _calculate_batch_execution_time(self, batch: str, route: List, params: SolveModelDTO) -> float:
+        """Calculate execution time for a batch given its route."""
+        if not route:
+            return 0
+
+        depot = self.location_graph.get_depot()
+        final = self.location_graph.get_final()
+
+        # Travel time
+        travel_time = 0
+        current = depot
+        for location in route:
+            if self.location_graph.has_edge(current, location):
+                travel_time += self.location_graph.get_distance(current, location)
+            current = location
+        if self.location_graph.has_edge(current, final):
+            travel_time += self.location_graph.get_distance(current, final)
+
+        # Setup time
+        setup_time = params.B_setup
+
+        # Picking time (sum of service times for orders in this batch)
+        picking_time = 0
+        batch_assignments = self._extract_batch_assignments(params.Bn)
+        for order in batch_assignments.get(batch, set()):
+            picking_time += params.S.get(order, 0) if params.S else 0
+
+        # Capacity weight (from objective function)
+        capacity_weight = params.B_picking
+
+        total_time = params.B_time * travel_time + setup_time + capacity_weight * picking_time
+        return total_time
