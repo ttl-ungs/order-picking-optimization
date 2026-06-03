@@ -16,12 +16,12 @@ from models.base.model import Model
 from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
-from models.opp_hill_climbing.utils.route_solution import RouteSolution
-from models.opp_hill_climbing.utils.route_evaluator import RouteEvaluator
-from models.opp_hill_climbing.utils.constraints_validator import ConstraintsValidator
+from models.opp_hc.utils.route_solution import RouteSolution
+from models.opp_hc.utils.route_evaluator import RouteEvaluator
+from models.opp_hc.utils.constraints_validator import ConstraintsValidator
 
 
-class OPPHillClimbingV3(Model):
+class OPPHillClimbing(Model):
     """Hill Climbing solver for OPP v3 - validates ALL constraints."""
 
     def __init__(self, dto: ModelDTO):
@@ -363,7 +363,7 @@ class OPPHillClimbingV3(Model):
     def _build_solution_info(self, solution: RouteSolution, objective_value: float, params: SolveModelDTO) -> dict:
         """
         Build solution information dictionary for OutputHandler.
-        Compatible with the format expected by opp_hill_climbing OutputHandler.
+        Compatible with the format expected by opp_hc OutputHandler.
         """
         solution_info = {
             "status": "optimal",

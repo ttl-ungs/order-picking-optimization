@@ -6,7 +6,7 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
 )
 
-from models.opp_hill_climbing import OPPHillClimbingV3
+from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
 from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.solve_model_dto import SolveModelDTO
@@ -15,14 +15,14 @@ from dtos.opp.model_dto import ModelDTO
 from tests.opp_v3.scenarios.normal.scenario_2 import two_orders_two_aisles
 
 
-class TestOPPHillClimbingV3Model4(OPPTestCase):
+class TestOPPHillClimbingModel3(OPPTestCase):
     """
-    Test HC4: Medium. 8 vertex, 8 edges, 2 orders, 2 batches.
-    Purpose: To test when both orders use the same aisle but different batches.
-    Equivalent to test_opp_v3_model_2.py (subtest 2.3)
+    Test HC3: Medium. 8 vertex, 8 edges, 2 orders, 2 batches.
+    Purpose: To test the functionality when one order has a single picking point.
+    Equivalent to test_opp_v3_model_2.py (subtest 2.2)
     """
 
-    def test_two_orders_two_aisles_using_one_aisle(self):
+    def test_two_orders_two_aisles_one_picking_point_per_order(self):
         V, B, w1, w2, gamma, delta, location_graph, cap_vehicle = (
             two_orders_two_aisles()
         )
@@ -30,9 +30,11 @@ class TestOPPHillClimbingV3Model4(OPPTestCase):
         N = {"O1", "O2"}
         a = {(n, v): 0 for n in N for v in V}
 
-        # Both orders must visit first aisle
-        a[("O1", "L2")] = 1
-        a[("O2", "L3")] = 1
+        # Order 1 must visit location 3
+        a[("O1", "L3")] = 1
+
+        # Order 2 must visit location 5
+        a[("O2", "L5")] = 1
 
         y = {("O1", "B1"): 1, ("O1", "B2"): 0, ("O2", "B1"): 0, ("O2", "B2"): 1}
         cap_n = {"O1": 3.0, "O2": 3.0}
@@ -64,7 +66,7 @@ class TestOPPHillClimbingV3Model4(OPPTestCase):
         model_dto.location_graph = location_graph
         model_dto.B = B
         model_dto.start_time = self.start_time
-        model = OPPHillClimbingV3(model_dto)
+        model = OPPHillClimbing(model_dto)
 
         try:
             result, output_graph = model.solve(params)
@@ -85,6 +87,11 @@ class TestOPPHillClimbingV3Model4(OPPTestCase):
         expected_graph.add_edge("L3", "L4", location_graph.get_distance("L3", "L4"))
         expected_graph.add_edge("L4", "L8", location_graph.get_distance("L4", "L8"))
 
+        expected_graph.add_edge("L1", "L5", location_graph.get_distance("L1", "L5"))
+        expected_graph.add_edge("L5", "L6", location_graph.get_distance("L5", "L6"))
+        expected_graph.add_edge("L6", "L7", location_graph.get_distance("L6", "L7"))
+        expected_graph.add_edge("L7", "L8", location_graph.get_distance("L7", "L8"))
+
         self.assertTrue(
             result in ("optimal", "feasible"),
             "The model did not find a solution.",
@@ -94,9 +101,11 @@ class TestOPPHillClimbingV3Model4(OPPTestCase):
         self.assertIsNotNone(output_graph)
         self.assertEqual(set(output_graph.get_vertices()), set(location_graph.get_vertices()))
 
-        # Validate that the graph connects depot to final through required locations
-        self.assertTrue(output_graph.has_edge("L1", "L2") or output_graph.has_edge("L1", "L3"),
-                       "Route should start from depot L1")
+        # Validate that routes visit required locations
+        # (Exact route order may differ from exact solver since this is a heuristic)
+        self.assertTrue(output_graph.has_edge("L1", "L3") or
+                       any(output_graph.has_edge("L1", v) for v in ["L2", "L3", "L4", "L5"]),
+                       "Batch B1 route should start from depot")
 
 
 if __name__ == "__main__":

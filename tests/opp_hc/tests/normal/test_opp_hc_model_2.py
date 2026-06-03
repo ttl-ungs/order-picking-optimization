@@ -6,7 +6,7 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
 )
 
-from models.opp_hill_climbing import OPPHillClimbingV3
+from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
 from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.solve_model_dto import SolveModelDTO
@@ -15,7 +15,7 @@ from dtos.opp.model_dto import ModelDTO
 from tests.opp_v3.scenarios.normal.scenario_2 import two_orders_two_aisles
 
 
-class TestOPPHillClimbingV3Model2(OPPTestCase):
+class TestOPPHillClimbingModel2(OPPTestCase):
     """
     Test HC2: Medium. 8 vertex, 8 edges, 2 orders, 2 batches.
     Purpose: To test the functionality of the model when it has to follow a route.
@@ -70,7 +70,7 @@ class TestOPPHillClimbingV3Model2(OPPTestCase):
         model_dto.location_graph = location_graph
         model_dto.B = B
         model_dto.start_time = self.start_time
-        model = OPPHillClimbingV3(model_dto)
+        model = OPPHillClimbing(model_dto)
 
         try:
             result, output_graph = model.solve(params)

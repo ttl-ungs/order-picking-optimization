@@ -13,7 +13,7 @@ import sys
 if __package__ is None or __package__ == "":
     sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from models.opp_hill_climbing import OPPHillClimbingV3
+from models.opp_hc import OPPHillClimbing
 from dtos.opp.model_dto import ModelDTO
 from dtos.opp.solve_model_dto import SolveModelDTO
 from models.base.opp_location_graph import OPPLocationGraph
@@ -106,7 +106,7 @@ def example_small_instance():
     }
 
     # Solve
-    solver = OPPHillClimbingV3(model_dto)
+    solver = OPPHillClimbing(model_dto)
     status, output_graph = solver.solve(solve_dto)
 
     print(f"\nSolution Status: {status}")

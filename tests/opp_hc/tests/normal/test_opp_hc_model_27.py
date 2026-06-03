@@ -7,7 +7,7 @@ sys.path.insert(
 )
 
 from dtos import SolveModelDTO, ModelDTO
-from models.opp_hill_climbing import OPPHillClimbingV3
+from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
 
 from tests.opp_v3.scenarios.normal.scenario_2 import two_orders_two_aisles
@@ -56,7 +56,7 @@ class TestOrderAssignedMultipleBatches(OPPTestCase):
         model_dto.location_graph = location_graph
         model_dto.B = B
         model_dto.start_time = self.start_time
-        model = OPPHillClimbingV3(model_dto)
+        model = OPPHillClimbing(model_dto)
         output_handler = OutputHandler()
         model.attach(output_handler)
         model.attach(OutputHandler())
@@ -104,7 +104,7 @@ class TestOrderAssignedMultipleBatches(OPPTestCase):
         model_dto.location_graph = location_graph
         model_dto.B = B
         model_dto.start_time = self.start_time
-        model = OPPHillClimbingV3(model_dto)
+        model = OPPHillClimbing(model_dto)
         output_handler = OutputHandler()
         model.attach(output_handler)
         model.attach(OutputHandler())

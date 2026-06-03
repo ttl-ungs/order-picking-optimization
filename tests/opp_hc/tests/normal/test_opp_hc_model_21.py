@@ -7,9 +7,9 @@ sys.path.insert(
 )
 
 from dtos.opp.model_dto import ModelDTO
-from models.opp_hill_climbing.utils.output_handler import OutputHandler
+from models.opp_hc.utils.output_handler import OutputHandler
 from dtos.opp.solve_model_dto import SolveModelDTO
-from models.opp_hill_climbing import OPPHillClimbingV3
+from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
 from tests.opp_v3.scenarios.normal.scenario_13 import (
     bridge_graph_disconnected,
@@ -87,7 +87,7 @@ class TestOPPHillClimbingBridge(OPPTestCase):
         model_dto.location_graph = location_graph
         model_dto.B = B
         model_dto.start_time = self.start_time
-        model = OPPHillClimbingV3(model_dto)
+        model = OPPHillClimbing(model_dto)
         output_handler = OutputHandler()
         model.attach(output_handler)
         model.attach(OutputHandler())

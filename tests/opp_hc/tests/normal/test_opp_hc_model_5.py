@@ -6,24 +6,25 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
 )
 
-from models.opp_hill_climbing import OPPHillClimbingV3
+from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
 from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
 
-from tests.opp_v3.scenarios.normal.scenario_6 import test_two_orders_two_locations
+from tests.opp_v3.scenarios.normal.scenario_1 import basic_two_orders_capacity_limit
 
 
-class TestOPPHillClimbing(OPPTestCase):
+class TestOPPHillClimbingModel5(OPPTestCase):
     """
-    Test 6: 4 vertex, 2 orders, 1 batch.
-    Purpose: To test the functionality of the model when two orders are linked to two locations.
+    Test HC5: Basic variant. 4 vertex, 5 edges, 2 orders, 2 batches.
+    Purpose: To test capacity constraints and basic routing with different weights.
+    Variant of test_opp_v3_model_1.py with different parameters.
     """
 
-    def test_two_orders_two_locations(self):
+    def test_basic_two_orders_with_different_weights(self):
         V, B, w1, w2, gamma, delta, location_graph, cap_vehicle = (
-            test_two_orders_two_locations()
+            basic_two_orders_capacity_limit()
         )
 
         N = {"O1", "O2"}
@@ -32,7 +33,7 @@ class TestOPPHillClimbing(OPPTestCase):
         a[("O1", "L2")] = 1
         a[("O2", "L3")] = 1
 
-        y = {("O1", "B1"): 1, ("O2", "B1"): 1}
+        y = {("O1", "B1"): 1, ("O1", "B2"): 0, ("O2", "B1"): 0, ("O2", "B2"): 1}
         cap_n = {"O1": 3.0, "O2": 3.0}
 
         beta_time = 0.5
@@ -42,11 +43,12 @@ class TestOPPHillClimbing(OPPTestCase):
 
         due_date = {"O1": 15.0, "O2": 15.0}
 
+        # Different weights from test 1
         params = SolveModelDTO()
-        params.W_full = w1
-        params.W_ea_ta = w2
-        params.W_ea = gamma
-        params.W_ta = delta
+        params.W_full = 2.0  # Higher weight on completion time
+        params.W_ea_ta = 0.5  # Lower weight on penalties
+        params.W_ea = 0.1
+        params.W_ta = 0.5
         params.C_n = cap_n
         params.C_v = cap_vehicle
         params.A = a
@@ -62,7 +64,7 @@ class TestOPPHillClimbing(OPPTestCase):
         model_dto.location_graph = location_graph
         model_dto.B = B
         model_dto.start_time = self.start_time
-        model = OPPHillClimbingV3(model_dto)
+        model = OPPHillClimbing(model_dto)
 
         try:
             result, output_graph = model.solve(params)
@@ -78,22 +80,19 @@ class TestOPPHillClimbing(OPPTestCase):
             if i not in expected_graph.get_vertices():
                 expected_graph.add_vertex(i, "picking")
 
-        expected_graph.add_edge("L1", "L3", location_graph.get_distance("L1", "L3"))
-        expected_graph.add_edge("L3", "L2", location_graph.get_distance("L3", "L2"))
+        expected_graph.add_edge("L1", "L2", location_graph.get_distance("L1", "L2"))
         expected_graph.add_edge("L2", "L4", location_graph.get_distance("L2", "L4"))
+
+        expected_graph.add_edge("L1", "L3", location_graph.get_distance("L1", "L3"))
+        expected_graph.add_edge("L3", "L4", location_graph.get_distance("L3", "L4"))
 
         self.assertTrue(
             result in ("optimal", "feasible"),
             "The model did not find a solution.",
         )
 
-        print("Output graph:", output_graph.to_string())
-        print("Expected graph:", expected_graph.to_string())
-
         self.assertEqual(output_graph, expected_graph)
 
 
 if __name__ == "__main__":
-    # pyscipopt.SCIP_PARAMSETTING_DEFAULT.set("limits/time", 60)
     unittest.main()
-

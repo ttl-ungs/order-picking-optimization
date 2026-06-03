@@ -7,7 +7,7 @@ sys.path.insert(
 )
 
 from dtos import SolveModelDTO, ModelDTO
-from models.opp_hill_climbing import OPPHillClimbingV3
+from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
 
 from tests.opp_v3.scenarios.normal.scenario_3 import two_possible_routes_batches

@@ -8,7 +8,7 @@ sys.path.insert(
 
 from dtos import SolveModelDTO, ModelDTO
 from models.base.opp_location_graph import OPPLocationGraph
-from models.opp_hill_climbing import OPPHillClimbingV3
+from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
 
 from tests.opp_v3.scenarios.normal.one_mission_one_picker_grid_graph import (
@@ -131,7 +131,7 @@ class TestOPPHillClimbing(OPPTestCase):
         model_dto.location_graph = self.opp_location_graph
         model_dto.B = self.B
         model_dto.start_time = self.start_time
-        model = OPPHillClimbingV3(model_dto)
+        model = OPPHillClimbing(model_dto)
 
         try:
             result, output_graph = model.solve(params)

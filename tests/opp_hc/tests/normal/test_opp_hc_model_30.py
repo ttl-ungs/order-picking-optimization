@@ -7,12 +7,12 @@ sys.path.insert(
 )
 
 
-from models.opp_hill_climbing import OPPHillClimbingV3
+from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
 
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
-from models.opp_hill_climbing.utils.output_handler import OutputHandler
+from models.opp_hc.utils.output_handler import OutputHandler
 
 from tests.opp_v3.scenarios.normal.scenario_1 import basic_two_orders_capacity_limit
 
@@ -63,7 +63,7 @@ class TestServiceTimeEdgeCases(OPPTestCase):
         return base_params, model_dto, V
 
     def _run_model(self, params: SolveModelDTO, model_dto: ModelDTO):
-        model = OPPHillClimbingV3(model_dto)
+        model = OPPHillClimbing(model_dto)
         output_handler = OutputHandler()
         model.attach(output_handler)
         model.attach(OutputHandler())
