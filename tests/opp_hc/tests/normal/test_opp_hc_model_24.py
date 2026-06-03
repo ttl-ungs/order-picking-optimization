@@ -8,6 +8,7 @@ sys.path.insert(
 
 from dtos import SolveModelDTO, ModelDTO
 from models.opp_hc import OPPHillClimbing
+from models.opp_hc.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
 
 from tests.opp_v3.scenarios.normal.scenario_3 import two_possible_routes_batches
@@ -56,7 +57,7 @@ class TestDueDatesExtreme(OPPTestCase):
         model_dto.B = B
         model_dto.start_time = self.start_time
 
-        model_tight = OPPModelV3(model_dto)
+        model_tight = OPPHillClimbing(model_dto)
         model_tight.attach(OutputHandler())
         result_tight, _ = model_tight.solve(params_tight)
         self.assertIn(result_tight, ("optimal", "feasible", "infeasible"))
@@ -65,7 +66,7 @@ class TestDueDatesExtreme(OPPTestCase):
         params_relaxed = params_base
         params_relaxed.Dd = {"O1": 1000.0, "O2": 1000.0}
 
-        model_relaxed = OPPModelV3(model_dto)
+        model_relaxed = OPPHillClimbing(model_dto)
         model_relaxed.attach(OutputHandler())
         result_relaxed, _ = model_relaxed.solve(params_relaxed)
         self.assertIn(result_relaxed, ("optimal", "feasible"))
