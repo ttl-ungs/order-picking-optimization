@@ -24,7 +24,6 @@ Parameters:
     M = Entero lo suficientemente grande
     dis_i = Distancia viajada para completar el lote i ∈ B
     capbatch_i = Capacidad requerida para un lote i ∈ B
-    b_ni = 1 si el lote i ∈ B contiene la órden n ∈ N, 0 si no
     x_pkh = 1 si la mision h ∈ H es asignada en la posicion k ∈ K
             del picker p ∈ P, 0 si no
     y_nh = 1 si la orden n ∈ N es asignada a la mision h ∈ H, 0 si no
@@ -32,7 +31,7 @@ Parameters:
 Variables:
     ta_n = tardanza de la orden n ∈ N
     ea_n = adelanto de la orden n ∈ N
-    t_(exec_n) = tiempo de ejecución de la misión h ∈ H
+    t_(exec_h) = tiempo de ejecución de la misión h ∈ H
     u_pk = tiempo de procesamiento del lote asignado a la posición k ∈ K
             del picker p ∈ P
     v_pk = tiempo de completitud para el lote asignado a la posición k ∈ K

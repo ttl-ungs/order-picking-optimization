@@ -55,6 +55,7 @@ Utilizamos el modelo completo y lo simplificamos, considerando las tareas relaci
     \NC \beta^{setup} \NC = \text{Tiempo de preparación (setup) de una misión o lote} \NR
     \NC \beta^{picking} \NC = \text{Tiempo requerido para recolectar una unidad de artículo} \NR
     \NC M \NC = \text{Un número positivo suficientemente grande (Big M)} \NR
+    \NC due\_date_{n} \NC = \text{Fecha de entrega de la orden } n \in N \NR
     \NC dis_i \NC = \text{Distancia viajada para completar el lote } i \in B \NR
     \NC capbatch_i \NC = \text{Capacidad requerida para un lote } i \in B \NR
     \NC x_{pkh} \NC = \startmathcases
@@ -186,8 +187,6 @@ De esta forma, obtenemos el siguiente modelo:
 \startalign
     \NC \mathcal{N} \NC = \text{Órdenes de clientes} \NR
     \NC \mathcal{V} \NC = \text{Locaciones totales} \NR
-    \NC \mathcal{H} \NC = \text{Misiones que se pueden completar} \NR
-    \NC \mathcal{K} \NC = \text{Períodos por picker en los que se recolecta un lote} \NR
     \NC \mathcal{P} \NC = \text{Pickers} \NR
     \NC \mathcal{B} \NC = \text{Lotes de pedidos factibles} \NR
 \stopalign
@@ -212,16 +211,17 @@ De esta forma, obtenemos el siguiente modelo:
     \NC \beta^{setup} \NC = \text{Tiempo de preparación (setup) de una misión o lote} \NR
     \NC \beta^{picking} \NC = \text{Tiempo requerido para recolectar una unidad de artículo} \NR
     \NC M \NC = \text{Un número positivo suficientemente grande (Big M)} \NR
+    \NC due\_date_{n} \NC = \text{Fecha de entrega de la orden } n \in N \NR
     \NC dis_i \NC = \text{Distancia viajada para completar el lote } i \in B \NR
     \NC capbatch_i \NC = \text{Capacidad requerida para un lote } i \in B \NR
-    \NC x_{pkb} \NC = \startmathcases
-                    \NC 1 \MC \text{si el lote } b \in B \text{ es asignado al período } k \in K \text{ del picker } p \in P \NR
+    \NC x_{pb} \NC = \startmathcases
+                    \NC 1 \MC \text{si el lote } b \in B \text{ es asignado al picker } p \in P \NR
                     \NC 0 \MC \text{en otro caso} \NR
                 \stopmathcases \NR
-    %\NC y_{nh} \NC = \startmathcases
-    %                \NC 1 \MC \text{si la la órden } n \in N \text{ es asignada a la misión } h \in H \NR
-    %                \NC 0 \MC \text{en otro caso} \NR
-    %            \stopmathcases \NR
+    \NC y_{nb} \NC = \startmathcases
+                    \NC 1 \MC \text{si la orden } n \in N \text{ pertenece al lote } b \in B \NR
+                    \NC 0 \MC \text{en otro caso} \NR
+                \stopmathcases \NR
 \stopalign
 \stopformula
 \stopsubsection

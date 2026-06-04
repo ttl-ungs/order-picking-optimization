@@ -3,13 +3,14 @@ Sets:
     N = Órdenes de clientes
     V = Locaciones a visitar
     B = Lotes de pedidos factibles
+    E = Arcos válidos del grafo de locaciones
 
 Parameters:
     W_full = Peso del tiempo de cumplimiento
     W_ea_ta = Peso asociado a la suma pesada de las demoras y los adelantos
     W_ea = Peso asociado al adelanto total (gamma)
     W_ta = Peso asociado a la demora total (delta)
-    S_i = Tiempo de servicio de la orden
+    d_ij = Distancia entre locaciones i ∈ V y j ∈ V
     C_n = Capacidad requerida para una órden n ∈ N
     C_v = Capacidad del vehículo de picking
     A_ni = 1 si la órder n ∈ N debe visitar la locaclización de picking
@@ -17,16 +18,17 @@ Parameters:
     B_time = Tiempo requerido para viajar en una unidad de espacio
     B_setup = Tiempo requerido para planificar cada lote
     B_picking = Tiempo requerido para buscar y recolectar ítems
+    S_i = Tiempo de servicio en la locación i ∈ V
     Dd = Fecha límite para la órden n ∈ N
     M = Entero lo suficientemente grande
     Bn = 1 si el lote b ∈ B contiene a la orden n ∈ N
-    T_0 = start time
+    v_1, v_f = Depósito inicial y nodo final
 
 Variables:
     ta_n = tardanza de la orden n ∈ N
     ea_n = adelanto de la orden n ∈ N
     t_(exec_b) = tiempo de ejecución del lote b ∈ B
-    v_pb = tiempo de completitud para el lote b ∈
+    v_b = tiempo de completitud del lote b ∈ B
     z_ijb = 1 si el arco que conecta las locaciones i ∈ V y j ∈ V están
             incluidos en el lote b ∈ B, 0 si no
     f_ijb = Número de unidades pasando por el arco que conecta las locaciones
