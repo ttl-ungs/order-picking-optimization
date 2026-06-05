@@ -10,6 +10,7 @@ Same problem as opp_model_v3.py:
 
 import time
 import random
+from collections import deque
 from typing import Dict, List, Set, Tuple, Optional
 
 from models.base.model import Model
@@ -41,8 +42,20 @@ class OPPHillClimbing(Model):
         """
         start_time = self.T_0 if self.T_0 is not None else time.time()
 
+        # Guard: Bn=None means no batch assignments were provided
+        if params.Bn is None:
+            return "infeasible", None
+
         # Extract batch assignments from Bn parameter
         batch_assignments = self._extract_batch_assignments(params.Bn)
+
+        # Check for orders assigned to more than one batch (violates sum_b y_nb = 1)
+        if self._check_multiple_batch_assignment(params.Bn):
+            return "infeasible", None
+
+        # Check vehicle capacity constraint per batch before doing any work
+        if self._check_capacity_infeasible(batch_assignments, params.C_n, params.C_v):
+            return "infeasible", None
 
         # Create validator
         validator = ConstraintsValidator(
@@ -131,12 +144,30 @@ class OPPHillClimbing(Model):
         return "optimal", output
 
     def _extract_batch_assignments(self, Bn: Dict) -> Dict[str, Set[str]]:
-        """Extract which orders belong to each batch from Bn parameter."""
+        # Extract which orders belong to each batch from Bn parameter
         batch_assignments = {b: set() for b in self.B}
         for (order, batch), value in Bn.items():
             if value > 0.5:  # Treat as binary
                 batch_assignments[batch].add(order)
         return batch_assignments
+
+    def _check_multiple_batch_assignment(self, Bn: Dict) -> bool:
+        # Return True if any order is assigned to more than one batch (infeasible)
+        order_batch_count: Dict[str, int] = {}
+        for (order, batch), value in Bn.items():
+            if value > 0.5:
+                order_batch_count[order] = order_batch_count.get(order, 0) + 1
+        return any(count > 1 for count in order_batch_count.values())
+
+    def _check_capacity_infeasible(
+        self, batch_assignments: Dict[str, Set[str]], C_n: Dict, C_v: float
+    ) -> bool:
+        # Return True if any batch exceeds the vehicle capacity constraint
+        for batch, orders in batch_assignments.items():
+            total = sum(C_n.get(order, 0) for order in orders)
+            if total > C_v:
+                return True
+        return False
 
     def _generate_initial_feasible_solution(
         self,
@@ -147,32 +178,32 @@ class OPPHillClimbing(Model):
     ) -> Optional[RouteSolution]:
         """
         Generate initial FEASIBLE solution respecting ALL constraints.
+        Returns None if any batch with required locations cannot be routed
         """
         solution = RouteSolution(self.B, self.location_graph, batch_assignments)
 
-        # For each batch, create a feasible route
+        # Build a route for every batch that has picking requirements
         for batch in self.B:
             if not batch_assignments[batch]:
                 continue
 
-            # Find required locations for this batch
             required_locations = self._find_required_locations(batch, batch_assignments[batch], A)
 
             if not required_locations:
                 continue
 
-            # Generate feasible route visiting all required locations
             route = self._generate_feasible_route(required_locations)
 
             if route is None:
+                # Graph is disconnected or required locations are unreachable
                 print(f"WARNING: Could not generate feasible route for batch {batch}")
-                continue
+                return None
 
             solution.set_batch_route(batch, route)
 
-            # Validate constraints
-            if not validator.validate_solution(solution):
-                print(f"WARNING: Generated solution violates constraints for batch {batch}")
+        # Validate the complete solution once all routes are in place
+        if not validator.validate_solution(solution):
+            return None
 
         return solution
 
@@ -192,7 +223,6 @@ class OPPHillClimbing(Model):
         """
         Generate a feasible route visiting all required locations.
         Uses nearest neighbor starting from depot.
-
         Constraints:
         - Start at depot
         - End at final
@@ -262,7 +292,7 @@ class OPPHillClimbing(Model):
         batch = random.choice(batches_with_routes)
         route = neighbor.get_batch_route(batch)
 
-        if len(route) <= 2:
+        if len(route) <= 1:
             return None
 
         # Try 2-opt swaps (limited attempts)
@@ -289,12 +319,17 @@ class OPPHillClimbing(Model):
         - Ends at final
         - Visits all required locations
         - Uses only valid edges
+        - No repeated nodes
         """
         if not route:
             return True
 
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
+
+        # No repeated nodes
+        if len(route) != len(set(route)):
+            return False
 
         # Check all edges are valid
         if not self.location_graph.has_edge(depot, route[0]):
