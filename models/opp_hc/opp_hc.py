@@ -296,18 +296,16 @@ class OPPHillClimbing(Model):
 
         while queue:
             node, remaining, path = queue.popleft()
-            visited = set(path)  # nodes already in the path (no revisits)
+            visited = set(path)
 
             for vertex in vertices:  # sorted → deterministic exploration
                 if vertex in visited or not self.location_graph.has_edge(node, vertex):
                     continue
 
                 if vertex == final:
-                    # Only go to final once all required locations are visited.
                     if not remaining:
                         # path[1:] = intermediate nodes after depot (final not in path)
                         return path[1:]
-                    # Still required locations pending — skip final for now.
                     continue
 
                 new_remaining = remaining - {vertex}
@@ -315,7 +313,6 @@ class OPPHillClimbing(Model):
                 if new_state not in seen:
                     seen.add(new_state)
                     queue.append((vertex, new_remaining, path + [vertex]))
-                # new_path = path + [vertex]
 
         return None  # No feasible path exists
 
