@@ -192,7 +192,7 @@ class OPPHillClimbing(Model):
             if not required_locations:
                 continue
 
-            route = self._generate_feasible_route(required_locations)
+            route = self._generate_feasible_route_bff(required_locations)
 
             if route is None:
                 # Graph is disconnected or required locations are unreachable
@@ -269,6 +269,56 @@ class OPPHillClimbing(Model):
             return None
 
         return route
+
+    def _generate_feasible_route_bff(self, required_locations: Set) -> Optional[List]:
+        """
+        Generate a feasible route visiting all required locations.
+
+        Uses BFS over states (current_node, frozenset(remaining_required)) to
+        find the shortest path from depot through all required locations
+        to final, without using final as an intermediate stop.
+
+        Intermediate nodes are included so the returned list represents the
+        full physical traversal (excluding depot and final).  Returns None
+        when no valid path exists.
+        """
+        if not required_locations:
+            return []
+
+        depot = self.location_graph.get_depot()
+        final = self.location_graph.get_final()
+        vertices = self.location_graph.get_vertices()
+
+        initial_remaining = frozenset(required_locations)
+        # Each queue entry: (current_node, remaining_required, path_so_far)
+        queue: deque = deque([(depot, initial_remaining, [depot])])
+        seen: Set = {(depot, initial_remaining)}
+
+        while queue:
+            node, remaining, path = queue.popleft()
+            visited = set(path)  # nodes already in the path (no revisits)
+
+            for vertex in vertices:  # sorted → deterministic exploration
+                if vertex in visited or not self.location_graph.has_edge(node, vertex):
+                    continue
+
+                if vertex == final:
+                    # Only go to final once all required locations are visited.
+                    if not remaining:
+                        # path[1:] = intermediate nodes after depot (final not in path)
+                        return path[1:]
+                    # Still required locations pending — skip final for now.
+                    continue
+
+                new_remaining = remaining - {vertex}
+                new_state = (vertex, new_remaining)
+                if new_state not in seen:
+                    seen.add(new_state)
+                    queue.append((vertex, new_remaining, path + [vertex]))
+                # new_path = path + [vertex]
+
+        return None  # No feasible path exists
+
 
     def _generate_feasible_neighbor(
         self,
