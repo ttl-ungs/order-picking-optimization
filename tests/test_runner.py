@@ -150,9 +150,11 @@ class OPPTestRunner:
 
     def write_results_csv(self, results: list):
         os.makedirs(os.path.dirname(os.path.abspath(self.csv_path)), exist_ok=True)
-        with open(self.csv_path, "w", newline="", encoding="utf-8") as f:
+        file_exists = os.path.isfile(self.csv_path)
+        with open(self.csv_path, "a", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=self.CSV_FIELDNAMES)
-            writer.writeheader()
+            if not file_exists:
+                writer.writeheader()
             for r in results:
                 is_timeout = r.get("status") == "timeout"
                 solve_data = r.get("solve_data") or {}

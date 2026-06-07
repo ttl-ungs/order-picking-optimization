@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     suite = unittest.TestLoader().discover(
         start_dir=os.path.join(os.path.dirname(__file__), "tests", "stress"),
-        pattern="test_*_11.py",
+        pattern="test_*.py",
     )
     test_ids = OPPTestRunner.collect_test_ids(suite)
 
