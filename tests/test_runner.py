@@ -149,6 +149,7 @@ class OPPTestRunner:
             print("\nAll tests passed.")
 
     def write_results_csv(self, results: list):
+        os.makedirs(os.path.dirname(os.path.abspath(self.csv_path)), exist_ok=True)
         with open(self.csv_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=self.CSV_FIELDNAMES)
             writer.writeheader()

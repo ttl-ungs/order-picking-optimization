@@ -17,7 +17,7 @@ if __name__ == "__main__":
     runner = OPPTestRunner(
         timeout_minutes=STRESS_TEST_TIMEOUT_MINUTES,
         write_csv=WRITE_RESULTS_CSV,
-        csv_path=os.path.join(os.path.dirname(__file__),  "outputs", "results_stress.csv"),
+        csv_path=os.path.join(os.path.dirname(__file__), "..", "outputs", "opp_v3", "results_stress.csv"),
     )
 
     suite = unittest.TestLoader().discover(
