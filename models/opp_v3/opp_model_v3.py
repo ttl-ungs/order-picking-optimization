@@ -43,6 +43,7 @@ from models.base.model import Model
 
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
+from dtos.opp.solve_result import SolveResult
 from models.utils.output_builder import build_output
 
 """
@@ -51,6 +52,8 @@ Version of OPP model V2 without concept of "pickers" (P)
 
 
 class OPPModelV3(Model):
+    _last_solve_result: "SolveResult | None" = None
+
     def __init__(self, dto: ModelDTO):
         super().__init__()
 
@@ -296,9 +299,10 @@ class OPPModelV3(Model):
         t0 = T_0 if T_0 is not None else time.time()
         model.optimize()
         elapsed = time.time() - t0
+        solver_time = model.getSolvingTime()
 
         print(
-            f"\nExecution time: {elapsed:.4f}s (solver: {model.getSolvingTime():.4f}s)"
+            f"\nExecution time: {elapsed:.4f}s (solver: {solver_time:.4f}s)"
         )
 
         # Print solution results, for testing purposes
@@ -317,7 +321,28 @@ class OPPModelV3(Model):
         )
 
         output = build_output(model, self.location_graph, self.B, z)
-        return model.getStatus(), output
+        solve_result = SolveResult(
+            status=model.getStatus(),
+            output=output,
+            elapsed=elapsed,
+            solver_time=solver_time,
+            params={
+                "W_full": W_full,
+                "W_ea_ta": W_ea_ta,
+                "W_ea": W_ea,
+                "W_ta": W_ta,
+                "C_v": C_v,
+                "B_time": B_time,
+                "B_setup": B_setup,
+                "B_picking": B_picking,
+                "M": M,
+                "N": len(self.N),
+                "B": len(self.B),
+                "V": len(self.location_graph.get_vertices()),
+            },
+        )
+        OPPModelV3._last_solve_result = solve_result
+        return solve_result
 
     def objective_function(self, W_full, v, W_ea_ta, ea, W_ea, W_ta, ta):
         recollection_time = sum(v[b] for b in self.B)
