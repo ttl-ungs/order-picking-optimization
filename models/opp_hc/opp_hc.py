@@ -146,7 +146,6 @@ class OPPHillClimbing(Model):
             status="optimal",
             output=output,
             elapsed=elapsed,
-            solver_time=elapsed,
             params={
                 "W_full": params.W_full,
                 "W_ea_ta": params.W_ea_ta,

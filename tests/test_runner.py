@@ -18,9 +18,8 @@ def _run_test_child(test_name, q):
 
     solve_data = None
     try:
-        from models.opp_v3.opp_model_v3 import OPPModelV3
-
-        sr = OPPModelV3._last_solve_result
+        from models.utils.solve_registry import get_last
+        sr = get_last()
         if sr is not None:
             solve_data = sr.to_csv_row()
     except Exception:
@@ -42,25 +41,7 @@ def _run_test_child(test_name, q):
 
 class OPPTestRunner:
     TIMEOUT_MSG = "Ejecución detenida - Más de 25 minutos"
-    CSV_FIELDNAMES = [
-        "test",
-        "status",
-        "total_time",
-        "model_time",
-        "solver_time",
-        "W_full",
-        "W_ea_ta",
-        "W_ea",
-        "W_ta",
-        "C_v",
-        "B_time",
-        "B_setup",
-        "B_picking",
-        "M",
-        "N",
-        "B",
-        "V",
-    ]
+    _FIXED_FIELDNAMES = ["test", "status", "total_time", "model_time"]
 
     def __init__(self, timeout_minutes: int, write_csv: bool, csv_path: str):
         self.timeout_minutes = timeout_minutes
@@ -149,10 +130,21 @@ class OPPTestRunner:
             print("\nAll tests passed.")
 
     def write_results_csv(self, results: list):
+        # Collect param keys in insertion order, deduplicated, across all results
+        param_keys = list(
+            dict.fromkeys(
+                k
+                for r in results
+                for k in (r.get("solve_data") or {})
+                if k not in "model_time"
+            )
+        )
+        fieldnames = self._FIXED_FIELDNAMES + param_keys
+
         os.makedirs(os.path.dirname(os.path.abspath(self.csv_path)), exist_ok=True)
         file_exists = os.path.isfile(self.csv_path)
         with open(self.csv_path, "a", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=self.CSV_FIELDNAMES)
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
             if not file_exists:
                 writer.writeheader()
             for r in results:
@@ -163,19 +155,7 @@ class OPPTestRunner:
                     "status": r.get("status"),
                     "total_time": self.TIMEOUT_MSG if is_timeout else r.get("duration"),
                     "model_time": self.TIMEOUT_MSG if is_timeout else solve_data.get("model_time"),
-                    "solver_time": self.TIMEOUT_MSG if is_timeout else solve_data.get("solver_time"),
-                    "W_full": solve_data.get("W_full"),
-                    "W_ea_ta": solve_data.get("W_ea_ta"),
-                    "W_ea": solve_data.get("W_ea"),
-                    "W_ta": solve_data.get("W_ta"),
-                    "C_v": solve_data.get("C_v"),
-                    "B_time": solve_data.get("B_time"),
-                    "B_setup": solve_data.get("B_setup"),
-                    "B_picking": solve_data.get("B_picking"),
-                    "M": solve_data.get("M"),
-                    "N": solve_data.get("N"),
-                    "B": solve_data.get("B"),
-                    "V": solve_data.get("V"),
+                    **{k: solve_data.get(k) for k in param_keys},
                 }
                 writer.writerow(row)
         print(f"\nResults were written in: {self.csv_path}")

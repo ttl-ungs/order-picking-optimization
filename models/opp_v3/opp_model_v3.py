@@ -45,6 +45,7 @@ from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
 from dtos.opp.solve_result import SolveResult
 from models.utils.output_builder import build_output
+import models.utils.solve_registry as solve_registry
 
 """
 Version of OPP model V2 without concept of "pickers" (P)
@@ -52,7 +53,6 @@ Version of OPP model V2 without concept of "pickers" (P)
 
 
 class OPPModelV3(Model):
-    _last_solve_result: "SolveResult | None" = None
 
     def __init__(self, dto: ModelDTO):
         super().__init__()
@@ -325,8 +325,8 @@ class OPPModelV3(Model):
             status=model.getStatus(),
             output=output,
             elapsed=elapsed,
-            solver_time=solver_time,
             params={
+                "solver_time": solver_time,
                 "W_full": W_full,
                 "W_ea_ta": W_ea_ta,
                 "W_ea": W_ea,
@@ -341,7 +341,7 @@ class OPPModelV3(Model):
                 "V": len(self.location_graph.get_vertices()),
             },
         )
-        OPPModelV3._last_solve_result = solve_result
+        solve_registry.register(solve_result)
         return solve_result
 
     def objective_function(self, W_full, v, W_ea_ta, ea, W_ea, W_ta, ta):
