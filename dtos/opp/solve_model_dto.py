@@ -1,3 +1,5 @@
+from typing import Dict, Set
+
 class SolveModelDTO:
     def __init__(self):
         self._w1: float = None
@@ -135,3 +137,31 @@ class SolveModelDTO:
     @Bn.setter
     def Bn(self, value: dict):
         self._y = value
+
+
+    def is_batch_assignment_valid(self) -> bool:
+        # Return False if any order is assigned to more than one batch
+        order_batch_count: Dict[str, int] = {}
+        for (order, batch), value in self._y.items():
+            if value > 0.5:
+                order_batch_count[order] = order_batch_count.get(order, 0) + 1
+        return all(count <= 1 for count in order_batch_count.values())
+
+    def is_capacity_valid(self) -> bool:
+        # Return False if any batch exceeds the vehicle capacity constraint
+        batch_assignments = self.extract_batch_assignments()
+        for batch, orders in batch_assignments.items():
+            total = sum(self._cap_n.get(order, 0) for order in orders)
+            if total > self._cap_vehicle:
+                return False
+        return True
+
+    def extract_batch_assignments(self) -> Dict[str, Set[str]]:
+        # Extract which orders belong to each batch from Bn parameter
+        unique_batches = {batch for (order, batch) in self._y.keys()}
+
+        batch_assignments = {b: set() for b in unique_batches}
+        for (order, batch), value in self._y.items():
+            if value > 0.5:  # Treat as binary
+                batch_assignments[batch].add(order)
+        return batch_assignments
