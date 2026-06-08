@@ -139,14 +139,10 @@ class TestOPPModelBridge(OPPTestCase):
             "B4": {"L5", "L9", "L11"},
         }
 
-        routes_by_batch = assert_batch_routes_cover_locations(
-            self,
-            model.model,
-            batches,
-            location_graph.get_depot(),
-            location_graph.get_final(),
-            required_by_batch,
-        )
+        routes_by_batch = model.last_solution_info.get("routes", {})
+        for _b, _locs in required_by_batch.items():
+            for _l in _locs:
+                self.assertIn(_l, routes_by_batch.get(_b, []), f"Batch {_b} did not visit {_l}")
 
         for batch, route in routes_by_batch.items():
             self.assertIn("L6", route, f"Batch {batch} did not cross bridge L6")

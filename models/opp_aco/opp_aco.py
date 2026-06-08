@@ -335,20 +335,36 @@ class OPPAntColonyOptimization(Model):
             if not route:
                 continue
 
-            # Calculate t_exec for the batch (travel + setup + picking)
+            # 1. Travel Time and unique visited picking locations
             travel_time = 0
+            visited_locations = set()
             for i in range(len(route) - 1):
-                travel_time += self.location_graph.get_distance(route[i], route[i + 1])
+                n1, n2 = route[i], route[i + 1]
+                travel_time += self.location_graph.get_distance(n1, n2)
+                if (
+                    n1 != self.location_graph.get_depot()
+                    and n1 != self.location_graph.get_final()
+                ):
+                    visited_locations.add(n1)
 
-            picking_time = (
-                sum(params.S.get(o, 0) for o in batch_assignments.get(batch, set()))
-                if params.S
-                else 0
-            )
+            # 2. Picking Time (Sum of required capacity C_n for orders in this batch)
+            picking_time = 0
+            if isinstance(params.C_n, dict):
+                picking_time = sum(
+                    params.C_n.get(o, 0) for o in batch_assignments.get(batch, set())
+                )
+
+            # 3. Service Time (Sum of S for each unique visited location)
+            service_time = 0
+            if isinstance(params.S, dict):
+                service_time = sum(params.S.get(loc, 0) for loc in visited_locations)
+
+            # EXACT V3 t_exec formula (Constraint 18 replication)
             t_exec_b = (
-                params.B_time * travel_time
-                + params.B_setup
-                + params.B_picking * picking_time
+                params.B_setup
+                + (params.B_picking * picking_time)
+                + (params.B_time * travel_time)
+                + service_time
             )
 
             current_time += t_exec_b

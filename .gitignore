@@ -18,3 +18,5 @@ Thumbs.db
 *.log
 *.out
 *.tuc
+
+script.py
