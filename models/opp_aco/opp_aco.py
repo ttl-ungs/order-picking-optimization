@@ -106,6 +106,7 @@ class OPPAntColonyOptimization(Model):
         solution_info = self._build_solution_info(
             best_global_solution, best_global_cost, params
         )
+        self.last_solution_info = solution_info
         super().notify(solution_info=solution_info)
 
         # Build and register the final result

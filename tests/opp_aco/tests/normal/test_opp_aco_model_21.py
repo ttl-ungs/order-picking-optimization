@@ -202,7 +202,7 @@ class TestOPPModelBridge(OPPTestCase):
 
         self.assertIn(result_fast, ("optimal", "feasible"))
 
-        total_tardiness_fast = self.sum_vars_with_prefix(model_fast.model, "ta_")
+        total_tardiness_fast = sum(model_fast.last_solution_info.get("tardiness", {}).values())
 
         result_slow, model_slow, _, _, _ = self._solve_bridge(
             N,
@@ -219,7 +219,7 @@ class TestOPPModelBridge(OPPTestCase):
 
         self.assertIn(result_slow, ("optimal", "feasible"))
 
-        total_tardiness_slow = self.sum_vars_with_prefix(model_slow.model, "ta_")
+        total_tardiness_slow = sum(model_slow.last_solution_info.get("tardiness", {}).values())
         self.assertGreater(total_tardiness_slow, total_tardiness_fast + 1e-6)
 
     def test_bridge_earliness_order_size(self):
@@ -272,8 +272,8 @@ class TestOPPModelBridge(OPPTestCase):
 
         self.assertIn(result_small, ("optimal", "feasible"))
 
-        total_earliness_small = self.sum_vars_with_prefix(model_small.model, "ea_")
-        total_tardiness_small = self.sum_vars_with_prefix(model_small.model, "ta_")
+        total_earliness_small = sum(model_small.last_solution_info.get("earliness", {}).values())
+        total_tardiness_small = sum(model_small.last_solution_info.get("tardiness", {}).values())
 
         result_large, model_large, _, _, _ = self._solve_bridge(
             N,
@@ -289,8 +289,8 @@ class TestOPPModelBridge(OPPTestCase):
 
         self.assertIn(result_large, ("optimal", "feasible"))
 
-        total_earliness_large = self.sum_vars_with_prefix(model_large.model, "ea_")
-        total_tardiness_large = self.sum_vars_with_prefix(model_large.model, "ta_")
+        total_earliness_large = sum(model_large.last_solution_info.get("earliness", {}).values())
+        total_tardiness_large = sum(model_large.last_solution_info.get("tardiness", {}).values())
 
         self.assertLessEqual(total_tardiness_small, 1e-6)
         self.assertLessEqual(total_tardiness_large, 1e-6)

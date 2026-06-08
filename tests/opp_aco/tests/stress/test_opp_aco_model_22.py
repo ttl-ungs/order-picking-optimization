@@ -6,7 +6,8 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
 )
 
-from dtos import SolveAcoModelDTO, ModelDTO
+from dtos import ModelDTO
+from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
 from models.opp_aco.opp_aco import OPPAntColonyOptimization
 from models.opp_aco.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase

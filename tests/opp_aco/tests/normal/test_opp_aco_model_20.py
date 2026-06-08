@@ -180,7 +180,7 @@ class TestOPPModelGrid(OPPTestCase):
 
         self.assertIn(result_low, ("optimal", "feasible"))
 
-        total_tardiness_low = self.sum_vars_with_prefix(model_low.model, "ta_")
+        total_tardiness_low = sum(model_low.last_solution_info.get("tardiness", {}).values())
         self.assertGreater(total_tardiness_low, 1e-6)
 
         result_high, model_high, _, _, _ = self._solve_grid(
@@ -197,7 +197,7 @@ class TestOPPModelGrid(OPPTestCase):
 
         self.assertIn(result_high, ("optimal", "feasible"))
 
-        total_tardiness_high = self.sum_vars_with_prefix(model_high.model, "ta_")
+        total_tardiness_high = sum(model_high.last_solution_info.get("tardiness", {}).values())
         self.assertLessEqual(total_tardiness_high, 1e-6)
 
     def test_grid_penalties_order_size_equal_to_cart(self):
@@ -251,7 +251,7 @@ class TestOPPModelGrid(OPPTestCase):
 
         self.assertIn(result_small, ("optimal", "feasible"))
 
-        total_tardiness_small = self.sum_vars_with_prefix(model_small.model, "ta_")
+        total_tardiness_small = sum(model_small.last_solution_info.get("tardiness", {}).values())
 
         result_large, model_large, _, _, _ = self._solve_grid(
             N,
@@ -267,7 +267,7 @@ class TestOPPModelGrid(OPPTestCase):
 
         self.assertIn(result_large, ("optimal", "feasible"))
 
-        total_tardiness_large = self.sum_vars_with_prefix(model_large.model, "ta_")
+        total_tardiness_large = sum(model_large.last_solution_info.get("tardiness", {}).values())
 
         # With order size equal to cart size, we expect more tardiness
         self.assertGreater(total_tardiness_large, total_tardiness_small + 1e-6)

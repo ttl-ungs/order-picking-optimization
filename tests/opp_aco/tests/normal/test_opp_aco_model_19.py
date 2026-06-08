@@ -116,7 +116,7 @@ class TestOPPModel(OPPTestCase):
 
         self.assertIn(result_low, ("optimal", "feasible"))
 
-        total_tardiness_low = self.sum_vars_with_prefix(model_low.model, "ta_")
+        total_tardiness_low = sum(model_low.last_solution_info.get("tardiness", {}).values())
         self.assertGreater(total_tardiness_low, 1e-6)
 
         try:
@@ -132,7 +132,7 @@ class TestOPPModel(OPPTestCase):
 
         self.assertIn(result_high, ("optimal", "feasible"))
 
-        total_tardiness_high = self.sum_vars_with_prefix(model_high.model, "ta_")
+        total_tardiness_high = sum(model_high.last_solution_info.get("tardiness", {}).values())
         self.assertLessEqual(total_tardiness_high, 1e-6)
 
     def test_longer_single_mission_duplicate_location(self):
