@@ -22,6 +22,8 @@ Este documento sirve como guía estricta y vinculante para cualquier agente aut�
 * **Data Transfer Objects (DTOs):** Siempre deben finalizar con el sufijo `DTO`.
     * *Ejemplos:* `ModelDTO`, `SolveModelDTO`, `SolveHCModelDTO`.
 
+El código se debe escribir en inglés.
+
 ---
 
 ### 2. Convenciones de Estructura de Directorios (Dirs Conventions)
@@ -93,6 +95,7 @@ El marco de validación científica de la tesis exige comparar modelos exactos c
 ### 5. Convenciones de Documentación (Docs Conventions)
 
 #### 5.1. Código Fuente (Módulos, Clases y Métodos)
+Los comentarios deben ser en inglés.
 Se debe utilizar obligatoriamente el formato de Docstrings de Google (PEP 257) para documentar:
 1.  **Propósito:** Breve descripción del objetivo del componente.
 2.  **Argumentos (`Args`):** Enumeración de parámetros indicando nombre, tipo y descripción.
