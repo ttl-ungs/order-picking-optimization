@@ -19,6 +19,7 @@ def _run_test_child(test_name, q):
     solve_data = None
     try:
         from models.utils.solve_registry import get_last
+
         sr = get_last()
         if sr is not None:
             solve_data = sr.to_csv_row()
@@ -39,7 +40,7 @@ def _run_test_child(test_name, q):
         pass
 
 
-class OPPTestRunner:
+class TestRunner:
     TIMEOUT_MSG = "Ejecución detenida - Más de 25 minutos"
     _FIXED_FIELDNAMES = ["test", "status", "total_time", "model_time"]
 
@@ -53,7 +54,7 @@ class OPPTestRunner:
         ids = []
         for t in suite:
             if isinstance(t, unittest.TestSuite):
-                ids.extend(OPPTestRunner.collect_test_ids(t))
+                ids.extend(TestRunner.collect_test_ids(t))
             else:
                 try:
                     ids.append(t.id())
@@ -89,7 +90,9 @@ class OPPTestRunner:
             else:
                 if not q.empty():
                     summary = q.get()
-                    summary["status"] = "ok" if summary.get("wasSuccessful") else "failed"
+                    summary["status"] = (
+                        "ok" if summary.get("wasSuccessful") else "failed"
+                    )
                     results.append(summary)
                 else:
                     results.append(
@@ -154,7 +157,9 @@ class OPPTestRunner:
                     "test": r["test"],
                     "status": r.get("status"),
                     "total_time": self.TIMEOUT_MSG if is_timeout else r.get("duration"),
-                    "model_time": self.TIMEOUT_MSG if is_timeout else solve_data.get("model_time"),
+                    "model_time": (
+                        self.TIMEOUT_MSG if is_timeout else solve_data.get("model_time")
+                    ),
                     **{k: solve_data.get(k) for k in param_keys},
                 }
                 writer.writerow(row)
