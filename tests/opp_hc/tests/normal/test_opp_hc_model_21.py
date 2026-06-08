@@ -2,20 +2,21 @@ import os
 import sys
 import unittest
 
-from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
-
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
 )
 
 from dtos.opp.model_dto import ModelDTO
 from models.opp_hc.utils.output_handler import OutputHandler
+from dtos.opp.solve_model_dto import SolveModelDTO
 from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
 from tests.opp_v3.scenarios.normal.scenario_13 import (
     bridge_graph_disconnected,
     bridge_graph_two_pickers_four_batches,
 )
+from tests.opp_v2.tests.route_assertions import assert_batch_routes_cover_locations
+
 
 class TestOPPHillClimbingBridge(OPPTestCase):
     def _solve_bridge(
@@ -66,7 +67,7 @@ class TestOPPHillClimbingBridge(OPPTestCase):
         if beta_picking_override is not None:
             beta_picking = beta_picking_override
 
-        params = SolveHCModelDTO()
+        params = SolveModelDTO()
         params.W_full = w1
         params.W_ea_ta = w2
         params.W_ea = gamma
