@@ -14,6 +14,8 @@ from collections import deque
 from typing import Dict, List, Set, Optional
 
 from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
+from dtos.opp.solve_result import SolveResult
+import models.utils.solve_registry as solve_registry
 from models.base.model import Model
 from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.solve_model_dto import SolveModelDTO
@@ -140,7 +142,30 @@ class OPPHillClimbing(Model):
         solution_info = self._build_solution_info(current_solution, current_cost, params)
         super().notify(solution_info=solution_info)
 
-        return "optimal", output
+        solve_result = SolveResult(
+            status="optimal",
+            output=output,
+            elapsed=elapsed,
+            solver_time=elapsed,
+            params={
+                "W_full": params.W_full,
+                "W_ea_ta": params.W_ea_ta,
+                "W_ea": params.W_ea,
+                "W_ta": params.W_ta,
+                "C_v": params.C_v,
+                "B_time": params.B_time,
+                "B_setup": params.B_setup,
+                "B_picking": params.B_picking,
+                "M": params.M,
+                "N": len(self.N),
+                "B": len(self.B),
+                "V": len(self.location_graph.get_vertices()),
+                "Max_it": params.Max_it,
+                "Max_imp": params.Max_imp,
+            },
+        )
+        solve_registry.register(solve_result)
+        return solve_result
 
     def _generate_initial_feasible_solution(
         self,

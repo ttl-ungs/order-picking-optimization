@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 from tests.test_runner import OPPTestRunner
 
-TEST_TIMEOUT_MINUTES = int(os.environ.get("STRESS_TEST_TIMEOUT_MINUTES", "25"))
+TEST_TIMEOUT_MINUTES = int(os.environ.get("TEST_TIMEOUT_MINUTES", "25"))
 WRITE_RESULTS_CSV = os.environ.get("WRITE_RESULTS_CSV", "").strip().lower() in (
     "1",
     "true",
