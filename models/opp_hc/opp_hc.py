@@ -11,8 +11,9 @@ Same problem as opp_model_v3.py:
 import time
 import random
 from collections import deque
-from typing import Dict, List, Set, Tuple, Optional
+from typing import Dict, List, Set, Optional
 
+from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
 from models.base.model import Model
 from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.solve_model_dto import SolveModelDTO
@@ -32,7 +33,7 @@ class OPPHillClimbing(Model):
         self.B = sorted(dto.B)
         self.T_0 = dto.start_time
 
-    def solve(self, params: SolveModelDTO):
+    def solve(self, params: SolveHCModelDTO):
         """
         Solve OPP v3 using Hill Climbing on routes with full constraint validation.
 
@@ -46,16 +47,13 @@ class OPPHillClimbing(Model):
         if params.Bn is None:
             return "infeasible", None
 
-        # Extract batch assignments from Bn parameter
-        batch_assignments = self._extract_batch_assignments(params.Bn)
-
         # Check for orders assigned to more than one batch (violates sum_b y_nb = 1)
-        if self._check_multiple_batch_assignment(params.Bn):
+        # Check vehicle capacity constraint per batch before doing any work
+        if not (params.is_capacity_valid() and params.is_batch_assignment_valid()) :
             return "infeasible", None
 
-        # Check vehicle capacity constraint per batch before doing any work
-        if self._check_capacity_infeasible(batch_assignments, params.C_n, params.C_v):
-            return "infeasible", None
+        # Extract batch assignments from Bn parameter
+        batch_assignments = params.extract_batch_assignments()
 
         # Create validator
         validator = ConstraintsValidator(
@@ -89,6 +87,9 @@ class OPPHillClimbing(Model):
             M=params.M,
         )
 
+        max_iterations = params.Max_it
+        max_no_improvement = params.Max_imp
+
         # Generate initial FEASIBLE solution
         current_solution = self._generate_initial_feasible_solution(
             batch_assignments, validator, params.C_n, params.A
@@ -101,9 +102,7 @@ class OPPHillClimbing(Model):
         current_cost = evaluator.evaluate(current_solution)
 
         iteration = 0
-        max_iterations = 500
         no_improvement_count = 0
-        max_no_improvement = 30
 
         # Hill climbing main loop
         while iteration < max_iterations and no_improvement_count < max_no_improvement:
@@ -142,32 +141,6 @@ class OPPHillClimbing(Model):
         super().notify(solution_info=solution_info)
 
         return "optimal", output
-
-    def _extract_batch_assignments(self, Bn: Dict) -> Dict[str, Set[str]]:
-        # Extract which orders belong to each batch from Bn parameter
-        batch_assignments = {b: set() for b in self.B}
-        for (order, batch), value in Bn.items():
-            if value > 0.5:  # Treat as binary
-                batch_assignments[batch].add(order)
-        return batch_assignments
-
-    def _check_multiple_batch_assignment(self, Bn: Dict) -> bool:
-        # Return True if any order is assigned to more than one batch (infeasible)
-        order_batch_count: Dict[str, int] = {}
-        for (order, batch), value in Bn.items():
-            if value > 0.5:
-                order_batch_count[order] = order_batch_count.get(order, 0) + 1
-        return any(count > 1 for count in order_batch_count.values())
-
-    def _check_capacity_infeasible(
-        self, batch_assignments: Dict[str, Set[str]], C_n: Dict, C_v: float
-    ) -> bool:
-        # Return True if any batch exceeds the vehicle capacity constraint
-        for batch, orders in batch_assignments.items():
-            total = sum(C_n.get(order, 0) for order in orders)
-            if total > C_v:
-                return True
-        return False
 
     def _generate_initial_feasible_solution(
         self,
@@ -474,7 +447,7 @@ class OPPHillClimbing(Model):
             solution_info["routes"][batch] = route
 
         # Calculate tardiness and earliness for each order
-        batch_assignments = self._extract_batch_assignments(params.Bn)
+        batch_assignments = params.extract_batch_assignments()
         for order in self.N:
             # Find which batch this order belongs to
             order_batch = None
@@ -519,7 +492,7 @@ class OPPHillClimbing(Model):
 
         # Picking time (sum of service times for orders in this batch)
         picking_time = 0
-        batch_assignments = self._extract_batch_assignments(params.Bn)
+        batch_assignments = params.extract_batch_assignments()
         for order in batch_assignments.get(batch, set()):
             picking_time += params.S.get(order, 0) if params.S else 0
 

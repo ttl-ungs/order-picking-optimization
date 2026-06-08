@@ -2,6 +2,8 @@ import unittest
 import sys
 import os
 
+from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
+
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
 )
@@ -9,8 +11,6 @@ sys.path.insert(
 
 from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
-
-from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
 from models.opp_hc.utils.output_handler import OutputHandler
 
@@ -62,7 +62,7 @@ class TestServiceTimeEdgeCases(OPPTestCase):
 
         return base_params, model_dto, V
 
-    def _run_model(self, params: SolveModelDTO, model_dto: ModelDTO):
+    def _run_model(self, params: SolveHCModelDTO, model_dto: ModelDTO):
         model = OPPHillClimbing(model_dto)
         output_handler = OutputHandler()
         model.attach(output_handler)
@@ -75,7 +75,7 @@ class TestServiceTimeEdgeCases(OPPTestCase):
 
     def test_missing_s_uses_default_zero(self):
         base_params, model_dto, V = self._build_common()
-        params = SolveModelDTO()
+        params = SolveHCModelDTO()
         for k, v in base_params.items():
             setattr(params, k, v)
         # do NOT set params.s -> should be treated as missing and default to 0
@@ -83,7 +83,7 @@ class TestServiceTimeEdgeCases(OPPTestCase):
 
     def test_partial_s_dictionary(self):
         base_params, model_dto, V = self._build_common()
-        params = SolveModelDTO()
+        params = SolveHCModelDTO()
         for k, v in base_params.items():
             setattr(params, k, v)
         some = list(sorted(V))[: max(1, len(V) // 2)]
@@ -94,7 +94,7 @@ class TestServiceTimeEdgeCases(OPPTestCase):
         base_params, model_dto, V = self._build_common()
         # Ensure non-dict s does not crash (treated as missing)
         for bad in (1, 0.5, [], None):
-            params = SolveModelDTO()
+            params = SolveHCModelDTO()
             for k, v in base_params.items():
                 setattr(params, k, v)
             params.S = bad
@@ -102,7 +102,7 @@ class TestServiceTimeEdgeCases(OPPTestCase):
 
     def test_large_and_fractional_s(self):
         base_params, model_dto, V = self._build_common()
-        params = SolveModelDTO()
+        params = SolveHCModelDTO()
         for k, v in base_params.items():
             setattr(params, k, v)
         params.S = {v: (i * 0.75 + 0.5) for i, v in enumerate(sorted(V))}
@@ -111,7 +111,7 @@ class TestServiceTimeEdgeCases(OPPTestCase):
     def test_depot_and_final_ignored_in_service_time(self):
         base_params, model_dto, V = self._build_common()
         # set extremely large s for all vertices including depot/final
-        params = SolveModelDTO()
+        params = SolveHCModelDTO()
         for k, v in base_params.items():
             setattr(params, k, v)
         # fill s for all vertices (model should ignore depot/final in service term)
@@ -121,7 +121,7 @@ class TestServiceTimeEdgeCases(OPPTestCase):
 
     def test_negative_s_values_do_not_crash(self):
         base_params, model_dto, V = self._build_common()
-        params = SolveModelDTO()
+        params = SolveHCModelDTO()
         for k, v in base_params.items():
             setattr(params, k, v)
         params.S = {v: (-1.0 if i % 2 == 0 else 0.5) for i, v in enumerate(sorted(V))}

@@ -2,6 +2,8 @@ import os
 import sys
 import unittest
 
+from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
+
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
 )
@@ -9,7 +11,6 @@ sys.path.insert(
 from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.model_dto import ModelDTO
 from models.opp_hc.utils.output_handler import OutputHandler
-from dtos.opp.solve_model_dto import SolveModelDTO
 from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
 from tests.opp_v3.scenarios.normal.scenario_17 import branched_single_mission_route
@@ -35,7 +36,7 @@ class TestOPPHillClimbing(OPPTestCase):
         y = {("O1", "B1"): 1, ("O2", "B1"): 1, ("O3", "B1"): 1, ("O4", "B1"): 1}
         cap_n = {"O1": 2.0, "O2": 2.0, "O3": 2.0, "O4": 2.0}
 
-        params = SolveModelDTO()
+        params = SolveHCModelDTO()
         params.W_full = w1
         params.W_ea_ta = w2
         params.W_ea = gamma

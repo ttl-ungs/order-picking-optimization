@@ -2,11 +2,13 @@ import unittest
 import sys
 import os
 
+from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
+
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
 )
 
-from dtos import SolveModelDTO, ModelDTO
+from dtos import ModelDTO
 from models.base.opp_location_graph import OPPLocationGraph
 from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
@@ -111,7 +113,7 @@ class TestOPPHillClimbing(OPPTestCase):
         beta_picking = 1.0
         M = 1000.0
 
-        params = SolveModelDTO()
+        params = SolveHCModelDTO()
         params.W_full = w1
         params.W_ea_ta = w2
         params.W_ea = gamma

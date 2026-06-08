@@ -2,11 +2,13 @@ import unittest
 import sys
 import os
 
+from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
+
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
 )
 
-from dtos import SolveModelDTO, ModelDTO
+from dtos import ModelDTO
 from models.opp_hc import OPPHillClimbing
 from models.opp_hc.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
@@ -42,7 +44,7 @@ class TestEmptyBatch(OPPTestCase):
         cap_vehicle = 50
         cap_n = {n: 5.0 for n in N}
 
-        params = SolveModelDTO()
+        params = SolveHCModelDTO()
         params.W_full = 1.0
         params.W_ea_ta = 1.0
         params.W_ea = 1.0

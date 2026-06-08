@@ -3,6 +3,8 @@ import unittest
 import sys
 import os
 
+from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
+
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
 )
@@ -12,7 +14,6 @@ from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
 
 from models.base.opp_location_graph import OPPLocationGraph
-from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
 
 from tests.opp_v3.scenarios.normal.scenario_1 import basic_two_orders_capacity_limit
@@ -46,7 +47,7 @@ class TestOPPHillClimbingModel1(OPPTestCase):
 
         due_date = {"O1": 15.0, "O2": 15.0}
 
-        params = SolveModelDTO()
+        params = SolveHCModelDTO()
         params.W_full = w1
         params.W_ea_ta = w2
         params.W_ea = gamma
