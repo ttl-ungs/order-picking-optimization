@@ -9,6 +9,7 @@ sys.path.insert(
 from dtos.opp.model_dto import ModelDTO
 from models.opp_hc.utils.output_handler import OutputHandler
 from dtos.opp.solve_model_dto import SolveModelDTO
+from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
 from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
 from tests.opp_v3.scenarios.normal.scenario_12 import grid_5x3_two_pickers_four_batches
@@ -48,7 +49,7 @@ class TestOPPHillClimbingGrid(OPPTestCase):
 
         due_date_by_order = self.normalize_due_dates(N, due_date_override)
 
-        params = SolveModelDTO()
+        params = SolveHCModelDTO()
         params.W_full = w1
         params.W_ea_ta = w2
         params.W_ea = gamma

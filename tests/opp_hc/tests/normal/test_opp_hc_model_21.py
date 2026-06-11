@@ -9,6 +9,7 @@ sys.path.insert(
 from dtos.opp.model_dto import ModelDTO
 from models.opp_hc.utils.output_handler import OutputHandler
 from dtos.opp.solve_model_dto import SolveModelDTO
+from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
 from models.opp_hc import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
 from tests.opp_v3.scenarios.normal.scenario_13 import (
@@ -67,7 +68,7 @@ class TestOPPHillClimbingBridge(OPPTestCase):
         if beta_picking_override is not None:
             beta_picking = beta_picking_override
 
-        params = SolveModelDTO()
+        params = SolveHCModelDTO()
         params.W_full = w1
         params.W_ea_ta = w2
         params.W_ea = gamma
