@@ -178,3 +178,16 @@ def assert_batch_routes_cover_locations(
             )
 
     return routes_by_batch
+
+
+def assert_aco_routes_cover_locations(testcase, routes, batches, required_by_batch):
+    """ACO-compatible variant: routes is {batch: [loc, ...]} from last_solution_info['routes']."""
+    for batch in batches:
+        route = routes.get(batch, [])
+        testcase.assertTrue(route, f"Batch {batch} has no route")
+        for location in required_by_batch.get(batch, set()):
+            testcase.assertIn(
+                location,
+                route,
+                f"Batch {batch} did not visit required location {location}",
+            )

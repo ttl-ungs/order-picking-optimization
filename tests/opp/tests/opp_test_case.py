@@ -1,10 +1,9 @@
-import time
 import unittest
 
 
 class OPPTestCase(unittest.TestCase):
     def setUp(self):
-        self.start_time = time.time()
+        self.start_time = 0
 
     def normalize_due_dates(self, orders, override=None, default=25.0):
         if override is None:
