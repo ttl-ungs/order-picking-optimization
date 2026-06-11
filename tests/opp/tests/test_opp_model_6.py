@@ -13,7 +13,7 @@ from models.opp.opp_model import OPPModel
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
 
-from tests.opp.scenarios.scenario_6 import test_two_orders_two_locations
+from tests.opp.scenarios.scenario_06 import test_two_orders_two_locations
 
 
 class TestOPPModel(OPPTestCase):

@@ -11,7 +11,7 @@ from models.opp_v3.opp_model_v3 import OPPModelV3
 from models.opp_v3.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
 
-from tests.opp_v3.scenarios.normal.scenario_3 import two_possible_routes_batches
+from tests.opp_v3.scenarios.normal.scenario_03 import two_possible_routes_batches
 
 
 class TestDueDatesExtreme(OPPTestCase):

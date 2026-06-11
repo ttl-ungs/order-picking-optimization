@@ -12,7 +12,7 @@ from models.opp.opp_model import OPPModel
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
 
-from tests.opp.scenarios.scenario_4 import bidirectional_edges
+from tests.opp.scenarios.scenario_04 import bidirectional_edges
 
 
 class TestOPPModel(OPPTestCase):

@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import unittest
+from datetime import datetime  # NUEVO IMPORT
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -41,13 +42,31 @@ def _run_test_child(test_name, q):
 
 
 class TestRunner:
-    TIMEOUT_MSG = "Ejecución detenida - Más de 25 minutos"
+    TIMEOUT_MSG = "Ejecución detenida por timeout"
     _FIXED_FIELDNAMES = ["test", "status", "total_time", "model_time"]
 
-    def __init__(self, timeout_minutes: int, write_csv: bool, csv_path: str):
+    def __init__(
+        self, timeout_minutes: int, write_csv: bool, model_name: str, test_type: str
+    ):
         self.timeout_minutes = timeout_minutes
+        self.TIMEOUT_MSG = f"{self.TIMEOUT_MSG} - {timeout_minutes}"
         self.write_csv = write_csv
-        self.csv_path = csv_path
+
+        base_dir = os.path.dirname(os.path.abspath(__file__))  # Folder 'tests'
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # Ej: 20231024_153000
+
+        # Ej: output_opp_hc_stress_tests_20231024_153000.csv
+        csv_filename = f"output_{model_name}_{test_type}_tests_{timestamp}.csv"
+
+        # Ej: tests/outputs/opp_hc/stress/output_opp_hc_stress_tests_20231024_153000.csv
+        self.csv_path = os.path.join(
+            base_dir, "outputs", model_name, test_type, csv_filename
+        )
+
+        if self.write_csv:
+            os.makedirs(os.path.dirname(self.csv_path), exist_ok=True)
+            with open(self.csv_path, "w", newline="", encoding="utf-8") as f:
+                pass
 
     @staticmethod
     def collect_test_ids(suite) -> list:
@@ -104,6 +123,9 @@ class TestRunner:
                         }
                     )
 
+            if self.write_csv:
+                self.write_results_csv(results)
+
         return results
 
     def print_summary(self, results: list, label: str = "TESTS"):
@@ -132,8 +154,10 @@ class TestRunner:
         if not failures and not timeouts:
             print("\nAll tests passed.")
 
+        if self.write_csv:
+            print(f"\n✅ Resultados guardados en:\n{self.csv_path}")
+
     def write_results_csv(self, results: list):
-        # Collect param keys in insertion order, deduplicated, across all results
         param_keys = list(
             dict.fromkeys(
                 k
@@ -144,12 +168,9 @@ class TestRunner:
         )
         fieldnames = self._FIXED_FIELDNAMES + param_keys
 
-        os.makedirs(os.path.dirname(os.path.abspath(self.csv_path)), exist_ok=True)
-        file_exists = os.path.isfile(self.csv_path)
-        with open(self.csv_path, "a", newline="", encoding="utf-8") as f:
+        with open(self.csv_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
-            if not file_exists:
-                writer.writeheader()
+            writer.writeheader()
             for r in results:
                 is_timeout = r.get("status") == "timeout"
                 solve_data = r.get("solve_data") or {}
@@ -163,7 +184,6 @@ class TestRunner:
                     **{k: solve_data.get(k) for k in param_keys},
                 }
                 writer.writerow(row)
-        print(f"\nResults were written in: {self.csv_path}")
 
     def succeeded(self, results: list) -> bool:
         return all(r.get("status") == "ok" for r in results)

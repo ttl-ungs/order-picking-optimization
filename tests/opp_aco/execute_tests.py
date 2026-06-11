@@ -21,9 +21,8 @@ if __name__ == "__main__":
     runner = TestRunner(
         timeout_minutes=TEST_TIMEOUT_MINUTES,
         write_csv=WRITE_RESULTS_CSV,
-        csv_path=os.path.join(
-            os.path.dirname(__file__), "..", "outputs", "opp_aco", "results.csv"
-        ),
+        model_name="opp_aco",
+        test_type="normal",
     )
 
     suite = unittest.TestLoader().discover(
@@ -34,8 +33,5 @@ if __name__ == "__main__":
 
     results = runner.run(test_ids)
     runner.print_summary(results, "NORMAL TESTS")
-
-    if WRITE_RESULTS_CSV:
-        runner.write_results_csv(results)
 
     sys.exit(0 if runner.succeeded(results) else 1)
