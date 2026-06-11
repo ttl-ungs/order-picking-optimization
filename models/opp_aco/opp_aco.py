@@ -36,7 +36,7 @@ class OPPAntColonyOptimization(Model):
         Args:
             params (SolveAcoModelDTO): DTO containing exact model and ACO parameters.
         """
-        start_time = self.T_0 if self.T_0 is not None else time.time()
+        start_time = time.time()
 
         # Initial validation analogous to opp_v3 / opp_hc
         if params.Bn is None:
