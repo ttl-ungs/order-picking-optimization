@@ -13,7 +13,7 @@ from models.opp_hc import OPPHillClimbing
 from models.opp_hc.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
 
-from tests.opp_v3.scenarios.normal.scenario_2 import two_orders_two_aisles
+from tests.opp_v3.scenarios.normal.scenario_02 import two_orders_two_aisles
 
 
 class TestOrderAssignedMultipleBatches(OPPTestCase):

@@ -25,9 +25,8 @@ if __name__ == "__main__":
     runner = TestRunner(
         timeout_minutes=STRESS_TEST_TIMEOUT_MINUTES,
         write_csv=WRITE_RESULTS_CSV,
-        csv_path=os.path.join(
-            os.path.dirname(__file__), "..", "outputs", "opp_v3", "results_stress.csv"
-        ),
+        model_name="opp_v3",
+        test_type="stress",
     )
 
     suite = unittest.TestLoader().discover(
@@ -38,8 +37,5 @@ if __name__ == "__main__":
 
     results = runner.run(test_ids)
     runner.print_summary(results, "STRESS TESTS")
-
-    if WRITE_RESULTS_CSV:
-        runner.write_results_csv(results)
 
     sys.exit(0 if runner.succeeded(results) else 1)
