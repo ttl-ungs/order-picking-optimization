@@ -1,12 +1,12 @@
 import unittest
-from models.opp_v2.opp_model_v2 import OPPModelV2
-from models.opp_v2.utils.output_handler import OutputHandler
+from models.opp_hc.opp_hc import OPPHillClimbing
+from models.opp_hc.utils.output_handler import OutputHandler
 from observer.observer import Observer
 from tests.opp.tests.opp_test_case import OPPTestCase
 import sys
 import os
 
-from tests.opp_v2.scenarios.normal.single_order_params import single_order_params
+from tests.opp_hc.scenarios.normal.single_order_params import single_order_params
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", "..")))
 
@@ -17,11 +17,9 @@ class ResultCapture(Observer):
         self.ta = {}
         self.ea = {}
 
-    def update(self, model, N, ta, ea, **kwargs):
-        if model.getStatus() in ("optimal", "feasible"):
-            for n in N:
-                self.ta[n] = model.getVal(ta[n])
-                self.ea[n] = model.getVal(ea[n])
+    def update(self, solution_info: dict, **kwargs):
+        self.ta = solution_info.get("tardiness", {})
+        self.ea = solution_info.get("earliness", {})
 
 
 class TestOPPHillClimbing(OPPTestCase):
@@ -41,7 +39,7 @@ class TestOPPHillClimbing(OPPTestCase):
         params, model_dto = single_order_params(due_date_value=10000.0, start_time=self.start_time)
 
         capture = ResultCapture()
-        model = OPPModelV2(model_dto)
+        model = OPPHillClimbing(model_dto)
         model.attach(OutputHandler())
         model.attach(capture)
 
@@ -59,7 +57,7 @@ class TestOPPHillClimbing(OPPTestCase):
         params, model_dto = single_order_params(due_date_value=0.0, start_time=self.start_time)
 
         capture = ResultCapture()
-        model = OPPModelV2(model_dto)
+        model = OPPHillClimbing(model_dto)
         model.attach(OutputHandler())
         model.attach(capture)
 

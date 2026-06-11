@@ -1,4 +1,5 @@
-from dtos import SolveModelDTO, ModelDTO
+from dtos import ModelDTO
+from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
 from graphs.graphs_factory import GraphsFactory
 
 
@@ -13,7 +14,7 @@ def single_order_params(due_date_value, start_time, cap_vehicle=100.0):
 
     y = {("O1", "B1"): 1}
 
-    params = SolveModelDTO()
+    params = SolveHCModelDTO()
     # w1 > w2*gamma forces the optimizer to minimize v (completion time)
     # rather than trading it off against earliness
     params.W_full = 10.0
