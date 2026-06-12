@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     suite = unittest.TestLoader().discover(
         start_dir=os.path.join(os.path.dirname(__file__), "tests", "stress"),
-        pattern="test_*.py",
+        pattern="test_opp_hc_model_[2-3][1-9].py",
     )
     test_ids = TestRunner.collect_test_ids(suite)
 

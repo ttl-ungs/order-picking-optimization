@@ -1,4 +1,5 @@
 import unittest
+from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
 import sys
 import os
 
