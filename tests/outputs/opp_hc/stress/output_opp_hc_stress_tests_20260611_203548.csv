@@ -1,0 +1,35 @@
+test,status,total_time,model_time,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,V,Max_it,Max_imp
+test_opp_hc_model_01.TestOPPModel.test_100_locations,ok,0.09571433067321777,1781220948.282559,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,100,500,30
+test_opp_hc_model_02.TestOPPModel.test_400_locations,ok,1.4780340194702148,1781220949.8719194,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,400,500,30
+test_opp_hc_model_03.TestOPPModel.test_625_locations,ok,3.7930257320404053,1781220953.7715979,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,625,500,30
+test_opp_hc_model_04.TestOPPModel.test_4_orders_per_batch,ok,1.1567258834838867,1781220955.1235025,9.0,1.0,1.0,1.0,40.0,0.5,1.0,1.0,1000.0,100,25,100,500,30
+test_opp_hc_model_05.TestOPPModel.test_10_orders_per_batch,ok,23.34219217300415,1781220978.597286,9.0,1.0,1.0,1.0,250.0,0.5,1.0,1.0,1000.0,100,10,100,500,30
+test_opp_hc_model_06.TestOPPModel.test_empty_batches,ok,0.24843382835388184,1781220978.987524,9.0,1.0,1.0,1.0,10.0,0.5,1.0,1.0,1000.0,25,50,100,500,30
+test_opp_hc_model_07.TestOPPModel.test_multi_location_orders,ok,1.634462594985962,1781220980.7537448,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,30,10,100,500,30
+test_opp_hc_model_08.TestOPPModel.test_shared_hotspots,ok,0.18964576721191406,1781220981.0710957,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,30,10,100,500,30
+test_opp_hc_model_09.TestOPPModel.test_infeasible_capacity,ok,0.015522956848144531,,,,,,,,,,,,,,,
+test_opp_hc_model_10.TestOPPModel.test_disconnected_graph,ok,0.026419878005981445,,,,,,,,,,,,,,,
+test_opp_hc_model_11.TestOPPModel.test_25_orders_per_batch_30_batches_10x10,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,
+test_opp_hc_model_12.TestOPPModel.test_25_orders_per_batch_30_batches_25x25,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,
+test_opp_hc_model_13.TestOPPModel.test_25_orders_per_batch_30_batches_100x100,ok,0.06723284721374512,,,,,,,,,,,,,,,
+test_opp_hc_model_14.TestOPPModel.test_30_orders_per_batch_20_batches_100x100,ok,0.01785755157470703,,,,,,,,,,,,,,,
+test_opp_hc_model_15.TestOPPModel.test_25_orders_per_batch_30_batches_double_50x50,ok,0.018111705780029297,,,,,,,,,,,,,,,
+test_opp_hc_model_16.TestOPPModel.test_20_orders_per_batch_40_batches_double_50x50,ok,0.016893386840820312,,,,,,,,,,,,,,,
+test_opp_hc_model_17.TestOPPModel.test_40_orders_per_batch_50_batches_100x100,ok,0.02106022834777832,,,,,,,,,,,,,,,
+test_opp_hc_model_18.TestOPPModel.test_40_orders_per_batch_50_batches_double_50x50,ok,0.01799321174621582,,,,,,,,,,,,,,,
+test_opp_hc_model_19.TestOPPModel.test_extremely_linear_grid,ok,0.019404172897338867,,,,,,,,,,,,,,,
+test_opp_hc_model_20.TestOPPModel.test_extreme_density,ok,0.018361806869506836,,,,,,,,,,,,,,,
+test_opp_hc_model_21.TestOPPModel.test_4_orders_per_batch_10_x_10,failed,0.03178262710571289,,,,,,,,,,,,,,,
+test_opp_hc_model_22.TestOPPModel.test_10_orders_per_batch_10_x_10,failed,0.03095269203186035,,,,,,,,,,,,,,,
+test_opp_hc_model_23.TestOPPModel.test_50_orders_per_batch_10_x_10,failed,0.03662443161010742,,,,,,,,,,,,,,,
+test_opp_hc_model_24.TestOPPModel.test_4_orders_per_batch_5_x_5,failed,0.020186901092529297,,,,,,,,,,,,,,,
+test_opp_hc_model_25.TestOPPModel.test_10_orders_per_batch_5_x_5,failed,0.026403427124023438,,,,,,,,,,,,,,,
+test_opp_hc_model_26.TestOPPModel.test_20_orders_per_batch_5_x_5,failed,0.028443098068237305,,,,,,,,,,,,,,,
+test_opp_hc_model_27.TestOPPModel.test_50_orders_per_batch_5_x_5,failed,0.027742862701416016,,,,,,,,,,,,,,,
+test_opp_hc_model_28.TestOPPModel.test_20_orders_per_batch_10_x_10,failed,0.035367727279663086,,,,,,,,,,,,,,,
+test_opp_hc_model_29.TestOPPModel.test_20_orders_per_batch_20_x_20,failed,0.08348798751831055,,,,,,,,,,,,,,,
+test_opp_hc_model_30.TestOPPModel.test_10_orders_per_batch_10_x_10,failed,0.03861117362976074,,,,,,,,,,,,,,,
+test_opp_hc_model_31.TestOPPModel.test_10_orders_per_batch_5_x_5_250_orders,failed,0.02936077117919922,,,,,,,,,,,,,,,
+test_opp_hc_model_32.TestOPPModel.test_10_orders_per_batch_5_x_5_500_orders,failed,0.028688907623291016,,,,,,,,,,,,,,,
+test_opp_hc_model_33.TestOPPModel.test_10_orders_per_batch_7_x_7_500_orders,failed,0.03092503547668457,,,,,,,,,,,,,,,
+test_opp_hc_model_34.TestOPPModel.test_8_orders_per_batch_7_x_7_320_orders,failed,0.03278994560241699,,,,,,,,,,,,,,,
