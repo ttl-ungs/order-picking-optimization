@@ -1,0 +1,13 @@
+test,status,total_time,model_time,solver_time,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,V
+test_opp_v3_model_13.TestOPPModel.test_25_orders_per_batch_30_batches_100x100,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,
+test_opp_v3_model_14.TestOPPModel.test_30_orders_per_batch_20_batches_100x100,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,
+test_opp_v3_model_15.TestOPPModel.test_25_orders_per_batch_30_batches_double_50x50,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,
+test_opp_v3_model_16.TestOPPModel.test_20_orders_per_batch_40_batches_double_50x50,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,
+test_opp_v3_model_17.TestOPPModel.test_40_orders_per_batch_50_batches_100x100,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,
+test_opp_v3_model_18.TestOPPModel.test_40_orders_per_batch_50_batches_double_50x50,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,
+test_opp_v3_model_19.TestOPPModel.test_extremely_linear_grid,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,
+test_opp_v3_model_20.TestOPPModel.test_extreme_density,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,
+test_opp_v3_model_26.TestOPPModel.test_20_orders_per_batch_5_x_5,ok,201.1551809310913,1781311028.830561,200.129601,9.0,1.0,1.0,1.0,200,0.5,1.0,1.0,1000.0,500,25,25
+test_opp_v3_model_27.TestOPPModel.test_50_orders_per_batch_5_x_5,ok,15.123142004013062,1781311044.154691,14.682392,9.0,1.0,1.0,1.0,500,0.5,1.0,1.0,1000.0,500,10,25
+test_opp_v3_model_28.TestOPPModel.test_20_orders_per_batch_10_x_10,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,
+test_opp_v3_model_29.TestOPPModel.test_20_orders_per_batch_20_x_20,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,
