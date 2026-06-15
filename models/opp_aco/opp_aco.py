@@ -160,22 +160,21 @@ class OPPAntColonyOptimization(Model):
                 dist[(src, dst)] = d.get(dst, float("inf"))
         return dist
 
-    def _initialize_pheromones(self) -> Dict[Tuple[str, str, str], float]:
-        """Initializes the pheromone matrix 3D (batch, origin, destination) with a base value of 1.0 for valid edges.
-        Avoid cross-contamination of routes between batches with different demands. """
+    def _initialize_pheromones(self) -> Dict[Tuple[str, str], float]:
+        """Initializes the pheromone matrix 2D (origin, destination) with a base value of 1.0 for valid edges."""
         pheromones = {}
         vertices = self.location_graph.get_vertices()
-        for b in self.B:
-            for i in vertices:
-                for j in vertices:
-                    if self.location_graph.has_edge(i, j):
-                        pheromones[(b, i, j)] = 1.0
+        # for b in self.B:
+        for i in vertices:
+            for j in vertices:
+                if self.location_graph.has_edge(i, j):
+                    pheromones[(i, j)] = 1.0
         return pheromones
 
     def _build_ant_solution(
         self,
         batch_assignments: Dict[str, Set[str]],
-        pheromones: Dict[Tuple[str, str, str], float],
+        pheromones: Dict[Tuple[str, str], float],
         params: SolveAcoModelDTO,
         alpha: float,
         beta: float,
@@ -197,7 +196,7 @@ class OPPAntColonyOptimization(Model):
                 solution[batch] = []
                 continue
 
-            route = self._build_batch_route(batch, required_locations, pheromones, alpha, beta)
+            route = self._build_batch_route(required_locations, pheromones, alpha, beta)
             if route is None:
                 return None  # Ant got stuck (infeasible route generated)
 
@@ -206,9 +205,8 @@ class OPPAntColonyOptimization(Model):
 
     def _build_batch_route(
         self,
-        batch: str,
         required_locations: Set[str],
-        pheromones: Dict[Tuple[str, str, str], float],
+        pheromones: Dict[Tuple[str, str], float],
         alpha: float,
         beta: float,
     ) -> Optional[List[str]]:
@@ -240,7 +238,7 @@ class OPPAntColonyOptimization(Model):
 
             for n in neighbors:
                 # Batch-specific pheromone query
-                tau = pheromones.get((batch, current, n), 1.0) ** alpha
+                tau = pheromones.get((current, n), 1.0) ** alpha
 
                 dist = self.location_graph.get_distance(current, n)
                 dist = dist if dist > 0 else 0.01
@@ -321,7 +319,7 @@ class OPPAntColonyOptimization(Model):
 
     def _update_pheromones(
         self,
-        pheromones: Dict[Tuple[str, str, str], float],
+        pheromones: Dict[Tuple[str, str], float],
         ant_solutions: List[Tuple[Dict[str, List[str]], float]],
         evaporation_rate: float,
         q_factor: float,
@@ -330,7 +328,7 @@ class OPPAntColonyOptimization(Model):
     ) -> None:
         """
         Applies evaporation and pheromone deposit based on ant solutions.
-        Elite upgrade. Evaporates and deposits pheromones on a 3D base, providing a strong additional boost
+        Elite upgrade. Evaporates and deposits pheromones on a 2D base, providing a strong additional boost
         to the best historical solution found.
         """
         # Evaporation
@@ -343,18 +341,18 @@ class OPPAntColonyOptimization(Model):
         for solution, cost in ant_solutions:
             if cost <= 0: continue
             deposit_amount = q_factor / cost
-            for batch, route in solution.items():
+            for route in solution.values():
                 for i in range(len(route) - 1):
-                    edge = (batch, route[i], route[i + 1])
+                    edge = (route[i], route[i + 1])
                     if edge in pheromones:
                         pheromones[edge] += deposit_amount
 
         # Elite Component: Extra bonus deposit for the best historical route
         if best_global_solution and best_global_cost < float('inf') and best_global_cost > 0:
-            elitist_deposit = (q_factor / best_global_cost) * 2.0  # Peso doble al líder histórico
-            for batch, route in best_global_solution.items():
+            elitist_deposit = (q_factor / best_global_cost) * 2.0
+            for route in best_global_solution.values():
                 for i in range(len(route) - 1):
-                    edge = (batch, route[i], route[i + 1])
+                    edge = (route[i], route[i + 1])
                     if edge in pheromones:
                         pheromones[edge] += elitist_deposit
 
