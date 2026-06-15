@@ -41,9 +41,11 @@ class OPPAntColonyOptimization(Model):
 
         # Initial validation analogous to opp_v3 / opp_hc
         if params.Bn is None:
+            self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
 
         if not (params.is_capacity_valid() and params.is_batch_assignment_valid()):
+            self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
 
         batch_assignments = params.extract_batch_assignments()
@@ -106,6 +108,7 @@ class OPPAntColonyOptimization(Model):
         print(f"Iterations completed: {iteration}")
 
         if best_global_solution is None:
+            self._register_infeasible(params, elapsed)
             return "infeasible", None
 
         # Notify the OutputHandler (Observer Pattern)
@@ -138,6 +141,27 @@ class OPPAntColonyOptimization(Model):
         )
         solve_registry.register(solve_result)
         return solve_result
+
+    def _register_infeasible(self, params: SolveAcoModelDTO, elapsed: float) -> None:
+        solve_registry.register(SolveResult(
+            status="infeasible",
+            output=None,
+            elapsed=elapsed,
+            params={
+                "W_full": getattr(params, "W_full", None),
+                "W_ea_ta": getattr(params, "W_ea_ta", None),
+                "W_ea": getattr(params, "W_ea", None),
+                "W_ta": getattr(params, "W_ta", None),
+                "C_v": getattr(params, "C_v", None),
+                "M": getattr(params, "M", None),
+                "N": len(self.N),
+                "B": len(self.B),
+                "A_ants": getattr(params, "_A", 15),
+                "Max_it": getattr(params, "_Max_it", 60),
+                "Alpha": getattr(params, "_Alpha", 1.0),
+                "Beta": getattr(params, "_Beta", 2.5),
+            },
+        ))
 
     def _precompute_shortest_paths(self) -> Dict[Tuple[str, str], float]:
         """Dijkstra from every node to get shortest-path distances."""

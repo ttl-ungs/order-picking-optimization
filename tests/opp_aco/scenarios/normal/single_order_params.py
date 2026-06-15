@@ -1,4 +1,5 @@
-from dtos import SolveAcoModelDTO, ModelDTO
+from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
+from dtos.opp.model_dto import ModelDTO
 from graphs.graphs_factory import GraphsFactory
 
 
