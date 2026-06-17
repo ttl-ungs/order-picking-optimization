@@ -43,7 +43,7 @@ def _run_test_child(test_name, q):
 
 class TestRunner:
     TIMEOUT_MSG = "Ejecución detenida por timeout"
-    _FIXED_FIELDNAMES = ["test", "status", "total_time", "model_time"]
+    _FIXED_FIELDNAMES = ["test", "status", "total_time", "model_time", "obj_val"]
 
     def __init__(
         self, timeout_minutes: int, write_csv: bool, model_name: str, test_type: str
@@ -163,7 +163,7 @@ class TestRunner:
                 k
                 for r in results
                 for k in (r.get("solve_data") or {})
-                if k not in "model_time"
+                if k not in ("model_time", "obj_val")
             )
         )
         fieldnames = self._FIXED_FIELDNAMES + param_keys
@@ -180,6 +180,9 @@ class TestRunner:
                     "total_time": self.TIMEOUT_MSG if is_timeout else r.get("duration"),
                     "model_time": (
                         self.TIMEOUT_MSG if is_timeout else solve_data.get("model_time")
+                    ),
+                    "obj_val": (
+                        self.TIMEOUT_MSG if is_timeout else solve_data.get("obj_val")
                     ),
                     **{k: solve_data.get(k) for k in param_keys},
                 }

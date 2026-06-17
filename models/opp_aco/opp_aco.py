@@ -125,6 +125,7 @@ class OPPAntColonyOptimization(Model):
             output=output,
             elapsed=elapsed,
             params={
+                "obj_val": best_global_cost,
                 "W_full": params.W_full,
                 "W_ea_ta": params.W_ea_ta,
                 "W_ea": params.W_ea,
