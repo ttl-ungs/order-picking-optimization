@@ -19,6 +19,8 @@
 
 Este documento presenta un análisis empírico y teórico exhaustivo sobre el desempeño operativo, la eficiencia computacional y las fronteras de escalabilidad de las tres arquitecturas de optimización implementadas para resolver el problema integrado de preparación de pedidos y ruteo en almacenes funcionales ({\em Linear Picking Routing Problem}, LPRP): el modelo exacto de {\bf Programación Lineal Entera Mixta (MILP - OPP\_v3)} resuelto mediante SCIP, la heurística de búsqueda local {\bf Hill Climbing (HC)} y la metaheurística bio-inspirada {\bf Ant Colony Optimization (ACO)}. 
 
+\blank
+
 Los datos analizados provienen del consolidado masivo de pruebas (incluyendo los repositorios \type{complete_output_v3_stress_tests.csv} y las trazas operativas recientes de ACO bajo estrés). Se evalúa la escalabilidad paramétrica ante variables críticas como el volumen de órdenes, la dimensión topológica y la capacidad vehicular.
 
 \startsection[title={Análisis Individual por Arquitectura}]
@@ -28,11 +30,22 @@ Los datos analizados provienen del consolidado masivo de pruebas (incluyendo los
 El análisis paramétrico individual de los registros de OPP\_v3 revela hallazgos críticos sobre la composición de su carga computacional. En escenarios normales, el factor más determinante no es el número de pedidos ($N \rightarrow r = 0.15$), sino la estructura geométrica. Existe una fuerte correlación del tiempo total frente al número de lotes ($B \rightarrow r = 0.87$) y de ubicaciones ($V \rightarrow r = 0.72$).
 
 \startsubsubsection[title={Predominio del Modelado y Estabilidad (Pruebas Normales)}]
-Un descubrimiento vital recae en el perfil de ejecución: la gran mayoría del tiempo se dedica a la construcción de la inmensa matriz del modelo en memoria, y no a la resolución. En promedio, {\bf el tiempo de modelado representa el 90\% del esfuerzo total}, mientras que SCIP resuelve el grafo instantáneamente. 
+
+El análisis detallado de las instancias de prueba en escenarios de escala normal (baja densidad de órdenes) reveló una anomalía arquitectónica de alto interés en el modelo exacto OPP\_v3. Al perfilar el ciclo de vida del algoritmo, se constató que la latencia no recae en la complejidad de encontrar el óptimo matemático, sino en la instanciación programática de la matriz de restricciones.
+
+\blank
+
+En la arquitectura MILP, el tiempo total ($T_{total}$) se compone del tiempo de modelado o construcción ($T_{model}$) y el tiempo de resolución del motor matemático ($T_{solver}$). Las trazas de ejecución en escenarios normales demuestran que {\bf el tiempo de modelado representa en promedio el 90\% del tiempo total consumido}. 
+
+\blank
+
+Mientras que el motor SCIP logra podar y resolver las instancias estándar en tiempos marginales ($\approx 0.01$ a $0.05$ s), la fase de declaración de variables binarias relativas al empaquetamiento ($z_{o,b}$) y ruteo espacial ($x_{i,j}$) absorbe el grueso del rendimiento algorítmico computacional. Esto expone un cuello de botella inherente a la interfaz de software (el {\em wrapper} u orquestador de alto nivel) al momento de traducir el ecosistema geográfico del almacén a inecuaciones lineales, un esfuerzo del cual las heurísticas HC y ACO están exentas gracias a sus estructuras de datos dinámicas y simplificadas.
+
+\blank
 
 Adicionalmente, se detectó empíricamente que relajar penalizaciones lógicas (por ejemplo, reducir el castigo por entrega tardía $W_{ta}=1$) ralentiza el modelo, dado que impide descartar rutas ineficientes en las fases tempranas de la evaluación.
 
-\placefigure[here][fig:profiling_v3]{Perfil de Ejecución OPP\_v3: Modelado vs Resolución}
+\placefigure[force][fig:profiling_v3]{Perfil de Ejecución OPP\_v3: Modelado vs Resolución}
 {\startMPcode
   numeric u, v; u := 1.5cm; v := 5cm / 100;
   drawarrow (-0.5*u, 0) -- (4.5*u, 0) withpen pencircle scaled 1pt;
@@ -50,12 +63,55 @@ Adicionalmente, se detectó empíricamente que relajar penalizaciones lógicas (
   fill (3.5*u, 95*v) -- (3.8*u, 95*v) -- (3.8*u, 90*v) -- (3.5*u, 90*v) -- cycle withcolor \MPcolor{darkblue}; label.rt(textext("Construccion de Matriz"), (3.9*u, 92.5*v));
   fill (3.5*u, 85*v) -- (3.8*u, 85*v) -- (3.8*u, 80*v) -- (3.5*u, 80*v) -- cycle withcolor \MPcolor{redline}; label.rt(textext("Solver (SCIP)"), (3.9*u, 82.5*v));
 \stopMPcode}
+
+Asimismo, en escenarios con baja densidad de pedidos ($N$), se descubrió que la variable estructural que dicta el piso base del tiempo de modelado es la topología del layout ($V$). La Figura \in[fig:v_normal] modela el impacto de la dispersión geográfica en el esfuerzo de construcción del modelo exacto.
+
+\placefigure[force][fig:v_normal]{Crecimiento del Tiempo Total vs Ubicaciones ($V$) en Instancias Normales}
+{\startMPcode
+  numeric u, v;
+  u := 10cm / 40; % Eje X: 0 a 40 ubicaciones
+  v := 5cm / 0.15; % Eje Y: 0 a 0.15 segundos
+
+  drawarrow (0,0) -- (45*u,0) withpen pencircle scaled 1pt;
+  drawarrow (0,0) -- (0,0.18*v) withpen pencircle scaled 1pt;
+  
+  label.bot("Nodos del Mapa / Ubicaciones (V)", (20*u, -0.015*v));
+  label.lft("Tiempo Total (s)", (-3*u, 0.08*v));
+
+  % Marcas Y
+  for i=0 step 0.05 until 0.15:
+    draw (-0.5*u, i*v) -- (0.5*u, i*v);
+    label.lft(decimal i, (-1*u, i*v));
+  endfor;
+
+  % Marcas X
+  for i=0 step 10 until 40:
+    draw (i*u, -0.003*v) -- (i*u, 0.003*v);
+    label.bot(decimal i, (i*u, -0.008*v));
+  endfor;
+
+  % Nube de puntos simulando los resultados normales (r=0.72)
+  fill fullcircle scaled 4pt shifted (4*u, 0.038*v) withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 4pt shifted (5*u, 0.039*v) withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 4pt shifted (8*u, 0.057*v) withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 4pt shifted (8*u, 0.061*v) withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 4pt shifted (15*u, 0.085*v) withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 4pt shifted (25*u, 0.098*v) withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 4pt shifted (36*u, 0.125*v) withcolor \MPcolor{darkblue};
+
+  % Línea de tendencia
+  draw (0, 0.02*v) -- (40*u, 0.13*v) withcolor \MPcolor{blueline} dashed evenly withpen pencircle scaled 1.5pt;
+  label.bot("Tendencia Lineal (r = 0.72)", (30*u, 0.09*v)) withcolor \MPcolor{blueline};
+
+\stopMPcode}
+
 \stopsubsubsection
 
 \startsubsubsection[title={Crecimiento Exponencial bajo Carga Masiva}]
+
 Cuando el modelo abandona la escala normal, la dimensión geométrica pierde peso y la ramificación de asignación ($N$) domina la latencia. La Figura \in[fig:opp_stress] demuestra el colapso asintótico del MILP ante configuraciones de estrés.
 
-\placefigure[here][fig:opp_stress]{Dispersión Temporal vs Volumen de Pedidos $N$ (OPP\_v3 Estrés)}
+\placefigure[force][fig:opp_stress]{Dispersión Temporal vs Volumen de Pedidos $N$ (OPP\_v3 Estrés)}
 {\startMPcode
   numeric u, v; u := 10cm / 500; v := 5cm / 1000;
   drawarrow (0,0) -- (550*u,0) withpen pencircle scaled 1pt;
@@ -78,9 +134,10 @@ Cuando el modelo abandona la escala normal, la dimensión geométrica pierde pes
 \stopsubsection
 
 \startsubsection[title={Heurística de Búsqueda Local (Hill Climbing)}]
+
 HC demostró un comportamiento asintótico sumamente eficiente. Aislar el ruteo a través de una matriz de distancias precalculadas le permite iterar vecindarios de forma polinomial. Tanto en entornos normales como de estrés, este enfoque heurístico de intercambio aseguró una curva casi plana (alcanzando tan solo picos de $\sim 177$ s en el peor escenario imaginable), asegurando una resiliencia sistémica única.
 
-\placefigure[here][fig:hc_stress]{Estabilidad Polinomial vs Número de Pedidos $N$ (HC Estrés)}
+\placefigure[force][fig:hc_stress]{Estabilidad Polinomial vs Número de Pedidos $N$ (HC Estrés)}
 {\startMPcode
   numeric u, v; u := 10cm / 500; v := 5cm / 200;
   drawarrow (0,0) -- (550*u,0) withpen pencircle scaled 1pt;
@@ -103,7 +160,7 @@ HC demostró un comportamiento asintótico sumamente eficiente. Aislar el ruteo 
 \startsubsection[title={Metaheurística Bio-inspirada (ACO)}]
 El modelo de optimización por colonia de hormigas exhibe una extrema sensibilidad geográfica. Su núcleo estocástico obliga a actualizar densidades de probabilidad a lo largo del mapa. Cuando la cantidad de ubicaciones físicas ($V$) crece severamente, la matriz algorítmica de transiciones se densifica y ralentiza el desempeño de ACO de manera desproporcionada, limitando su aplicación a almacenes compactos (Figura \in[fig:aco_stress]).
 
-\placefigure[here][fig:aco_stress]{Vulnerabilidad Topológica vs Nodos $V$ (ACO Estrés)}
+\placefigure[force][fig:aco_stress]{Vulnerabilidad Topológica vs Nodos $V$ (ACO Estrés)}
 {\startMPcode
   numeric u, v; u := 10cm / 600; v := 5cm / 600;
   drawarrow (0,0) -- (650*u,0) withpen pencircle scaled 1pt;
@@ -153,7 +210,7 @@ Por otro lado, la metaheurística ACO logra converger en solo el 41.17\% de las 
 
 Para dimensionar visualmente la brecha de rendimiento extraída de la consolidación de resultados, las Figuras \in[fig:bar_norm] y \in[fig:bar_stress] grafican los tiempos medios globales de cada arquitectura separados por entorno de prueba.
 
-\placefigure[here][fig:bar_norm]{Tiempos Medios Globales (Escenarios Normales)}
+\placefigure[force][fig:bar_norm]{Tiempos Medios Globales (Escenarios Normales)}
 {\startMPcode
   numeric u, v; u := 2.5cm; v := 5cm / 0.15;
   drawarrow (-0.5*u, 0) -- (3.5*u, 0) withpen pencircle scaled 1pt;
@@ -170,7 +227,7 @@ Para dimensionar visualmente la brecha de rendimiento extraída de la consolidac
   label.bot(textext("ACO"), (3*u, -0.01*v)); label.top(textext("0.114s"), (3*u, 0.114*v));
 \stopMPcode}
 
-\placefigure[here][fig:bar_stress]{Tiempos Medios Globales (Escenarios de Estrés)}
+\placefigure[force][fig:bar_stress]{Tiempos Medios Globales (Escenarios de Estrés)}
 {\startMPcode
   numeric u, v; u := 2.5cm; v := 5cm / 200;
   drawarrow (-0.5*u, 0) -- (3.5*u, 0) withpen pencircle scaled 1pt;
@@ -188,114 +245,6 @@ Para dimensionar visualmente la brecha de rendimiento extraída de la consolidac
 \stopMPcode}
 
 \stopsubsection
-
-\stopsubsection
-
-\startsubsection[title={Perfilado de Ejecución en Instancias Estándar: Construcción vs. Resolución}]
-
-El análisis detallado de las instancias de prueba en escenarios de escala normal (baja densidad de órdenes) reveló una anomalía arquitectónica de alto interés en el modelo exacto OPP\_v3. Al perfilar el ciclo de vida del algoritmo, se constató que la latencia no recae en la complejidad de encontrar el óptimo matemático, sino en la instanciación programática de la matriz de restricciones.
-
-En la arquitectura MILP, el tiempo total ($T_{total}$) se compone del tiempo de modelado o construcción ($T_{model}$) y el tiempo de resolución del motor matemático ($T_{solver}$). Las trazas de ejecución en escenarios normales demuestran que {\bf el tiempo de modelado representa en promedio el 90\% del tiempo total consumido}. 
-
-Mientras que el motor SCIP logra podar y resolver las instancias estándar en tiempos marginales ($\approx 0.01$ a $0.05$ s), la fase de declaración de variables binarias relativas al empaquetamiento ($z_{o,b}$) y ruteo espacial ($x_{i,j}$) absorbe el grueso del rendimiento algorítmico computacional. Esto expone un cuello de botella inherente a la interfaz de software (el {\em wrapper} u orquestador de alto nivel) al momento de traducir el ecosistema geográfico del almacén a inecuaciones lineales, un esfuerzo del cual las heurísticas HC y ACO están exentas gracias a sus estructuras de datos dinámicas y simplificadas.
-
-\placefigure[here][fig:profiling]{Perfil de Ejecución: Tiempo de Modelado vs Tiempo de Solver (Escenarios Normales)}
-{\startMPcode
-  numeric u, v;
-  u := 1.5cm; % Ancho de barra
-  v := 8cm / 100; % Escala Y: 0 a 100%
-
-  % Ejes
-  drawarrow (-0.5*u, 0) -- (6.5*u, 0) withpen pencircle scaled 1pt;
-  drawarrow (0, 0) -- (0, 110*v) withpen pencircle scaled 1pt;
-  
-  % Etiqueta del Eje Y rotada (Corregido)
-  draw textext("Porcentaje del Tiempo Total (\%)") rotated 90 shifted (-1.2*u, 50*v);
-  
-  % Marcas eje Y (Corregido)
-  for i=0 step 20 until 100:
-    draw (-0.1*u, i*v) -- (0.1*u, i*v);
-    label.lft(textext(decimal i & "\%"), (-0.2*u, i*v));
-  endfor;
-
-  % Datos de muestra (Instancia 1, Instancia 2, Instancia 3, Promedio)
-  numeric mod[], sol[];
-  mod[1] := 88; sol[1] := 12;
-  mod[2] := 92; sol[2] := 8;
-  mod[3] := 85; sol[3] := 15;
-  mod[4] := 89; sol[4] := 11; % Promedio global
-
-  % Dibujar Barras Apiladas
-  for i=1 step 1 until 4:
-    % Barra Modelado (Azul oscuro)
-    fill ((i*1.5)*u - 0.4*u, 0) -- ((i*1.5)*u + 0.4*u, 0) -- 
-         ((i*1.5)*u + 0.4*u, mod[i]*v) -- ((i*1.5)*u - 0.4*u, mod[i]*v) -- cycle 
-         withcolor \MPcolor{darkblue};
-         
-    % Barra Solver (Rojo)
-    fill ((i*1.5)*u - 0.4*u, mod[i]*v) -- ((i*1.5)*u + 0.4*u, mod[i]*v) -- 
-         ((i*1.5)*u + 0.4*u, (mod[i]+sol[i])*v) -- ((i*1.5)*u - 0.4*u, (mod[i]+sol[i])*v) -- cycle 
-         withcolor \MPcolor{redline};
-         
-    % Etiquetas X
-    if i=4:
-        label.bot("Promedio", ((i*1.5)*u, -5*v));
-    else:
-        label.bot("Caso " & decimal i, ((i*1.5)*u, -5*v));
-    fi;
-  endfor;
-
-  % Leyenda
-  fill (4.5*u, 95*v) -- (4.8*u, 95*v) -- (4.8*u, 92*v) -- (4.5*u, 92*v) -- cycle withcolor \MPcolor{darkblue};
-  label.rt("Tiempo de Modelado", (4.9*u, 93.5*v));
-  
-  fill (4.5*u, 88*v) -- (4.8*u, 88*v) -- (4.8*u, 85*v) -- (4.5*u, 85*v) -- cycle withcolor \MPcolor{redline};
-  label.rt("Tiempo de Solver (SCIP)", (4.9*u, 86.5*v));
-
-\stopMPcode}
-
-\blank[big]
-
-Asimismo, en escenarios con baja densidad de pedidos ($N$), se descubrió que la variable estructural que dicta el piso base del tiempo de modelado es la topología del layout ($V$). La Figura \in[fig:v_normal] modela el impacto de la dispersión geográfica en el esfuerzo de construcción del modelo exacto.
-
-\placefigure[here][fig:v_normal]{Crecimiento del Tiempo Total vs Ubicaciones ($V$) en Instancias Normales}
-{\startMPcode
-  numeric u, v;
-  u := 10cm / 40; % Eje X: 0 a 40 ubicaciones
-  v := 5cm / 0.15; % Eje Y: 0 a 0.15 segundos
-
-  drawarrow (0,0) -- (45*u,0) withpen pencircle scaled 1pt;
-  drawarrow (0,0) -- (0,0.18*v) withpen pencircle scaled 1pt;
-  
-  label.bot("Nodos del Mapa / Ubicaciones (V)", (20*u, -0.015*v));
-  label.lft("Tiempo Total (s)", (-3*u, 0.08*v));
-
-  % Marcas Y
-  for i=0 step 0.05 until 0.15:
-    draw (-0.5*u, i*v) -- (0.5*u, i*v);
-    label.lft(decimal i, (-1*u, i*v));
-  endfor;
-
-  % Marcas X
-  for i=0 step 10 until 40:
-    draw (i*u, -0.003*v) -- (i*u, 0.003*v);
-    label.bot(decimal i, (i*u, -0.008*v));
-  endfor;
-
-  % Nube de puntos simulando los resultados normales (r=0.72)
-  fill fullcircle scaled 4pt shifted (4*u, 0.038*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (5*u, 0.039*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (8*u, 0.057*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (8*u, 0.061*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (15*u, 0.085*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (25*u, 0.098*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (36*u, 0.125*v) withcolor \MPcolor{darkblue};
-
-  % Línea de tendencia
-  draw (0, 0.02*v) -- (40*u, 0.13*v) withcolor \MPcolor{blueline} dashed evenly withpen pencircle scaled 1.5pt;
-  label.bot("Tendencia Lineal (r = 0.72)", (30*u, 0.09*v)) withcolor \MPcolor{blueline};
-
-\stopMPcode}
 
 \stopsubsection
 
@@ -329,7 +278,7 @@ r = \frac{\sum_{i=1}^{k} (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^{k} (x
 
 El modelo lineal OPP\_v3 manifiesta una sólida correlación ($r \approx 0.66$) respecto a los pedidos ($N$) y una aún mayor dependencia frente al número de lotes ($B \rightarrow r \approx 0.71$). La formulación del {\em order batching} introduce hiperdensidad en las variables de decisión lógicas. Para asegurar optimalidad, SCIP requiere expandir un árbol de ramificación geométrico que castiga el desempeño del solver en problemas $>300$ pedidos. Hill Climbing amortigua este castigo ($r \approx 0.53$) operando sobre vecindades localizadas, y ACO resulta indiferente al empaquetamiento ($r \approx 0.18$) por su naturaleza puramente secuencial en la construcción.
 
-\placefigure[here][fig:n_vs_time]{Curvas de Crecimiento Temporal vs Cantidad de Pedidos ($N$)}
+\placefigure[force][fig:n_vs_time]{Curvas de Crecimiento Temporal vs Cantidad de Pedidos ($N$)}
 {\startMPcode
   numeric u, v;
   u := 10cm / 500;
@@ -368,7 +317,7 @@ El modelo lineal OPP\_v3 manifiesta una sólida correlación ($r \approx 0.66$) 
 
 La metaheurística ACO sufre un colapso estructural puro al crecer la densidad física del almacén ($V$), dominando la tabla con la correlación más severa observada en las simulaciones: $r = 0.9463$. Para enrutar almacenes de gran magnitud (e.g. 400-625 vértices), las matrices probabilísticas y la actualización de feromonas obligan a un cálculo cuadrático $O(V^2)$ por iteración y por hormiga, estancando asintóticamente la plataforma, mientras que el solver SCIP apenas se inmuta ($r = 0.2029$). Por su parte, el Hill Climbing aísla el ruteo delegándolo en matrices dinámicas precalculadas, demostrando completa inmunidad geográfica ($r \approx 0.11$).
 
-\placefigure[here][fig:v_vs_time]{Curvas de Crecimiento Temporal vs Dimensión de Layout ($V$)}
+\placefigure[force][fig:v_vs_time]{Curvas de Crecimiento Temporal vs Dimensión de Layout ($V$)}
 {\startMPcode
   numeric u, v;
   u := 10cm / 600;
