@@ -21,6 +21,109 @@ Este documento presenta un análisis empírico y teórico exhaustivo sobre el de
 
 Los datos analizados provienen del consolidado masivo de pruebas (incluyendo los repositorios \type{complete_output_v3_stress_tests.csv} y las trazas operativas recientes de ACO bajo estrés). Se evalúa la escalabilidad paramétrica ante variables críticas como el volumen de órdenes, la dimensión topológica y la capacidad vehicular.
 
+\startsection[title={Análisis Individual por Arquitectura}]
+
+\startsubsection[title={Modelo Exacto: Programación Lineal Entera Mixta (OPP\_v3)}]
+
+El análisis paramétrico individual de los registros de OPP\_v3 revela hallazgos críticos sobre la composición de su carga computacional. En escenarios normales, el factor más determinante no es el número de pedidos ($N \rightarrow r = 0.15$), sino la estructura geométrica. Existe una fuerte correlación del tiempo total frente al número de lotes ($B \rightarrow r = 0.87$) y de ubicaciones ($V \rightarrow r = 0.72$).
+
+\startsubsubsection[title={Predominio del Modelado y Estabilidad (Pruebas Normales)}]
+Un descubrimiento vital recae en el perfil de ejecución: la gran mayoría del tiempo se dedica a la construcción de la inmensa matriz del modelo en memoria, y no a la resolución. En promedio, {\bf el tiempo de modelado representa el 90\% del esfuerzo total}, mientras que SCIP resuelve el grafo instantáneamente. 
+
+Adicionalmente, se detectó empíricamente que relajar penalizaciones lógicas (por ejemplo, reducir el castigo por entrega tardía $W_{ta}=1$) ralentiza el modelo, dado que impide descartar rutas ineficientes en las fases tempranas de la evaluación.
+
+\placefigure[here][fig:profiling_v3]{Perfil de Ejecución OPP\_v3: Modelado vs Resolución}
+{\startMPcode
+  numeric u, v; u := 1.5cm; v := 5cm / 100;
+  drawarrow (-0.5*u, 0) -- (4.5*u, 0) withpen pencircle scaled 1pt;
+  drawarrow (0, 0) -- (0, 110*v) withpen pencircle scaled 1pt;
+  draw textext("Porcentaje del Tiempo Total (\%)") rotated 90 shifted (-1.0*u, 50*v);
+  for i=0 step 20 until 100:
+    draw (-0.1*u, i*v) -- (0.1*u, i*v); label.lft(textext(decimal i), (-0.2*u, i*v));
+  endfor;
+  numeric mod[], sol[]; mod[1] := 88; sol[1] := 12; mod[2] := 92; sol[2] := 8; mod[3] := 89; sol[3] := 11;
+  for i=1 step 1 until 3:
+    fill ((i*1.2)*u - 0.4*u, 0) -- ((i*1.2)*u + 0.4*u, 0) -- ((i*1.2)*u + 0.4*u, mod[i]*v) -- ((i*1.2)*u - 0.4*u, mod[i]*v) -- cycle withcolor \MPcolor{darkblue};
+    fill ((i*1.2)*u - 0.4*u, mod[i]*v) -- ((i*1.2)*u + 0.4*u, mod[i]*v) -- ((i*1.2)*u + 0.4*u, 100*v) -- ((i*1.2)*u - 0.4*u, 100*v) -- cycle withcolor \MPcolor{redline};
+    if i=3: label.bot(textext("Promedio"), ((i*1.2)*u, -5*v)); else: label.bot(textext("Caso " & decimal i), ((i*1.2)*u, -5*v)); fi;
+  endfor;
+  fill (3.5*u, 95*v) -- (3.8*u, 95*v) -- (3.8*u, 90*v) -- (3.5*u, 90*v) -- cycle withcolor \MPcolor{darkblue}; label.rt(textext("Construccion de Matriz"), (3.9*u, 92.5*v));
+  fill (3.5*u, 85*v) -- (3.8*u, 85*v) -- (3.8*u, 80*v) -- (3.5*u, 80*v) -- cycle withcolor \MPcolor{redline}; label.rt(textext("Solver (SCIP)"), (3.9*u, 82.5*v));
+\stopMPcode}
+\stopsubsubsection
+
+\startsubsubsection[title={Crecimiento Exponencial bajo Carga Masiva}]
+Cuando el modelo abandona la escala normal, la dimensión geométrica pierde peso y la ramificación de asignación ($N$) domina la latencia. La Figura \in[fig:opp_stress] demuestra el colapso asintótico del MILP ante configuraciones de estrés.
+
+\placefigure[here][fig:opp_stress]{Dispersión Temporal vs Volumen de Pedidos $N$ (OPP\_v3 Estrés)}
+{\startMPcode
+  numeric u, v; u := 10cm / 500; v := 5cm / 1000;
+  drawarrow (0,0) -- (550*u,0) withpen pencircle scaled 1pt;
+  drawarrow (0,0) -- (0,1050*v) withpen pencircle scaled 1pt;
+  label.bot(textext("Cantidad de Pedidos (N)"), (250*u, -80*v));
+  draw textext("Tiempo Total (s)") rotated 90 shifted (-45*u, 500*v);
+  for i=0 step 200 until 1000:
+    draw (-2*u, i*v) -- (2*u, i*v); label.lft(textext(decimal i), (-5*u, i*v));
+  endfor;
+  for i=0 step 100 until 500:
+    draw (i*u, -2*v) -- (i*u, 2*v); label.bot(textext(decimal i), (i*u, -20*v));
+  endfor;
+  draw (12*u, 3.8*v) {dir 12} .. (100*u, 99.4*v) .. (320*u, 912.5*v) withcolor \MPcolor{redline} withpen pencircle scaled 1.5pt;
+  fill fullcircle scaled 4pt shifted (12*u, 3.8*v) withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 4pt shifted (100*u, 99.4*v) withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 4pt shifted (320*u, 912.5*v) withcolor \MPcolor{darkblue};
+\stopMPcode}
+\stopsubsubsection
+
+\stopsubsection
+
+\startsubsection[title={Heurística de Búsqueda Local (Hill Climbing)}]
+HC demostró un comportamiento asintótico sumamente eficiente. Aislar el ruteo a través de una matriz de distancias precalculadas le permite iterar vecindarios de forma polinomial. Tanto en entornos normales como de estrés, este enfoque heurístico de intercambio aseguró una curva casi plana (alcanzando tan solo picos de $\sim 177$ s en el peor escenario imaginable), asegurando una resiliencia sistémica única.
+
+\placefigure[here][fig:hc_stress]{Estabilidad Polinomial vs Número de Pedidos $N$ (HC Estrés)}
+{\startMPcode
+  numeric u, v; u := 10cm / 500; v := 5cm / 200;
+  drawarrow (0,0) -- (550*u,0) withpen pencircle scaled 1pt;
+  drawarrow (0,0) -- (0,220*v) withpen pencircle scaled 1pt;
+  label.bot(textext("Cantidad de Pedidos (N)"), (250*u, -15*v));
+  draw textext("Tiempo Total (s)") rotated 90 shifted (-40*u, 100*v);
+  for i=0 step 50 until 200:
+    draw (-2*u, i*v) -- (2*u, i*v); label.lft(textext(decimal i), (-5*u, i*v));
+  endfor;
+  for i=0 step 100 until 500:
+    draw (i*u, -2*v) -- (i*u, 2*v); label.bot(textext(decimal i), (i*u, -5*v));
+  endfor;
+  draw (12*u, 0.01*v) -- (100*u, 23.3*v) -- (300*u, 80*v) -- (500*u, 177.4*v) withcolor \MPcolor{blueline} withpen pencircle scaled 1.5pt;
+  fill fullcircle scaled 4pt shifted (12*u, 0.01*v) withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 4pt shifted (100*u, 23.3*v) withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 4pt shifted (500*u, 177.4*v) withcolor \MPcolor{darkblue};
+\stopMPcode}
+\stopsubsection
+
+\startsubsection[title={Metaheurística Bio-inspirada (ACO)}]
+El modelo de optimización por colonia de hormigas exhibe una extrema sensibilidad geográfica. Su núcleo estocástico obliga a actualizar densidades de probabilidad a lo largo del mapa. Cuando la cantidad de ubicaciones físicas ($V$) crece severamente, la matriz algorítmica de transiciones se densifica y ralentiza el desempeño de ACO de manera desproporcionada, limitando su aplicación a almacenes compactos (Figura \in[fig:aco_stress]).
+
+\placefigure[here][fig:aco_stress]{Vulnerabilidad Topológica vs Nodos $V$ (ACO Estrés)}
+{\startMPcode
+  numeric u, v; u := 10cm / 600; v := 5cm / 600;
+  drawarrow (0,0) -- (650*u,0) withpen pencircle scaled 1pt;
+  drawarrow (0,0) -- (0,650*v) withpen pencircle scaled 1pt;
+  label.bot(textext("Ubicaciones / Nodos (V)"), (300*u, -50*v));
+  draw textext("Tiempo Total (s)") rotated 90 shifted (-40*u, 300*v);
+  for i=0 step 100 until 600:
+    draw (-2*u, i*v) -- (2*u, i*v); label.lft(textext(decimal i), (-5*u, i*v));
+  endfor;
+  for i=0 step 100 until 600:
+    draw (i*u, -2*v) -- (i*u, 2*v); label.bot(textext(decimal i), (i*u, -15*v));
+  endfor;
+  draw (16*u, 0.05*v) {dir 15} .. (100*u, 60.3*v) .. (400*u, 596.3*v) withcolor \MPcolor{greenline} withpen pencircle scaled 1.5pt;
+  fill fullcircle scaled 4pt shifted (16*u, 0.05*v) withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 4pt shifted (100*u, 60.3*v) withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 4pt shifted (400*u, 596.3*v) withcolor \MPcolor{darkblue};
+\stopMPcode}
+\stopsubsection
+\stopsection
+
 \startsection[title={Estadísticas Descriptivas Generales y Metodología de Agregación}]
 
 El universo de datos crudos fue procesado bajo un estricto protocolo de depuración estadística. La evaluación de las métricas temporales (Media, Desvío Estándar y Máximo) se restringió exclusivamente a aquellas instancias experimentales que alcanzaron una convergencia exitosa (estado {\em ok}). Esto previene el sesgo matemático que introduciría la inclusión de escenarios truncados por {\em timeout} o agotamiento de memoria, garantizando que los estadísticos describan el tiempo real necesario para demostrar optimalidad o hallar una solución heurística superior.
@@ -45,6 +148,46 @@ La robustez general de cada arquitectura se cuantificó mediante la razón incre
 A partir de la distribución estadística, emergen observaciones críticas. Al someter el modelo OPP\_v3 a cargas masivas, se constata que logra resolver solo el 50\% de la muestra dentro del límite de tiempo. En sus resoluciones óptimas, la media temporal escala drásticamente a 164.45 segundos, con una extrema dispersión ($\sigma \approx 290.7$ s) y múltiples escenarios rebasando los 15 minutos (912 s), ratificando la inestabilidad operativa de la formulación discreta continua.
 
 Por otro lado, la metaheurística ACO logra converger en solo el 41.17\% de las instancias de estrés (14/34), operando con una media de 34.75 segundos, pero denotando una alta volatilidad ante expansiones del área de almacenamiento. En contraste, Hill Climbing ratifica su posición dominante anclando una tasa de convergencia del 85\% en estrés y promediando apenas $\approx 10.4$ segundos.
+
+\startsubsection[title={Comparativa Global de Tiempos Promedio por Modelo}]
+
+Para dimensionar visualmente la brecha de rendimiento extraída de la consolidación de resultados, las Figuras \in[fig:bar_norm] y \in[fig:bar_stress] grafican los tiempos medios globales de cada arquitectura separados por entorno de prueba.
+
+\placefigure[here][fig:bar_norm]{Tiempos Medios Globales (Escenarios Normales)}
+{\startMPcode
+  numeric u, v; u := 2.5cm; v := 5cm / 0.15;
+  drawarrow (-0.5*u, 0) -- (3.5*u, 0) withpen pencircle scaled 1pt;
+  drawarrow (0, 0) -- (0, 0.17*v) withpen pencircle scaled 1pt;
+  draw textext("Tiempo Medio (s)") rotated 90 shifted (-0.8*u, 0.08*v);
+  for i=0 step 0.05 until 0.15:
+    draw (-0.1*u, i*v) -- (0.1*u, i*v); label.lft(textext(decimal i), (-0.2*u, i*v));
+  endfor;
+  fill (1*u - 0.4*u, 0) -- (1*u + 0.4*u, 0) -- (1*u + 0.4*u, 0.007*v) -- (1*u - 0.4*u, 0.007*v) -- cycle withcolor \MPcolor{blueline};
+  label.bot(textext("HC"), (1*u, -0.01*v)); label.top(textext("0.007s"), (1*u, 0.007*v));
+  fill (2*u - 0.4*u, 0) -- (2*u + 0.4*u, 0) -- (2*u + 0.4*u, 0.110*v) -- (2*u - 0.4*u, 0.110*v) -- cycle withcolor \MPcolor{redline};
+  label.bot(textext("OPP V3"), (2*u, -0.01*v)); label.top(textext("0.110s"), (2*u, 0.110*v));
+  fill (3*u - 0.4*u, 0) -- (3*u + 0.4*u, 0) -- (3*u + 0.4*u, 0.114*v) -- (3*u - 0.4*u, 0.114*v) -- cycle withcolor \MPcolor{greenline};
+  label.bot(textext("ACO"), (3*u, -0.01*v)); label.top(textext("0.114s"), (3*u, 0.114*v));
+\stopMPcode}
+
+\placefigure[here][fig:bar_stress]{Tiempos Medios Globales (Escenarios de Estrés)}
+{\startMPcode
+  numeric u, v; u := 2.5cm; v := 5cm / 200;
+  drawarrow (-0.5*u, 0) -- (3.5*u, 0) withpen pencircle scaled 1pt;
+  drawarrow (0, 0) -- (0, 220*v) withpen pencircle scaled 1pt;
+  draw textext("Tiempo Medio (s)") rotated 90 shifted (-0.8*u, 100*v);
+  for i=0 step 50 until 200:
+    draw (-0.1*u, i*v) -- (0.1*u, i*v); label.lft(textext(decimal i), (-0.2*u, i*v));
+  endfor;
+  fill (1*u - 0.4*u, 0) -- (1*u + 0.4*u, 0) -- (1*u + 0.4*u, 10.4*v) -- (1*u - 0.4*u, 10.4*v) -- cycle withcolor \MPcolor{blueline};
+  label.bot(textext("HC"), (1*u, -10*v)); label.top(textext("10.4s"), (1*u, 10.4*v));
+  fill (2*u - 0.4*u, 0) -- (2*u + 0.4*u, 0) -- (2*u + 0.4*u, 34.8*v) -- (2*u - 0.4*u, 34.8*v) -- cycle withcolor \MPcolor{greenline};
+  label.bot(textext("ACO"), (2*u, -10*v)); label.top(textext("34.8s"), (2*u, 34.8*v));
+  fill (3*u - 0.4*u, 0) -- (3*u + 0.4*u, 0) -- (3*u + 0.4*u, 164.5*v) -- (3*u - 0.4*u, 164.5*v) -- cycle withcolor \MPcolor{redline};
+  label.bot(textext("OPP V3"), (3*u, -10*v)); label.top(textext("164.5s"), (3*u, 164.5*v));
+\stopMPcode}
+
+\stopsubsection
 
 \stopsubsection
 
