@@ -56,8 +56,6 @@ Utilizamos el modelo completo y lo simplificamos, considerando las tareas relaci
     \NC \beta^{picking} \NC = \text{Tiempo requerido para recolectar una unidad de artículo} \NR
     \NC M \NC = \text{Un número positivo suficientemente grande (Big M)} \NR
     \NC due\_date_{n} \NC = \text{Fecha de entrega de la orden } n \in N \NR
-    \NC dis_i \NC = \text{Distancia viajada para completar el lote } i \in B \NR
-    \NC capbatch_i \NC = \text{Capacidad requerida para un lote } i \in B \NR
     \NC x_{pkh} \NC = \startmathcases
                     \NC 1 \MC \text{si la misión } h \in H \text{ es asignada a la posición } k \in K \text{ del picker } p \in P \NR
                     \NC 0 \MC \text{en otro caso} \NR
@@ -130,28 +128,28 @@ Utilizamos el modelo completo y lo simplificamos, considerando las tareas relaci
     
     \NC \sum_{j \in V \setminus \{v_f\}, h} z_{v_f,j,h} = 0; \NC \NC \Desc{(No se puede ir a otro lado desde el final)} \NR
     
-    \NC \sum_{i \in V \setminus \{v_f\}} z_{ijh} \ge a_{nj} \cdot y_{nh}; \NC \Cond{$\forall h \in H,$ \crlf $n \in N,$ \crlf $j \in V \setminus \{v_i\}$} \NC \Desc{(Si una orden requiere pasar por una locación, la ruta de esa misión tiene un camino que entra a esa locación)} \NR
+    \NC \sum_{i \in V, i \neq j} z_{ijh} \ge \sum_{n \in N} a_{nj} \cdot y_{nh}; \NC \Cond{$\forall h \in H,$ \crlf $j \in V \setminus \{v_i, v_f\}$} \NC \Desc{(Si una orden requiere pasar por una locación, la ruta de esa misión tiene un camino que entra a esa locación)} \NR
 \stopalign
 \stopformula
 
 \startformula 
 \startalign[n=3, align={left, left, left}, number=yes]
-    \NC \sum_{j \in V \setminus \{v_i\}} z_{ijh} \ge a_{ni} \cdot y_{nh}; \NC \Cond{$\forall h \in H,$ \crlf $n \in N,$ \crlf $i \in V \setminus \{v_f\}$} \NC \Desc{(Si una orden requiere pasar por una locación, la ruta de esa misión tiene un camino que salga de esa locación)} \NR
+    \NC \sum_{j \in V, j \neq i} z_{ijh} \ge \sum_{n \in N} a_{ni} \cdot y_{nh}; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(Si una orden requiere pasar por una locación, la ruta de esa misión tiene un camino que salga de esa locación)} \NR
     
     \NC f_{ijh} \le Cap_{vehicle} \cdot z_{ijh}; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_f\},$ \crlf $j \in V \setminus \{v_i\}$} \NC \Desc{(Los artículos entran en el vehículo)} \NR
     
-    \NC \sum_{g \in V \setminus \{v_f\}} z_{gih} = \sum_{j \in V \setminus \{v_i\}} z_{ijh}; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(Para cualquier nodo intermedio $i$, la suma de todos los arcos que entran debe ser igual a la suma de todos los arcos que salen)} \NR
+    \NC \sum_{g \in V, g \neq i} z_{gih} = \sum_{j \in V, j \neq i} z_{ijh}; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(Para cualquier nodo intermedio $i$, la suma de todos los arcos que entran debe ser igual a la suma de todos los arcos que salen)} \NR
     
-    \NC \sum_{g \in V \setminus \{v_f\}} z_{gih} \le 1; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(Se elige a lo sumo un arco por vecino de g)} \NR
+    \NC \sum_{g \in V, g \neq i} z_{gih} \le 1; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(Se elige a lo sumo un arco por vecino de g)} \NR
     
-    \NC \sum_{j \in V \setminus \{v_i\}} z_{ihj} \le 1; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(Se elige a lo sumo un arco desde i a cualquier otro vértice)} \NR
+    \NC \sum_{j \in V, j \neq i} z_{ijh} \le 1; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(Se elige a lo sumo un arco desde i a cualquier otro vértice)} \NR
     
-    \NC \sum_{g \in V \setminus \{v_f\}} f_{gih} = \sum_{j \in V \setminus \{v_i\}} f_{ijh} \ge a_{ni} \cdot y_{nh}; \NC \Cond{$\forall h \in H, n \in N,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(El número de unidades del inicio al final es el mismo que es del final al inicio, y se refiere a la cantidad de unidades de la misión. Evita subrutas y ciclos)} \NR
+    \NC \sum_{g \in V \setminus \{v_f\}} f_{gih} \ge a_{ni} \cdot y_{nh}; \NC \Cond{$\forall h \in H, n \in N,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(El flujo que entra al nodo $i$ cubre la demanda de la misión. Evita subrutas y ciclos)} \NR
     
     \NC z_{iih} = 0; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_i, v_f\}$} \NC \Desc{(No hay ciclos)} \NR
     
-    \NC t\_exec_{h} = \beta^{setup} + \beta^{picking} \cdot \left( \sum_{n \in N} cap_n \cdot y_{nh} \right) \NC \NC \NR[-]
-    \NC \quad + \beta^{time} \cdot \left( \sum_{i,j,h} d_{ij} \cdot z_{ijh} \right); \NC \Cond{$\forall h \in H$} \NC \Desc{(El tiempo de setup + picking + viaje definen el tiempo total de ejecución)} \NR
+    \NC t\_exec_{h} \ge \beta^{setup} + \beta^{picking} \cdot \left( \sum_{n \in N} cap_n \cdot y_{nh} \right) \NC \NC \NR[-]
+    \NC \quad + \beta^{time} \cdot \left( \sum_{i \in V, j \in V} d_{ij} \cdot z_{ijh} \right); \NC \Cond{$\forall h \in H$} \NC \Desc{(El tiempo de setup + picking + viaje definen el tiempo total de ejecución)} \NR
     
     \NC t\_exec_{h} - M \cdot (1 - x_{pkh}) \le u_{pk}; \NC \Cond{$\forall p, k, h$} \NC \Desc{(\overstrike{Cuando se asigna una mision a un picker, el tiempo de ejecución es $\le$ al lote})} \NR
 \stopalign
@@ -212,8 +210,6 @@ De esta forma, obtenemos el siguiente modelo:
     \NC \beta^{picking} \NC = \text{Tiempo requerido para recolectar una unidad de artículo} \NR
     \NC M \NC = \text{Un número positivo suficientemente grande (Big M)} \NR
     \NC due\_date_{n} \NC = \text{Fecha de entrega de la orden } n \in N \NR
-    \NC dis_i \NC = \text{Distancia viajada para completar el lote } i \in B \NR
-    \NC capbatch_i \NC = \text{Capacidad requerida para un lote } i \in B \NR
     \NC x_{pb} \NC = \startmathcases
                     \NC 1 \MC \text{si el lote } b \in B \text{ es asignado al picker } p \in P \NR
                     \NC 0 \MC \text{en otro caso} \NR
@@ -271,7 +267,7 @@ De esta forma, obtenemos el siguiente modelo:
     \NC \sum_{b\in B}x_{pb}=1; \NC \Cond{$\forall p \in P$} \NC \Desc{(\overstrike{Cada lote es asignado a un picker})} \NR
     
     % (4) tachada
-    \NC \sum_{b\in B}y_{bn}=1; \NC \Cond{$\forall n \in N$} \NC \Desc{(\overstrike{Cada orden es asignada a un lote})} \NR
+    \NC \sum_{b\in B}y_{nb}=1; \NC \Cond{$\forall n \in N$} \NC \Desc{(\overstrike{Cada orden es asignada a un lote})} \NR
     
     % (6) constraint_start_from_depot
     \NC \sum_{j \in V \setminus \{v_i\}} z_{1jb} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta sale una vez del depósito inicial)} \NR
@@ -283,7 +279,7 @@ De esta forma, obtenemos el siguiente modelo:
     % (9) constraint_cant_move_from_end_node
     \NC \sum_{j \in V \setminus \{v_f\}} \sum_{b \in B} z_{v_f,j,b} = 0; \NC \NC \Desc{(No se puede ir a otro lado desde el final)} \NR
     % (10) constraint_force_visit_inflow
-    \NC \sum_{j \in V \setminus \{v_f\}} z_{ijb} \ge a_{ni} \cdot y_{bn}; \NC \Cond{$\forall b \in B,$ \crlf $n \in N,$ \crlf $i \in V \setminus \{v_f\}$} \NC \Desc{(Si una orden requiere pasar por una locación, la ruta de esa misión tiene un camino que entra a esa locación)} \NR
+    \NC \sum_{i \in V, i \neq j} z_{ijb} \ge \min\left(1, \sum_{n \in N} a_{nj} \cdot y_{nb}\right); \NC \Cond{$\forall b \in B,$ \crlf $j \in V \setminus \{v_1, v_f\}$} \NC \Desc{(Si una orden del lote requiere una locación, la ruta debe entrar a ella)} \NR
     % (11) constraint_force_visit_outflow
     \NC \sum_{i \in V, i \neq j} z_{jib} \ge \min(1, \sum_{n \in N} a_{nj} \cdot y_{nb}) \NC \NC \Desc{(Si una orden en el lote requiere una locación, la ruta debe salir de ella) } \NR
     % (12) constraint_articles_capacity
@@ -310,19 +306,19 @@ De esta forma, obtenemos el siguiente modelo:
     % (19) constraint_batch_execution_time
     \NC t_exec_{b} - M \cdot (1 - x_{pb}) \le u_{pb} \NC \NC \Desc{(Cuando se asigna un lote a un picker, su tiempo de ejecución es $\le$ al de procesamiento)}  \NR
     % (20) constraint_processing_time
-    \NC u_{p1} \le v_{p1} \NC \NC \Desc{(El tiempo de procesamiento es menor o igual al tiempo de completitud de un lote)}  \NR
+    \NC u_{pb} \le v_{pb}; \NC \Cond{$\forall p \in P, b \in B$} \NC \Desc{(El tiempo de procesamiento es menor o igual al tiempo de completitud de un lote)}  \NR
     % (21) constraint_completition_batch_time (function commented in code)
-    \NC u_{pb} + v_{pb-1} \le v_{pb} \NC \NC \Desc{(El tiempo de procesamiento + el del lote previo es $\le$ al tiempo de completitud del lote)}  \NR
+    \NC u_{pb} + v_{pb-1} \le v_{pb} \NC \NC \Desc{(\overstrike{El tiempo de procesamiento + el del lote previo es $\le$ al tiempo de completitud del lote --- no activa en implementación})}  \NR
     % (22) constraint_tardiness_definition
-    \NC v_{pb} - due_date_{n} - M \cdot (2 - x_{pb} - y_{bn}) \le ta_{n} \NC \NC \Desc{(Si el lote termina después de la fecha de entrega, la diferencia se asigna a tardanza)}  \NR
+    \NC v_{pb} - due_date_{n} - M \cdot (2 - x_{pb} - y_{nb}) \le ta_{n} \NC \NC \Desc{(Si el lote termina después de la fecha de entrega, la diferencia se asigna a tardanza)}  \NR
     % (23) constraint_earliness_definition
-    \NC due_date_{n} - v_{pb} - M \cdot (2 - x_{pb} - y_{bn}) \le ea_{n} \NC \NC \Desc{(Si la fecha de entrega es mayor al tiempo de finalización, la diferencia se asigna a adelanto)}  \NR
+    \NC due_date_{n} - v_{pb} - M \cdot (2 - x_{pb} - y_{nb}) \le ea_{n} \NC \NC \Desc{(Si la fecha de entrega es mayor al tiempo de finalización, la diferencia se asigna a adelanto)}  \NR
     % (24) constraint_batch_capacity
-    \NC \sum_{n\in N}cap_{n} \cdot y_{bn} \le Cap_{vehicle}; \NC \Cond{$\forall b \in B$} \NC \Desc{(La capacidad de las órdenes asignades a un lote $\le$ la del vehículo)} \NR
+    \NC \sum_{n\in N}cap_{n} \cdot y_{nb} \le Cap_{vehicle}; \NC \Cond{$\forall b \in B$} \NC \Desc{(La capacidad de las órdenes asignades a un lote $\le$ la del vehículo)} \NR
     % (25) constraint_only_valid_edges
-    \NC z_{ijb} \eq 0 \NC \Cond{$\forall b \in B,$ \crlf $i, j \in V$ \crlf $d_{ij} = \infty$} \NC \Desc{(Solo se pueden usar arcos entre locaciones conectadas)} \NR
+    \NC z_{ijb} = 0 \NC \Cond{$\forall b \in B,$ \crlf $i, j \in V$ \crlf $d_{ij} = \infty$} \NC \Desc{(Solo se pueden usar arcos entre locaciones conectadas)} \NR
     % (n/a) x and y are parameters in `opp_model_v2` (no constraint function)
-    \NC x_{pb} \in {0, 1} \NC \NC \Desc{($x$ es binaria)} \NR \NC y_{bn} \in {0, 1} \NC \NC \Desc{($y$ es binaria)} \NR 
+    \NC x_{pb} \in {0, 1} \NC \NC \Desc{($x$ es binaria)} \NR \NC y_{nb} \in {0, 1} \NC \NC \Desc{($y$ es binaria)} \NR
     % (vars) z created as binary in `opp_model_v2.solve()` -> see variable `z`
     \NC z_{ijb} \in {0, 1} \NC \NC \Desc{($z$ es binaria)} \NR
     % (vars) non-negativity enforced via variable lower-bounds in code (lb=0)
