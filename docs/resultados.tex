@@ -46,6 +46,19 @@ A partir de la distribución estadística, emergen observaciones críticas. Al s
 
 Por otro lado, la metaheurística ACO logra converger en solo el 41.17\% de las instancias de estrés (14/34), operando con una media de 34.75 segundos, pero denotando una alta volatilidad ante expansiones del área de almacenamiento. En contraste, Hill Climbing ratifica su posición dominante anclando una tasa de convergencia del 85\% en estrés y promediando apenas $\approx 10.4$ segundos.
 
+\stopsubsection
+
+\startsubsection[title={Perfilado de Ejecución en Instancias Estándar: Construcción vs. Resolución}]
+
+El análisis detallado de las instancias de prueba en escenarios de escala normal (baja densidad de órdenes) reveló una anomalía arquitectónica de alto interés en el modelo exacto OPP\_v3. Al perfilar el ciclo de vida del algoritmo, se constató que la latencia no recae en la complejidad de encontrar el óptimo matemático, sino en la instanciación programática de la matriz de restricciones.
+
+En la arquitectura MILP, el tiempo total ($T_{total}$) se compone del tiempo de modelado o construcción ($T_{model}$) y el tiempo de resolución del motor matemático ($T_{solver}$). Las trazas de ejecución en escenarios normales demuestran que {\bf el tiempo de modelado representa en promedio el 90\% del tiempo total consumido}. 
+
+Mientras que el motor SCIP logra podar y resolver las instancias estándar en tiempos marginales ($\approx 0.01$ a $0.05$ s), la fase de declaración de variables binarias relativas al empaquetamiento ($z_{o,b}$) y ruteo espacial ($x_{i,j}$) absorbe el grueso del rendimiento algorítmico computacional. Esto expone un cuello de botella inherente a la interfaz de software (el {\em wrapper} u orquestador de alto nivel) al momento de traducir el ecosistema geográfico del almacén a inecuaciones lineales, un esfuerzo del cual las heurísticas HC y ACO están exentas gracias a sus estructuras de datos dinámicas y simplificadas.
+
+
+\stopsubsection
+
 \stopsection
 
 \startsection[title={Análisis de Correlación Paramétrica y Sensibilidad Algorítmica}]
