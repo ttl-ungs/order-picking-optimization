@@ -19,13 +19,13 @@
 
 Este documento presenta un análisis empírico y teórico exhaustivo sobre el desempeño operativo, la eficiencia computacional y las fronteras de escalabilidad de las tres arquitecturas de optimización implementadas para resolver el problema integrado de preparación de pedidos y ruteo en almacenes funcionales ({\em Linear Picking Routing Problem}, LPRP): el modelo exacto de {\bf Programación Lineal Entera Mixta (MILP - OPP\_v3)} resuelto mediante SCIP, la heurística de búsqueda local {\bf Hill Climbing (HC)} y la metaheurística bio-inspirada {\bf Ant Colony Optimization (ACO)}. 
 
-Los datos analizados provienen de una muestra de más de 200 experimentos controlados extraídos del consolidado final de pruebas de estrés masivas (\type{complete_output_v3_stress_tests.csv}) y pruebas normales, evaluando la escalabilidad paramétrica frente a variables críticas como el volumen de órdenes, la dimensión topológica del layout y restricciones de capacidad vehicular.
+Los datos analizados provienen del consolidado masivo de pruebas (incluyendo los repositorios \type{complete_output_v3_stress_tests.csv} y las trazas operativas recientes de ACO bajo estrés). Se evalúa la escalabilidad paramétrica ante variables críticas como el volumen de órdenes, la dimensión topológica y la capacidad vehicular.
 
-\startsection[title={1. Estadísticas Descriptivas Generales y Metodología de Agregación}]
+\startsection[title={Estadísticas Descriptivas Generales y Metodología de Agregación}]
 
-El universo de datos crudos fue procesado mediante herramientas de manipulación de matrices lógicas bajo un estricto protocolo de depuración estadística. La evaluación de las métricas temporales (Media, Desvío Estándar y Máximo) se restringió exclusivamente a aquellas instancias experimentales que alcanzaron una convergencia exitosa (estado {\em ok}). Esto previene el sesgo matemático que introduciría la inclusión de escenarios truncados por {\em timeout} o memoria agotada, garantizando que los estadísticos describan el tiempo real necesario para demostrar optimalidad o hallar una solución heurística superior.
+El universo de datos crudos fue procesado bajo un estricto protocolo de depuración estadística. La evaluación de las métricas temporales (Media, Desvío Estándar y Máximo) se restringió exclusivamente a aquellas instancias experimentales que alcanzaron una convergencia exitosa (estado {\em ok}). Esto previene el sesgo matemático que introduciría la inclusión de escenarios truncados por {\em timeout} o agotamiento de memoria, garantizando que los estadísticos describan el tiempo real necesario para demostrar optimalidad o hallar una solución heurística superior.
 
-La robustez general de cada arquitectura se cuantificó mediante la razón incremental entre soluciones exitosas y el total de casos proyectados para cada entorno de simulación. La siguiente tabla sintetiza los resultados:
+La robustez general de cada arquitectura se cuantificó mediante la razón incremental entre soluciones exitosas y el total de casos proyectados para cada entorno de simulación. La siguiente tabla sintetiza los resultados finales:
 
 \blank[medium]
 
@@ -42,15 +42,15 @@ La robustez general de cada arquitectura se cuantificó mediante la razón incre
 
 \blank[medium]
 
-A partir de la distribución estadística, emergen observaciones críticas para el diseño de soluciones de {\em routing}. Al incorporar el consolidado completo de estrés para el modelo OPP\_v3, se constata que logró resolver el 50\% de la muestra masiva (17 de 34 instancias) de manera exitosa dentro del límite de tiempo. No obstante, en estas resoluciones óptimas, la media temporal escala drásticamente a 164.45 segundos, con una extrema dispersión ($\sigma \approx 290.7$ s) y múltiples escenarios que consumieron cerca de 912 segundos. Esto ratifica que la optimización exacta no provee determinismo operativo estable en layouts estresados.
+A partir de la distribución estadística, emergen observaciones críticas. Al someter el modelo OPP\_v3 a cargas masivas, se constata que logra resolver solo el 50\% de la muestra dentro del límite de tiempo. En sus resoluciones óptimas, la media temporal escala drásticamente a 164.45 segundos, con una extrema dispersión ($\sigma \approx 290.7$ s) y múltiples escenarios rebasando los 15 minutos (912 s), ratificando la inestabilidad operativa de la formulación discreta continua.
 
-En contraste, Hill Climbing ratifica su posición dominante en ambientes de escala industrial. Mantiene una tasa de convergencia del 85\% en pruebas de estrés y ancla su tiempo de cómputo en un sobresaliente promedio de $\approx 10.4$ segundos, reduciendo la penalidad temporal por un factor de 15x respecto al solver lineal.
+Por otro lado, la metaheurística ACO logra converger en solo el 41.17\% de las instancias de estrés (14/34), operando con una media de 34.75 segundos, pero denotando una alta volatilidad ante expansiones del área de almacenamiento. En contraste, Hill Climbing ratifica su posición dominante anclando una tasa de convergencia del 85\% en estrés y promediando apenas $\approx 10.4$ segundos.
 
 \stopsection
 
-\startsection[title={2. Análisis de Correlación Paramétrica y Sensibilidad Algorítmica}]
+\startsection[title={Análisis de Correlación Paramétrica y Sensibilidad Algorítmica}]
 
-Para aislar matemáticamente las causas subyacentes de las penalidades temporales, se computó el Coeficiente de Correlación de Pearson ($r$) evaluando la dependencia lineal entre el tiempo de convergencia exitosa y cada variable estructural de las instancias del LPRP.
+Para aislar matemáticamente las causas subyacentes de las penalidades temporales, se computó el Coeficiente de Correlación de Pearson ($r$) evaluando la dependencia lineal entre el tiempo de convergencia exitosa y cada variable estructural.
 
 \placeformula[-]
 \startformula
@@ -72,11 +72,9 @@ r = \frac{\sum_{i=1}^{k} (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^{k} (x
 
 \blank[medium]
 
-\startsubsection[title={2.1. Explosión Combinatoria del Batching frente al Volumen de Órdenes ($N$)}]
+\startsubsection[title={Explosión Combinatoria del Batching frente al Volumen de Órdenes ($N$)}]
 
-Al analizar la corrida completa, el modelo lineal OPP\_v3 manifiesta una sólida correlación ($r \approx 0.66$) respecto a los pedidos ($N$) y una correlación preponderante respecto a la cantidad de lotes o agrupaciones requeridas ($B \rightarrow r \approx 0.71$). La formulación del {\em order batching} introduce hiperdensidad en las matrices de asignación binaria ($z_{o,b}$). SCIP requiere expandir un árbol de ramificación y acotación exponencial que castiga el desempeño del solver, empujando la resolución de lotes de $>300$ pedidos hacia el límite del fracaso computacional.
-
-Hill Climbing amortigua este castigo ($r \approx 0.53$) limitando la evaluación a vecindades con operadores polinomiales. ACO resulta prácticamente indiferente al empaquetamiento directo ($r \approx 0.18$) gracias a su construcción secuencial probabilística de soluciones.
+El modelo lineal OPP\_v3 manifiesta una sólida correlación ($r \approx 0.66$) respecto a los pedidos ($N$) y una aún mayor dependencia frente al número de lotes ($B \rightarrow r \approx 0.71$). La formulación del {\em order batching} introduce hiperdensidad en las variables de decisión lógicas. Para asegurar optimalidad, SCIP requiere expandir un árbol de ramificación geométrico que castiga el desempeño del solver en problemas $>300$ pedidos. Hill Climbing amortigua este castigo ($r \approx 0.53$) operando sobre vecindades localizadas, y ACO resulta indiferente al empaquetamiento ($r \approx 0.18$) por su naturaleza puramente secuencial en la construcción.
 
 \placefigure[here][fig:n_vs_time]{Curvas de Crecimiento Temporal vs Cantidad de Pedidos ($N$)}
 {\startMPcode
@@ -100,7 +98,7 @@ Hill Climbing amortigua este castigo ($r \approx 0.53$) limitando la evaluación
     label.bot(decimal i, (i*u, -10*v));
   endfor;
 
-  % Curva Exacto (Roja) ajustada a complete_output_v3_stress
+  % Curva Exacto (Roja)
   draw (12*u, 3.8*v) {dir 12} .. (100*u, 99.4*v) .. (320*u, 912.5*v) 
        withcolor \MPcolor{redline} withpen pencircle scaled 1.5pt;
   label.top("OPP Exacto (SCIP)", (200*u, 650*v)) withcolor \MPcolor{redline};
@@ -113,11 +111,9 @@ Hill Climbing amortigua este castigo ($r \approx 0.53$) limitando la evaluación
 
 \stopsubsection
 
-\startsubsection[title={2.2. Colapso del Espacio de Estados en Metaheurísticas por Escala Topológica ($V$)}]
+\startsubsection[title={Colapso del Espacio de Estados en Metaheurísticas por Escala Topológica ($V$)}]
 
-ACO sufre un colapso estructural al crecer la cantidad de vértices físicos en el almacén ($V$), registrando la máxima dependencia detectada en la tesis: $r = 0.9463$. Para escalar el layout a entornos masivos (625 nodos), la matriz probabilística de feromonas obliga a recalcular adyacencias iterativamente. Este impacto geométrico estanca asintóticamente al algoritmo frente al solver lineal, que ignora fuertemente la dimensión espacial ($r = 0.2029$ en la muestra global) favoreciendo las restricciones lógicas.
-
-Hill Climbing brilla en esta faceta ($r = 0.1192$) al aislar computacionalmente el enrutamiento mediante grafos subyacentes precalculados, demostrando ser agnóstico al plano topológico.
+La metaheurística ACO sufre un colapso estructural puro al crecer la densidad física del almacén ($V$), dominando la tabla con la correlación más severa observada en las simulaciones: $r = 0.9463$. Para enrutar almacenes de gran magnitud (e.g. 400-625 vértices), las matrices probabilísticas y la actualización de feromonas obligan a un cálculo cuadrático $O(V^2)$ por iteración y por hormiga, estancando asintóticamente la plataforma, mientras que el solver SCIP apenas se inmuta ($r = 0.2029$). Por su parte, el Hill Climbing aísla el ruteo delegándolo en matrices dinámicas precalculadas, demostrando completa inmunidad geográfica ($r \approx 0.11$).
 
 \placefigure[here][fig:v_vs_time]{Curvas de Crecimiento Temporal vs Dimensión de Layout ($V$)}
 {\startMPcode
@@ -146,7 +142,7 @@ Hill Climbing brilla en esta faceta ($r = 0.1192$) al aislar computacionalmente 
        withcolor \MPcolor{greenline} withpen pencircle scaled 1.5pt;
   label.lft("Metaheuristica ACO", (380*u, 540*v)) withcolor \MPcolor{greenline};
 
-  % Curva Exacto en V (Roja) - Para la corrida completa tiene bajo impacto frente a N, pero es r=0.20
+  % Curva Exacto en V (Roja)
   draw (16*u, 0.07*v) -- (100*u, 36.1*v) -- (400*u, 92.8*v) -- (600*u, 243.1*v) 
        withcolor \MPcolor{redline} withpen pencircle scaled 1.5pt;
   label.ulft("OPP Exacto", (600*u, 260*v)) withcolor \MPcolor{redline};
@@ -159,26 +155,26 @@ Hill Climbing brilla en esta faceta ($r = 0.1192$) al aislar computacionalmente 
 
 \stopsubsection
 
-\startsubsection[title={2.3. Dinámica Restrictiva de la Capacidad Vehicular ($C_v$) y Densidad de Poda}]
+\startsubsection[title={Dinámica Restrictiva de la Capacidad Vehicular ($C_v$) y Densidad de Poda}]
 
-La capacidad del vehículo evidencia que el empaque holgado corrompe al modelo exacto ($r = 0.4321$). Camiones sumamente restrictivos facilitan al solver SCIP aplicar cortes rápidos en ramas infactibles ({\em Branch and Cut}). Cuando se relaja $C_v$, SCIP debe validar un volumen abismal de soluciones hiperdensas. Las heurísticas HC y ACO neutralizan este efecto matemático mediante iteraciones secuenciales y asignaciones {\em greedy}, diluyendo su peso.
+Una capacidad de carga ($C_v$) expansiva corrompe de manera medible la eficiencia de la optimización exacta ($r = 0.4321$). Esto se debe a que un vehículo pequeño genera una alta infracción prematura de los hiperplanos, permitiendo al sistema aplicar cortes limpios y podas ({\em Branch and Cut}). Cuando se amplía la capacidad física de los carretones logísticos, SCIP se ve forzado a explorar profundas ramificaciones del empaque válido. Las heurísticas HC y ACO contrarrestan esta desventaja inherentemente mediante evaluaciones y selecciones de construcción rápida.
 
 \stopsubsection
 
-\startsubsection[title={2.4. Gradientes Lógicos y Penalizaciones Temporales ($W_{ea\_ta}$)}]
+\startsubsection[title={ Gradientes Lógicos y Penalizaciones Temporales ($W_{ea\_ta}$)}]
 
-Resulta destacable que la variable de penalidad por ventanas de tiempo de entrega se comporte en régimen negativo para todas las plataformas (hasta $r = -0.2545$ en SCIP). Explicado algebraicamente, el endurecimiento de la función de costo objetivo castiga severamente el valor residual de rutas de ruteo ineficientes, expandiendo drásticamente la brecha con la Cota Dual y permitiendo descartar escenarios tempranamente. Castigar retrasos optimiza la eficiencia del sistema.
+Resulta destacable que la penalidad por entrega temprana/tardía opere sistemáticamente en un régimen negativo ($r \rightarrow -0.25$ en SCIP). Algebraicamente, incrementar esta penalización ensancha tempranamente la función de costo de ramas subóptimas y mediocres. Esta discrepancia financiera permite a los algoritmos rechazar velozmente permutaciones inválidas de enrutamiento temporal.
 
 \stopsubsection
 
 \stopsection
 
-\startsection[title={3. Conclusiones Fundacionales y Directrices de Diseño Logístico}]
+\startsection[title={Conclusiones Fundacionales y Directrices de Diseño Logístico}]
 
 \startitemize[n]
-\item {\bf Escala Límite del Modelo MILP:} La consolidación de las bitácoras completas ratifica la inhabilidad de OPP\_v3 para brindar un desempeño garantizado en tiempos industriales bajo grandes volúmenes de pedidos o hiper-lotes. Sus tasas de éxito fluctúan violentamente al incorporar ruido en la variable ($N$), tornándolo inseguro para sistemas dinámicos (WMS).
-\item {\bf Sensibilidad Geográfica de ACO:} La exploración algorítmica expone que ACO no sufre por qué empaquetar, sino por {\em dónde}. Al escalar la red topológica, el estancamiento computacional provocado por el denso recálculo matricial de grafos desaconseja su uso sin aplicar heurísticas severas de segmentación de zonas de picking.
-\item {\bf Dominancia Heurística Consolidada:} Hill Climbing valida su rol de arquitectura cúspide frente al conjunto completo de pruebas. Inmune a la dimensión del plano geográfico gracias al aislamiento en su matriz de distancias y resistente al incremento de la densidad de órdenes, asegura una convergencia excepcionalmente ágil ($\mu = 10.41$ s en estrés) y establece la mejor relación de compromiso factibilidad/tiempo.
+\item {\bf Escala Límite del Modelo MILP:} La consolidación de bitácoras ratifica la incapacidad de OPP\_v3 para otorgar un desempeño continuo bajo flujos mayores a 200 órdenes logísticas. La volatilidad exponencial lo margina de un ecosistema en línea, obligando a usarlo exclusivamente para planificaciones *offline* de menor envergadura.
+\item {\bf Sensibilidad Geográfica Extrema de ACO:} El análisis paramétrico comprobó que el enfoque bio-inspirado no se bloquea por la tarea de empaquetar mercadería, sino por recorrer las distancias espaciales. Para implementar ACO en depósitos vastos ($>400$ nodos), resulta obligatorio aplicar lógicas de segmentación geográfica.
+\item {\bf Dominancia Operativa Consolidada de HC:} Hill Climbing es la estructura recomendada como pilar industrial. Es invulnerable al tamaño físico de la red de estantes y resiste estoicamente el aumento de órdenes mediante operadores polinomiales. Su tiempo de ejecución estable ante condiciones de estrés abismales conforma el estándar óptimo de compromiso entre rendimiento algorítmico y factibilidad de negocio.
 \stopitemize
 
 \stopsection
