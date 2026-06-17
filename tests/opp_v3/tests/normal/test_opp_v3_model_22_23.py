@@ -1,6 +1,6 @@
 import unittest
-from models.opp_v2.opp_model_v2 import OPPModelV2
-from models.opp_v2.utils.output_handler import OutputHandler
+from models.opp_v3.opp_model_v3 import OPPModelV3
+from models.opp_v3.utils.output_handler import OutputHandler
 from observer.observer import Observer
 from tests.opp.tests.opp_test_case import OPPTestCase
 import sys
@@ -41,7 +41,7 @@ class TestOPPModel(OPPTestCase):
         params, model_dto = single_order_params(due_date_value=10000.0, start_time=self.start_time)
 
         capture = ResultCapture()
-        model = OPPModelV2(model_dto)
+        model = OPPModelV3(model_dto)
         model.attach(OutputHandler())
         model.attach(capture)
 
@@ -59,7 +59,7 @@ class TestOPPModel(OPPTestCase):
         params, model_dto = single_order_params(due_date_value=0.0, start_time=self.start_time)
 
         capture = ResultCapture()
-        model = OPPModelV2(model_dto)
+        model = OPPModelV3(model_dto)
         model.attach(OutputHandler())
         model.attach(capture)
 

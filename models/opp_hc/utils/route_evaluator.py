@@ -42,7 +42,7 @@ class RouteEvaluator:
         self.B_time = B_time
         self.B_setup = B_setup
         self.B_picking = B_picking
-        self.S = S if S else {}
+        self.S = S if isinstance(S, dict) else {}
         self.Dd = Dd
         self.M = M
 

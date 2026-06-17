@@ -16,6 +16,7 @@ from tests.opp.tests.opp_test_case import OPPTestCase
 from tests.opp_aco.scenarios.normal.one_mission_one_picker_grid_graph import (
     scenario_one_mission_one_picker_grid_graph,
 )
+from tests.opp_v2.tests.route_assertions import assert_aco_routes_cover_locations
 
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
@@ -147,7 +148,17 @@ class TestOPPModel(OPPTestCase):
             "The model did not find a solution.",
         )
 
-        self.assertEqual(output_graph, self.get_output_graph())
+        # ACO is non-deterministic: assert all required locations are visited,
+        # not a specific route.
+        required_by_batch = {
+            "B1": {"V2", "V3", "V7", "V9", "V10", "V13"},
+        }
+        assert_aco_routes_cover_locations(
+            self,
+            model.last_solution_info["routes"],
+            self.B,
+            required_by_batch,
+        )
 
 
 if __name__ == "__main__":

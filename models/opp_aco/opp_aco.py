@@ -7,12 +7,12 @@ Observer pattern to notify output results, ensuring architectural parity.
 
 import time
 import random
-from collections import defaultdict
+import heapq
+from collections import defaultdict, deque
 from typing import Dict, List, Set, Optional, Tuple
 
 from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
 from dtos.opp.solve_result import SolveResult
-from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
 from models.base.model import Model
 from models.base.opp_location_graph import OPPLocationGraph
@@ -28,6 +28,7 @@ class OPPAntColonyOptimization(Model):
         self.location_graph = dto.location_graph
         self.B = sorted(dto.B)
         self.T_0 = dto.start_time
+        self._sp_dist = self._precompute_shortest_paths()
 
     def solve(self, params: SolveAcoModelDTO):
         """
@@ -40,9 +41,11 @@ class OPPAntColonyOptimization(Model):
 
         # Initial validation analogous to opp_v3 / opp_hc
         if params.Bn is None:
+            self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
 
         if not (params.is_capacity_valid() and params.is_batch_assignment_valid()):
+            self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
 
         batch_assignments = params.extract_batch_assignments()
@@ -85,12 +88,17 @@ class OPPAntColonyOptimization(Model):
             # 3. Update the global best solution
             iter_best_solution, iter_best_cost = min(ant_solutions, key=lambda x: x[1])
             if iter_best_cost < best_global_cost:
-                best_global_solution = iter_best_solution
+                best_global_solution = iter_best_solution.copy()
                 best_global_cost = iter_best_cost
 
             # 4. Pheromone Update
             self._update_pheromones(
-                pheromones, ant_solutions, evaporation_rate, q_factor
+                pheromones,
+                ant_solutions,
+                evaporation_rate,
+                q_factor,
+                best_global_solution=best_global_solution,
+                best_global_cost=best_global_cost
             )
 
         elapsed = time.time() - start_time
@@ -100,6 +108,7 @@ class OPPAntColonyOptimization(Model):
         print(f"Iterations completed: {iteration}")
 
         if best_global_solution is None:
+            self._register_infeasible(params, elapsed)
             return "infeasible", None
 
         # Notify the OutputHandler (Observer Pattern)
@@ -121,22 +130,73 @@ class OPPAntColonyOptimization(Model):
                 "W_ea": params.W_ea,
                 "W_ta": params.W_ta,
                 "C_v": params.C_v,
+                "B_time": params.B_time,
+                "B_setup": params.B_setup,
+                "B_picking": params.B_picking,
                 "M": params.M,
                 "N": len(self.N),
                 "B": len(self.B),
+                "V": len(self.location_graph.get_vertices()),
                 "A_ants": num_ants,
                 "Max_it": max_it,
                 "Alpha": alpha,
-                "Beta": beta,
+                "Beta": beta
             },
         )
         solve_registry.register(solve_result)
         return solve_result
 
+    def _register_infeasible(self, params: SolveAcoModelDTO, elapsed: float) -> None:
+        solve_registry.register(SolveResult(
+            status="infeasible",
+            output=None,
+            elapsed=elapsed,
+            params={
+                "W_full": getattr(params, "W_full", None),
+                "W_ea_ta": getattr(params, "W_ea_ta", None),
+                "W_ea": getattr(params, "W_ea", None),
+                "W_ta": getattr(params, "W_ta", None),
+                "C_v": getattr(params, "C_v", None),
+                "B_time": params.B_time,
+                "B_setup": params.B_setup,
+                "B_picking": params.B_picking,
+                "M": getattr(params, "M", None),
+                "N": len(self.N),
+                "B": len(self.B),
+                "V": len(self.location_graph.get_vertices()),
+                "A_ants": getattr(params, "_A", 15),
+                "Max_it": getattr(params, "_Max_it", 60),
+                "Alpha": getattr(params, "_Alpha", 1.0),
+                "Beta": getattr(params, "_Beta", 2.5),
+            },
+        ))
+
+    def _precompute_shortest_paths(self) -> Dict[Tuple[str, str], float]:
+        """Dijkstra from every node to get shortest-path distances."""
+        vertices = self.location_graph.get_vertices()
+        dist = {}
+        for src in vertices:
+            d = {src: 0.0}
+            heap = [(0.0, src)]
+            while heap:
+                cost, node = heapq.heappop(heap)
+                if cost > d.get(node, float("inf")):
+                    continue
+                for nbr in vertices:
+                    if self.location_graph.has_edge(node, nbr):
+                        new_cost = cost + self.location_graph.get_distance(node, nbr)
+                        if new_cost < d.get(nbr, float("inf")):
+                            d[nbr] = new_cost
+                            heapq.heappush(heap, (new_cost, nbr))
+            for dst in vertices:
+                dist[(src, dst)] = d.get(dst, float("inf"))
+        return dist
+
     def _initialize_pheromones(self) -> Dict[Tuple[str, str], float]:
-        """Initializes the pheromone matrix with a base value of 1.0 for valid edges."""
+        """Initializes the pheromone matrix 2D (origin, destination) with a base value of 1.0 for valid edges."""
         pheromones = {}
         vertices = self.location_graph.get_vertices()
+        # for b in self.B:
         for i in vertices:
             for j in vertices:
                 if self.location_graph.has_edge(i, j):
@@ -209,12 +269,20 @@ class OPPAntColonyOptimization(Model):
             total_prob = 0.0
 
             for n in neighbors:
+                # Batch-specific pheromone query
                 tau = pheromones.get((current, n), 1.0) ** alpha
-                eta = (1.0 / self.location_graph.get_distance(current, n)) ** beta
 
-                # Heuristic bonus for required nodes to guide the ant
+                dist = self.location_graph.get_distance(current, n)
+                dist = dist if dist > 0 else 0.01
+
+                # Dynamic visibility oriented towards the nearest remaining target
                 if n in unvisited_req:
-                    eta *= 10
+                    eta = (1.5 / dist) ** beta  # High priority because it is an immediately required node
+                else:
+                    # Shortest-path distance to nearest required node (not just direct edge)
+                    min_dist_to_req = min(self._sp_dist.get((n, req), float("inf")) for req in unvisited_req)
+                    min_dist_to_req = min_dist_to_req if min_dist_to_req > 0 else 0.01
+                    eta = (1.0 / (dist + min_dist_to_req)) ** beta
 
                 prob = tau * eta
                 probabilities.append((n, prob))
@@ -239,28 +307,32 @@ class OPPAntColonyOptimization(Model):
                 unvisited_req.remove(next_node)
             current = next_node
 
+        # Optimal deterministic connection (BFS) to the final node to avoid deadlocks
+        tail_route = self._find_shortest_path_bfs(current, final, visited)
+        if tail_route is None:
+            return None  # There is no physical connection to the output node
+
         # Phase 2: Connect to the final node
-        while current != final:
-            if self.location_graph.has_edge(current, final):
-                route.append(final)
-                break
-
-            neighbors = [
-                n
-                for n in self.location_graph.get_vertices()
-                if self.location_graph.has_edge(current, n) and n not in visited
-            ]
-
-            if not neighbors:
-                return None
-
-            # Simple greedy fallback for final connection in complex graphs
-            next_node = random.choice(neighbors)
-            route.append(next_node)
-            visited.add(next_node)
-            current = next_node
-
+        route.extend(tail_route[1:])
         return route
+
+    def _find_shortest_path_bfs(self, start: str, end: str, visited_nodes: Set[str]) -> Optional[List[str]]:
+        if start == end:
+            return [start]
+        queue = deque([[start]])
+        explored = set(visited_nodes) - {end} # Mandatory allow discovery of the final node
+        while queue:
+            path = queue.popleft()
+            node = path[-1]
+            if node == end:
+                return path
+            for neighbor in self.location_graph.get_vertices():
+                if self.location_graph.has_edge(node, neighbor) and neighbor not in explored:
+                    explored.add(neighbor)
+                    new_path = list(path)
+                    new_path.append(neighbor)
+                    queue.append(new_path)
+        return None
 
     def _find_required_locations(
         self, batch: str, orders: Set[str], A: Dict
@@ -283,22 +355,38 @@ class OPPAntColonyOptimization(Model):
         ant_solutions: List[Tuple[Dict[str, List[str]], float]],
         evaporation_rate: float,
         q_factor: float,
-    ):
-        """Applies evaporation and pheromone deposit based on ant solutions."""
+        best_global_solution: Optional[Dict[str, List[str]]] = None,
+        best_global_cost: float = float('inf')
+    ) -> None:
+        """
+        Applies evaporation and pheromone deposit based on ant solutions.
+        Elite upgrade. Evaporates and deposits pheromones on a 2D base, providing a strong additional boost
+        to the best historical solution found.
+        """
         # Evaporation
         for edge in pheromones:
-            pheromones[edge] *= 1.0 - evaporation_rate
+            pheromones[edge] *= (1.0 - evaporation_rate)
             # Minimum limit to prevent absolute stagnation (Min-Max Ant System logic base)
             pheromones[edge] = max(pheromones[edge], 0.01)
 
         # Deposit (Iterating over all ants that found a feasible solution)
         for solution, cost in ant_solutions:
-            deposit_amount = q_factor / cost if cost > 0 else 0
-            for batch, route in solution.items():
+            if cost <= 0: continue
+            deposit_amount = q_factor / cost
+            for route in solution.values():
                 for i in range(len(route) - 1):
                     edge = (route[i], route[i + 1])
                     if edge in pheromones:
                         pheromones[edge] += deposit_amount
+
+        # Elite Component: Extra bonus deposit for the best historical route
+        if best_global_solution and best_global_cost < float('inf') and best_global_cost > 0:
+            elitist_deposit = (q_factor / best_global_cost) * 2.0
+            for route in best_global_solution.values():
+                for i in range(len(route) - 1):
+                    edge = (route[i], route[i + 1])
+                    if edge in pheromones:
+                        pheromones[edge] += elitist_deposit
 
     def _evaluate_solution(
         self, solution: Dict[str, List[str]], params: SolveAcoModelDTO

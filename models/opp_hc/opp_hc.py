@@ -47,11 +47,13 @@ class OPPHillClimbing(Model):
 
         # Guard: Bn=None means no batch assignments were provided
         if params.Bn is None:
+            self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
 
         # Check for orders assigned to more than one batch (violates sum_b y_nb = 1)
         # Check vehicle capacity constraint per batch before doing any work
-        if not (params.is_capacity_valid() and params.is_batch_assignment_valid()) :
+        if not (params.is_capacity_valid() and params.is_batch_assignment_valid()):
+            self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
 
         # Extract batch assignments from Bn parameter
@@ -99,6 +101,7 @@ class OPPHillClimbing(Model):
 
         if current_solution is None:
             print("ERROR: Could not generate initial feasible solution")
+            self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
 
         current_cost = evaluator.evaluate(current_solution)
@@ -165,6 +168,29 @@ class OPPHillClimbing(Model):
         )
         solve_registry.register(solve_result)
         return solve_result
+
+    def _register_infeasible(self, params: SolveHCModelDTO, elapsed: float) -> None:
+        solve_registry.register(SolveResult(
+            status="infeasible",
+            output=None,
+            elapsed=elapsed,
+            params={
+                "W_full": getattr(params, "W_full", None),
+                "W_ea_ta": getattr(params, "W_ea_ta", None),
+                "W_ea": getattr(params, "W_ea", None),
+                "W_ta": getattr(params, "W_ta", None),
+                "C_v": getattr(params, "C_v", None),
+                "B_time": getattr(params, "B_time", None),
+                "B_setup": getattr(params, "B_setup", None),
+                "B_picking": getattr(params, "B_picking", None),
+                "M": getattr(params, "M", None),
+                "N": len(self.N),
+                "B": len(self.B),
+                "V": len(self.location_graph.get_vertices()),
+                "Max_it": getattr(params, "Max_it", None),
+                "Max_imp": getattr(params, "Max_imp", None),
+            },
+        ))
 
     def _generate_initial_feasible_solution(
         self,
@@ -518,7 +544,7 @@ class OPPHillClimbing(Model):
         picking_time = 0
         batch_assignments = params.extract_batch_assignments()
         for order in batch_assignments.get(batch, set()):
-            picking_time += params.S.get(order, 0) if params.S else 0
+            picking_time += params.S.get(order, 0) if isinstance(params.S, dict) else 0
 
         # Capacity weight (from objective function)
         capacity_weight = params.B_picking
