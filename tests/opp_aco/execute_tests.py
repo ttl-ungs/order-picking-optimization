@@ -1,21 +1,13 @@
 import os
 import sys
 import unittest
-from dotenv import load_dotenv
-
-load_dotenv()  # Carga variables del archivo .env
 
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from tests.test_runner import TestRunner
 
-TEST_TIMEOUT_MINUTES = int(os.environ.get("TEST_TIMEOUT_MINUTES", "25"))
-WRITE_RESULTS_CSV = os.environ.get("WRITE_RESULTS_CSV", "").strip().lower() in (
-    "1",
-    "true",
-    "yes",
-)
+from tests.test_config import TEST_TIMEOUT_MINUTES, WRITE_RESULTS_CSV
 
 if __name__ == "__main__":
     runner = TestRunner(

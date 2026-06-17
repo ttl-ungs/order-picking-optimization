@@ -1,7 +1,4 @@
 import unittest
-from dotenv import load_dotenv
-
-load_dotenv()  # Carga variables del archivo .env
 
 import sys
 import os

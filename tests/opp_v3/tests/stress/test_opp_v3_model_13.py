@@ -13,7 +13,7 @@ from models.opp_v3.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
 from tests.opp_v3.scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
-RUN_LARGE_STRESS = os.environ.get("RUN_LARGE_STRESS") == "1"
+from tests.test_config import RUN_LARGE_TESTS
 
 
 class TestOPPModel(OPPTestCase):
@@ -22,7 +22,7 @@ class TestOPPModel(OPPTestCase):
     """
 
     @unittest.skipUnless(
-        RUN_LARGE_STRESS, "Requires RUN_LARGE_STRESS=1; model size is huge."
+        RUN_LARGE_TESTS, "Requires RUN_LARGE_TESTS=1; model size is huge."
     )
     def test_25_orders_per_batch_30_batches_100x100(self):
         opp_location_graph, V, B, N, y, a = scenario_custom_setup(30, 750, 100, 100)

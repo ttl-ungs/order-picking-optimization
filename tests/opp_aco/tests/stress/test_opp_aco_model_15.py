@@ -15,7 +15,7 @@ from tests.opp_aco.scenarios.stress.scenario_double_grid import (
     scenario_two_grids_custom_setup,
 )
 
-RUN_LARGE_STRESS = os.environ.get("RUN_LARGE_STRESS") == "1"
+from tests.test_config import RUN_LARGE_TESTS
 
 
 class TestOPPModel(OPPTestCase):
@@ -24,7 +24,7 @@ class TestOPPModel(OPPTestCase):
     """
 
     @unittest.skipUnless(
-        RUN_LARGE_STRESS, "Requires RUN_LARGE_STRESS=1; model size is huge."
+        RUN_LARGE_TESTS, "Requires RUN_LARGE_TESTS=1; model size is huge."
     )
     def test_25_orders_per_batch_30_batches_double_50x50(self):
         location_graph, V, B, N, y, a = scenario_two_grids_custom_setup(

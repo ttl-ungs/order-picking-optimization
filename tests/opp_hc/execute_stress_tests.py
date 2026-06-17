@@ -1,25 +1,13 @@
 import os
 import sys
 import unittest
-from dotenv import load_dotenv
-
-load_dotenv()  # Carga variables del archivo .env
 
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from tests.test_runner import TestRunner
 
-STRESS_TEST_TIMEOUT_MINUTES = int(
-    os.environ.get(
-        "STRESS_TEST_TIMEOUT_MINUTES", int(os.environ.get("TEST_TIMEOUT_MINUTES", "25"))
-    )
-)
-WRITE_RESULTS_CSV = os.environ.get("WRITE_RESULTS_CSV", "").strip().lower() in (
-    "1",
-    "true",
-    "yes",
-)
+from tests.test_config import STRESS_TEST_TIMEOUT_MINUTES, WRITE_RESULTS_CSV
 
 if __name__ == "__main__":
     runner = TestRunner(
@@ -31,7 +19,7 @@ if __name__ == "__main__":
 
     suite = unittest.TestLoader().discover(
         start_dir=os.path.join(os.path.dirname(__file__), "tests", "stress"),
-        pattern="test_opp_hc_model_[2-3][1-9].py",  # TODO: Undo
+        pattern="test_opp_hc_model_[1][3-9].py",  # TODO: Undo
     )
     test_ids = TestRunner.collect_test_ids(suite)
 
