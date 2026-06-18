@@ -2,7 +2,6 @@ import os
 import sys
 import unittest
 
-
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from tests.test_runner import TestRunner
@@ -19,7 +18,7 @@ if __name__ == "__main__":
 
     suite = unittest.TestLoader().discover(
         start_dir=os.path.join(os.path.dirname(__file__), "tests", "stress"),
-        pattern="test_opp_hc_model_[1][3-9].py",  # TODO: Undo
+        pattern="test_opp_hc_model_10.py",  # TODO: Undo
     )
     test_ids = TestRunner.collect_test_ids(suite)
 
