@@ -1,28 +1,28 @@
-% Configuración de página y márgenes
-\setuplayout[backspace=20mm, topspace=20mm, width=middle, height=middle, header=0mm, footer=10mm]
+\setupcolors[state=start]
+\setupcolor[hex]
+\definecolor[darkblue][h=003366]
+\definecolor[darkgray][h=e6e6e6]
+\definecolor[redline][h=d9534f]
+\definecolor[blueline][h=5bc0de]
+\definecolor[greenline][h=5cb85c]
 
-% Numeración continua y soporte para salto de página
-\setupformulas[way=bytext, prefix=no, split=yes]
-\setupmathalignment[split=yes]
-
-% Estilo de títulos
-\setuphead[section][style=\bfb]
-\setuphead[subsection][style=\bfa, after=\blank]
-
-% Macros ajustadas para evitar desbordamiento de margen
-\define[1]\Cond{\framed[width=2.8cm, frame=off, align=normal, offset=0pt, location=middle]{\tfx #1}}
-\define[1]\Desc{\framed[width=4.5cm, frame=off, align=normal, offset=0pt, location=middle]{\tfx #1}}
+\setuphead[section][style=\bfa, color=darkblue, before=\blank, after=\blank]
+\setuphead[subsection][style=\bf, color=black, before=\blank, after=\blank]
+\setuppapersize[A4][A4]
+\setupbodyfont[11pt]
+\setuplayout[width=middle, height=middle, topspace=2cm, bottomspace=2cm]
 
 \starttext
 
-\centerline{\tfd Modelo OPP - Order Picking Problem}
-\blank[small]
-\centerline{\tfa Soria, Lucía; Ebertz, Ximena}
-\blank[2*big]
+\define[1]\Cond{\framed[width=2.8cm, frame=off, align=normal, offset=0pt, location=middle]{\tfx #1}}
+\define[1]\Desc{\framed[width=4.5cm, frame=off, align=normal, offset=0pt, location=middle]{\tfx #1}}
+
+\title{\bf Modelos Definidos Para el Problema de Orden Picking Problem}
+\blank[big]
 
 \startsection[title={Primera Versión: OPP con misiones}]
 
-Utilizamos el modelo completo y lo simplificamos, considerando las tareas relacionadas con el \italic{batch} como parámetros y no como variables, que podrían ser obtenidas mediante metaheurísticas en un preprocesamiento por zonas. De esta forma, obtenemos el siguiente modelo:
+Utilizamos el modelo completo y lo simplificamos, considerando las tareas relacionadas con el {\em batch} como parámetros y no como variables, que podrían ser obtenidas mediante metaheurísticas en un preprocesamiento por zonas. De esta forma, obtenemos el siguiente modelo:
 
 \startsubsection[title={Sean los conjuntos}]
 \startformula
@@ -96,29 +96,29 @@ Utilizamos el modelo completo y lo simplificamos, considerando las tareas relaci
 \startalign
     \NC \text{Tiempo de recolección} \NC = \sum_{p=1}^{N} \sum_{k=1}^K v_{pk} \NR
     \NC \text{Adelantos totales} \NC = \sum_{n=1}^{N} ea_n \NR
-    \NC \text{Peso de adelantos totales} \NC = \gamma * \sum_{n=1}^{N} ea_n \NR
+    \NC \text{Peso de adelantos totales} \NC = \gamma \cdot \sum_{n=1}^{N} ea_n \NR
     \NC \text{Demoras totales} \NC = \sum_{n=1}^{N} ta_n \NR
-    \NC \text{Peso de demoras totales} \NC = \delta * \sum_{n=1}^{N} ta_n \NR
-    \NC \text{Peso de penalizaciones} \NC = w_2 * (\text{peso adelantos totales} + \text{peso de demoras totales}) \NR
+    \NC \text{Peso de demoras totales} \NC = \delta \cdot \sum_{n=1}^{N} ta_n \NR
+    \NC \text{Peso de penalizaciones} \NC = w_2 \cdot (\text{peso adelantos totales} + \text{peso de demoras totales}) \NR
 \stopalign
 \stopformula
 
 {\bf Esta función objetivo se traduce en}
 \startformula
-    \min w_1 * \text{\bf tiempo de recolección } + w_2 * \text{\bf peso de penalizaciones} 
+    \min w_1 \cdot \text{\bf tiempo de recolección } + w_2 \cdot \text{\bf peso de penalizaciones} 
 \stopformula
 \stopsubsection
 
 \startsubsection[title={Restricciones}]
 \startformula 
 \startalign[n=3, align={left, left, left}, number=yes]
-    \NC \sum_{h\in H}x_{pkh}\le1; \NC \Cond{$\forall p \in P,$ \crlf $k \in K$} \NC \Desc{(\overstrike{Cada misión es asignada a lo sumo a un picker en un periodo})} \NR
+    \NC \sum_{h\in H}x_{pkh}\le1; \NC \Cond{$\forall p \in P,$ \crlf $k \in K$} \NC \Desc{({\em Cada misión es asignada a lo sumo a un picker en un periodo})} \NR
     
-    \NC \sum_{p\in P}\sum_{k\in K}x_{pkh}=1; \NC \Cond{$\forall h \in H$} \NC \Desc{(\overstrike{Cada misión es asignada exactamente una vez a un único picker en una única posición})} \NR
+    \NC \sum_{p\in P}\sum_{k\in K}x_{pkh}=1; \NC \Cond{$\forall h \in H$} \NC \Desc{({\em Cada misión es asignada exactamente una vez a un único picker en una única posición})} \NR
     
-    \NC \sum_{h\in H}y_{nh}=1; \NC \Cond{$\forall n \in N$} \NC \Desc{(\overstrike{Cada órden es asignada a una misión})} \NR
+    \NC \sum_{h\in H}y_{nh}=1; \NC \Cond{$\forall n \in N$} \NC \Desc{({\em Cada órden es asignada a una misión})} \NR
     
-    \NC \sum_{n\in N}cap_{n} \cdot y_{nh} \le Cap_{vehicle}; \NC \Cond{$\forall h \in H$} \NC \Desc{(\overstrike{La capacidad de las órdenes asignades a la misión $\le$ la del vehículo})} \NR
+    \NC \sum_{n\in N}cap_{n} \cdot y_{nh} \le Cap_{vehicle}; \NC \Cond{$\forall h \in H$} \NC \Desc{({\em La capacidad de las órdenes asignades a la misión $\le$ la del vehículo})} \NR
     
     \NC \sum_{j \in V \setminus \{v_i\}} z_{v_i,j,h} = 1; \NC \Cond{$\forall h \in H$} \NC \Desc{(La ruta sale una vez del depósito inicial)} \NR
     
@@ -151,7 +151,7 @@ Utilizamos el modelo completo y lo simplificamos, considerando las tareas relaci
     \NC t\_exec_{h} \ge \beta^{setup} + \beta^{picking} \cdot \left( \sum_{n \in N} cap_n \cdot y_{nh} \right) \NC \NC \NR[-]
     \NC \quad + \beta^{time} \cdot \left( \sum_{i \in V, j \in V} d_{ij} \cdot z_{ijh} \right); \NC \Cond{$\forall h \in H$} \NC \Desc{(El tiempo de setup + picking + viaje definen el tiempo total de ejecución)} \NR
     
-    \NC t\_exec_{h} - M \cdot (1 - x_{pkh}) \le u_{pk}; \NC \Cond{$\forall p, k, h$} \NC \Desc{(\overstrike{Cuando se asigna una mision a un picker, el tiempo de ejecución es $\le$ al lote})} \NR
+    \NC t\_exec_{h} - M \cdot (1 - x_{pkh}) \le u_{pk}; \NC \Cond{$\forall p, k, h$} \NC \Desc{({\em Cuando se asigna una mision a un picker, el tiempo de ejecución es $\le$ al lote})} \NR
 \stopalign
 \stopformula
 
@@ -177,7 +177,6 @@ Utilizamos el modelo completo y lo simplificamos, considerando las tareas relaci
 \startsection[title={Segunda Versión: OPP sin misiones}]
 
 Simplificamos el modelo de la primera versión, eliminando las misiones y considerando directamente los lotes como variables de decisión. 
-A parte, simplificamos el uso de las posiciones. % TODO: ampliar. 
 De esta forma, obtenemos el siguiente modelo:
 
 \startsubsection[title={Sean los conjuntos}]
@@ -252,10 +251,10 @@ De esta forma, obtenemos el siguiente modelo:
 \startalign
     \NC \text{Tiempo de recolección} \NC = \sum_{p=1}^{N} \sum_{b=1}^{B} v_{pb} \NR
     \NC \text{Adelantos totales} \NC = \sum_{n=1}^{N} ea_n \NR
-    \NC \text{Peso de adelantos totales} \NC = \gamma * \sum_{n=1}^{N} ea_n \NR
+    \NC \text{Peso de adelantos totales} \NC = \gamma \cdot \sum_{n=1}^{N} ea_n \NR
     \NC \text{Demoras totales} \NC = \sum_{n=1}^{N} ta_n \NR
-    \NC \text{Peso de demoras totales} \NC = \delta * \sum_{n=1}^{N} ta_n \NR
-    \NC \text{Peso de penalizaciones} \NC = w_2 * (\text{peso adelantos totales} + \text{peso de demoras totales}) \NR
+    \NC \text{Peso de demoras totales} \NC = \delta \cdot \sum_{n=1}^{N} ta_n \NR
+    \NC \text{Peso de penalizaciones} \NC = w_2 \cdot (\text{peso adelantos totales} + \text{peso de demoras totales}) \NR
 \stopalign
 \stopformula
 \stopsubsection
@@ -263,66 +262,40 @@ De esta forma, obtenemos el siguiente modelo:
 \startsubsection[title={Restricciones}]
 \startformula 
 \startalign[n=3, align={left, left, left}, number=yes]
-    % (3) tachada
-    \NC \sum_{b\in B}x_{pb}=1; \NC \Cond{$\forall p \in P$} \NC \Desc{(\overstrike{Cada lote es asignado a un picker})} \NR
+    \NC \sum_{b\in B}x_{pb}=1; \NC \Cond{$\forall p \in P$} \NC \Desc{({\em Cada lote es asignado a un picker})} \NR
     
-    % (4) tachada
-    \NC \sum_{b\in B}y_{nb}=1; \NC \Cond{$\forall n \in N$} \NC \Desc{(\overstrike{Cada orden es asignada a un lote})} \NR
+    \NC \sum_{b\in B}y_{nb}=1; \NC \Cond{$\forall n \in N$} \NC \Desc{({\em Cada orden es asignada a un lote})} \NR
     
-    % (6) constraint_start_from_depot
     \NC \sum_{j \in V \setminus \{v_i\}} z_{1jb} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta sale una vez del depósito inicial)} \NR
     
-    % (7) constraint_finish_at_end
     \NC \sum_{i \in V \setminus \{v_f\}} z_{i,v_f,b} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta entra una vez al depósito final)} \NR
-    % (8) constraint_cant_go_back_to_depot
     \NC \sum_{i \in V \setminus \{v_i\}} \sum_{b \in B} z_{i1b} = 0; \NC \NC \Desc{(No se puede volver al inicio)} \NR
-    % (9) constraint_cant_move_from_end_node
     \NC \sum_{j \in V \setminus \{v_f\}} \sum_{b \in B} z_{v_f,j,b} = 0; \NC \NC \Desc{(No se puede ir a otro lado desde el final)} \NR
-    % (10) constraint_force_visit_inflow
     \NC \sum_{i \in V, i \neq j} z_{ijb} \ge \min\left(1, \sum_{n \in N} a_{nj} \cdot y_{nb}\right); \NC \Cond{$\forall b \in B,$ \crlf $j \in V \setminus \{v_1, v_f\}$} \NC \Desc{(Si una orden del lote requiere una locación, la ruta debe entrar a ella)} \NR
-    % (11) constraint_force_visit_outflow
     \NC \sum_{i \in V, i \neq j} z_{jib} \ge \min(1, \sum_{n \in N} a_{nj} \cdot y_{nb}) \NC \NC \Desc{(Si una orden en el lote requiere una locación, la ruta debe salir de ella) } \NR
-    % (12) constraint_articles_capacity
     \NC f_{ijb} \le Cap_{vehicle} \cdot z_{ijb} \NC \NC \Desc{(Los artículos deben caber en la capacidad del vehículo) } \NR
-    % (13) constraint_flow_conservation
     \NC \sum_{g \in V, g \neq i} z_{gib} = \sum_{j \in V, j \neq i} z_{ijb} \NC \NC \Desc{(Conservación de flujo: lo que entra a un nodo intermedio debe salir) } \NR
-    % (14) constraint_one_input_arc_per_node
     \NC \sum_{g \in V, g < num_loc} z_{gib} \le 1 \NC \NC \Desc{(Se elige a lo sumo un arco de entrada por cada nodo) } \NR
-    % (15) constraint_one_output_arc_per_node
     \NC \sum_{j \in V, j > 2} z_{ijb} \le 1 \NC \NC \Desc{(Se elige a lo sumo un arco de salida por cada nodo) } \NR
-    % (16) constraint_f_depot_source
     \NC \sum_{j \in V, j \neq v_1} f_{v_1jb} = R_{b} \NC \NC \Desc{(El flujo que sale del depósito es igual a las locaciones requeridas) } \NR
-    % (16) constraint_f_flow_conservation
-    \NC \sum_{g \in V, g \neq v_f} f_{gib} - \sum_{j \in V, j \neq v_1} f_{ijb} = \dots \NC \NC \Desc{(Cada nodo requerido consume exactamente una unidad de flujo) } \NR
-    % (17) constraint_no_loops
+    \NC \sum_{g \in V, g \neq v_f} f_{gib} - \sum_{j \in V, j \neq v_1} f_{ijb} = \text{Balance} \NC \NC \Desc{(Cada nodo requerido consume exactamente una unidad de flujo) } \NR
     \NC z_{iib} = 0 \NC \NC \Desc{(No se permiten bucles o ciclos sobre el mismo nodo) } \NR
-    % (18) constraint_valid_execution_time
-    \NC t_exec_{b} \ge \beta_{setup} + \beta_{pick} + \beta_{trav} \NC \NC \Desc{(El tiempo total es la suma de preparación, recolección y viaje) } \NR
+    \NC t\_exec_{b} \ge \beta^{setup} + \beta^{pick} + \beta^{trav} \NC \NC \Desc{(El tiempo total es la suma de preparación, recolección y viaje) } \NR
 \stopalign
 \stopformula
 
 \startformula
 \startalign[n=3, align={left, left, left}, number=yes]
-    % (19) constraint_batch_execution_time
-    \NC t_exec_{b} - M \cdot (1 - x_{pb}) \le u_{pb} \NC \NC \Desc{(Cuando se asigna un lote a un picker, su tiempo de ejecución es $\le$ al de procesamiento)}  \NR
-    % (20) constraint_processing_time
+    \NC t\_exec_{b} - M \cdot (1 - x_{pb}) \le u_{pb} \NC \NC \Desc{(Cuando se asigna un lote a un picker, su tiempo de ejecución es $\le$ al de procesamiento)}  \NR
     \NC u_{pb} \le v_{pb}; \NC \Cond{$\forall p \in P, b \in B$} \NC \Desc{(El tiempo de procesamiento es menor o igual al tiempo de completitud de un lote)}  \NR
-    % (21) constraint_completition_batch_time (function commented in code)
-    \NC u_{pb} + v_{pb-1} \le v_{pb} \NC \NC \Desc{(\overstrike{El tiempo de procesamiento + el del lote previo es $\le$ al tiempo de completitud del lote --- no activa en implementación})}  \NR
-    % (22) constraint_tardiness_definition
-    \NC v_{pb} - due_date_{n} - M \cdot (2 - x_{pb} - y_{nb}) \le ta_{n} \NC \NC \Desc{(Si el lote termina después de la fecha de entrega, la diferencia se asigna a tardanza)}  \NR
-    % (23) constraint_earliness_definition
-    \NC due_date_{n} - v_{pb} - M \cdot (2 - x_{pb} - y_{nb}) \le ea_{n} \NC \NC \Desc{(Si la fecha de entrega es mayor al tiempo de finalización, la diferencia se asigna a adelanto)}  \NR
-    % (24) constraint_batch_capacity
+    \NC u_{pb} + v_{pb-1} \le v_{pb} \NC \NC \Desc{({\em El tiempo de procesamiento + el del lote previo es $\le$ al tiempo de completitud del lote})}  \NR
+    \NC v_{pb} - due\_date_{n} - M \cdot (2 - x_{pb} - y_{nb}) \le ta_{n} \NC \NC \Desc{(Si el lote termina después de la fecha de entrega, la diferencia se asigna a tardanza)}  \NR
+    \NC due\_date_{n} - v_{pb} - M \cdot (2 - x_{pb} - y_{nb}) \le ea_{n} \NC \NC \Desc{(Si la fecha de entrega es mayor al tiempo de finalización, la diferencia se asigna a adelanto)}  \NR
     \NC \sum_{n\in N}cap_{n} \cdot y_{nb} \le Cap_{vehicle}; \NC \Cond{$\forall b \in B$} \NC \Desc{(La capacidad de las órdenes asignades a un lote $\le$ la del vehículo)} \NR
-    % (25) constraint_only_valid_edges
     \NC z_{ijb} = 0 \NC \Cond{$\forall b \in B,$ \crlf $i, j \in V$ \crlf $d_{ij} = \infty$} \NC \Desc{(Solo se pueden usar arcos entre locaciones conectadas)} \NR
-    % (n/a) x and y are parameters in `opp_model_v2` (no constraint function)
-    \NC x_{pb} \in {0, 1} \NC \NC \Desc{($x$ es binaria)} \NR \NC y_{nb} \in {0, 1} \NC \NC \Desc{($y$ es binaria)} \NR
-    % (vars) z created as binary in `opp_model_v2.solve()` -> see variable `z`
-    \NC z_{ijb} \in {0, 1} \NC \NC \Desc{($z$ es binaria)} \NR
-    % (vars) non-negativity enforced via variable lower-bounds in code (lb=0)
-    \NC t_exec_{b} \ge 0 \NC \Cond{$\forall b \in B$} \NC \Desc{(El tiempo de ejecución es positivo o 0)} \NR 
+    \NC x_{pb} \in \{0, 1\} \NC \NC \Desc{($x$ es binaria)} \NR \NC y_{nb} \in \{0, 1\} \NC \NC \Desc{($y$ es binaria)} \NR
+    \NC z_{ijb} \in \{0, 1\} \NC \NC \Desc{($z$ es binaria)} \NR
+    \NC t\_exec_{b} \ge 0 \NC \Cond{$\forall b \in B$} \NC \Desc{(El tiempo de ejecución es positivo o 0)} \NR 
     \NC ta_{n} \ge 0 \NC \NC \Desc{(La tardanza es positiva o 0)} \NR 
     \NC ea_{n} \ge 0 \NC \NC \Desc{(El adelanto es positivo o 0)} \NR 
     \NC u_{pb} \ge 0 \NC \NC \Desc{(El tiempo de procesamiento no es negativo)} \NR 
@@ -331,50 +304,6 @@ De esta forma, obtenemos el siguiente modelo:
 
 \stopalign
 \stopformula
-\stopsubsection
-
-\startsubsection[title={Modificaciones realizadas}]
-
-{\bf Control de flujo} 
-
-Luego de reemplazar el uso de misiones (H) de la primera versión del modelo por el uso de 
-lotes (B), se plantearon las siguientes modificaciones al modelo Opp_v2. La restricción 16 (eliminación de ciclos) es insuficiente para prevenir la formación de los 
-mismos, y también para controlar el flujo dentro de la ruta solución. Por lo tanto, esta 
-restricción fue eliminada y reemplazada por otra. Esta nueva restricción se define de la 
-siguiente forma:
-
-\startformula
-\startalign[n=3, align={left, left, left}, number=yes]
-    \NC R_{b} \NC = \sum_{i \in V, i \notin \{v_1, v_f\}} \min(1, \sum_{n \in N} a_{ni} \cdot y_{nb}) \NC \Desc{(R es el número de locaciones requeridas por el lote $b$)} \NR
-    \NC \sum_{j \in V, j \neq v_1} f_{v_1jb} \NC = R_{b} \NC \Desc{(El flujo que sale del depósito es igual a las locaciones requeridas)} \NR
-    \NC \sum_{g \in V, g \neq v_f} f_{gib} - \sum_{j \in V, j \neq v_1} f_{ijb} \NC = \min(1, \sum_{n \in N} a_{ni} \cdot y_{nb}) \NC \Desc{(Cada nodo requerido consume exactamente una unidad de flujo)} \NR
-\stopalign
-\stopformula
-
-Estas restricciones están basadas en el "balance Gavish-Graves". La idea central es modelar el flujo como un commodity que el depósito inyecta y cada nodo requerido consume. El depósito emite $|V|-1$ unidades, y cada nodo consume exactamente 1. Esta formulación fue adaptada para permitir dos aspectos del problema abordado:
-
-\startitemize[bullet]
-    \item No es necesario recorrer todos los nodos, sino solo los requeridos por el lote a procesar. En el problema TCP original todos los nodos deben ser visitados.
-    \item El nodo final es distinto al inicial. En el problema TCP original el nodo inicial y el final son el mismo, ya que el recorrido comienza y finaliza en el mismo lugar.
-\stopitemize
-
-{\bf Permitir más de una órden por locación}
-
-Se modificaron las restricciones (10) y (11) para que la restricción considere el mínimo entre 1 y la cantidad de veces que esa locación es requerida. Esto permite que en un mismo 
-recorrido se recolecten ordenes distintas en la misma locación.  
-
-{\bf Nota: antes la restricción exigía que la cantidad de caminos entrantes/salientes de la 
-locación requerida sea igual a la cantidad de veces que esa locación es requerida. Esto 
-chocaba con las restricciones que limitan la cantidad de caminos entrantes/salientes de una 
-locación a 1. }
-
-\startformula
-\startalign[n=3, align={left, left, left}, number=yes]
-    \NC \sum_{i \in V, i \neq j} z_{ijb} \ge \min(1, \sum_{n \in N} a_{nj} \cdot y_{nb}) \NC \NC \Desc{(Si una orden en el lote requiere una locación, la ruta debe entrar a ella) } \NR
-    \NC \sum_{j \in V, j \neq i} z_{jib} \ge \min(1, \sum_{n \in N} a_{ni} \cdot y_{nb}) \NC \NC \Desc{(Si una orden en el lote requiere una locación, la ruta debe salir de ella) } \NR
-\stopalign
-\stopformula
-
 \stopsubsection
 
 \stopsection
@@ -411,7 +340,7 @@ En esta versión se elimina el concepto de picker y se trabaja con lotes predefi
     \NC \beta^{time} \NC = \text{Tiempo requerido para viajar una unidad de distancia} \NR
     \NC \beta^{setup} \NC = \text{Tiempo de preparación (setup) del lote} \NR
     \NC \beta^{picking} \NC = \text{Tiempo requerido para recolectar una unidad} \NR
-    \NC s_{i} \NC = \text{Tiempo de servicio en la locación } i \in V \text{ (p. ej. mayor en estanterías, menor en piso)} \NR
+    \NC s_{i} \NC = \text{Tiempo de servicio en la locación } i \in V \NR
     \NC due\_date_{n} \NC = \text{Fecha de entrega de la orden } n \in N \NR
     \NC M \NC = \text{Un número positivo suficientemente grande (Big M)} \NR
     \NC y_{nb} \NC = \startmathcases
@@ -449,55 +378,33 @@ En esta versión se elimina el concepto de picker y se trabaja con lotes predefi
 \startsubsection[title={Restricciones}]
 \startformula
 \startalign[n=3, align={left, left, left}, number=yes]
-    % (6) constraint_start_from_depot
     \NC \sum_{j \in V \setminus \{v_1\}} z_{v_1 j b} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta sale una vez del depósito)} \NR
-    % (7) constraint_finish_at_end
     \NC \sum_{i \in V \setminus \{v_f\}} z_{i v_f b} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta entra una vez al nodo final)} \NR
-    % (8) constraint_cant_go_back_to_depot
     \NC \sum_{i \in V \setminus \{v_1\}} z_{i v_1 b} = 0; \NC \Cond{$\forall b \in B$} \NC \Desc{(No se puede volver al depósito)} \NR
-    % (9) constraint_cant_move_from_end_node
     \NC \sum_{j \in V \setminus \{v_f\}} z_{v_f j b} = 0; \NC \Cond{$\forall b \in B$} \NC \Desc{(No se puede salir del nodo final)} \NR
-    % (10) constraint_force_visit_inflow
     \NC \sum_{i \in V, i \neq j} z_{i j b} \ge \min(1, \sum_{n \in N} a_{n j} \cdot y_{n b}); \NC \Cond{$\forall b \in B,$ \crlf $j \in V \setminus \{v_1, v_f\}$} \NC \Desc{(Si una locación es requerida, debe tener arco de entrada)} \NR
-    % (11) constraint_force_visit_outflow
     \NC \sum_{i \in V, i \neq j} z_{j i b} \ge \min(1, \sum_{n \in N} a_{n j} \cdot y_{n b}); \NC \Cond{$\forall b \in B,$ \crlf $j \in V \setminus \{v_1, v_f\}$} \NC \Desc{(Si una locación es requerida, debe tener arco de salida)} \NR
-    % (12) constraint_articles_capacity
     \NC f_{i j b} \le Cap_{vehicle} \cdot z_{i j b}; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_f\},$ \crlf $j \in V \setminus \{v_1\}$} \NC \Desc{(El flujo respeta la capacidad)} \NR
-    % (13) constraint_flow_conservation
     \NC \sum_{g \in V, g \neq i} z_{g i b} = \sum_{j \in V, j \neq i} z_{i j b}; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1, v_f\}$} \NC \Desc{(Conservación de flujo en la ruta)} \NR
-    % (14) constraint_one_input_arc_per_node
     \NC \sum_{j \in V, j \neq i} z_{j i b} \le 1; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1\}$} \NC \Desc{(A lo sumo un arco de entrada)} \NR
-    % (15) constraint_one_output_arc_per_node
     \NC \sum_{j \in V, j \neq i} z_{i j b} \le 1; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_f\}$} \NC \Desc{(A lo sumo un arco de salida)} \NR
-    % (17) constraint_no_loops
     \NC z_{i i b} = 0; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1\}$} \NC \Desc{(No hay bucles)} \NR
 \stopalign
 \stopformula
 
 \startformula
 \startalign[n=3, align={left, left, left}, number=yes]
-    % (16) constraint_f_depot_source
     \NC R_{b} = \sum_{i \in V, i \notin \{v_1, v_f\}} \min(1, \sum_{n \in N} a_{n i} \cdot y_{n b}); \NC \Cond{$\forall b \in B$} \NC \Desc{(Locaciones requeridas)} \NR
-    % (16) constraint_f_depot_source - continuación
     \NC \sum_{j \in V \setminus \{v_1\}} f_{v_1 j b} = R_{b}; \NC \Cond{$\forall b \in B$} \NC \Desc{(Flujo total desde el depósito)} \NR
-    % (16) constraint_f_flow_conservation
     \NC \sum_{g \in V \setminus \{v_f\}} f_{g i b} - \sum_{j \in V \setminus \{v_1\}} f_{i j b} = \min(1, \sum_{n \in N} a_{n i} \cdot y_{n b}); \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1, v_f\}$} \NC \Desc{(Balance Gavish-Graves)} \NR
-    % (17) constraint_no_loops
     \NC z_{i i b} = 0; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_1\}$} \NC \Desc{(No se permiten bucles)} \NR
-    % (18) constraint_valid_execution_time
     \NC t\_exec_{b} \ge \beta^{setup} + \beta^{picking} \cdot \left(\sum_{n \in N} cap_n \cdot y_{n b}\right) + \beta^{time} \cdot \left(\sum_{(i,j) \in \mathcal{E}} d_{ij} \cdot z_{i j b}\right) \NC \NR
     \NC \quad + \sum_{i \in V, i \notin \{v_1, v_f\}} s_{i} \cdot \left( \sum_{j:\ (i,j) \in \mathcal{E}} z_{i j b} \right); \NC \Cond{$\forall b \in B$} \NC \Desc{(Tiempo de ejecución del lote: setup + picking + viaje + servicio)} \NR
-    % (19) constraint_batch_execution_time
     \NC v_{b_1} \ge t\_exec_{b_1}; \NC \Cond{$b_1 \text{ es el primer lote}$} \NC \Desc{(Inicio de la secuencia)} \NR
-    % (19) constraint_batch_execution_time
     \NC v_{b_k} \ge v_{b_{k-1}} + t\_exec_{b_k}; \NC \Cond{$\forall k \ge 2$} \NC \Desc{(Secuencia de lotes)} \NR
-    % (22) constraint_tardiness_definition
     \NC v_{b} - due\_date_{n} - M \cdot (1 - y_{n b}) \le ta_{n}; \NC \Cond{$\forall b \in B,$ \crlf $n \in N$} \NC \Desc{(Definición de tardanza)} \NR
-    % (23) constraint_earliness_definition
     \NC due\_date_{n} - v_{b} - M \cdot (1 - y_{n b}) \le ea_{n}; \NC \Cond{$\forall b \in B,$ \crlf $n \in N$} \NC \Desc{(Definición de adelanto)} \NR
-    % (24) constraint_batch_capacity
     \NC \sum_{n \in N} cap_n \cdot y_{n b} \le Cap_{vehicle}; \NC \Cond{$\forall b \in B$} \NC \Desc{(Capacidad del lote)} \NR
-    % (25) constraint_only_valid_edges
     \NC z_{i j b} = 0; \NC \Cond{$\forall b \in B,$ \crlf $(i, j) \notin \mathcal{E}$} \NC \Desc{(Solo arcos válidos)} \NR
 \stopalign
 \stopformula
@@ -725,6 +632,116 @@ Este formato es completamente compatible con el método `build_output()` del sol
     \item \bold{Multi-start}: Ejecutar múltiples veces y retornar mejor.
     \item \bold{Paralelización}: Ejecutar múltiples búsquedas locales en paralelo.
     \item \bold{Perturbaciones controladas}: Iterated Local Search (ILS).
+\stopitemize
+
+\stopsubsection
+
+\stopsection
+
+\startsection[title={Quinta Versión: Metaheurística Bio-inspirada (OPP ACO)}]
+
+Además del modelo exacto (OPP\_v3) y la heurística de búsqueda local (Hill Climbing), se diseñó e implementó un motor basado en inteligencia de enjambres: {\bf Ant Colony Optimization (ACO)}. Esta metaheurística iterativa emula el comportamiento de búsqueda de las hormigas reales para converger hacia rutas óptimas.
+
+\startsubsection[title={Definición del Problema Adaptado para ACO}]
+
+La metaheurística ACO, al igual que Hill Climbing, delega la lógica de asignación ({\em order batching}) asumiendo que los lotes ya se encuentran ensamblados. El esfuerzo computacional se concentra exclusivamente en el enrutamiento:
+
+\startitemize[n]
+    \item {\bf Input:} Configuración fija de órdenes empaquetadas por lote (parámetro $y_{nb}$) y la topología espacial del almacén ($V, E, d_{ij}$).
+    \item {\bf Dinámica Espacial:} Transiciones probabilísticas iterativas de nodos basadas en una matriz de rastros de feromonas (memoria global) y visibilidad heurística (matriz de distancias inversas).
+    \item {\bf Objetivo:} Construcción estocástica de secuencias de {\em picking} que minimicen el {\em makespan} global y las penalizaciones temporales $ea_n, ta_n$.
+    \item {\bf Output:} Grafo final de trayectorias óptimas compatibles con OPP\_v3.
+\stopitemize
+
+\stopsubsection
+
+\startsubsection[title={Fundamentación de la Metaheurística}]
+
+El motor ACO ofrece una propuesta diferencial frente a algoritmos constructivos o de búsqueda local rígida:
+
+\startitemize[bullet]
+    \item {\bf Exploración Estocástica:} A diferencia de HC (que suele atraparse en óptimos locales), ACO fomenta la exploración de nuevas ramas topológicas utilizando una matriz de probabilidades de estado de transición.
+    \item {\bf Aprendizaje Colectivo:} El rastro de feromonas ($\tau_{ij}$) actúa como un sistema de memoria a largo plazo. Soluciones eficientes encontradas por el enjambre en iteraciones previas sesgan probabilísticamente el camino de futuras hormigas.
+    \item {\bf Escalabilidad en Densidad:} Aunque sufre en grafos excesivamente extensos (como se demostró en los test de estrés), ACO es excepcionalmente hábil desenredando marañas de múltiples órdenes dentro de zonas de {\em picking} congestionadas.
+\stopitemize
+
+\stopsubsection
+
+\startsubsection[title={Arquitectura Algorítmica y Probabilidad de Transición}]
+
+El núcleo de ACO reside en la ecuación probabilística de selección de estado. Una hormiga en el nodo $i$ elige transitar al nodo $j$ (dentro del conjunto de vecindad no visitada $N_i$) según la siguiente fórmula:
+
+\startformula
+P_{ij} = \frac{[\tau_{ij}]^\alpha \cdot [\eta_{ij}]^\beta}{\sum_{k \in N_i} [\tau_{ik}]^\alpha \cdot [\eta_{ik}]^\beta}
+\stopformula
+
+Donde:
+\startitemize[bullet]
+    \item $\tau_{ij}$: Nivel actual de feromona depositada en el arco $(i,j)$. Representa el aprendizaje global.
+    \item $\eta_{ij} = \frac{1}{d_{ij}}$: Información heurística local (visibilidad). Favorece los desplazamientos físicamente más cortos.
+    \item $\alpha, \beta$: Hiperparámetros que ponderan la importancia relativa del rastro histórico frente a la codicia geográfica.
+\stopitemize
+
+\stopsubsection
+
+\startsubsection[title={Actualización de Feromonas (Pheromone Update)}]
+
+Tras finalizar una iteración global (cuando todo el enjambre construyó sus rutas), la matriz de feromonas experimenta dos procesos concurrentes: evaporación y depósito.
+
+\startformula
+\tau_{ij} \leftarrow (1 - \rho) \cdot \tau_{ij} + \sum_{k=1}^{m} \Delta \tau_{ij}^k
+\stopformula
+
+Donde $\rho$ es el coeficiente de evaporación (evita convergencia prematura), $m$ es el número de hormigas, y $\Delta \tau_{ij}^k$ es la cantidad de feromona depositada por la hormiga $k$, la cual es inversamente proporcional al costo total (función objetivo) de la ruta hallada.
+
+\stopsubsection
+
+\startsubsection[title={Pseudocódigo Estructural}]
+
+\starttyping
+procedure ACO_Routing(Bn_fijo, parametros)
+  // Inicialización global
+  MatrizFeromonas ← Inicializar(\tau_0)
+  MejorSolucionGlobal ← Nulo
+  MejorCostoGlobal ← \infty
+  
+  para iteracion = 1 hasta max_iteraciones hacer
+    SolucionesHormigas ← []
+    
+    // Fase constructiva del enjambre
+    para k = 1 hasta num_hormigas hacer
+      ruta_k ← ConstruirRutaProbabilistica(MatrizFeromonas, Visibilidad)
+      costo_k ← EvaluarRuta(ruta_k)
+      Agregar ruta_k a SolucionesHormigas
+      
+      si costo_k < MejorCostoGlobal entonces
+        MejorSolucionGlobal ← ruta_k
+        MejorCostoGlobal ← costo_k
+      fin si
+    fin para
+    
+    // Evaporación global
+    Evaporar(MatrizFeromonas, \rho)
+    
+    // Refuerzo basado en elitismo
+    DepositarFeromonas(MatrizFeromonas, SolucionesHormigas)
+    
+  fin para
+  
+  devolver MejorSolucionGlobal
+fin procedure
+\stoptyping
+
+\stopsubsection
+
+\startsubsection[title={Comparativa e Inserción en la Arquitectura OPP}]
+
+La arquitectura bio-inspirada se instanció preservando estrictamente las políticas de DTOs y el patrón Observer descritos en las guías técnicas del proyecto:
+
+\startitemize[bullet]
+    \item {\bf OPPAcoModelV3:} Actúa como controlador y hereda abstractamente del orquestador base, compartiendo la misma firma de método `solve(params)`.
+    \item {\bf Parámetros Sintonizables:} Además de los hiperparámetros convencionales del OPP ($w_1, w_2, \gamma, \delta$), el modelo exige configuración para el tamaño del enjambre (`ants`), las épocas de búsqueda (`max_iterations`), la evaporación (`evaporation_rate`) y las ponderaciones $\alpha$ y $\beta$.
+    \item {\bf Desempeño y Tolerancia:} La estabilización asintótica observada revela que ACO domina la búsqueda local (HC) en instancias altamente laberínticas, pero incurre en un castigo cuadrático computacional al someterse a expansiones territoriales desmedidas (incrementos masivos de $|V|$).
 \stopitemize
 
 \stopsubsection
