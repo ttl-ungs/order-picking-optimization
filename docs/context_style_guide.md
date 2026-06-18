@@ -63,5 +63,12 @@ Todo nuevo archivo `.tex` debe comenzar exactamente con la siguiente cabecera de
 \setuplayout[width=middle, height=middle, topspace=2cm, bottomspace=2cm]
 
 \starttext
+\title{\bf Título}
+\blank[big]
+
+% ... introducción ... 
+
+\blank
+
 % ... contenido ...
 \stoptext
