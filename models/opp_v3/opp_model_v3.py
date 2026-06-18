@@ -327,6 +327,7 @@ class OPPModelV3(Model):
             elapsed=elapsed,
             params={
                 "solver_time": solver_time,
+                "obj_val": model.getObjVal() if model.getStatus() in ("optimal", "feasible") else None,
                 "W_full": W_full,
                 "W_ea_ta": W_ea_ta,
                 "W_ea": W_ea,
