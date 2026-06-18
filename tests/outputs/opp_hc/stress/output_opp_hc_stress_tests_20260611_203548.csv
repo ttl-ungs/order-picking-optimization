@@ -7,8 +7,8 @@ test_opp_hc_model_05.TestOPPModel.test_10_orders_per_batch,ok,23.34219217300415,
 test_opp_hc_model_06.TestOPPModel.test_empty_batches,ok,0.24843382835388184,1781220978.987524,9.0,1.0,1.0,1.0,10.0,0.5,1.0,1.0,1000.0,25,50,100,500,30
 test_opp_hc_model_07.TestOPPModel.test_multi_location_orders,ok,1.634462594985962,1781220980.7537448,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,30,10,100,500,30
 test_opp_hc_model_08.TestOPPModel.test_shared_hotspots,ok,0.18964576721191406,1781220981.0710957,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,30,10,100,500,30
-test_opp_hc_model_09.TestOPPModel.test_infeasible_capacity,ok,0.015522956848144531,,,,,,,,,,,,,,,
-test_opp_hc_model_10.TestOPPModel.test_disconnected_graph,ok,0.026419878005981445,,,,,,,,,,,,,,,
+test_opp_hc_model_09.TestOPPModel.test_infeasible_capacity,ok,0.022320985794067383,1781740783.4820786,9.0,1.0,1.0,1.0,40.0,0.5,1.0,1.0,1000.0,10,2,16,500,30
+test_opp_hc_model_10.TestOPPModel.test_disconnected_graph,ok,0.037982940673828125,1781740831.280796,1.0,10.0,1.0,5.0,20.0,0.5,1.0,1.0,1000.0,6,12,34,500,30
 test_opp_hc_model_11.TestOPPModel.test_25_orders_per_batch_30_batches_10x10,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,
 test_opp_hc_model_12.TestOPPModel.test_25_orders_per_batch_30_batches_25x25,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,
 test_opp_hc_model_13.TestOPPModel.test_25_orders_per_batch_30_batches_100x100,ok,0.06723284721374512,,,,,,,,,,,,,,,
