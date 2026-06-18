@@ -158,26 +158,74 @@ HC demostró un comportamiento asintótico sumamente eficiente. Aislar el ruteo 
 \stopsubsection
 
 \startsubsection[title={Metaheurística Bio-inspirada (ACO)}]
-El modelo de optimización por colonia de hormigas exhibe una extrema sensibilidad geográfica. Su núcleo estocástico obliga a actualizar densidades de probabilidad a lo largo del mapa. Cuando la cantidad de ubicaciones físicas ($V$) crece severamente, la matriz algorítmica de transiciones se densifica y ralentiza el desempeño de ACO de manera desproporcionada, limitando su aplicación a almacenes compactos (Figura \in[fig:aco_stress]).
+
+El modelo de optimización por colonia de hormigas exhibe una extrema sensibilidad geográfica. Su núcleo estocástico obliga a actualizar densidades de probabilidad a lo largo del mapa completo en cada iteración por cada hormiga. Cuando la cantidad de ubicaciones físicas ($V$) crece severamente, la matriz algorítmica de transiciones se densifica y ralentiza el desempeño de ACO de manera desproporcionada, limitando su aplicación práctica a almacenes de tamaño moderado.
+
+\blank
+
+Las 34 pruebas de estrés confirman empíricamente este fenómeno. La Figura \in[fig:aco_stress] grafica el tiempo total observado frente a $V$ para los casos exitosos ({\em ok}, círculos sólidos) y los casos que completaron su ejecución pero cuya solución no superó los criterios de calidad ({\em failed}, triángulos). Las instancias de mayor escala topológica ($V \geq 625$) fueron detenidas por {\em timeout} tras 25 minutos sin converger.
 
 \placefigure[force][fig:aco_stress]{Vulnerabilidad Topológica vs Nodos $V$ (ACO Estrés)}
 {\startMPcode
-  numeric u, v; u := 10cm / 600; v := 5cm / 600;
-  drawarrow (0,0) -- (650*u,0) withpen pencircle scaled 1pt;
-  drawarrow (0,0) -- (0,650*v) withpen pencircle scaled 1pt;
-  label.bot(textext("Ubicaciones / Nodos (V)"), (300*u, -50*v));
-  draw textext("Tiempo Total (s)") rotated 90 shifted (-40*u, 300*v);
-  for i=0 step 100 until 600:
-    draw (-2*u, i*v) -- (2*u, i*v); label.lft(textext(decimal i), (-5*u, i*v));
+  numeric u, v; u := 10cm / 1100; v := 5cm / 1000;
+  drawarrow (0,0) -- (1150*u,0) withpen pencircle scaled 1pt;
+  drawarrow (0,0) -- (0,1050*v) withpen pencircle scaled 1pt;
+  label.bot(textext("Ubicaciones / Nodos (V)"), (550*u, -70*v));
+  draw textext("Tiempo Total (s)") rotated 90 shifted (-55*u, 500*v);
+  for i=0 step 200 until 1000:
+    draw (-3*u, i*v) -- (3*u, i*v); label.lft(textext(decimal i), (-8*u, i*v));
   endfor;
-  for i=0 step 100 until 600:
-    draw (i*u, -2*v) -- (i*u, 2*v); label.bot(textext(decimal i), (i*u, -15*v));
+  for i=0 step 200 until 1000:
+    draw (i*u, -3*v) -- (i*u, 3*v); label.bot(textext(decimal i), (i*u, -18*v));
   endfor;
-  draw (16*u, 0.05*v) {dir 15} .. (100*u, 60.3*v) .. (400*u, 596.3*v) withcolor \MPcolor{greenline} withpen pencircle scaled 1.5pt;
-  fill fullcircle scaled 4pt shifted (16*u, 0.05*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (100*u, 60.3*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (400*u, 596.3*v) withcolor \MPcolor{darkblue};
+  % Curva de tendencia ACO (verde)
+  draw (16*u, 0.06*v) {dir 8} .. (100*u, 29.4*v) .. (400*u, 596.4*v) .. (1000*u, 924.96*v)
+       withcolor \MPcolor{greenline} withpen pencircle scaled 1.5pt dashed evenly;
+  % Puntos OK (círculos sólidos, azul)
+  fill fullcircle scaled 5pt shifted (16*u,   0.06*v)  withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 5pt shifted (34*u,   0.51*v)  withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 5pt shifted (100*u,  5.61*v)  withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 5pt shifted (100*u,  22.09*v) withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 5pt shifted (100*u,  60.35*v) withcolor \MPcolor{darkblue};
+  fill fullcircle scaled 5pt shifted (400*u,  596.39*v) withcolor \MPcolor{darkblue};
+  % Puntos Failed (triángulos, rojo)
+  draw (400*u, 50.4*v+4pt) -- (400*u-4pt, 50.4*v-3pt) -- (400*u+4pt, 50.4*v-3pt) -- cycle
+       withcolor \MPcolor{redline} withpen pencircle scaled 1pt;
+  draw (625*u, 356.0*v+4pt) -- (625*u-4pt, 356.0*v-3pt) -- (625*u+4pt, 356.0*v-3pt) -- cycle
+       withcolor \MPcolor{redline} withpen pencircle scaled 1pt;
+  draw (1000*u, 924.96*v+4pt) -- (1000*u-4pt, 924.96*v-3pt) -- (1000*u+4pt, 924.96*v-3pt) -- cycle
+       withcolor \MPcolor{redline} withpen pencircle scaled 1pt;
+  % Marcas de timeout en la parte superior del eje
+  draw (625*u,  990*v) -- (625*u,  1010*v) withcolor \MPcolor{redline} withpen pencircle scaled 1.5pt;
+  label.top(textext("TO"), (625*u, 1010*v)) withcolor \MPcolor{redline};
+  % Leyenda
+  fill fullcircle scaled 5pt shifted (750*u, 820*v) withcolor \MPcolor{darkblue};
+  label.rt(textext("Convergencia exitosa (ok)"), (760*u, 820*v));
+  draw (750*u, 750*v+4pt) -- (750*u-4pt, 750*v-3pt) -- (750*u+4pt, 750*v-3pt) -- cycle
+       withcolor \MPcolor{redline} withpen pencircle scaled 1pt;
+  label.rt(textext("Fallo de calidad (failed)"), (760*u, 750*v));
 \stopMPcode}
+
+\startsubsubsection[title={Clasificación de Resultados bajo Estrés}]
+
+De las 34 instancias ejecutadas, el análisis revela tres patrones de comportamiento claramente diferenciados:
+
+\blank
+
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Resultado \eTH \bTH Cantidad \eTH \bTH Rango de $V$ \eTH \bTH Causa dominante \eTH \eTR
+\bTR \bTD Exitoso (ok) \eTD \bTD 6 / 34 \eTD \bTD 16 -- 400 \eTD \bTD Almacenes compactos o moderados \eTD \eTR
+\bTR \bTD Fallo de calidad (failed) \eTD \bTD 21 / 34 \eTD \bTD 25 -- 1000 \eTD \bTD Solución subóptima: alta capacidad $C_v$, alta densidad de órdenes $N/B$ o $V$ elevado \eTD \eTR
+\bTR \bTD Timeout (> 25 min) \eTD \bTD 7 / 34 \eTD \bTD $\geq$ 625 \eTD \bTD Explosión cuadrática $O(V^2)$ por iteración \eTD \eTR
+\eTABLE
+
+\blank
+
+Los 6 casos exitosos comprenden almacenes con hasta 400 nodos ($V \leq 400$) bajo condiciones de carga moderada. En el extremo opuesto, las 7 instancias con grillas de $100 \times 100$ nodos o dobles galpones de $50 \times 50$ fueron abortadas sistemáticamente por {\em timeout}, confirmando la barrera asintótica $O(V^2)$ de la actualización de feromonas. Los 21 fallos de calidad representan ejecuciones completadas, pero cuyas soluciones no superan los umbrales de optimalidad definidos por los criterios de prueba: este patrón es más frecuente ante una alta capacidad vehicular ($C_v \geq 200$) o una densidad de órdenes extrema ($N/B \geq 20$), condiciones bajo las cuales la exploración estocástica de ACO no logra escapar de mínimos locales en el espacio combinatorio del batching.
+
+\stopsubsubsection
+
 \stopsubsection
 \stopsection
 
@@ -197,14 +245,14 @@ La robustez general de cada arquitectura se cuantificó mediante la razón incre
 \bTR \bTD Hill Climbing \eTD \bTD Normal \eTD \bTD 46 / 46 \eTD \bTD 0.01 \eTD \bTD 0.00 \eTD \bTD 0.01 \eTD \eTR
 \bTR \bTD Hill Climbing \eTD \bTD Stress \eTD \bTD 29 / 34 \eTD \bTD 10.41 \eTD \bTD 33.29 \eTD \bTD 177.48 \eTD \eTR
 \bTR \bTD ACO \eTD \bTD Normal \eTD \bTD 48 / 48 \eTD \bTD 0.15 \eTD \bTD 0.21 \eTD \bTD 0.81 \eTD \eTR
-\bTR \bTD ACO \eTD \bTD Stress \eTD \bTD 14 / 34 \eTD \bTD 34.75 \eTD \bTD 118.53 \eTD \bTD 596.39 \eTD \eTR
+\bTR \bTD ACO \eTD \bTD Stress \eTD \bTD 6 / 34 \eTD \bTD 114.17 \eTD \bTD 237.33 \eTD \bTD 596.39 \eTD \eTR
 \eTABLE
 
 \blank[medium]
 
 A partir de la distribución estadística, emergen observaciones críticas. Al someter el modelo OPP\_v3 a cargas masivas, se constata que logra resolver solo el 50\% de la muestra dentro del límite de tiempo. En sus resoluciones óptimas, la media temporal escala drásticamente a 164.45 segundos, con una extrema dispersión ($\sigma \approx 290.7$ s) y múltiples escenarios rebasando los 15 minutos (912 s), ratificando la inestabilidad operativa de la formulación discreta continua.
 
-Por otro lado, la metaheurística ACO logra converger en solo el 41.17\% de las instancias de estrés (14/34), operando con una media de 34.75 segundos, pero denotando una alta volatilidad ante expansiones del área de almacenamiento. En contraste, Hill Climbing ratifica su posición dominante anclando una tasa de convergencia del 85\% en estrés y promediando apenas $\approx 10.4$ segundos.
+Por otro lado, la metaheurística ACO logra converger exitosamente en apenas el 17.65\% de las instancias de estrés (6/34), operando con una media de 114.17 segundos entre los casos exitosos, pero con una volatilidad severa ($\sigma \approx 237.3$ s) que evidencia la fuerte dependencia del tiempo respecto a la escala topológica. Un 61.76\% de los casos (21/34) completa la ejecución pero produce soluciones subóptimas, y el 20.59\% restante (7/34) es abortado por {\em timeout} ante grillas de gran magnitud. En contraste, Hill Climbing ratifica su posición dominante anclando una tasa de convergencia del 85\% en estrés y promediando apenas $\approx 10.4$ segundos.
 
 \startsubsection[title={Comparativa Global de Tiempos Promedio por Modelo}]
 
@@ -264,12 +312,12 @@ r = \frac{\sum_{i=1}^{k} (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^{k} (x
 \bTABLE[split=yes, align=middle, frame=on, width=broad]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \bTR \bTH Atributo del Problema ($x$) \eTH \bTH Exacto MILP ($r$) \eTH \bTH Hill Climbing ($r$) \eTH \bTH Metaheurística ACO ($r$) \eTH \eTR
-\bTR \bTD Cantidad de Pedidos ($N$) \eTD \bTD 0.6597 \eTD \bTD 0.5347 \eTD \bTD 0.1802 \eTD \eTR
-\bTR \bTD Vértices del Almacén ($V$) \eTD \bTD 0.2029 \eTD \bTD 0.1192 \eTD \bTD 0.9463 \eTD \eTR
-\bTR \bTD Cantidad de Batches ($B$) \eTD \bTD 0.7085 \eTD \bTD 0.4963 \eTD \bTD 0.1327 \eTD \eTR
-\bTR \bTD Capacidad del Vehículo ($C_v$) \eTD \bTD 0.4321 \eTD \bTD 0.3643 \eTD \bTD 0.0384 \eTD \eTR
-\bTR \bTD Peso de Utilización ($W_{full}$) \eTD \bTD 0.3649 \eTD \bTD 0.2561 \eTD \bTD 0.3003 \eTD \eTR
-\bTR \bTD Pen. Ventanas ($W_{ea\_ta}$) \eTD \bTD -0.2545 \eTD \bTD -0.1791 \eTD \bTD -0.1833 \eTD \eTR
+\bTR \bTD Cantidad de Pedidos ($N$) \eTD \bTD 0.6597 \eTD \bTD 0.5347 \eTD \bTD -0.1558 \eTD \eTR
+\bTR \bTD Vértices del Almacén ($V$) \eTD \bTD 0.2029 \eTD \bTD 0.1192 \eTD \bTD 0.9752 \eTD \eTR
+\bTR \bTD Cantidad de Batches ($B$) \eTD \bTD 0.7085 \eTD \bTD 0.4963 \eTD \bTD -0.1432 \eTD \eTR
+\bTR \bTD Capacidad del Vehículo ($C_v$) \eTD \bTD 0.4321 \eTD \bTD 0.3643 \eTD \bTD -0.1495 \eTD \eTR
+\bTR \bTD Peso de Utilización ($W_{full}$) \eTD \bTD 0.3649 \eTD \bTD 0.2561 \eTD \bTD 0.2347 \eTD \eTR
+\bTR \bTD Pen. Ventanas ($W_{ea\_ta}$) \eTD \bTD -0.2545 \eTD \bTD -0.1791 \eTD \bTD -0.2346 \eTD \eTR
 \eTABLE
 
 \blank[medium]
@@ -315,7 +363,7 @@ El modelo lineal OPP\_v3 manifiesta una sólida correlación ($r \approx 0.66$) 
 
 \startsubsection[title={Colapso del Espacio de Estados en Metaheurísticas por Escala Topológica ($V$)}]
 
-La metaheurística ACO sufre un colapso estructural puro al crecer la densidad física del almacén ($V$), dominando la tabla con la correlación más severa observada en las simulaciones: $r = 0.9463$. Para enrutar almacenes de gran magnitud (e.g. 400-625 vértices), las matrices probabilísticas y la actualización de feromonas obligan a un cálculo cuadrático $O(V^2)$ por iteración y por hormiga, estancando asintóticamente la plataforma, mientras que el solver SCIP apenas se inmuta ($r = 0.2029$). Por su parte, el Hill Climbing aísla el ruteo delegándolo en matrices dinámicas precalculadas, demostrando completa inmunidad geográfica ($r \approx 0.11$).
+La metaheurística ACO sufre un colapso estructural puro al crecer la densidad física del almacén ($V$), dominando la tabla con la correlación más severa observada en las simulaciones: $r = 0.9752$ (computado sobre los 6 casos exitosos del batch de estrés). Para enrutar almacenes de gran magnitud (e.g. 400--625 vértices), las matrices probabilísticas y la actualización de feromonas obligan a un cálculo cuadrático $O(V^2)$ por iteración y por hormiga, estancando asintóticamente la plataforma. Instancias con $V \geq 625$ no logran converger en 25 minutos, ratificando el umbral práctico de aplicabilidad. En contraste, el solver SCIP se muestra casi indiferente a $V$ en sus casos exitosos ($r = 0.2029$), y el Hill Climbing delega el ruteo en matrices de distancias precalculadas, demostrando completa inmunidad geográfica ($r \approx 0.12$). Cabe notar que con apenas $n=6$ observaciones el coeficiente de Pearson para ACO debe interpretarse con cautela estadística, aunque la dirección y magnitud de la correlación en $V$ son robustas dado el rango extremo de los datos ($V \in [16, 400]$, $t \in [0.06, 596]$).
 
 \placefigure[force][fig:v_vs_time]{Curvas de Crecimiento Temporal vs Dimensión de Layout ($V$)}
 {\startMPcode
@@ -375,7 +423,7 @@ Resulta destacable que la penalidad por entrega temprana/tardía opere sistemát
 
 \startitemize[n]
 \item {\bf Escala Límite del Modelo MILP:} La consolidación de bitácoras ratifica la incapacidad de OPP\_v3 para otorgar un desempeño continuo bajo flujos mayores a 200 órdenes logísticas. La volatilidad exponencial lo margina de un ecosistema en línea, obligando a usarlo exclusivamente para planificaciones *offline* de menor envergadura.
-\item {\bf Sensibilidad Geográfica Extrema de ACO:} El análisis paramétrico comprobó que el enfoque bio-inspirado no se bloquea por la tarea de empaquetar mercadería, sino por recorrer las distancias espaciales. Para implementar ACO en depósitos vastos ($>400$ nodos), resulta obligatorio aplicar lógicas de segmentación geográfica.
+\item {\bf Sensibilidad Geográfica Extrema de ACO:} Las pruebas de estrés evidencian que ACO converge exitosamente en apenas el 17.65\% de los casos (6/34), con una tasa de {\em timeout} del 20.59\% para grillas de $V \geq 625$ nodos. El análisis paramétrico confirma que el bloqueo no proviene del empaquetado de mercadería ($r_N \approx -0.16$), sino de la escala topológica ($r_V = 0.9752$). Para implementar ACO en depósitos de más de 400 nodos resulta obligatorio aplicar lógicas de segmentación geográfica o reducción del grafo; adicionalmente, el 61.76\% de los fallos de calidad (soluciones subóptimas sin timeout) indica que la parametrización estocástica debe ajustarse ante alta densidad de órdenes o capacidad vehicular elevada.
 \item {\bf Dominancia Operativa Consolidada de HC:} Hill Climbing es la estructura recomendada como pilar industrial. Es invulnerable al tamaño físico de la red de estantes y resiste estoicamente el aumento de órdenes mediante operadores polinomiales. Su tiempo de ejecución estable ante condiciones de estrés abismales conforma el estándar óptimo de compromiso entre rendimiento algorítmico y factibilidad de negocio.
 \stopitemize
 

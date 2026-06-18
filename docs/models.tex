@@ -20,6 +20,11 @@
 \title{\bf Modelos Definidos Para el Problema de Orden Picking Problem}
 \blank[big]
 
+\startsection[title={Introducción}]
+En el presente documento, hacemos una descripción de los modelos implementados con la finalidad de optimizar el problema de Orden Picking. Trabajamos con tres versiones de un modelo de optimización lineal, al cual sometimos a distintas iteraciones y evaluaciones, y también con dos metaheurísticas: Hill Climbing y Ant Colony Optimization.
+
+En cada no de los modelos describimos variables y parámetros. En el modelo de optimización lineal también describimos restricciones, y en cada metaheurística se presenta un pseudocódigo y una breve descripción.
+
 \startsection[title={Primera Versión: OPP con misiones}]
 
 Utilizamos el modelo completo y lo simplificamos, considerando las tareas relacionadas con el {\em batch} como parámetros y no como variables, que podrían ser obtenidas mediante metaheurísticas en un preprocesamiento por zonas. De esta forma, obtenemos el siguiente modelo:
