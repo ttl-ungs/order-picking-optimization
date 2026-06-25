@@ -76,7 +76,27 @@ class TestOPPModelZIMPL(OPPTestCase):
         build_dat_files(DAT_DIR, scenario_data)
 
         try:
-            status, var_values = solve_zpl(self.ZPL_PATH, dat_dir=DAT_DIR)
+            status, var_values = solve_zpl(self.ZPL_PATH, dat_dir=DAT_DIR, params={
+                "N": len(N),
+                "B": len(B),
+                "V": len(set(location_graph.get_vertices())),
+                "P": len(P),
+                "W_full": w1,
+                "W_ea_ta": w2,
+                "W_ea": gamma,
+                "W_ta": delta,
+                "B_time": 0.5,
+                "B_setup": 1,
+                "B_picking": 1,
+                "C_v": cap_vehicle,
+                "C_n":      C_n,
+                "Dd":       Dd,
+                "d_ij":     d_ij,
+                "S_i":      S_i,
+                "A_ni":     A_ni,
+                "Bn":       Bn,
+                "X_pb":     x
+            })
         except Exception as e:
             self.fail(f"ZPL solve failed: {e}")
 

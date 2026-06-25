@@ -27,14 +27,13 @@ set N := { read "../dat_files/data_N.dat" as "<1s>" comment "#" };
 # V : locaciones totales del almacen (incluye v_1 y v_f)
 set V := { read "../dat_files/data_V.dat" as "<1s>" comment "#" };
 
-# P : pickers  (presente en modelo v2; no figura en la especificacion nueva
-#     pero se conserva para no eliminar variables del modelo)
+# P : pickers
 set P := { read "../dat_files/data_P.dat" as "<1s>" comment "#" };
 
 # B : lotes de pedidos factibles
 set B := { read "../dat_files/data_B.dat" as "<1s>" comment "#" };
 
-# E : arcos validos del grafo de locaciones  [(i,j) con borde existente]
+# E : arcos validos del grafo de locaciones
 set E := { read "../dat_files/data_E.dat" as "<1s,2s>" comment "#" };
 
 
@@ -79,12 +78,9 @@ param S_i[V]    := read "../dat_files/service_time.dat" as "<1s> 2n" comment "#"
 param A_ni[N * V] := read "../dat_files/a_ni.dat"    as "<1s,2s> 3n" comment "#";
 
 # Bn[n,b] : 1 si el lote b contiene la orden n, 0 si no
-#           (parametro de entrada; equivale a y[n,b] del modelo v2 Python)
 param Bn[N * B] := read "../dat_files/Bn.dat"        as "<1s,2s> 3n" comment "#";
 
 # X_pb[p,b] : 1 si el lote b es asignado al picker p  (parametro de entrada)
-#             (presente en modelo v2; no figura en la especificacion nueva
-#              pero se conserva para mantener las variables u_pb y v_pb)
 param X_pb[P * B] := read "../dat_files/x_pb.dat"   as "<1s,2s> 3n" comment "#";
 
 # R_b[b] : numero de locaciones distintas requeridas por el lote b
@@ -138,8 +134,7 @@ var f_ijb[E * B] >= 0;
 # min  W_full * sum_{p,b} v_pb[p,b]
 #    + W_ea_ta * ( W_ea * sum_n ea_n[n]  +  W_ta * sum_n ta_n[n] )
 #
-# Nota: la FO del modelo v2 Python suma v[p,b] sobre pickers y lotes.
-# v_b se vincula a v_pb mediante las restricciones de completitud (ver abajo).
+# Nota: v_b se vincula a v_pb mediante las restricciones de completitud (ver abajo).
 ##############################################################################
 
 minimize obj:

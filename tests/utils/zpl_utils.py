@@ -1,30 +1,14 @@
 import os
 import subprocess
+import time
 
 import pyscipopt
 
+from dtos.opp.solve_result import SolveResult
+import models.utils.solve_registry as solve_registry
 
-def solve_zpl(zpl_path, dat_dir=None):
-    """
-  Compila el .zpl a .lp usando el binario `zimpl` y luego resuelve
-  el .lp con PySCIPOpt/SCIP.
 
-  Parameters
-  ----------
-  zpl_path : str
-      Ruta al archivo .zpl.
-  dat_dir : str, optional
-      Directorio donde estan los .dat que referencia el .zpl.
-      Si es None se usa el directorio del propio .zpl.
-
-  Returns
-  -------
-  status : str
-      Estado de SCIP: "optimal", "infeasible", etc.
-  var_values : dict
-      {nombre_variable: valor}  (vacio si no hay solucion factible).
-  """
-def solve_zpl(zpl_path, dat_dir=None):
+def solve_zpl(zpl_path, dat_dir=None, params=None):
     """
     Compila el .zpl a .lp usando el binario `zimpl` asegurando las extensiones
     para que SCIP mantenga los nombres de las variables intactos.
@@ -52,7 +36,10 @@ def solve_zpl(zpl_path, dat_dir=None):
     model = pyscipopt.Model()
     model.hideOutput()
     model.readProblem(lp_path)
+
+    t0 = time.time()
     model.optimize()
+    elapsed = time.time() - t0
 
     status = model.getStatus()
 
@@ -60,6 +47,16 @@ def solve_zpl(zpl_path, dat_dir=None):
     if status in ("optimal", "feasible"):
         for var in model.getVars():
             var_values[var.name] = model.getVal(var)
+
+    obj_val = model.getObjVal() if status in ("optimal", "feasible") else None
+
+    solve_result = SolveResult(
+        status=status,
+        output=var_values,
+        elapsed=elapsed,
+        params={"obj_val": obj_val, **(params or {})},
+    )
+    solve_registry.register(solve_result)
 
     return status, var_values
 
