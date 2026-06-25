@@ -89,10 +89,8 @@ param X_pb[P * B] := read "../dat_files/x_pb.dat"   as "<1s,2s> 3n" comment "#";
 
 # R_b[b] : numero de locaciones distintas requeridas por el lote b
 #          (parametro derivado; R_b = |{i in V\{v_1,v_f} : sum_n A_ni[n,i]*Bn[n,b] >= 1}|)
-param R_b[B] :=
-    forall <b> in B:
-        sum <i> in V with i != v_1 and i != v_f:
-            if (sum <n> in N: A_ni[n,i] * Bn[n,b]) >= 1 then 1 else 0 end;
+param R_b[<b> in B] :=
+    sum <i> in V with (i != v_1 and i != v_f and (sum <n> in N : A_ni[n,i] * Bn[n,b]) >= 1) : 1;
 
 
 ##############################################################################
@@ -122,10 +120,16 @@ var u_pb[P * B]     >= 0;
 var v_pb[P * B]     >= 0;
 
 # z_ijb[i,j,b] : 1 si el arco (i,j) esta incluido en el lote b  (binaria)
-var z_ijb[V * V * B]  binary;
+#var z_ijb[V * V * B]  binary;
+
+# z_ijb[i,j,b] : 1 si el arco valido (i,j) esta incluido en el lote b --> redefinimos la variable para que considere solo arcos válidos
+var z_ijb[E * B] binary;
 
 # f_ijb[i,j,b] : unidades que pasan por el arco (i,j) en el lote b  (continua >= 0)
-var f_ijb[V * V * B]  >= 0;
+#var f_ijb[V * V * B]  >= 0;
+
+# f_ijb[i,j,b] : unidades que pasan por el arco valido (i,j) en el lote b --> redefinimos la variable para que considere solo arcos válidos
+var f_ijb[E * B] >= 0;
 
 
 ##############################################################################
@@ -151,101 +155,93 @@ minimize obj:
 
 # (6) La ruta del lote b sale exactamente una vez del deposito
 subto start_from_depot:
-    forall <b> in B:
-        sum <j> in V with j != v_1:
-            z_ijb[v_1, j, b] == 1;
+  forall <b> in B:
+      sum <v_1, j> in E:
+          z_ijb[v_1, j, b] == 1;
 
 # (7) La ruta del lote b entra exactamente una vez al nodo final
 subto finish_at_end:
-    forall <b> in B:
-        sum <i> in V with i != v_f:
-            z_ijb[i, v_f, b] == 1;
+   forall <b> in B:
+       sum <i, v_f> in E:
+           z_ijb[i, v_f, b] == 1;
 
-# (8) No se puede volver al deposito
-subto cant_go_back_to_depot:
-    forall <b> in B:
-        sum <i> in V with i != v_1:
-            z_ijb[i, v_1, b] == 0;
+# (8) No se puede volver al deposito --> ya no hace falta por cómo están definidos los arcos
+#subto cant_go_back_to_depot:
+ #   forall <b> in B:
+  #      sum <i> in V with i != v_1:
+   #         z_ijb[i, v_1, b] == 0;
 
-# (9) No se puede salir del nodo final
-subto cant_move_from_end_node:
-    forall <b> in B:
-        sum <j> in V with j != v_f:
-            z_ijb[v_f, j, b] == 0;
+# (9) No se puede salir del nodo final --> ya no hace falta por cómo están definidos los arcos
+#subto cant_move_from_end_node:
+ #   forall <b> in B:
+  #      sum <j> in V with j != v_f:
+   #         z_ijb[v_f, j, b] == 0;
 
 # (10) Si una locacion es requerida por el lote, debe tener arco entrante
 subto force_visit_inflow:
-    forall <b> in B:
-        forall <j> in V with j != v_1 and j != v_f:
-            sum <i> in V with i != j:
-                z_ijb[i, j, b]
-            >= if (sum <n> in N: A_ni[n,j] * Bn[n,b]) >= 1 then 1 else 0 end;
+   forall <b> in B:
+       forall <j> in V with j != v_1 and j != v_f:
+           sum <i, j> in E:
+               z_ijb[i, j, b]
+           >= if (sum <n> in N: A_ni[n,j] * Bn[n,b]) >= 1 then 1 else 0 end;
 
 # (11) Si una locacion es requerida por el lote, debe tener arco saliente
 subto force_visit_outflow:
     forall <b> in B:
         forall <j> in V with j != v_1 and j != v_f:
-            sum <i> in V with i != j:
+            sum <j, i> in E:
                 z_ijb[j, i, b]
             >= if (sum <n> in N: A_ni[n,j] * Bn[n,b]) >= 1 then 1 else 0 end;
 
 # (12) Capacidad de articulos: f_ijb <= C_v * z_ijb
 subto articles_capacity:
     forall <b> in B:
-        forall <i> in V with i != v_f:
-            forall <j> in V with j != v_1:
-                f_ijb[i, j, b] - C_v * z_ijb[i, j, b] <= 0;
+        forall <i, j> in E:
+            f_ijb[i, j, b] - C_v * z_ijb[i, j, b] <= 0;
 
 # (13) Conservacion de flujo en la ruta (nodos intermedios)
 subto flow_conservation:
     forall <b> in B:
         forall <i> in V with i != v_1 and i != v_f:
-            (sum <g> in V with g != i: z_ijb[g, i, b])
-            - (sum <j> in V with j != i: z_ijb[i, j, b]) == 0;
+            (sum <g, i> in E: z_ijb[g, i, b])
+            - (sum <i, j> in E: z_ijb[i, j, b]) == 0;
 
 # (14) A lo sumo un arco de entrada por nodo (excepto deposito)
 subto one_input_arc_per_node:
     forall <b> in B:
         forall <i> in V with i != v_1:
-            sum <j> in V with j != i:
+            sum <j, i> in E:
                 z_ijb[j, i, b] <= 1;
 
 # (15) A lo sumo un arco de salida por nodo (excepto nodo final)
 subto one_output_arc_per_node:
     forall <b> in B:
         forall <i> in V with i != v_f:
-            sum <j> in V with j != i:
+            sum <i, j> in E:
                 z_ijb[i, j, b] <= 1;
 
 # (16a) Gavish-Graves: flujo total desde el deposito == R_b[b]
 subto f_depot_source:
     forall <b> in B:
-        sum <j> in V with j != v_1:
+        sum <v_1, j> in E:
             f_ijb[v_1, j, b] == R_b[b];
 
 # (16b) Gavish-Graves: balance de flujo en nodos intermedios
-# inflow - outflow == 1 si locacion requerida, 0 si no
 subto f_flow_conservation:
     forall <b> in B:
         forall <i> in V with i != v_1 and i != v_f:
-            (sum <g> in V with g != v_f: f_ijb[g, i, b])
-            - (sum <j> in V with j != v_1: f_ijb[i, j, b])
+            (sum <g, i> in E: f_ijb[g, i, b])
+            - (sum <i, j> in E: f_ijb[i, j, b])
             == if (sum <n> in N: A_ni[n,i] * Bn[n,b]) >= 1 then 1 else 0 end;
 
-# (17) Sin loops: z_ijb[i,i,b] = 0  (i != v_1)
-subto no_loops:
-    forall <b> in B:
-        forall <i> in V with i != v_1:
-            z_ijb[i, i, b] == 0;
+# (17) Sin loops: z_ijb[i,i,b] = 0  (i != v_1) --> ya no hace falta por cómo están definidos los arcos
+#subto no_loops:
+ #   forall <b> in B:
+  #      forall <i> in V with i != v_1:
+   #         z_ijb[i, i, b] == 0;
 
 # (18) Tiempo de ejecucion del lote
-# t_exec_b[b] >= B_setup
-#              + B_picking * sum_n C_n[n] * Bn[n,b]
-#              + B_time    * sum_{(i,j) in E, i!=v_f, j!=v_1} d_ij[i,j] * z_ijb[i,j,b]
-#              + sum_{i in V \ {v_1,v_f}} S_i[i] * sum_j z_ijb[i,j,b]
-#
-# El termino S_i se agrega respecto al modelo v2 original, siguiendo la
-# especificacion de parametros del equipo (equivalente a la v3 en models.pdf).
+# El termino S_i se agrega respecto al modelo v2 original
 subto valid_execution_time:
     forall <b> in B:
         t_exec_b[b] >=
@@ -253,8 +249,8 @@ subto valid_execution_time:
             + B_picking * (sum <n> in N: C_n[n] * Bn[n,b])
             + B_time    * (sum <i,j> in E with i != v_f and j != v_1:
                                d_ij[i,j] * z_ijb[i,j,b])
-            + (sum <i> in V with i != v_1 and i != v_f:
-                   S_i[i] * (sum <j> in V with j != i: z_ijb[i,j,b]));
+             + (sum <i> in V with i != v_1 and i != v_f:
+                   S_i[i] * (sum <i, j> in E: z_ijb[i, j, b]));
 
 # (19) t_exec_b acota u_pb por picker
 # t_exec_b[b] - M * (1 - X_pb[p,b]) <= u_pb[p,b]
@@ -287,13 +283,13 @@ subto earliness_definition:
     forall <p,b,n> in P * B * N:
         Dd[n] - v_pb[p,b] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ea_n[n];
 
-# (24) Capacidad del lote: sum_n C_n[n] * Bn[n,b] <= C_v
-subto batch_capacity:
-    forall <b> in B:
-        sum <n> in N: C_n[n] * Bn[n,b] <= C_v;
+# (24) Capacidad del lote: sum_n C_n[n] * Bn[n,b] <= C_v --> comentada porque no tiene que ver con nada que optimice el modelo, tiene que haber una validación en el dto
+#subto batch_capacity:
+ #   forall <b> in B:
+  #      sum <n> in N: C_n[n] * Bn[n,b] <= C_v; #!
 
-# (25) Solo arcos validos del grafo: z_ijb = 0 si (i,j) not in E -------
-subto only_valid_edges:
-    forall <b> in B:
-        forall <i,j> in V * V with (i,j) not in E:
-            z_ijb[i, j, b] == 0;
+# (25) Solo arcos validos del grafo: z_ijb = 0 si (i,j) not in E --> ya no hace falta por cómo están definidos los arcos
+#subto only_valid_edges:
+ #   forall <b> in B:
+  #      forall <i,j> in V * V with (i,j) not in E:
+   #         z_ijb[i, j, b] == 0;

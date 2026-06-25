@@ -24,6 +24,11 @@ def solve_zpl(zpl_path, dat_dir=None):
   var_values : dict
       {nombre_variable: valor}  (vacio si no hay solucion factible).
   """
+def solve_zpl(zpl_path, dat_dir=None):
+    """
+    Compila el .zpl a .lp usando el binario `zimpl` asegurando las extensiones
+    para que SCIP mantenga los nombres de las variables intactos.
+    """
     if dat_dir is None:
         dat_dir = os.path.dirname(zpl_path)
 
@@ -32,7 +37,7 @@ def solve_zpl(zpl_path, dat_dir=None):
     # --- Paso 1: compilar .zpl → .lp con zimpl ----------------------------
     result = subprocess.run(
         ["zimpl", "-t", "lp", "-o", lp_path, zpl_path],
-        cwd=dat_dir,          # los .dat se buscan relativos a este directorio
+        cwd=dat_dir,
         capture_output=True,
         text=True,
     )
@@ -46,7 +51,7 @@ def solve_zpl(zpl_path, dat_dir=None):
     # --- Paso 2: resolver el .lp con PySCIPOpt ----------------------------
     model = pyscipopt.Model()
     model.hideOutput()
-    model.readProblem(lp_path)   # SCIP lee .lp sin necesitar el plugin ZIMPL
+    model.readProblem(lp_path)
     model.optimize()
 
     status = model.getStatus()
@@ -67,8 +72,8 @@ def extract_active_arcs(var_values, B):
     """
     active = {b: [] for b in B}
     for name, val in var_values.items():
-        if name.startswith("z_ijb#") and round(val) == 1:
-            parts = name.split("#")
+        if name.startswith("z_ijb$") and round(val) == 1:
+            parts = name.split("$")
             if len(parts) == 4:
                 _, i, j, b = parts
                 if b in active:
