@@ -34,7 +34,7 @@ def solve_zpl(zpl_path, dat_dir=None):
 
     lp_path = os.path.join(dat_dir, "model.lp")
 
-    # --- Paso 1: compilar .zpl → .lp con zimpl ----------------------------
+    # Paso 1: compilar .zpl → .lp con zimpl
     result = subprocess.run(
         ["zimpl", "-t", "lp", "-o", lp_path, zpl_path],
         cwd=dat_dir,
@@ -48,7 +48,7 @@ def solve_zpl(zpl_path, dat_dir=None):
             f"stderr: {result.stderr}"
         )
 
-    # --- Paso 2: resolver el .lp con PySCIPOpt ----------------------------
+    # Paso 2: resolver el .lp con PySCIPOpt
     model = pyscipopt.Model()
     model.hideOutput()
     model.readProblem(lp_path)

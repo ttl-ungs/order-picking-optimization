@@ -5,32 +5,25 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
+from tests.test_runner import TestRunner
+
+from tests.test_config import TEST_TIMEOUT_MINUTES, WRITE_RESULTS_CSV
+
 if __name__ == "__main__":
-    loader = unittest.TestLoader()
-    tests_dir = os.path.join(os.path.dirname(__file__), "tests", "normal")
-    suite = loader.discover(start_dir=tests_dir, pattern="test_*.py")
+    runner = TestRunner(
+        timeout_minutes=TEST_TIMEOUT_MINUTES,
+        write_csv=WRITE_RESULTS_CSV,
+        model_name="opp_v2_zpl",
+        test_type="normal",
+    )
 
-    runner = unittest.TextTestRunner(verbosity=2)
-    result = runner.run(suite)
+    suite = unittest.TestLoader().discover(
+        start_dir=os.path.join(os.path.dirname(__file__), "tests", "normal"),
+        pattern="test_*.py",
+    )
+    test_ids = TestRunner.collect_test_ids(suite)
 
-    print("\n" + "=" * 60)
-    print("FINAL SUMMARY (NORMAL TESTS)")
-    print("=" * 60)
-    print(f"Ran: {result.testsRun}")
-    print(f"Failures: {len(result.failures)}")
-    print(f"Errors: {len(result.errors)}")
+    results = runner.run(test_ids)
+    runner.print_summary(results, "NORMAL TESTS")
 
-    if result.failures:
-        print("\nFailed tests:")
-        for test, _ in result.failures:
-            print(f" - {test.id()}")
-
-    if result.errors:
-        print("\nTests with errors:")
-        for test, _ in result.errors:
-            print(f" - {test.id()}")
-
-    if not result.failures and not result.errors:
-        print("\nAll tests passed.")
-
-    sys.exit(0 if result.wasSuccessful() else 1)
+    sys.exit(0 if runner.succeeded(results) else 1)
