@@ -2,10 +2,6 @@
 # OPP Model V2 - ZIMPL Formulation
 # Basado en: OPPModelV2 (opp_model_v2.py) y models.pdf (Segunda Version)
 #
-# Nomenclatura: sigue los nombres definidos en la especificacion de variables
-# del equipo. Las variables/parametros del modelo v2 que no figuran en dicha
-# especificacion se nombran siguiendo el mismo estilo snake_case/mayusculas.
-#
 # Supuestos LP (del PDF "Supuestos de la Programacion Lineal"):
 #   Proporcionalidad : cada termino de la FO y restricciones es lineal en sus vars.
 #   Aditividad       : FO y restricciones son combinaciones lineales (sin productos
