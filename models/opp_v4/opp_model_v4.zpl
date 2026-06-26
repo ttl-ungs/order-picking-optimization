@@ -272,14 +272,20 @@ subto assign_exactly_one_picker:
     forall <b> in B:
         sum <p> in P: X_pb[p,b] == 1;
 
-# (A2) Secuenciamiento sin solapamiento (Big-M)
-# Si los lotes 'b' y 'k' son asignados al mismo picker 'p', uno debe realizarse después del otro.
+# Variable auxiliar para secuenciación (solo definida para pares únicos b < k)
+var Z_bk[<b,k> in B * B with b < k] binary;
+
+# Parámetro Big-M local gigante para evitar cortes de presolve en variables continuas
+param M_seq := 100000;
+
+# (A2) Secuenciamiento sin solapamiento
+# Si ambos lotes se asignan al mismo picker, uno debe ejecutarse después del otro.
 subto non_overlap_1:
     forall <p> in P:
         forall <b, k> in B * B with b < k:
-            v_pb[p,k] >= v_pb[p,b] + t_exec_b[k] - M * (3 - X_pb[p,b] - X_pb[p,k] - Y_bk[b,k]);
+            v_pb[p,k] >= v_pb[p,b] + t_exec_b[k] - M_seq * (3 - X_pb[p,b] - X_pb[p,k] - Z_bk[b,k]);
 
 subto non_overlap_2:
     forall <p> in P:
         forall <b, k> in B * B with b < k:
-            v_pb[p,b] >= v_pb[p,k] + t_exec_b[b] - M * (2 - X_pb[p,b] - X_pb[p,k] + Y_bk[b,k]);
+            v_pb[p,b] >= v_pb[p,k] + t_exec_b[b] - M_seq * (2 - X_pb[p,b] - X_pb[p,k] + Z_bk[b,k]);

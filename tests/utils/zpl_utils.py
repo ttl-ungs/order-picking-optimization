@@ -1,12 +1,9 @@
 import os
 import subprocess
 import time
-
 import pyscipopt
-
 from dtos.opp.solve_result import SolveResult
 import models.utils.solve_registry as solve_registry
-
 
 def solve_zpl(zpl_path, dat_dir=None, params=None):
     """
@@ -16,15 +13,18 @@ def solve_zpl(zpl_path, dat_dir=None, params=None):
     if dat_dir is None:
         dat_dir = os.path.dirname(zpl_path)
 
-    lp_path = os.path.join(dat_dir, "model.lp")
+    out_base = os.path.join(dat_dir, "model")
+
+    lp_path = f"{out_base}.lp"
 
     # Paso 1: compilar .zpl → .lp con zimpl
     result = subprocess.run(
-        ["zimpl", "-t", "lp", "-o", lp_path, zpl_path],
+        ["zimpl", "-t", "lp", "-o", out_base, zpl_path],
         cwd=dat_dir,
         capture_output=True,
         text=True,
     )
+
     if result.returncode != 0:
         raise RuntimeError(
             f"ZIMPL compilation failed:\n"
@@ -69,7 +69,7 @@ def extract_active_arcs(var_values, B):
     """
     active = {b: [] for b in B}
     for name, val in var_values.items():
-        if name.startswith("z_ijb$") and round(val) == 1:
+        if name.lower().startswith("z_ijb$") and round(val) == 1:
             parts = name.split("$")
             if len(parts) == 4:
                 _, i, j, b = parts
