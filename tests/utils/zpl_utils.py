@@ -7,14 +7,13 @@ import models.utils.solve_registry as solve_registry
 
 def solve_zpl(zpl_path, dat_dir=None, params=None):
     """
-    Compila el .zpl a .lp usando el binario `zimpl` asegurando las extensiones
-    para que SCIP mantenga los nombres de las variables intactos.
+    Compila el .zpl a .lp usando el binario `zimpl` y lo resuelve con SCIP.
+    Inyecta automáticamente las variables > 0 en params para los reportes CSV.
     """
     if dat_dir is None:
         dat_dir = os.path.dirname(zpl_path)
 
     out_base = os.path.join(dat_dir, "model")
-
     lp_path = f"{out_base}.lp"
 
     # Paso 1: compilar .zpl → .lp con zimpl
@@ -24,7 +23,6 @@ def solve_zpl(zpl_path, dat_dir=None, params=None):
         capture_output=True,
         text=True,
     )
-
     if result.returncode != 0:
         raise RuntimeError(
             f"ZIMPL compilation failed:\n"
@@ -42,11 +40,25 @@ def solve_zpl(zpl_path, dat_dir=None, params=None):
     elapsed = time.time() - t0
 
     status = model.getStatus()
-
     var_values = {}
+    debug_string = ""
+
     if status in ("optimal", "feasible"):
+        debug_list = []
         for var in model.getVars():
-            var_values[var.name] = model.getVal(var)
+            val = model.getVal(var)
+            var_values[var.name] = val
+            if val > 0.01:
+                debug_list.append(f"{var.name}: {val}")
+        debug_string = " | ".join(debug_list)
+
+    elif status == "infeasible":
+        debug_string = "INFEASIBLE"
+
+    if params is None:
+        params = {}
+
+    params["debug_output"] = debug_string
 
     obj_val = model.getObjVal() if status in ("optimal", "feasible") else None
 
@@ -54,7 +66,7 @@ def solve_zpl(zpl_path, dat_dir=None, params=None):
         status=status,
         output=var_values,
         elapsed=elapsed,
-        params={"obj_val": obj_val, **(params or {})},
+        params={"obj_val": obj_val, **params},
     )
     solve_registry.register(solve_result)
 

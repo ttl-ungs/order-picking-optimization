@@ -100,19 +100,7 @@ class TestOPPModelZIMPL(OPPTestCase):
             f"The model did not find a solution. Status: {status}",
         )
 
-        # =========================================================
-        # DEBUG: Imprimir todas las variables > 0
-        # =========================================================
-        print("\n" + "="*50)
-        print("VARIABLES DEVUELTAS POR EL SOLVER (> 0):")
-        for key, val in var_values.items():
-            if val > 0.01:  # Filtramos los ceros para no saturar la consola
-                print(f"{key}: {val}")
-        print("="*50 + "\n")
-
-        # =========================================================
         # NUEVAS VALIDACIONES
-        # =========================================================
         assignments = {b: 0 for b in B}
         picker_workload = {p: 0 for p in P}
 
