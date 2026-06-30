@@ -1,23 +1,16 @@
-import os
 import unittest
 
 from models.utils.dat_files_builder import build_dat_files
 from models.base.opp_location_graph import OPPLocationGraph
 from tests.opp.tests.opp_test_case import OPPTestCase
+from tests.opp_v4.config import PROJECT_ROOT, DAT_DIR, ZPL_PATH
 from tests.opp_v4.scenarios.normal.scenario_01 import basic_two_orders_capacity_limit
 from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
-
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
-DAT_DIR = os.path.join(PROJECT_ROOT, "models", "dat_files")
-
 
 class TestOPPModelZIMPL(OPPTestCase):
     """
     Test 1 (ZIMPL): Basic. 4 vertices, 5 edges, 2 orders, 2 batches.
     """
-
-    ZPL_PATH = os.path.join(PROJECT_ROOT, "models", "opp_v4", "opp_model_v4.zpl")
-
     def test_basic_two_orders_capacity_limit(self):
         V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle = (
             basic_two_orders_capacity_limit()
@@ -72,7 +65,7 @@ class TestOPPModelZIMPL(OPPTestCase):
         build_dat_files(DAT_DIR, scenario_data)
 
         try:
-            status, var_values = solve_zpl(self.ZPL_PATH, dat_dir=DAT_DIR, params={
+            status, var_values = solve_zpl(ZPL_PATH, dat_dir=DAT_DIR, params={
                 "N": len(N),
                 "B": len(B),
                 "V": len(set(location_graph.get_vertices())),

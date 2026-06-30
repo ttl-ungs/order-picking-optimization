@@ -25,5 +25,4 @@ def basic_two_orders_capacity_limit():
 
     cap_vehicle = 5.0
 
-    # Retornamos todo menos la variable "x"
     return V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle
