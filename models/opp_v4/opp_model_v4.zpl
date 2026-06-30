@@ -154,14 +154,14 @@ minimize obj:
 # (6) La ruta del lote b sale exactamente una vez del deposito
 subto start_from_depot:
   forall <b> in B:
-      sum <v_1, j> in E:
-          z_ijb[v_1, j, b] == 1;
+      sum <i, j> in E with i == v_1:
+          z_ijb[i, j, b] == 1;
 
 # (7) La ruta del lote b entra exactamente una vez al nodo final
 subto finish_at_end:
    forall <b> in B:
-       sum <i, v_f> in E:
-           z_ijb[i, v_f, b] == 1;
+       sum <i, j> in E with j == v_f:
+           z_ijb[i, j, b] == 1;
 
 # (10) Si una locacion es requerida por el lote, debe tener arco entrante
 subto force_visit_inflow:
@@ -179,11 +179,11 @@ subto force_visit_outflow:
                 z_ijb[j, i, b]
             >= if (sum <n> in N: A_ni[n,j] * Bn[n,b]) >= 1 then 1 else 0 end;
 
-# (12) Capacidad de articulos: f_ijb <= C_v * z_ijb
-subto articles_capacity:
+# (12) Cota de ruteo MTZ
+subto subtour_elimination_bound:
     forall <b> in B:
         forall <i, j> in E:
-            f_ijb[i, j, b] - C_v * z_ijb[i, j, b] <= 0;
+            f_ijb[i, j, b] - R_b[b] * z_ijb[i, j, b] <= 0;
 
 # (13) Conservacion de flujo en la ruta (nodos intermedios)
 subto flow_conservation:
@@ -209,8 +209,8 @@ subto one_output_arc_per_node:
 # (16a) Gavish-Graves: flujo total desde el deposito == R_b[b]
 subto f_depot_source:
     forall <b> in B:
-        sum <v_1, j> in E:
-            f_ijb[v_1, j, b] == R_b[b];
+        sum <i, j> in E with i == v_1:
+            f_ijb[i, j, b] == R_b[b];
 
 # (16b) Gavish-Graves: balance de flujo en nodos intermedios
 subto f_flow_conservation:
