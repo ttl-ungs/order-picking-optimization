@@ -1,5 +1,9 @@
 from models.base.opp_location_graph import OPPLocationGraph
 
+"""
+   Scenario for test 1
+"""
+
 
 def basic_two_orders_capacity_limit():
     V = {"L1", "L2", "L3", "L4"}
@@ -25,4 +29,8 @@ def basic_two_orders_capacity_limit():
 
     cap_vehicle = 5.0
 
-    return V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle
+    x = {(p, b): 0 for p in P for b in B}
+    x[("P1", "B1")] = 1
+    x[("P2", "B2")] = 1
+
+    return V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x

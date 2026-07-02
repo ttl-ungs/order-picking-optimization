@@ -30,6 +30,10 @@ def two_orders_two_aisles():
     gamma = 1.0
     delta = 5.0
 
+    x = {(p, b): 0 for p in P for b in B}
+    x[("P1", "B1")] = 1
+    x[("P2", "B2")] = 1
+
     cap_vehicle = 5.0
 
-    return V, P, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle
+    return V, P, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle, x
