@@ -15,7 +15,7 @@ class TestOPPModel(OPPTestCase):
     """
 
     def test_two_orders_two_aisles_one_picking_point_per_order(self):
-        V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle = (
+        V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, _x = (
             two_orders_two_aisles()
         )
 

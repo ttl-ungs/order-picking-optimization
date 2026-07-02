@@ -14,7 +14,7 @@ class TestOPPModelZIMPL(OPPTestCase):
     """
 
     def test_basic_two_orders_capacity_limit(self):
-        V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle = (
+        V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, _x = (
             basic_two_orders_capacity_limit()
         )
 
