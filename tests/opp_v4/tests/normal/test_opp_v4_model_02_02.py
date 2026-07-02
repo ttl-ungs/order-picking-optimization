@@ -7,11 +7,12 @@ from tests.opp_v4.config import DAT_DIR, ZPL_PATH
 from tests.opp_v4.scenarios.normal.scenario_02 import two_orders_two_aisles
 from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
 
+
 class TestOPPModel(OPPTestCase):
     """
-     Test 2.2: Medium. 8 vertex, 8 edges, 2 orders, 2 missions.
-     Purpose: To test the functionality of the model when we have few vertex assigned to orders.
-     """
+    Test 2.2: Medium. 8 vertex, 8 edges, 2 orders, 2 missions.
+    Purpose: To test the functionality of the model when we have few vertex assigned to orders.
+    """
 
     def test_two_orders_two_aisles_one_picking_point_per_order(self):
         V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle = (
@@ -47,53 +48,57 @@ class TestOPPModel(OPPTestCase):
                     d_ij[(i, j)] = location_graph.get_distance(i, j)
 
         scenario_data = {
-            "N":        N,
-            "V":        set(location_graph.get_vertices()),
-            "P":        P,
-            "B":        B,
-            "E":        E,
-            "depot":    location_graph.get_depot(),
-            "final":    location_graph.get_final(),
-            "W_full":   w1,
-            "W_ea_ta":  w2,
-            "W_ea":     gamma,
-            "W_ta":     delta,
-            "B_time":   B_time,
-            "B_setup":  B_setup,
-            "B_picking":B_picking,
-            "C_v":      cap_vehicle,
-            "M":        M,
-            "C_n":      C_n,
-            "Dd":       Dd,
-            "d_ij":     d_ij,
-            "S_i":      S_i,
-            "A_ni":     A_ni,
-            "Bn":       Bn
+            "N": N,
+            "V": set(location_graph.get_vertices()),
+            "P": P,
+            "B": B,
+            "E": E,
+            "depot": location_graph.get_depot(),
+            "final": location_graph.get_final(),
+            "W_full": w1,
+            "W_ea_ta": w2,
+            "W_ea": gamma,
+            "W_ta": delta,
+            "B_time": B_time,
+            "B_setup": B_setup,
+            "B_picking": B_picking,
+            "C_v": cap_vehicle,
+            "M": M,
+            "C_n": C_n,
+            "Dd": Dd,
+            "d_ij": d_ij,
+            "S_i": S_i,
+            "A_ni": A_ni,
+            "Bn": Bn,
         }
 
         build_dat_files(DAT_DIR, scenario_data)
 
         try:
-            status, var_values = solve_zpl(ZPL_PATH, dat_dir=DAT_DIR, params={
-                "N": len(N),
-                "B": len(B),
-                "V": len(set(location_graph.get_vertices())),
-                "P": len(P),
-                "W_full": w1,
-                "W_ea_ta": w2,
-                "W_ea": gamma,
-                "W_ta": delta,
-                "B_time": B_time,
-                "B_setup": B_setup,
-                "B_picking": B_picking,
-                "C_v": cap_vehicle,
-                "C_n":      C_n,
-                "Dd":       Dd,
-                "d_ij":     d_ij,
-                "S_i":      S_i,
-                "A_ni":     A_ni,
-                "Bn":       Bn
-            })
+            status, var_values = solve_zpl(
+                ZPL_PATH,
+                dat_dir=DAT_DIR,
+                params={
+                    "N": len(N),
+                    "B": len(B),
+                    "V": len(set(location_graph.get_vertices())),
+                    "P": len(P),
+                    "W_full": w1,
+                    "W_ea_ta": w2,
+                    "W_ea": gamma,
+                    "W_ta": delta,
+                    "B_time": B_time,
+                    "B_setup": B_setup,
+                    "B_picking": B_picking,
+                    "C_v": cap_vehicle,
+                    "C_n": C_n,
+                    "Dd": Dd,
+                    "d_ij": d_ij,
+                    "S_i": S_i,
+                    "A_ni": A_ni,
+                    "Bn": Bn,
+                },
+            )
         except Exception as e:
             self.fail(f"Model execution failed: {e}")
 
@@ -103,7 +108,8 @@ class TestOPPModel(OPPTestCase):
         )
 
         self.assertIn(
-            status, ("optimal", "feasible", "infeasible", "unbounded"),
+            status,
+            ("optimal", "feasible", "infeasible", "unbounded"),
             f"The model did not find a solution. Status: {status}",
         )
 
@@ -124,21 +130,22 @@ class TestOPPModel(OPPTestCase):
         # Cada lote debe tener asignado exactamente un picker
         for b in B:
             self.assertEqual(
-                assignments[b], 1,
-                f"Batch {b} does not meet the unique assignment constraint (Assigned to {assignments[b]} pickers)."
+                assignments[b],
+                1,
+                f"Batch {b} does not meet the unique assignment constraint (Assigned to {assignments[b]} pickers).",
             )
 
         # Deberían paralelizar el trabajo
         for p in P:
             self.assertEqual(
-                picker_workload[p], 1,
-                f"The picker {p} was expected to process exactly 1 batch to parallelize the load."
+                picker_workload[p],
+                1,
+                f"The picker {p} was expected to process exactly 1 batch to parallelize the load.",
             )
 
-
         for i in location_graph.get_vertices():
-                if i not in expected_graph.get_vertices():
-                    expected_graph.add_vertex(i, "picking")
+            if i not in expected_graph.get_vertices():
+                expected_graph.add_vertex(i, "picking")
 
         expected_graph.add_edge("L1", "L2", location_graph.get_distance("L1", "L2"))
         expected_graph.add_edge("L2", "L3", location_graph.get_distance("L2", "L3"))
@@ -163,6 +170,6 @@ class TestOPPModel(OPPTestCase):
 
         self.assertEqual(output_graph, expected_graph)
 
+
 if __name__ == "__main__":
     unittest.main()
-

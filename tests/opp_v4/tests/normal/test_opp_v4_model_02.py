@@ -7,8 +7,8 @@ from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
 
 from tests.opp_v4.scenarios.normal.scenario_02 import two_orders_two_aisles
 
-class TestOPPModelZIMPL(OPPTestCase):
 
+class TestOPPModelZIMPL(OPPTestCase):
     """
     Test 2.1: Medium. 8 vertex, 8 edges, 2 orders, 2 missions.
     Purpose: To test the functionality of the model when it has to follow a route.
@@ -42,11 +42,11 @@ class TestOPPModelZIMPL(OPPTestCase):
 
         due_date = {"O1": 15.0, "O2": 15.0}
         # Adaptación de variables para el formato ZIMPL V4
-        A_ni = a if 'a' in locals() else {} 
-        Bn = y if 'y' in locals() else {}
-        C_n = cap_n if 'cap_n' in locals() else {}
-        Dd = due_date if 'due_date' in locals() else {}
-        
+        A_ni = a if "a" in locals() else {}
+        Bn = y if "y" in locals() else {}
+        C_n = cap_n if "cap_n" in locals() else {}
+        Dd = due_date if "due_date" in locals() else {}
+
         # Tiempo de servicio por defecto (si V2 no lo tenía explícito)
         S_i = {v: 0.0 for v in V}
 
@@ -60,58 +60,84 @@ class TestOPPModelZIMPL(OPPTestCase):
                     d_ij[(i, j)] = location_graph.get_distance(i, j)
 
         scenario_data = {
-            "N":        N,
-            "V":        set(location_graph.get_vertices()),
-            "P":        P,
-            "B":        B,
-            "E":        E,
-            "depot":    location_graph.get_depot(),
-            "final":    location_graph.get_final(),
-            "W_full":   w1,
-            "W_ea_ta":  w2,
-            "W_ea":     gamma,
-            "W_ta":     delta,
-            "B_time":   0.5,
-            "B_setup":  1.0,
-            "B_picking":1.0,
-            "C_v":      cap_vehicle,
-            "M":        10000.0,
-            "C_n":      C_n,
-            "Dd":       Dd,
-            "d_ij":     d_ij,
-            "S_i":      S_i,
-            "A_ni":     A_ni,
-            "Bn":       Bn
+            "N": N,
+            "V": set(location_graph.get_vertices()),
+            "P": P,
+            "B": B,
+            "E": E,
+            "depot": location_graph.get_depot(),
+            "final": location_graph.get_final(),
+            "W_full": w1,
+            "W_ea_ta": w2,
+            "W_ea": gamma,
+            "W_ta": delta,
+            "B_time": 0.5,
+            "B_setup": 1.0,
+            "B_picking": 1.0,
+            "C_v": cap_vehicle,
+            "M": 10000.0,
+            "C_n": C_n,
+            "Dd": Dd,
+            "d_ij": d_ij,
+            "S_i": S_i,
+            "A_ni": A_ni,
+            "Bn": Bn,
         }
 
         build_dat_files(DAT_DIR, scenario_data)
 
         try:
-            status, var_values = solve_zpl(ZPL_PATH, dat_dir=DAT_DIR, params={
-                "N": len(N), "B": len(B), "V": len(set(location_graph.get_vertices())), "P": len(P),
-                "W_full": w1, "W_ea_ta": w2, "W_ea": gamma, "W_ta": delta,
-                "B_time": 0.5, "B_setup": 1.0, "B_picking": 1.0,
-                "C_v": cap_vehicle, "C_n": C_n, "Dd": Dd, "d_ij": d_ij,
-                "S_i": S_i, "A_ni": A_ni, "Bn": Bn
-            })
+            status, var_values = solve_zpl(
+                ZPL_PATH,
+                dat_dir=DAT_DIR,
+                params={
+                    "N": len(N),
+                    "B": len(B),
+                    "V": len(set(location_graph.get_vertices())),
+                    "P": len(P),
+                    "W_full": w1,
+                    "W_ea_ta": w2,
+                    "W_ea": gamma,
+                    "W_ta": delta,
+                    "B_time": 0.5,
+                    "B_setup": 1.0,
+                    "B_picking": 1.0,
+                    "C_v": cap_vehicle,
+                    "C_n": C_n,
+                    "Dd": Dd,
+                    "d_ij": d_ij,
+                    "S_i": S_i,
+                    "A_ni": A_ni,
+                    "Bn": Bn,
+                },
+            )
         except Exception as e:
             self.fail(f"ZPL solve failed: {e}")
 
-        self.assertIn(status, ("optimal", "feasible"), "El modelo no encontró una solución.")
-        
+        self.assertIn(
+            status, ("optimal", "feasible"), "El modelo no encontró una solución."
+        )
+
         # Aserción Genérica de V4: Cada lote se asigna a 1 picker
         assignments = {b: 0 for b in B}
         for key, val in var_values.items():
             if key.lower().startswith("x_pb") and val > 0.5:
                 for b in B:
-                    if b in key: assignments[b] += 1
-                    
+                    if b in key:
+                        assignments[b] += 1
+
         for b in B:
-            self.assertEqual(assignments[b], 1, f"El lote {b} no fue asignado exactamente a un picker.")
-            
+            self.assertEqual(
+                assignments[b],
+                1,
+                f"El lote {b} no fue asignado exactamente a un picker.",
+            )
+
         # Extracción de grafo resultante
         active_arcs = extract_active_arcs(var_values, B)
-        output_graph = OPPLocationGraph(depot_node=location_graph.get_depot(), final_node=location_graph.get_final())
+        output_graph = OPPLocationGraph(
+            depot_node=location_graph.get_depot(), final_node=location_graph.get_final()
+        )
         for i in location_graph.get_vertices():
             if i not in output_graph.get_vertices():
                 output_graph.add_vertex(i, "picking")
@@ -144,8 +170,8 @@ class TestOPPModelZIMPL(OPPTestCase):
             "The model did not find a solution.",
         )
 
-        
         self.assertEqual(output_graph, expected_graph)
+
 
 if __name__ == "__main__":
     unittest.main()

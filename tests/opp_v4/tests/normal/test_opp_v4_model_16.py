@@ -72,7 +72,7 @@ class TestOPPModelZIMPL(OPPTestCase):
         A_ni = a if 'a' in locals() else {} 
         Bn = y if 'y' in locals() else {}
         C_n = cap_n if 'cap_n' in locals() else {}
-        Dd = due_date if 'due_date' in locals() else {}
+        Dd = due_date if 'due_date' in locals() else {n: 0.0 for n in N}
         
         # Tiempo de servicio por defecto (si V2 no lo tenía explícito)
         S_i = {v: 0.0 for v in V}
