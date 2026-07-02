@@ -1,14 +1,18 @@
 import unittest
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
+
 
 from models.utils.dat_files_builder import build_dat_files
 from models.base.opp_location_graph import OPPLocationGraph
-from tests.opp.tests.opp_test_case import OPPTestCase
+from tests.opp_v4.tests.opp_test_case_v4 import OPPTestCaseV4
 from tests.opp_v4.config import PROJECT_ROOT, DAT_DIR, ZPL_PATH
 from tests.opp_v4.scenarios.normal.scenario_01 import basic_two_orders_capacity_limit
 from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
 
 
-class TestOPPModelZIMPL(OPPTestCase):
+class TestOPPModelZIMPL(OPPTestCaseV4):
     """
     Test 1 (ZIMPL): Basic. 4 vertices, 5 edges, 2 orders, 2 batches.
     """
@@ -157,6 +161,12 @@ class TestOPPModelZIMPL(OPPTestCase):
                     output_graph.add_edge(i, j, location_graph.get_distance(i, j))
 
         self.assertEqual(output_graph, expected_graph)
+        # --- NUEVAS VALIDACIONES INTELIGENTES V4 ---
+        if len(P) > 1 and len(B) > 1:
+            self.assert_workload_balance(var_values, P, B, max_difference=1)
+            
+        self.assert_no_time_overlap(var_values, P, B)
+
 
 
 if __name__ == "__main__":

@@ -137,6 +137,7 @@ class TestRunner:
         print(f"FINAL SUMMARY ({label})")
         print("=" * 60)
         print(f"Ran: {len(results)}")
+        print(f"Passed: {len(results) - len(failures) - len(timeouts)}")
         print(f"Failures: {len(failures)}")
         print(f"Errors: {len(errors)}")
         print(f"Timeouts: {len(timeouts)}")

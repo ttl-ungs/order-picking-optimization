@@ -6,14 +6,14 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
 )
 
-from tests.opp.tests.opp_test_case import OPPTestCase
+from tests.opp_v4.tests.opp_test_case_v4 import OPPTestCaseV4
 from tests.opp_v4.scenarios.normal.single_order_params import single_order_params
 from models.utils.dat_files_builder import build_dat_files
 from tests.opp_v4.config import DAT_DIR, ZPL_PATH
 from tests.utils.zpl_utils import solve_zpl
 
 
-class TestOPPModelZIMPL(OPPTestCase):
+class TestOPPModelZIMPL(OPPTestCaseV4):
 
     def extract_tardiness_earliness(self, var_values, order):
         ta = 0.0

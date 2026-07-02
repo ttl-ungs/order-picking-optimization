@@ -6,7 +6,7 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
 )
 
-from tests.opp.tests.opp_test_case import OPPTestCase
+from tests.opp_v4.tests.opp_test_case_v4 import OPPTestCaseV4
 from tests.opp_v4.scenarios.normal.scenario_13 import (
     bridge_graph_disconnected,
     bridge_graph_two_pickers_four_batches,
@@ -16,7 +16,7 @@ from tests.opp_v4.config import DAT_DIR, ZPL_PATH
 from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
 
 
-class TestOPPModelBridgeZIMPL(OPPTestCase):
+class TestOPPModelBridgeZIMPL(OPPTestCaseV4):
     def _solve_bridge_zpl(
         self,
         N,
