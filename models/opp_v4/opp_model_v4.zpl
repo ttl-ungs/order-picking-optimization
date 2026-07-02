@@ -128,9 +128,6 @@ var f_ijb[E * B] >= 0;
 # X_pb[p,b] : 1 si el lote b es asignado al picker p
 var X_pb[P * B] binary;
 
-# Y_bk[b,k] : 1 si el lote b se procesa antes que el lote k (para secuenciar)
-var Y_bk[B * B] binary;
-
 ##############################################################################
 # OBJECTIVE FUNCTION
 #
