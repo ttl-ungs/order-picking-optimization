@@ -20,3 +20,7 @@ Thumbs.db
 *.tuc
 
 script.py
+
+# dat files
+*.dat
+*/dat_files/*
