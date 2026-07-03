@@ -114,25 +114,25 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
         Dd = due_date if "due_date" in locals() else {n: 0.0 for n in N}
 
         # Tiempo de servicio por defecto (si V2 no lo tenía explícito)
-        S_i = {v: 0.0 for v in V}
+        S_i = {v: 0.0 for v in self.V}
 
         # Generación de conjunto de Arcos válidos E y distancias d_ij
         E = set()
         d_ij = {}
-        for i in location_graph.get_vertices():
-            for j in location_graph.get_vertices():
-                if location_graph.has_edge(i, j):
+        for i in self.opp_location_graph.get_vertices():
+            for j in self.opp_location_graph.get_vertices():
+                if self.opp_location_graph.has_edge(i, j):
                     E.add((i, j))
-                    d_ij[(i, j)] = location_graph.get_distance(i, j)
+                    d_ij[(i, j)] = self.opp_location_graph.get_distance(i, j)
 
         scenario_data = {
             "N": N,
-            "V": set(location_graph.get_vertices()),
-            "P": P,
-            "B": B,
+            "V": set(self.opp_location_graph.get_vertices()),
+            "P": self.P,
+            "B": self.B,
             "E": E,
-            "depot": location_graph.get_depot(),
-            "final": location_graph.get_final(),
+            "depot": self.opp_location_graph.get_depot(),
+            "final": self.opp_location_graph.get_final(),
             "W_full": w1,
             "W_ea_ta": w2,
             "W_ea": gamma,
@@ -158,9 +158,9 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
                 dat_dir=DAT_DIR,
                 params={
                     "N": len(N),
-                    "B": len(B),
-                    "V": len(set(location_graph.get_vertices())),
-                    "P": len(P),
+                    "B": len(self.B),
+                    "V": len(set(self.opp_location_graph.get_vertices())),
+                    "P": len(self.P),
                     "W_full": w1,
                     "W_ea_ta": w2,
                     "W_ea": gamma,

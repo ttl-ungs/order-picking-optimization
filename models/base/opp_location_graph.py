@@ -109,7 +109,7 @@ class OPPLocationGraph:
 
         paths = []
         for (from_v, to_v), _ in self.distances.items():
-            if from_v.location_id == origin_vertex and to_v not in visited:
+            if from_v.location_id == origin_vertex and to_v.location_id not in visited:
                 sub_paths = self._find_paths(
                     to_v.location_id, destination_vertex, visited
                 )

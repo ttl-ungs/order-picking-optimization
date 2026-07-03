@@ -109,20 +109,20 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
         # Generación de conjunto de Arcos válidos E y distancias d_ij
         E = set()
         d_ij = {}
-        for i in location_graph.get_vertices():
-            for j in location_graph.get_vertices():
-                if location_graph.has_edge(i, j):
+        for i in opp_location_graph.get_vertices():
+            for j in opp_location_graph.get_vertices():
+                if opp_location_graph.has_edge(i, j):
                     E.add((i, j))
-                    d_ij[(i, j)] = location_graph.get_distance(i, j)
+                    d_ij[(i, j)] = opp_location_graph.get_distance(i, j)
 
         scenario_data = {
             "N": N,
-            "V": set(location_graph.get_vertices()),
+            "V": set(opp_location_graph.get_vertices()),
             "P": P,
             "B": B,
             "E": E,
-            "depot": location_graph.get_depot(),
-            "final": location_graph.get_final(),
+            "depot": opp_location_graph.get_depot(),
+            "final": opp_location_graph.get_final(),
             "W_full": w1,
             "W_ea_ta": w2,
             "W_ea": gamma,
@@ -149,7 +149,7 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
                 params={
                     "N": len(N),
                     "B": len(B),
-                    "V": len(set(location_graph.get_vertices())),
+                    "V": len(set(opp_location_graph.get_vertices())),
                     "P": len(P),
                     "W_full": w1,
                     "W_ea_ta": w2,
