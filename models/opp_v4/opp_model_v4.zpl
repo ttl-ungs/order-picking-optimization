@@ -128,6 +128,9 @@ var f_ijb[E * B] >= 0;
 # X_pb[p,b] : 1 si el lote b es asignado al picker p
 var X_pb[P * B] binary;
 
+# w_b[b] : tiempo de espera o inactividad del lote b (continua >= 0)
+var w_b[B] >= 0;
+
 ##############################################################################
 # OBJECTIVE FUNCTION
 #
@@ -226,8 +229,9 @@ subto valid_execution_time:
             + B_picking * (sum <n> in N: C_n[n] * Bn[n,b])
             + B_time    * (sum <i,j> in E with i != v_f and j != v_1:
                                d_ij[i,j] * z_ijb[i,j,b])
-             + (sum <i> in V with i != v_1 and i != v_f:
-                   S_i[i] * (sum <i, j> in E: z_ijb[i, j, b]));
+            + (sum <i> in V with i != v_1 and i != v_f:
+                   S_i[i] * (sum <i, j> in E: z_ijb[i, j, b]))
+            + w_b[b]; # tiempo de espera
 
 # (19) t_exec_b acota u_pb por picker
 # t_exec_b[b] - M * (1 - X_pb[p,b]) <= u_pb[p,b]
@@ -286,3 +290,15 @@ subto non_overlap_2:
     forall <p> in P:
         forall <b, k> in B * B with b < k:
             v_pb[p,b] >= v_pb[p,k] + t_exec_b[b] - M_seq * (2 - X_pb[p,b] - X_pb[p,k] + Z_bk[b,k]);
+
+# Prohibir salidas desde el nodo final (si el nodo final no es el deposito)
+subto no_outflow_final:
+    forall <b> in B:
+        sum <i, j> in E with i == v_f and v_1 != v_f:
+            z_ijb[i, j, b] == 0;
+
+# Prohibir entradas al deposito inicial (si el nodo final no es el deposito)
+subto no_inflow_depot:
+    forall <b> in B:
+        sum <i, j> in E with j == v_1 and v_1 != v_f:
+            z_ijb[i, j, b] == 0;
