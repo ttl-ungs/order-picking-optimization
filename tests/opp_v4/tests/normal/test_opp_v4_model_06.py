@@ -130,8 +130,10 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
         expected_graph.add_edge("L3", "L2", location_graph.get_distance("L3", "L2"))
         expected_graph.add_edge("L2", "L4", location_graph.get_distance("L2", "L4"))
 
-        self.assertTrue(
-            "The model did not find a solution.",
+        self.assertIn(
+            status,
+            ("optimal", "feasible"),
+            "El modelo no encontró una solución.",
         )
 
         print("Output graph:", output_graph.to_string())

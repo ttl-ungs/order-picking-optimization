@@ -132,7 +132,11 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
             },
         )
 
-        self.assertIn(status, ("optimal", "feasible"))
+        self.assertIn(
+            status,
+            ("optimal", "feasible"),
+            "El modelo no encontró una solución.",
+        )
 
         ta, ea = self.extract_tardiness_earliness(var_values, "O1")
         self.assertGreater(ta, 0.0, "Expected positive tardiness")

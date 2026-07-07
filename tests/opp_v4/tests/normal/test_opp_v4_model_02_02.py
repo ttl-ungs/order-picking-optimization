@@ -172,14 +172,19 @@ class TestOPPModel(OPPTestCaseV4):
                 if not output_graph.has_edge(i, j):
                     output_graph.add_edge(i, j, location_graph.get_distance(i, j))
 
+        self.assertIn(
+            status,
+            ("optimal", "feasible"),
+            "El modelo no encontró una solución.",
+        )
+
         self.assertEqual(output_graph, expected_graph)
+
         # --- NUEVAS VALIDACIONES INTELIGENTES V4 ---
         if len(P) > 1 and len(B) > 1:
             self.assert_workload_balance(var_values, P, B, max_difference=1)
             
         self.assert_no_time_overlap(var_values, P, B)
-
-
 
 if __name__ == "__main__":
     unittest.main()

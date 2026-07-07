@@ -167,7 +167,5 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
             
         self.assert_no_time_overlap(var_values, P, B)
 
-
-
 if __name__ == "__main__":
     unittest.main()

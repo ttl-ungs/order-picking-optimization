@@ -132,7 +132,11 @@ class TestOPPModelGridZIMPL(OPPTestCaseV4):
 
         cap_n = {n: 2.0 for n in N}
         status, var_values, _, _, _ = self._solve_grid_zpl(N, a, y, cap_n)
-        self.assertIn(status, ("optimal", "feasible"))
+        self.assertIn(
+            status,
+            ("optimal", "feasible"),
+            "El modelo no encontró una solución.",
+        )
 
         # Validar cobertura de locaciones extrayendo arcos
         active_arcs = extract_active_arcs(var_values, B)

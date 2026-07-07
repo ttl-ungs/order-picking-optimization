@@ -133,10 +133,11 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
         expected_graph.add_edge("L1", "L3", location_graph.get_distance("L1", "L3"))
         expected_graph.add_edge("L3", "L4", location_graph.get_distance("L3", "L4"))
 
-        self.assertTrue(
-            "The model did not find a solution.",
+        self.assertIn(
+            status,
+            ("optimal", "feasible"),
+            "El modelo no encontró una solución.",
         )
-
         
         self.assertEqual(output_graph, expected_graph)
         # --- NUEVAS VALIDACIONES INTELIGENTES V4 ---

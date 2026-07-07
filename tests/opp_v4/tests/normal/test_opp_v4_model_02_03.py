@@ -169,13 +169,20 @@ class TestOPPModel(OPPTestCaseV4):
 
         print(expected_graph.to_string())
         print(output_graph.to_string())
+
+        self.assertIn(
+            status,
+            ("optimal", "feasible"),
+            "El modelo no encontró una solución.",
+        )
+
         self.assertEqual(output_graph, expected_graph)
+
         # --- NUEVAS VALIDACIONES INTELIGENTES V4 ---
         if len(P) > 1 and len(B) > 1:
             self.assert_workload_balance(var_values, P, B, max_difference=1)
             
         self.assert_no_time_overlap(var_values, P, B)
-
 
 
 if __name__ == "__main__":
