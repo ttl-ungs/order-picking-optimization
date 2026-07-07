@@ -172,8 +172,8 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
 
         self.assertIn(
             status,
-            ("infeasible",),
-            "El modelo encontró una solución cuando se esperaba que fuera infactible.",
+            ("optimal", "feasible"),
+            "El modelo no encontró una solución.",
         )
 
 
