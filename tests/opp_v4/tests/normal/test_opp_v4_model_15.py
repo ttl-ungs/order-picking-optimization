@@ -22,7 +22,7 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
     Test 15: 3 orders, 1 mission, 1 picker. Each order is assigned to the same mission and picker. 4x4 graph.
     """
 
-    P, x, opp_location_graph, V, B = scenario_one_mission_one_picker_grid_graph(4, 4)
+    P, opp_location_graph, V, B = scenario_one_mission_one_picker_grid_graph(4, 4)
 
     def get_orders(self):
         orders = {"O1", "O2", "O3"}
@@ -180,10 +180,23 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
         except Exception as e:
             self.fail(f"ZPL solve failed: {e}")
 
+        # Extracción de grafo resultante
+        active_arcs = extract_active_arcs(var_values, self.B)
+        output_graph = OPPLocationGraph(depot_node=self.opp_location_graph.get_depot(), final_node=self.opp_location_graph.get_final())
+        for i in self.opp_location_graph.get_vertices():
+            if i not in output_graph.get_vertices():
+                output_graph.add_vertex(i, "picking")
+        for b, arcs in active_arcs.items():
+            for i, j in arcs:
+                if not output_graph.has_edge(i, j):
+                    output_graph.add_edge(i, j, self.opp_location_graph.get_distance(i, j))
+
+        print("Output graph:", output_graph.to_string())
+
         self.assertIn(
             status,
-            ("infeasible",),
-            "El modelo encontró una solución cuando se esperaba que fuera infactible.",
+            ("optimal", "feasible"),
+            "El modelo no encontró una solución.",
         )
 
 

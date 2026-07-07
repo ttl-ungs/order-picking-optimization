@@ -23,7 +23,7 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
     Each order visits more than one location.
     """
 
-    P, x, opp_location_graph, V, B = (
+    P, opp_location_graph, V, B = (
         scenario_three_missions_two_pickers_two_periods_grid_graph(4, 4)
     )
 
@@ -150,10 +150,23 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
         except Exception as e:
             self.fail(f"ZPL solve failed: {e}")
 
+        # Extracción de grafo resultante
+        active_arcs = extract_active_arcs(var_values, self.B)
+        output_graph = OPPLocationGraph(depot_node=self.opp_location_graph.get_depot(), final_node=self.opp_location_graph.get_final())
+        for i in self.opp_location_graph.get_vertices():
+            if i not in output_graph.get_vertices():
+                output_graph.add_vertex(i, "picking")
+        for b, arcs in active_arcs.items():
+            for i, j in arcs:
+                if not output_graph.has_edge(i, j):
+                    output_graph.add_edge(i, j, self.opp_location_graph.get_distance(i, j))
+
+        print("Output graph:", output_graph.to_string())
+
         self.assertIn(
             status,
-            ("infeasible",),
-            "El modelo encontró una solución cuando se esperaba que fuera infactible.",
+            ("optimal", "feasible"),
+            "El modelo no encontró una solución.",
         )
 
 
