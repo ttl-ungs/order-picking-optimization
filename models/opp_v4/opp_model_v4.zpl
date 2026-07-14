@@ -239,6 +239,11 @@ subto batch_execution_time:
     forall <p,b> in P * B:
         t_exec_b[b] - M * (1 - X_pb[p,b]) <= u_pb[p,b];
 
+# (19b) u_pb acotado por t_exec_b (cota superior, fija u_pb == t_exec_b cuando X_pb=1)
+subto batch_execution_time_upper:
+    forall <p,b> in P * B:
+        u_pb[p,b] <= t_exec_b[b] + M * (1 - X_pb[p,b]);
+
 # (20) u_pb <= v_pb  (procesamiento <= completitud por picker)
 subto processing_le_completion:
     forall <p,b> in P * B:

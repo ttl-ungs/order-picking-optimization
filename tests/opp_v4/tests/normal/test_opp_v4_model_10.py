@@ -131,7 +131,7 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
             "B_setup": 1.0,
             "B_picking": 1.0,
             "C_v": cap_vehicle,
-            "M": 10000.0,
+            "M": 1000.0,
             "C_n": C_n,
             "Dd": Dd,
             "d_ij": d_ij,

@@ -26,5 +26,14 @@ class OPPTestCaseV4(OPPTestCase):
                 elif k.startswith("u_pb"): u_pb[(p, b)] = val
         for p in P:
             tasks = sorted([(v_pb.get((p, b), 0)-u_pb.get((p, b), 0), v_pb.get((p, b), 0), b) for b in B if x_pb.get((p, b), 0) > 0.5])
+            # if len(tasks) > 1:
+            #     print(f"DEBUG picker {p} tasks (start, end, batch): {tasks}")
+            #     batches_on_p = [b for b in B if x_pb.get((p, b), 0) > 0.5]
+            #     for key, val in sorted(var_values.items()):
+            #         kl = key.lower()
+            #         if kl.startswith("z_bk") and any(b in key for b in batches_on_p):
+            #             print(f"DEBUG {key} = {val}")
+            #     for b in batches_on_p:
+            #         print(f"DEBUG t_exec_b[{b}] = {var_values.get(f't_exec_b${b}', var_values.get(f't_exec_b[{b}]'))}")
             for i in range(len(tasks) - 1):
                 self.assertGreaterEqual(tasks[i+1][0], tasks[i][1] - 1e-4, f"Solapamiento temporal en {p}")
