@@ -148,7 +148,8 @@ t\_exec_{b} \ge B_{setup} + B_{picking} \cdot \left( \sum_{n \in \mathcal{N}} C_
 \startformula
 \startalign[n=3, align={left,left,left}]
     \NC \sum_{p \in \mathcal{P}} X_{p b} = 1; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Asignación única por lote a un picker)} \NR
-    \NC t\_exec_{b} - M \cdot (1 - X_{p b}) \le u_{p b}; \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B} \NC \quad \text{(Ejecución acota procesamiento)} \NR
+    \NC t\_exec_{b} - M \cdot (1 - X_{p b}) \le u_{p b}; \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B} \NC \quad \text{(Ejecución acota procesamiento, cota inferior)} \NR
+    \NC u_{p b} \le t\_exec_{b} + M \cdot (1 - X_{p b}); \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B} \NC \quad \text{(Ejecución acota procesamiento, cota superior; fija } u_{pb} = t\_exec_{b} \text{ cuando } X_{pb}=1 \text{)} \NR
     \NC u_{p b} \le v_{p b}; \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B} \NC \quad \text{(Procesamiento precede a completitud)} \NR
     \NC v_{p b} - M \cdot (1 - X_{p b}) \le v_{b}; \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B} \NC \quad \text{(Completitud del lote vs picker)} \NR
 \stopalign
@@ -180,7 +181,7 @@ Donde $M_{seq}$ es una constante local de Big-M usada para linealizar el ordenam
 \startformula
 \startalign[n=2, align={left,left}]
     \NC ta_{n}, ea_{n}, t\_exec_{b}, v_{b}, u_{p b}, v_{p b}, f_{i j b} \ge 0; \NC \quad \forall n \in \mathcal{N},\ b \in \mathcal{B},\ p \in \mathcal{P},\ (i,j) \in \mathcal{E} \NR
-    \NC z_{i j b}, X_{p b}, Y_{b k}, Z_{b k} \in \{0,1\}; \NC \quad \forall p \in \mathcal{P},\ b,k \in \mathcal{B},\ (i,j) \in \mathcal{E} \NR
+    \NC z_{i j b}, X_{p b}, Z_{b k} \in \{0,1\}; \NC \quad \forall p \in \mathcal{P},\ b,k \in \mathcal{B},\ (i,j) \in \mathcal{E} \NR
 \stopalign
 \stopformula
 \stopsubsection
