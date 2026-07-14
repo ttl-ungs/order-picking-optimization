@@ -43,21 +43,21 @@ param v_1 := read "../dat_files/depot.dat"  as "1s" comment "#";   # deposito in
 param v_f := read "../dat_files/final.dat"  as "1s" comment "#";   # nodo final
 
 # Pesos de la funcion objetivo
-param W_full    := read "../dat_files/params.dat" as "1n" use 1 comment "#";  # peso tiempo cumplimiento
-param W_ea_ta   := read "../dat_files/params.dat" as "1n" use 2 comment "#";  # peso penalizaciones (adelanto + demora)
-param W_ea      := read "../dat_files/params.dat" as "1n" use 3 comment "#";  # peso adelanto (gamma)
-param W_ta      := read "../dat_files/params.dat" as "1n" use 4 comment "#";  # peso demora  (delta)
+param W_full    := read "../dat_files/params.dat" as "1n" skip 0 comment "#";  # peso tiempo cumplimiento
+param W_ea_ta   := read "../dat_files/params.dat" as "1n" skip 1 comment "#";  # peso penalizaciones (adelanto + demora)
+param W_ea      := read "../dat_files/params.dat" as "1n" skip 2 comment "#";  # peso adelanto (gamma)
+param W_ta      := read "../dat_files/params.dat" as "1n" skip 3 comment "#";  # peso demora  (delta)
 
 # Parametros de tiempo
-param B_time    := read "../dat_files/params.dat" as "1n" use 5 comment "#";  # tiempo por unidad de distancia
-param B_setup   := read "../dat_files/params.dat" as "1n" use 6 comment "#";  # tiempo de setup por lote
-param B_picking := read "../dat_files/params.dat" as "1n" use 7 comment "#";  # tiempo de picking por unidad de capacidad
+param B_time    := read "../dat_files/params.dat" as "1n" skip 4 comment "#";  # tiempo por unidad de distancia
+param B_setup   := read "../dat_files/params.dat" as "1n" skip 5 comment "#";  # tiempo de setup por lote
+param B_picking := read "../dat_files/params.dat" as "1n" skip 6 comment "#";  # tiempo de picking por unidad de capacidad
 
 # Capacidades
-param C_v       := read "../dat_files/params.dat" as "1n" use 8 comment "#";  # capacidad del vehiculo de picking
+param C_v       := read "../dat_files/params.dat" as "1n" skip 7 comment "#";  # capacidad del vehiculo de picking
 
 # Big-M
-param M         := read "../dat_files/params.dat" as "1n" use 9 comment "#";  # entero suficientemente grande
+param M         := read "../dat_files/params.dat" as "1n" skip 8 comment "#";  # entero suficientemente grande
 
 # C_n[n] : capacidad requerida para la orden n
 param C_n[N]    := read "../dat_files/cap_n.dat"      as "<1s> 2n" comment "#";
