@@ -19,9 +19,10 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
         ta = 0.0
         ea = 0.0
         for key, val in var_values.items():
-            if f"ta_n[{order}]" in key:
+            # Checking for both standard bracket and ZIMPL '$' output formats
+            if f"ta_n[{order}]" in key or f"ta_n${order}" in key:
                 ta = val
-            if f"ea_n[{order}]" in key:
+            if f"ea_n[{order}]" in key or f"ea_n${order}" in key:
                 ea = val
         return ta, ea
 
@@ -73,13 +74,31 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
                 "B": len(model_dto.B),
                 "V": len(scenario_data["V"]),
                 "P": len(model_dto.P),
+                "E": E,
+                "depot": model_dto.location_graph.get_depot(),
+                "final": model_dto.location_graph.get_final(),
+                "W_full": params.W_full,
+                "W_ea_ta": params.W_ea_ta,
+                "W_ea": params.W_ea,
+                "W_ta": params.W_ta,
+                "B_time": params.B_time,
+                "B_setup": params.B_setup,
+                "B_picking": params.B_picking,
+                "C_v": params.C_v,
+                "M": params.M,
+                "C_n": params.C_n,
+                "Dd": params.Dd,
+                "d_ij": d_ij,
+                "S_i": {v: 0.0 for v in set(model_dto.location_graph.get_vertices())},
+                "A_ni": params.A,
+                "Bn": params.Bn
             },
         )
 
         self.assertIn(status, ("optimal", "feasible"))
 
         ta, ea = self.extract_tardiness_earliness(var_values, "O1")
-        self.assertGreater(ea, 0.0, "Expected positive earliness")
+        self.assertGreater(ea, 0.0, "Expected positive earliness") #!
         self.assertAlmostEqual(ta, 0.0, places=4, msg="Expected zero tardiness")
 
     def test_tardiness_when_batch_finishes_after_due_date(self):
@@ -117,7 +136,7 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
             "d_ij": d_ij,
             "S_i": {v: 0.0 for v in set(model_dto.location_graph.get_vertices())},
             "A_ni": params.A,
-            "Bn": params.Bn,
+            "Bn": params.Bn
         }
 
         build_dat_files(DAT_DIR, scenario_data)
@@ -129,6 +148,24 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
                 "B": len(model_dto.B),
                 "V": len(scenario_data["V"]),
                 "P": len(model_dto.P),
+                "E": E,
+                "depot": model_dto.location_graph.get_depot(),
+                "final": model_dto.location_graph.get_final(),
+                "W_full": params.W_full,
+                "W_ea_ta": params.W_ea_ta,
+                "W_ea": params.W_ea,
+                "W_ta": params.W_ta,
+                "B_time": params.B_time,
+                "B_setup": params.B_setup,
+                "B_picking": params.B_picking,
+                "C_v": params.C_v,
+                "M": params.M,
+                "C_n": params.C_n,
+                "Dd": params.Dd,
+                "d_ij": d_ij,
+                "S_i": {v: 0.0 for v in set(model_dto.location_graph.get_vertices())},
+                "A_ni": params.A,
+                "Bn": params.Bn
             },
         )
 
