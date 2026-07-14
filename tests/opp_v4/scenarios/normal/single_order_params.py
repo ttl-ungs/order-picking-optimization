@@ -5,7 +5,6 @@ from graphs.graphs_factory import GraphsFactory
 def single_order_params(due_date_value, start_time, cap_vehicle=100.0):
     P = {"P1"}
     B = {"B1"}
-    x = {("P1", "B1"): 1}
 
     factory = GraphsFactory()
     opp_location_graph, V = factory.get_graph(4, 4, 4, 4)
@@ -30,8 +29,7 @@ def single_order_params(due_date_value, start_time, cap_vehicle=100.0):
     params.B_setup = 1.0
     params.B_picking = 1.0
     params.Dd = {"O1": due_date_value}
-    params.M = 1000.0
-    params.x = x
+    params.M = 100000.0
     params.Bn = y
 
     model_dto = ModelDTO()
