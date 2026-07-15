@@ -82,6 +82,8 @@ param Bn[N * B] := read "../dat_files/Bn.dat"        as "<1s,2s> 3n" comment "#"
 param R_b[<b> in B] :=
     sum <i> in V with (i != v_1 and i != v_f and (sum <n> in N : A_ni[n,i] * Bn[n,b]) >= 1) : 1;
 
+# Parámetro Big-M local gigante para evitar cortes de presolve en variables continuas
+param M_seq := 100000;
 
 ##############################################################################
 # VARIABLES
@@ -130,6 +132,9 @@ var X_pb[P * B] binary;
 
 # w_b[b] : tiempo de espera o inactividad del lote b (continua >= 0)
 var w_b[B] >= 0;
+
+# Variable auxiliar para secuenciación (solo definida para pares únicos b < k)
+var Z_bk[<b,k> in B * B with b < k] binary;
 
 ##############################################################################
 # OBJECTIVE FUNCTION
@@ -277,12 +282,6 @@ subto earliness_definition:
 subto assign_exactly_one_picker:
     forall <b> in B:
         sum <p> in P: X_pb[p,b] == 1;
-
-# Variable auxiliar para secuenciación (solo definida para pares únicos b < k)
-var Z_bk[<b,k> in B * B with b < k] binary;
-
-# Parámetro Big-M local gigante para evitar cortes de presolve en variables continuas
-param M_seq := 100000;
 
 # (A2) Secuenciamiento sin solapamiento
 # Si ambos lotes se asignan al mismo picker, uno debe ejecutarse después del otro.
