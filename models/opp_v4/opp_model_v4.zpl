@@ -53,8 +53,8 @@ param B_time    := read "../dat_files/params.dat" as "1n" skip 4 comment "#";  #
 param B_setup   := read "../dat_files/params.dat" as "1n" skip 5 comment "#";  # tiempo de setup por lote
 param B_picking := read "../dat_files/params.dat" as "1n" skip 6 comment "#";  # tiempo de picking por unidad de capacidad
 
-# Capacidades
-param C_v       := read "../dat_files/params.dat" as "1n" skip 7 comment "#";  # capacidad del vehiculo de picking
+# Capacidades --> NO USADO EN ESTE MODELO.
+# param C_v       := read "../dat_files/params.dat" as "1n" skip 7 comment "#";  # capacidad del vehiculo de picking
 
 # Big-M
 param M         := read "../dat_files/params.dat" as "1n" skip 8 comment "#";  # entero suficientemente grande
