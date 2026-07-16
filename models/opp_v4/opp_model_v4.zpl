@@ -156,6 +156,8 @@ minimize obj:
 # CONSTRAINTS
 ##############################################################################
 
+############################### Rutas de lote ################################
+
 # (1) Cada lote sale una vez del depósito
 subto start_from_depot:
   forall <b> in B:
@@ -179,6 +181,8 @@ subto no_outflow_final:
     forall <b> in B:
         sum <i, j> in E with i == v_f and v_1 != v_f:
             z_ijb[i, j, b] == 0;
+
+####################### Visita y conservación de flujo #######################
 
 # (5) Entrada a locaciones requeridas
 subto force_visit_inflow:
@@ -216,6 +220,9 @@ subto one_output_arc_per_node:
         forall <i> in V with i != v_f:
             sum <i, j> in E:
                 z_ijb[i, j, b] <= 1;
+
+#################### Subtour elimination y flujo de carga ####################
+
 # (10) Límite MTZ subtours
 subto subtour_elimination_bound:
     forall <b> in B:
@@ -236,6 +243,8 @@ subto f_flow_conservation:
             - (sum <i, j> in E: f_ijb[i, j, b])
             == if (sum <n> in N: A_ni[n,i] * Bn[n,b]) >= 1 then 1 else 0 end;
 
+##################### Tiempo de ejecución y completitud ######################
+
 # (13) Tiempo de ejecución del lote
 # El termino S_i se agrega respecto al modelo v2 original
 subto valid_execution_time:
@@ -248,6 +257,8 @@ subto valid_execution_time:
             + (sum <i> in V with i != v_1 and i != v_f:
                    S_i[i] * (sum <i, j> in E: z_ijb[i, j, b]))
             + w_b[b]; # tiempo de espera
+
+#################### Asignación de lotes y secuenciación #####################
 
 # (14) Asignación única por lote a un picker - Nueva constraint
 subto assign_exactly_one_picker:
@@ -278,6 +289,8 @@ subto v_b_lower_bound:
     forall <p,b> in P * B:
         v_pb[p,b] - M * (1 - X_pb[p,b]) <= v_b[b];
 
+###################### Secuenciamiento sin solapamiento ######################
+
 # (19) Secuenciamiento sin solapamiento (orden 1) - Nueva constraint
 # Si ambos lotes se asignan al mismo picker, uno debe ejecutarse después del otro.
 subto non_overlap_1:
@@ -290,6 +303,8 @@ subto non_overlap_2:
     forall <p> in P:
         forall <b, k> in B * B with b < k:
             v_pb[p,b] >= v_pb[p,k] + t_exec_b[b] - M_seq * (2 - X_pb[p,b] - X_pb[p,k] + Z_bk[b,k]);
+
+########################### Earliness y tardiness ############################
 
 # (21) Definición de tardanza
 # v_pb[p,b] - Dd[n] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ta_n[n]
