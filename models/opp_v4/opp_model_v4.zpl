@@ -156,19 +156,31 @@ minimize obj:
 # CONSTRAINTS
 ##############################################################################
 
-# (6) La ruta del lote b sale exactamente una vez del deposito
+# (1) Cada lote sale una vez del depósito
 subto start_from_depot:
   forall <b> in B:
       sum <i, j> in E with i == v_1:
           z_ijb[i, j, b] == 1;
 
-# (7) La ruta del lote b entra exactamente una vez al nodo final
+# (2) Cada lote entra una vez al nodo final
 subto finish_at_end:
    forall <b> in B:
        sum <i, j> in E with j == v_f:
            z_ijb[i, j, b] == 1;
 
-# (10) Si una locacion es requerida por el lote, debe tener arco entrante
+# (3) No hay retorno al depósito inicial - Nueva constraint
+subto no_inflow_depot:
+    forall <b> in B:
+        sum <i, j> in E with j == v_1 and v_1 != v_f:
+            z_ijb[i, j, b] == 0;
+
+# (4) No hay salida desde el nodo final - Nueva constraint
+subto no_outflow_final:
+    forall <b> in B:
+        sum <i, j> in E with i == v_f and v_1 != v_f:
+            z_ijb[i, j, b] == 0;
+
+# (5) Entrada a locaciones requeridas
 subto force_visit_inflow:
    forall <b> in B:
        forall <j> in V with j != v_1 and j != v_f:
@@ -176,7 +188,7 @@ subto force_visit_inflow:
                z_ijb[i, j, b]
            >= if (sum <n> in N: A_ni[n,j] * Bn[n,b]) >= 1 then 1 else 0 end;
 
-# (11) Si una locacion es requerida por el lote, debe tener arco saliente
+# (6) Salida de locaciones requeridas
 subto force_visit_outflow:
     forall <b> in B:
         forall <j> in V with j != v_1 and j != v_f:
@@ -184,40 +196,39 @@ subto force_visit_outflow:
                 z_ijb[j, i, b]
             >= if (sum <n> in N: A_ni[n,j] * Bn[n,b]) >= 1 then 1 else 0 end;
 
-# (12) Cota de ruteo MTZ
-subto subtour_elimination_bound:
-    forall <b> in B:
-        forall <i, j> in E:
-            f_ijb[i, j, b] - R_b[b] * z_ijb[i, j, b] <= 0;
-
-# (13) Conservacion de flujo en la ruta (nodos intermedios)
+# (7) Conservación en nodos intermedios
 subto flow_conservation:
     forall <b> in B:
         forall <i> in V with i != v_1 and i != v_f:
             (sum <g, i> in E: z_ijb[g, i, b])
             - (sum <i, j> in E: z_ijb[i, j, b]) == 0;
 
-# (14) A lo sumo un arco de entrada por nodo (excepto deposito)
+# (8) A lo sumo un arco de entrada por nodo
 subto one_input_arc_per_node:
     forall <b> in B:
         forall <i> in V with i != v_1:
             sum <j, i> in E:
                 z_ijb[j, i, b] <= 1;
 
-# (15) A lo sumo un arco de salida por nodo (excepto nodo final)
+# (9) A lo sumo un arco de salida por nodo
 subto one_output_arc_per_node:
     forall <b> in B:
         forall <i> in V with i != v_f:
             sum <i, j> in E:
                 z_ijb[i, j, b] <= 1;
+# (10) Límite MTZ subtours
+subto subtour_elimination_bound:
+    forall <b> in B:
+        forall <i, j> in E:
+            f_ijb[i, j, b] - R_b[b] * z_ijb[i, j, b] <= 0;
 
-# (16a) Gavish-Graves: flujo total desde el deposito == R_b[b]
+# (11) Flujo total desde el depósito
 subto f_depot_source:
     forall <b> in B:
         sum <i, j> in E with i == v_1:
             f_ijb[i, j, b] == R_b[b];
 
-# (16b) Gavish-Graves: balance de flujo en nodos intermedios
+# (12) Balance Gavish-Graves
 subto f_flow_conservation:
     forall <b> in B:
         forall <i> in V with i != v_1 and i != v_f:
@@ -225,7 +236,7 @@ subto f_flow_conservation:
             - (sum <i, j> in E: f_ijb[i, j, b])
             == if (sum <n> in N: A_ni[n,i] * Bn[n,b]) >= 1 then 1 else 0 end;
 
-# (18) Tiempo de ejecucion del lote
+# (13) Tiempo de ejecución del lote
 # El termino S_i se agrega respecto al modelo v2 original
 subto valid_execution_time:
     forall <b> in B:
@@ -238,23 +249,28 @@ subto valid_execution_time:
                    S_i[i] * (sum <i, j> in E: z_ijb[i, j, b]))
             + w_b[b]; # tiempo de espera
 
-# (19) t_exec_b acota u_pb por picker
+# (14) Asignación única por lote a un picker - Nueva constraint
+subto assign_exactly_one_picker:
+    forall <b> in B:
+        sum <p> in P: X_pb[p,b] == 1;
+
+# (15) Ejecución acota procesamiento (cota inferior)
 # t_exec_b[b] - M * (1 - X_pb[p,b]) <= u_pb[p,b]
 subto batch_execution_time:
     forall <p,b> in P * B:
         t_exec_b[b] - M * (1 - X_pb[p,b]) <= u_pb[p,b];
 
-# (19b) u_pb acotado por t_exec_b (cota superior, fija u_pb == t_exec_b cuando X_pb=1)
+# (16) cota superior; fija u_pb = t_exec_b cuando X_pb=1
 subto batch_execution_time_upper:
     forall <p,b> in P * B:
         u_pb[p,b] <= t_exec_b[b] + M * (1 - X_pb[p,b]);
 
-# (20) u_pb <= v_pb  (procesamiento <= completitud por picker)
+# (17) Procesamiento precede a completitud
 subto processing_le_completion:
     forall <p,b> in P * B:
         u_pb[p,b] <= v_pb[p,b];
 
-# (20b) v_b vinculada a v_pb
+# (18) Completitud del lote vs picker
 # v_b[b] se define como el maximo de v_pb[p,b] sobre los pickers que tienen
 # asignado el lote b.  Se linealiza como:
 #   v_pb[p,b] - M * (1 - X_pb[p,b]) <= v_b[b]   forall p, b
@@ -262,47 +278,27 @@ subto v_b_lower_bound:
     forall <p,b> in P * B:
         v_pb[p,b] - M * (1 - X_pb[p,b]) <= v_b[b];
 
-# (22) Definicion de tardanza
-# v_pb[p,b] - Dd[n] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ta_n[n]
-subto tardiness_definition:
-    forall <p,b,n> in P * B * N:
-        v_pb[p,b] - Dd[n] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ta_n[n];
-
-# (23) Definicion de adelanto
-# Dd[n] - v_pb[p,b] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ea_n[n]
-subto earliness_definition:
-    forall <p,b,n> in P * B * N:
-        Dd[n] - v_pb[p,b] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ea_n[n];
-
-##############################################################################
-# NUEVAS CONSTRAINTS
-##############################################################################
-
-# (A1) Asignación única: Cada lote debe estar asignado a exactamente un picker
-subto assign_exactly_one_picker:
-    forall <b> in B:
-        sum <p> in P: X_pb[p,b] == 1;
-
-# (A2) Secuenciamiento sin solapamiento
+# (19) Secuenciamiento sin solapamiento (orden 1) - Nueva constraint
 # Si ambos lotes se asignan al mismo picker, uno debe ejecutarse después del otro.
 subto non_overlap_1:
     forall <p> in P:
         forall <b, k> in B * B with b < k:
             v_pb[p,k] >= v_pb[p,b] + t_exec_b[k] - M_seq * (3 - X_pb[p,b] - X_pb[p,k] - Z_bk[b,k]);
 
+# (20) Secuenciamiento sin solapamiento (orden 2) - Nueva constraint
 subto non_overlap_2:
     forall <p> in P:
         forall <b, k> in B * B with b < k:
             v_pb[p,b] >= v_pb[p,k] + t_exec_b[b] - M_seq * (2 - X_pb[p,b] - X_pb[p,k] + Z_bk[b,k]);
 
-# Prohibir salidas desde el nodo final (si el nodo final no es el deposito)
-subto no_outflow_final:
-    forall <b> in B:
-        sum <i, j> in E with i == v_f and v_1 != v_f:
-            z_ijb[i, j, b] == 0;
+# (21) Definición de tardanza
+# v_pb[p,b] - Dd[n] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ta_n[n]
+subto tardiness_definition:
+    forall <p,b,n> in P * B * N:
+        v_pb[p,b] - Dd[n] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ta_n[n];
 
-# Prohibir entradas al deposito inicial (si el nodo final no es el deposito)
-subto no_inflow_depot:
-    forall <b> in B:
-        sum <i, j> in E with j == v_1 and v_1 != v_f:
-            z_ijb[i, j, b] == 0;
+# (22) Definición de adelanto
+# Dd[n] - v_pb[p,b] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ea_n[n]
+subto earliness_definition:
+    forall <p,b,n> in P * B * N:
+        Dd[n] - v_pb[p,b] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ea_n[n];
