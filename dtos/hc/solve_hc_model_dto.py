@@ -5,6 +5,7 @@ class SolveHCModelDTO(SolveModelDTO):
         super().__init__()
         self._Max_it: int = 500
         self._Max_imp: int = 30
+        self._Max_time: float = 30.0
 
     @property
     def Max_it(self) -> int:
@@ -21,3 +22,12 @@ class SolveHCModelDTO(SolveModelDTO):
     @Max_imp.setter
     def Max_imp(self, value: int):
         self._Max_imp = value
+
+    @property
+    def Max_time(self) -> float:
+        """Wall-clock time budget (seconds) for the hill climbing main loop."""
+        return self._Max_time
+
+    @Max_time.setter
+    def Max_time(self, value: float):
+        self._Max_time = value
