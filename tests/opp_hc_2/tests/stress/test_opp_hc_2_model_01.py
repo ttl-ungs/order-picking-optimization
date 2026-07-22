@@ -10,16 +10,19 @@ from dtos.opp.model_dto import ModelDTO
 from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
 from models.opp_hc_2.opp_hc_2 import OPPHillClimbing
 from models.opp_hc_2.utils.output_handler import OutputHandler
-from tests.opp.tests.opp_test_case import OPPTestCase
+from tests.opp_hc_2.tests.opp_hc_2_test_case import OPPTestCaseHC2
 from tests.opp_hc_2.scenarios.common.six_missions_three_pickers_grid_graph import (
     scenario_six_missions_two_periods_grid_graph,
 )
 
 
-class TestOPPModel(OPPTestCase):
+class TestOPPModel(OPPTestCaseHC2):
     """
-    Test 1: 12 orders, 6 batches. 10x10 grid.
+    Test 1: 12 orders, 6 batches, 3 pickers. 10x10 grid.
     Purpose: stress the model.
+
+    With 6 batches and 3 pickers, batches should be distributed (X_pb) with
+    an even workload, and batches on the same picker must not overlap in time.
     """
 
     def test_100_locations(self):
@@ -83,20 +86,27 @@ class TestOPPModel(OPPTestCase):
         params.M = M
         params.Bn = y
 
+        P = {"P1", "P2", "P3"}
+
         model_dto = ModelDTO()
         model_dto.N = N
         model_dto.location_graph = opp_location_graph
         model_dto.B = B
+        model_dto.P = P
         model_dto.start_time = self.start_time
         model = OPPHillClimbing(model_dto)
         model.attach(OutputHandler())
 
         try:
-            result, _ = model.solve(params)
+            result, _, solution_info = self.solve_and_capture(model, params)
         except Exception as e:
             self.fail(f"Model execution failed: {e}")
 
         self.assertIn(result, ("optimal", "feasible"))
+
+        self.assert_every_batch_has_one_picker(solution_info, P)
+        self.assert_workload_balance(solution_info, P, max_difference=1)
+        self.assert_no_time_overlap(solution_info, P)
 
 
 if __name__ == "__main__":
