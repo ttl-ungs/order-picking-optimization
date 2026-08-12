@@ -58,6 +58,9 @@ queue slot, not a true continuous-time joint simulation) applies here too.
 
 ## Algorithm
 
+See [`PSEUDOCODE.md`](./PSEUDOCODE.md) for the full algorithm as
+line-by-line pseudocode, cross-referenced to the actual method names.
+
 1. **Initial solution** — unchanged from opp_hc_2: Dijkstra-based
    nearest-neighbor routes per batch, batches distributed round-robin
    across pickers (X_pb).

@@ -84,6 +84,9 @@ same *idea* rather than replicating the paper literally:
 
 ## Algorithm
 
+See [`PSEUDOCODE.md`](./PSEUDOCODE.md) for the full algorithm as
+line-by-line pseudocode, cross-referenced to the actual method names.
+
 ### 1. Picker assignment (X_pb) — unchanged from opp_aco_2
 
 Each ant assigns every batch with orders to a picker via roulette-wheel
