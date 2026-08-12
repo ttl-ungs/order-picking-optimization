@@ -21,10 +21,12 @@ component of the paper's logic distance.
 
 Simplification vs. the paper (documented for the thesis write-up): Chen et
 al. re-plan step-by-step for exactly two pickers moving concurrently. Here,
-routes are built one full batch at a time (see opp_aco_3.py), so resource
-reservations are registered in a "round-robin by picker-queue slot" causal
-order rather than a true continuous-time simulation of all pickers at once.
-This is an approximation, not an exact replication of the paper.
+routes are built/priced one full batch at a time (see opp_aco_3.py, which
+reserves incrementally as each ant's route is constructed, and opp_hc_3.py,
+which prices an already-built route via `simulate_route_congestion` below),
+so resource reservations are registered in a "round-robin by picker-queue
+slot" causal order rather than a true continuous-time simulation of all
+pickers at once. This is an approximation, not an exact replication of the paper.
 """
 
 from typing import Dict, List, Tuple, Hashable
@@ -96,3 +98,57 @@ class CongestionTracker:
     def dwell(self, service_time: float) -> float:
         """Node occupancy duration: max of the real service time and the min_dwell floor."""
         return max(self.min_dwell, service_time)
+
+
+def simulate_route_congestion(
+    location_graph,
+    full_route: List[str],
+    owner: str,
+    start_time: float,
+    b_time: float,
+    S: Dict[str, float],
+    tracker: "CongestionTracker",
+    depot: str,
+    final: str,
+) -> Tuple[float, float]:
+    """
+    Walk an already-built, complete route (depot -> ... -> final) through
+    `tracker`, reserving each edge/node resource in causal order, and return
+    (end_time, total_wait_incurred).
+
+    Used by opp_hc_3, which builds a full route up front (Dijkstra-based
+    nearest neighbor, see opp_hc_2) and only needs to *price* congestion
+    against everyone else's already-registered reservations - unlike
+    opp_aco_3's ants, which choose the next node step by step and reserve
+    incrementally as they go (see opp_aco_3.py::_advance_and_reserve, which
+    this function's logic mirrors for a fixed route instead of a
+    node-by-node probabilistic choice).
+    """
+    current = full_route[0]
+    current_time = start_time
+    total_wait = 0.0
+
+    for next_node in full_route[1:]:
+        dist = location_graph.get_distance(current, next_node)
+        dist = dist if dist > 0 and dist != float("inf") else 0.0
+        travel_time = b_time * dist
+
+        departure, edge_wait = tracker.reserve(
+            CongestionTracker.edge_key(current, next_node), current_time, travel_time, owner
+        )
+        arrival = departure + travel_time
+        total_wait += edge_wait
+
+        if next_node in (depot, final):
+            current_time = arrival
+        else:
+            dwell = tracker.dwell(S.get(next_node, 0.0))
+            node_start, node_wait = tracker.reserve(
+                CongestionTracker.node_key(next_node), arrival, dwell, owner
+            )
+            current_time = node_start + dwell
+            total_wait += node_wait
+
+        current = next_node
+
+    return current_time, total_wait
