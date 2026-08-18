@@ -118,9 +118,17 @@ inventa un cero ni se descarta en silencio.
    subprocess/Python). Heurísticas no tienen este split porque no llaman a un
    solver externo.
 4. **Gap de optimalidad vs. opp_v4** — compara `obj_val` de cada heurística
-   contra `obj_val` del exacto en las *mismas* instancias (join por nombre de
-   método de test, que es compartido entre variantes del modelo). Sin esto,
-   "más rápido" no dice si la heurística además da soluciones razonables.
+   contra `obj_val` del exacto en las *mismas* instancias. El join es por
+   nombre de método de test **y** por forma de la instancia (`N, V, B, P,
+   C_v`) — el nombre solo no alcanza: se verificó empíricamente que
+   `test_basic_two_orders_capacity_limit` da `obj_val≈744` en `opp_hc_2`
+   (que cae al picker único implícito, `P=1`) y `obj_val≈30` en `opp_v4`
+   (cuyo scenario builder ya trae `P=2` incluido) — mismos pesos, misma
+   instancia nominal, pero paralelismo distinto, así que esos dos valores no
+   son comparables. `quality_gap_table` excluye esos casos y lo reporta por
+   consola en vez de mezclarlos en el promedio. Sin esto, "más rápido" no
+   dice si la heurística además da soluciones razonables — y con el join mal
+   hecho, tampoco lo dice, solo parece que sí.
 5. **Congestión** — espera media por congestión (`obj_val_congestion`) para
    `opp_hc_3`/`opp_aco_3`, y el sobrecosto de tiempo que pagan frente a sus
    baselines `opp_hc_2`/`opp_aco_2` (que no miden congestión en absoluto —

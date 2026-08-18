@@ -67,35 +67,68 @@ def profiling_table(df: pd.DataFrame, exact_model: str = EXACT_MODEL) -> pd.Data
     return out.reset_index()
 
 
+# Columns that must match between a heuristic row and the exact-model row for
+# the same (scenario, instance) before their obj_val's are comparable at all.
+# Same *test method name* does NOT guarantee the same instance: e.g.
+# opp_hc_2/opp_aco_2's test_basic_two_orders_capacity_limit never sets a
+# picker set and falls back to a single implicit picker (P=1), while
+# opp_v4's own scenario_01 (same method name) bakes P={"P1","P2"} into the
+# scenario builder -- same weights, same N/V/B, but a fundamentally
+# different parallelism structure, giving wildly different objective values
+# (~744 vs ~30 for that instance) that have nothing to do with solution
+# quality. Verified empirically before adding this guard -- don't remove it
+# without re-checking that assumption.
+SHAPE_COLUMNS = ["N", "V", "B", "P", "C_v"]
+
+
 def quality_gap_table(df: pd.DataFrame, exact_model: str = EXACT_MODEL) -> pd.DataFrame:
     """
     Optimality gap of every heuristic model vs the exact model, computed only
     on instances (scenario, instance) where BOTH the exact model and the
-    heuristic converged ("ok"). Rows the exact model didn't solve (timeout on
-    larger stress instances) are reported as excluded, not dropped silently.
+    heuristic converged ("ok") AND the instance shape actually matches
+    (SHAPE_COLUMNS) -- same test method name is not sufficient, see above.
+    Rows excluded for either reason are counted and reported, never dropped
+    silently.
     """
     ok = _ok(df)
-    exact = ok[ok["model"] == exact_model][["scenario", "instance", "obj_val"]]
-    exact = exact.rename(columns={"obj_val": "obj_val_exact"})
+    shape_cols_present = [c for c in SHAPE_COLUMNS if c in ok.columns]
+    exact_cols = ["scenario", "instance", "obj_val"] + shape_cols_present
+    exact = ok[ok["model"] == exact_model][exact_cols].copy()
+    exact = exact.rename(columns={"obj_val": "obj_val_exact",
+                                   **{c: f"{c}_exact" for c in shape_cols_present}})
 
     heuristics = ok[ok["model"] != exact_model]
     merged = heuristics.merge(exact, on=["scenario", "instance"], how="left")
 
-    matched = merged.dropna(subset=["obj_val_exact", "obj_val"]).copy()
-    matched["gap_pct"] = (
-        (matched["obj_val"] - matched["obj_val_exact"]) / matched["obj_val_exact"] * 100
-    )
-
-    unmatched = merged[merged["obj_val_exact"].isna()]
-    if not unmatched.empty:
-        n_unmatched = len(unmatched)
-        print(f"[quality_gap_table] {n_unmatched} heuristic rows have no matching "
+    no_exact_run = merged[merged["obj_val_exact"].isna()]
+    if not no_exact_run.empty:
+        print(f"[quality_gap_table] {len(no_exact_run)} heuristic rows have no matching "
               f"'{exact_model}' OK result for the same (scenario, instance) -- "
               f"excluded from the gap computation (exact model likely timed out "
               f"or that instance/scenario hasn't been run for {exact_model} yet).")
 
+    candidates = merged.dropna(subset=["obj_val_exact", "obj_val"]).copy()
+
+    shape_ok = pd.Series(True, index=candidates.index)
+    for c in shape_cols_present:
+        shape_ok &= candidates[c] == candidates[f"{c}_exact"]
+
+    shape_mismatch = candidates[~shape_ok]
+    if not shape_mismatch.empty:
+        print(f"[quality_gap_table] {len(shape_mismatch)} rows excluded: same test method "
+              f"name as an {exact_model} row, but a different instance shape "
+              f"({', '.join(shape_cols_present)}) -- their obj_val's aren't comparable. "
+              f"Affected instances: {sorted(shape_mismatch['instance'].unique())[:10]}"
+              f"{'...' if shape_mismatch['instance'].nunique() > 10 else ''}")
+
+    matched = candidates[shape_ok].copy()
+    matched["gap_pct"] = (
+        (matched["obj_val"] - matched["obj_val_exact"]) / matched["obj_val_exact"] * 100
+    )
+
     g = matched.groupby(["model", "scenario"])["gap_pct"]
-    out = g.agg(mean_gap_pct="mean", std_gap_pct="std", max_gap_pct="max", n_matched="count")
+    out = g.agg(mean_gap_pct="mean", median_gap_pct="median",
+                std_gap_pct="std", max_gap_pct="max", n_matched="count")
     return out.reset_index()
 
 
