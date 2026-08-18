@@ -4,6 +4,7 @@ import time
 import pyscipopt
 from dtos.opp.solve_result import SolveResult
 import models.utils.solve_registry as solve_registry
+from models.utils.input_validation import overloaded_batches, orders_without_exactly_one_batch
 
 def solve_zpl(zpl_path, dat_dir=None, params=None):
     """
@@ -12,6 +13,42 @@ def solve_zpl(zpl_path, dat_dir=None, params=None):
     """
     if dat_dir is None:
         dat_dir = os.path.dirname(zpl_path)
+    if params is None:
+        params = {}
+
+    # opp_model_v4.zpl takes Bn/C_v as fixed parameters, not decision
+    # variables, so it has no constraint left to reject a batch that
+    # overflows the vehicle or an order assigned to zero/two+ batches --
+    # it would just solve happily around garbage input (see
+    # models/utils/input_validation.py). Enforce both here, before ever
+    # calling zimpl/SCIP, so this input is rejected the same way
+    # opp_hc_2/opp_aco_2/opp_hc_3/opp_aco_3 reject it for the same instance.
+    bn = params.get("Bn")
+    invalid_reasons = []
+
+    overloaded = overloaded_batches(params.get("C_n"), bn, params.get("C_v"))
+    if overloaded:
+        invalid_reasons.append(
+            "batch(es) exceed vehicle capacity (C_v): " + ", ".join(sorted(overloaded))
+        )
+
+    N_inferred = {n for (n, _b) in bn.keys()} if bn else set()
+    misassigned = orders_without_exactly_one_batch(bn, N_inferred)
+    if misassigned:
+        invalid_reasons.append(
+            "order(s) not assigned to exactly one batch: " + ", ".join(sorted(misassigned))
+        )
+
+    if invalid_reasons:
+        params["debug_output"] = "INFEASIBLE: " + "; ".join(invalid_reasons)
+        solve_result = SolveResult(
+            status="infeasible",
+            output={},
+            elapsed=0.0,
+            params={"obj_val": None, **params},
+        )
+        solve_registry.register(solve_result)
+        return "infeasible", {}
 
     out_base = os.path.join(dat_dir, "model")
     lp_path = f"{out_base}.lp"
@@ -54,9 +91,6 @@ def solve_zpl(zpl_path, dat_dir=None, params=None):
 
     elif status == "infeasible":
         debug_string = "INFEASIBLE"
-
-    if params is None:
-        params = {}
 
     params["debug_output"] = debug_string
 
