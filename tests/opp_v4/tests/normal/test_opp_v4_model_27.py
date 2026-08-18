@@ -29,10 +29,10 @@ class TestFractionalZeroCapacitiesZIMPL(OPPTestCaseV4):
 
         N = {"O1", "O2", "O3", "O4"}
         a = {(n, v): 0 for n in N for v in V}
-        a[("O1", "V2")] = 1
-        a[("O2", "V3")] = 1
-        a[("O3", "V4")] = 1
-        a[("O4", "V5")] = 1
+        a[("O1", "A2")] = 1
+        a[("O2", "A3")] = 1
+        a[("O3", "A4")] = 1
+        a[("O4", "A5")] = 1
 
         y = {(n, b): 0 for n in N for b in B}
         batches = sorted(B)
