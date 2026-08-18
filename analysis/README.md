@@ -14,37 +14,82 @@ Generaliza `specs/model_analysis.md` (escrito originalmente para
 ## 1. Generar los datos
 
 El pipeline **no ejecuta los tests**, solo lee lo que ya está en
-`tests/outputs/<modelo>/<normal|stress>/*.csv`. Faltan corridas para varios
-modelos/escenarios (`opp_hc_2`, `opp_aco_2`, `opp_hc_3`, `opp_aco_3` no
-tienen ningún CSV todavía, y `opp_v4` no tiene corrida de estrés). Para
-generarlos:
+`tests/outputs/<modelo>/<normal|stress>/*.csv`. Para generarlos:
 
 ```bash
 export WRITE_RESULTS_CSV=1
 
 python tests/opp_v4/execute_tests.py            # opp_v4 normal
+python tests/opp_v4/execute_stress_tests.py     # opp_v4 stress
 python tests/opp_hc_2/execute_tests.py          # opp_hc_2 normal
 python tests/opp_hc_2/execute_stress_tests.py   # opp_hc_2 stress
 python tests/opp_aco_2/execute_tests.py         # opp_aco_2 normal
+python tests/opp_aco_2/execute_stress_tests.py  # opp_aco_2 stress
 python tests/opp_hc_3/execute_tests.py          # opp_hc_3 normal
+python tests/opp_hc_3/execute_stress_tests.py   # opp_hc_3 stress
 python tests/opp_aco_3/execute_tests.py         # opp_aco_3 normal
+python tests/opp_aco_3/execute_stress_tests.py  # opp_aco_3 stress
 ```
 
-Estado real de estrés por modelo (verificado en el repo, no asumido):
+Cada `execute_stress_tests.py` acepta un id de dos dígitos como único
+argumento para correr un solo test (p. ej. `python tests/opp_hc_3/execute_stress_tests.py 04`).
 
-- `opp_hc_2`: tiene `execute_stress_tests.py` y casos en `tests/stress/` —
-  listo para correr.
-- `opp_v4`: tiene la carpeta `tests/opp_v4/tests/stress/` pero está vacía
-  (solo `__init__.py`) y no hay `execute_stress_tests.py` — faltan escribir
-  los casos de estrés antes de poder correrlos. Sin esto, la sección 3
-  (profiling) y el gap de calidad en estrés quedan cojos.
-- `opp_aco_2`, `opp_hc_3`, `opp_aco_3`: no tienen ni carpeta `tests/stress/`
-  ni script de ejecución todavía — hay que crearlos siguiendo el patrón de
-  `opp_hc_2` (reusar los mismos escenarios de estrés que ya existen para
-  `opp_hc_2`/`opp_v3`, adaptando el DTO de cada modelo).
+### Alcance de los stress tests que se agregaron
+
+`opp_hc_2` ya tenía su batería completa de 34 escenarios de estrés (heredada
+de `opp_v3`/`opp_hc`/`opp_aco`). Para `opp_v4`, `opp_aco_2`, `opp_hc_3` y
+`opp_aco_3` **no** se portaron los 34 — se eligió un subconjunto curado de
+11 escenarios (mismo *builder* de escenario y mismos parámetros numéricos que
+sus equivalentes en `opp_hc_2`, para que el join por instancia en `analysis/`
+sea válido), pensado para cubrir el rango de `N` (cantidad de pedidos) y `V`
+(tamaño del grafo) que necesita la sección 6 (correlación/sensibilidad):
+
+| # en este repo | Origen (`opp_hc_2` test #) | Escenario                                    |
+|-----------------|------------------------------|-----------------------------------------------|
+| 01 / 02 / 03    | 01 / 02 / 03                 | grid 10x10 / 20x20 / 25x25 (100/400/625 nodos) |
+| 04 / 05 / 06    | 04 / 05 / 06                 | custom setup, distintas órdenes por lote        |
+| 07              | 09                           | capacidad infeasible (caso negativo a propósito) |
+| 08              | 34                           | 320 órdenes, grilla 7x7                         |
+| 09 / 10         | 11 / 12                      | 750 órdenes, grilla 10x10 / 25x25 (**grandes**) |
+| 11              | 15                           | doble grilla 50x50, 750 órdenes (**grande**)    |
+
+- **`opp_v4` solo tiene 01-08.** Los tests 09, 10 y 11 (750 órdenes / hasta
+  5000 nodos) se excluyeron a propósito para el modelo exacto: el propio
+  `opp_v3` (antecesor de `opp_v4`) ya demostró en su suite de estrés que a
+  esa escala el solver exacto no converge en tiempo razonable (ver
+  `tests/outputs/opp_v3/stress/complete_output_v3_stress_tests.csv`, y la
+  hipótesis de "asintotismo exponencial" en `specs/model_analysis.md` sec. 5)
+  — correrlos ahí solo quemaría CPU para un timeout garantizado.
+- **`opp_aco_2`, `opp_hc_3`, `opp_aco_3` tienen los 11**, con 09/10/11
+  gateados detrás de `RUN_LARGE_TESTS=1` (mismo mecanismo que ya usaba
+  `opp_hc_2` test #15) porque son instancias pesadas (hasta 750 órdenes /
+  5000 nodos) — corren, pero tardan.
+- Si se necesita más resolución para la correlación paramétrica, se puede
+  ampliar el subconjunto siguiendo el mismo patrón: reusar el *builder* de
+  escenario de `opp_hc_2` (`scenario_custom_setup` / `scenario_double_grid` /
+  `scenario_six_missions_two_periods_grid_graph`, todos funciones puras sin
+  acoplamiento a ningún modelo) y copiar los parámetros numéricos del test
+  original de `opp_hc_2`/`opp_v3` que se quiera portar.
+
+### Nota sobre ACO en estrés
+
+Al portar el test 04 a `opp_aco_2`, con los hiperparámetros default (15
+hormigas, 60 iteraciones) el algoritmo **no encuentra solución factible** en
+esa instancia (misma instancia donde `opp_hc_2` sí converge). No es un bug
+del test: el propio historial de `opp_aco` (v1) ya tiene ese mismo resultado
+registrado (`status=failed`) en
+`tests/outputs/opp_aco/stress/output_opp_aco_stress_tests_20260617_123001.csv`
+para ese escenario y para la mayoría de las instancias medianas/grandes. Es
+en sí mismo un hallazgo real para la tesina — la tasa de éxito de ACO se
+degrada en estrés bajo estos hiperparámetros — y la sección 1 del pipeline
+(tasa de éxito/convergencia) está pensada justamente para cuantificarlo, no
+para esconderlo ajustando parámetros hasta que "pase".
 
 Los tests de estrés en el modelo exacto pueden tardar varios minutos por
-instancia — correrlos con tiempo de sobra.
+instancia — correrlos con tiempo de sobra. `opp_v4` requiere el binario
+`zimpl` instalado y en el `PATH` (no verificado en este sandbox: los tests
+nuevos compilan y siguen exactamente el patrón de los tests normales de
+`opp_v4`, que tampoco corren aquí por la misma razón).
 
 ## 2. Correr el pipeline
 
