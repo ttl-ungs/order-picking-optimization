@@ -1,42 +1,52 @@
-import unittest
+# Corresponds to test test_opp_v2_model_20.py
+
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
+import unittest
 
-from models.utils.dat_files_builder import build_dat_files
-from models.base.opp_location_graph import OPPLocationGraph
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
+)
+
 from tests.opp_v4.tests.opp_test_case_v4 import OPPTestCaseV4
+from tests.opp_v4.scenarios.normal.scenario_12 import grid_5x3_two_pickers_four_batches
+from models.utils.dat_files_builder import build_dat_files
 from tests.opp_v4.config import DAT_DIR, ZPL_PATH
 from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
 
-from tests.opp_v4.scenarios.normal.scenario_17 import branched_single_mission_route
 
-class TestOPPModelZIMPL(OPPTestCaseV4):
-
-    def test_branched_single_mission_route(self):
-        V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
-            branched_single_mission_route()
+class TestOPPModelGridZIMPL(OPPTestCaseV4):
+    def _solve_grid_zpl(
+        self,
+        N,
+        a,
+        y,
+        cap_n,
+        cap_vehicle_override=None,
+        due_date_override=None,
+        w1_override=None,
+        w2_override=None,
+        gamma_override=None,
+        delta_override=None,
+    ):
+        V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, _ = (
+            grid_5x3_two_pickers_four_batches()
         )
 
-        N = {"O1", "O2", "O3", "O4"}
-        a = {(n, v): 0 for n in N for v in V}
-        a[("O1", "L2")] = 1
-        a[("O2", "L3")] = 1
-        a[("O3", "L5")] = 1
-        a[("O4", "L6")] = 1
+        if cap_vehicle_override is not None:
+            cap_vehicle = cap_vehicle_override
+        w1, w2, gamma, delta = self.apply_weight_overrides(
+            w1,
+            w2,
+            gamma,
+            delta,
+            w1_override,
+            w2_override,
+            gamma_override,
+            delta_override,
+        )
+        due_date_by_order = self.normalize_due_dates(N, due_date_override)
 
-        y = {("O1", "B1"): 1, ("O2", "B1"): 1, ("O3", "B1"): 1, ("O4", "B1"): 1}
-        cap_n = {"O1": 2.0, "O2": 2.0, "O3": 2.0, "O4": 2.0}
-        # Adaptación de variables para el formato ZIMPL V4
-        A_ni = a if 'a' in locals() else {} 
-        Bn = y if 'y' in locals() else {}
-        C_n = cap_n if 'cap_n' in locals() else {}
-        Dd = due_date if 'due_date' in locals() else {n: 0.0 for n in N}
-        
-        # Tiempo de servicio por defecto (si V2 no lo tenía explícito)
-        S_i = {v: 0.0 for v in V}
-
-        # Generación de conjunto de Arcos válidos E y distancias d_ij
         E = set()
         d_ij = {}
         for i in location_graph.get_vertices():
@@ -46,90 +56,119 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
                     d_ij[(i, j)] = location_graph.get_distance(i, j)
 
         scenario_data = {
-            "N":        N,
-            "V":        set(location_graph.get_vertices()),
-            "P":        P,
-            "B":        B,
-            "E":        E,
-            "depot":    location_graph.get_depot(),
-            "final":    location_graph.get_final(),
-            "W_full":   w1,
-            "W_ea_ta":  w2,
-            "W_ea":     gamma,
-            "W_ta":     delta,
-            "B_time":   0.5,
-            "B_setup":  1.0,
-            "B_picking":1.0,
-            "C_v":      cap_vehicle,
-            "M":        10000.0,
-            "C_n":      C_n,
-            "Dd":       Dd,
-            "d_ij":     d_ij,
-            "S_i":      S_i,
-            "A_ni":     A_ni,
-            "Bn":       Bn
+            "N": N,
+            "V": set(location_graph.get_vertices()),
+            "P": P,
+            "B": B,
+            "E": E,
+            "depot": location_graph.get_depot(),
+            "final": location_graph.get_final(),
+            "W_full": w1,
+            "W_ea_ta": w2,
+            "W_ea": gamma,
+            "W_ta": delta,
+            "B_time": 0.5,
+            "B_setup": 1.0,
+            "B_picking": 1.0,
+            "C_v": cap_vehicle,
+            "M": 10000.0,
+            "C_n": cap_n,
+            "Dd": due_date_by_order,
+            "d_ij": d_ij,
+            "S_i": {v: 0.0 for v in V},
+            "A_ni": a,
+            "Bn": y,
         }
 
         build_dat_files(DAT_DIR, scenario_data)
 
-        try:
-            status, var_values = solve_zpl(ZPL_PATH, dat_dir=DAT_DIR, params={
-                "N": len(N), "B": len(B), "V": len(set(location_graph.get_vertices())), "P": len(P),
-                "W_full": w1, "W_ea_ta": w2, "W_ea": gamma, "W_ta": delta,
-                "B_time": 0.5, "B_setup": 1.0, "B_picking": 1.0,
-                "C_v": cap_vehicle, "C_n": C_n, "Dd": Dd, "d_ij": d_ij,
-                "S_i": S_i, "A_ni": A_ni, "Bn": Bn
-            })
-        except Exception as e:
-            self.fail(f"ZPL solve failed: {e}")
+        status, var_values = solve_zpl(
+            ZPL_PATH,
+            dat_dir=DAT_DIR,
+            params={"N": len(N), "B": len(B), "V": len(V), "P": len(P)},
+        )
 
-        self.assertIn(status, ("optimal", "feasible"), "El modelo no encontró una solución.")
-        
-        # Aserción Genérica de V4: Cada lote se asigna a 1 picker
-        assignments = {b: 0 for b in B}
-        for key, val in var_values.items():
-            if key.lower().startswith("x_pb") and val > 0.5:
-                for b in B:
-                    if b in key: assignments[b] += 1
-                    
-        for b in B:
-            self.assertEqual(assignments[b], 1, f"El lote {b} no fue asignado exactamente a un picker.")
-            
-        # Extracción de grafo resultante
-        active_arcs = extract_active_arcs(var_values, B)
-        output_graph = OPPLocationGraph(depot_node=location_graph.get_depot(), final_node=location_graph.get_final())
-        for i in location_graph.get_vertices():
-            if i not in output_graph.get_vertices():
-                output_graph.add_vertex(i, "picking")
-        for b, arcs in active_arcs.items():
-            for i, j in arcs:
-                if not output_graph.has_edge(i, j):
-                    output_graph.add_edge(i, j, location_graph.get_distance(i, j))
+        return status, var_values, location_graph, B, V
 
-        expected_graph = OPPLocationGraph("L1", "L7")
-        expected_graph.add_vertex("L2", "picking")
-        expected_graph.add_vertex("L3", "picking")
-        expected_graph.add_vertex("L4", "picking")
-        expected_graph.add_vertex("L5", "picking")
-        expected_graph.add_vertex("L6", "picking")
-        expected_graph.add_edge("L1", "L2", location_graph.get_distance("L1", "L2"))
-        expected_graph.add_edge("L2", "L3", location_graph.get_distance("L2", "L3"))
-        expected_graph.add_edge("L3", "L5", location_graph.get_distance("L3", "L5"))
-        expected_graph.add_edge("L5", "L6", location_graph.get_distance("L5", "L6"))
-        expected_graph.add_edge("L6", "L7", location_graph.get_distance("L6", "L7"))
+    def test_grid_multi_location_orders(self):
+        V, _, B, _, _, _, _, _, _, _ = grid_5x3_two_pickers_four_batches()
+        N = {f"O{i}" for i in range(1, 13)}
+        a = {(n, v): 0 for n in N for v in V}
 
+        # Setup de locaciones
+        locs = {
+            "O1": ["V2", "V7"],
+            "O2": ["V3"],
+            "O3": ["V8"],
+            "O4": ["V4"],
+            "O5": ["V9"],
+            "O6": ["V10"],
+            "O7": ["V5"],
+            "O8": ["V11"],
+            "O9": ["V12"],
+            "O10": ["V6"],
+            "O11": ["V13"],
+            "O12": ["V14"],
+        }
+        for order, loc_list in locs.items():
+            for loc in loc_list:
+                a[(order, loc)] = 1
+
+        y = {(n, b): 0 for n in N for b in B}
+        batches = {
+            "O1": "B1",
+            "O2": "B1",
+            "O3": "B1",
+            "O4": "B2",
+            "O5": "B2",
+            "O6": "B2",
+            "O7": "B3",
+            "O8": "B3",
+            "O9": "B3",
+            "O10": "B4",
+            "O11": "B4",
+            "O12": "B4",
+        }
+        for order, b in batches.items():
+            y[(order, b)] = 1
+
+        cap_n = {n: 2.0 for n in N}
+        status, var_values, _, _, _ = self._solve_grid_zpl(N, a, y, cap_n)
         self.assertIn(
             status,
             ("optimal", "feasible"),
             "El modelo no encontró una solución.",
         )
-        
-        self.assertEqual(output_graph, expected_graph)
-        # --- NUEVAS VALIDACIONES INTELIGENTES V4 ---
-        if len(P) > 1 and len(B) > 1:
-            self.assert_workload_balance(var_values, P, B, max_difference=1)
-            
-        self.assert_no_time_overlap(var_values, P, B)
+
+        # Validar cobertura de locaciones extrayendo arcos
+        active_arcs = extract_active_arcs(var_values, B)
+        required_by_batch = {
+            "B1": {"V2", "V7", "V3", "V8"},
+            "B2": {"V4", "V9", "V10"},
+            "B3": {"V5", "V11", "V12"},
+            "B4": {"V6", "V13", "V14"},
+        }
+
+        for batch, required_locs in required_by_batch.items():
+            visited = set(node for edge in active_arcs.get(batch, []) for node in edge)
+            for loc in required_locs:
+                self.assertIn(loc, visited, f"El lote {batch} no visitó {loc}")
+
+    # def test_grid_order_size_bigger_than_cart_infeasible(self):
+    #     V, _, B, _, _, _, _, _, _, _ = grid_5x3_two_pickers_four_batches()
+    #     N = {f"O{i}" for i in range(1, 13)}
+    #     a = {(n, v): 0 for n in N for v in V}
+    #     y = {
+    #         (n, b): 0 for n in N for b in B
+    #     }  # Simplificado para que no ocupe 20 lineas
+    #
+    #     # Test Infeasible por capacidad
+    #     cap_n = {n: 3.0 for n in N}
+    #     status, _, _, _, _ = self._solve_grid_zpl(N, a, y, cap_n)
+    #
+    #     El modelo ya no evalúa que las órdenes entren en el carro, el test ya no tiene sentido.
+    #
+    #     self.assertEqual(status, "infeasible")
 
 
 if __name__ == "__main__":

@@ -1,3 +1,5 @@
+# Corresponds to test test_opp_v2_model_26.py
+
 import unittest
 import sys
 import os
@@ -15,21 +17,25 @@ from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
 
 from tests.opp_v4.scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
+)
+
 
 class TestOPPModelZIMPL(OPPTestCaseV4):
     """
-    Test 24: 4 orders per batch. 1 batch per picker. Each order has a location.
+    Test 26: 4 orders per batch. +-2 batches per picker. Each order has a location.
     """
 
-    def test_4_orders_per_batch(self):
+    def test_4_orders_per_batch_10_pickers(self):
         opp_location_graph, V, B, P, N, x, y, a = scenario_custom_setup(
-            25, 25, 100, 10, 10
+            25, 10, 100, 10, 10
         )
 
         cap_n = {f"O{n}": 10 for n in range(1, len(N) + 1)}
         due_date = {f"O{n}": 30 for n in range(1, len(N) + 1)}
 
-        cap_vehicle = 40
+        cap_vehicle = 250
         w1 = 9.0
         w2 = 1.0
         gamma = 1.0

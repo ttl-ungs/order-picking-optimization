@@ -44,24 +44,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 
 ## 3. Cambios recientes
 
-### Formato recomendado para cada cambio
-
-#### Cambio [YYYY-MM-DD] - [Título breve]
-- Autor: [nombre]
-- Alcance: [modelo / tests / docs / infraestructura]
-- Archivos principales: [ruta1, ruta2, ...]
-- Qué se hizo:
-  - [Resumen claro en 2-4 bullets]
-- Impacto:
-  - [Qué cambia para el proyecto]
-- Riesgo / atención:
-  - [Punto crítico, dependencia, posible regresión]
-- Validación:
-  - [comandos ejecutados / pruebas / evidencia]
-
-### Ejemplo de entrada real
-
-#### Cambio 2026-08-18 09:00 - Estructura inicial de meta summary
+### Cambio 2026-08-18 09:00 - Estructura inicial de meta summary
 - Autor: IA / equipo
 - Alcance: documentación / colaboración
 - Archivos principales: [meta.md]
@@ -75,7 +58,33 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - Validación:
   - Se verificó la existencia del archivo y su estructura inicial.
 
-#### Cambio 2026-08-18 11:15 - Ampliación de validación V4 y nuevos tests de stress
+
+### Cambio 2026-08-18 - Normalización de suite opp_v4 y limpieza de tests migrados
+- Autor: IA / equipo
+- Alcance: tests / validación / comparación de modelos
+- Archivos principales:
+  - [tests/opp_v4/tests/normal](tests/opp_v4/tests/normal)
+  - [tests/opp_v4/tests/stress](tests/opp_v4/tests/stress)
+  - [tests/opp_v4/tests/opp_test_case_v4.py](tests/opp_v4/tests/opp_test_case_v4.py)
+  - [tests/opp_hc_2/tests/normal](tests/opp_hc_2/tests/normal)
+- Qué se hizo:
+  - Se dejó la suite normal de opp_v4 alineada con la cobertura normal de opp_hc_2, sin mezclar casos de gran escala.
+  - Se reubicaron los casos de stress grandes (12, 13, 14, y los de 24–27) al directorio de stress, manteniendo el normal más restringido a escenarios de tamaño controlado.
+  - Se revisaron tests migrados que habían quedado con patrones legacy, como `if 'x' in locals()` y bloques `self.fail(... {e})` con variables indefinidas.
+  - Se corrigieron archivos concretos con errores de análisis estático del IDE, especialmente en la normal 15 y en la stress 04–07.
+- Impacto:
+  - Mejora la coherencia entre suites de comparación y reduce los falsos positivos del IDE.
+  - Deja la suite de opp_v4 más clara para distinguir normal vs stress y facilita la revisión de regresiones.
+  - Aumenta la confianza en la migración entre versiones de tests y modelado.
+- Riesgo / atención:
+  - El conjunto de stress sigue siendo más pesado y requiere validación manual/por lote para casos de tamaño grande.
+  - La comparación entre modelos exactos y heurísticos sigue dependiendo de que los escenarios representen el mismo problema y no solo el mismo nombre.
+- Validación:
+  - `git status --short` confirmó la reorganización del árbol de tests y la presencia de cambios relevantes en [tests/opp_v4/tests/normal](tests/opp_v4/tests/normal) y [tests/opp_v4/tests/stress](tests/opp_v4/tests/stress).
+  - Verificación compilatoria del árbol v4: `NO_COMPILATION_ERRORS`.
+  - Revisión del IDE en los archivos afectados: `No errors found` en los tests corregidos.
+
+### Cambio 2026-08-18 11:15 - Ampliación de validación V4 y nuevos tests de stress
 - Autor: [equipo / desarrollador actual]
 - Alcance: tests / validación / infraestructura de comparación del modelo V4
 - Archivos principales:
@@ -106,7 +115,39 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 
 ---
 
-## 4. Archivos clave del repositorio
+
+## 4. Formato recomendado para cada cambio
+
+### Cambio [YYYY-MM-DD] - [Título breve]
+- Autor: [nombre]
+- Alcance: [modelo / tests / docs / infraestructura]
+- Archivos principales: [ruta1, ruta2, ...]
+- Qué se hizo:
+  - [Resumen claro en 2-4 bullets]
+- Impacto:
+  - [Qué cambia para el proyecto]
+- Riesgo / atención:
+  - [Punto crítico, dependencia, posible regresión]
+- Validación:
+  - [comandos ejecutados / pruebas / evidencia]
+
+### Ejemplo de entrada real
+
+#### Cambio 2026-08-18 09:00 - Estructura inicial de meta summary
+- Autor: IA / equipo
+- Alcance: documentación / colaboración
+- Archivos principales: [meta.md]
+- Qué se hizo:
+  - Se agregó un resumen operativo para que la IA registre cambios y el contexto del repo.
+  - Se define una estructura reutilizable para cambios, impacto y validación.
+- Impacto:
+  - Reduce la necesidad de leer todo el repositorio para entender el estado actual.
+- Riesgo / atención:
+  - Requiere mantener este archivo actualizado para que siga siendo útil.
+- Validación:
+  - Se verificó la existencia del archivo y su estructura inicial.
+
+## 5. Archivos clave del repositorio
 
 ### Documentación principal
 - [README.md](README.md)
@@ -137,7 +178,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 
 ---
 
-## 5. Dependencias y entorno
+## 6. Dependencias y entorno
 
 ### Requisitos
 - Python
@@ -166,7 +207,7 @@ python -m unittest discover -s tests
 
 ---
 
-## 6. Riesgos, deuda y pendientes
+## 7. Riesgos, deuda y pendientes
 
 ### Riesgos conocidos
 - [Riesgo 1: inconsistencia de imports entre modelos]
@@ -181,7 +222,7 @@ python -m unittest discover -s tests
 
 ---
 
-## 7. Criterios para actualizar este archivo
+## 8. Criterios para actualizar este archivo
 
 Cuando se haga un cambio, la IA o el desarrollador debe actualizar esta página con el siguiente mínimo:
 
@@ -204,7 +245,7 @@ No se debe escribir un resumen genérico como “se arregló el código”. Debe
 
 ---
 
-## 8. Instrucción directa para la IA
+## 9. Instrucción directa para la IA
 
 La IA encargada de modificar este repositorio debe seguir esta secuencia:
 
