@@ -61,7 +61,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 
 ### Ejemplo de entrada real
 
-#### Cambio 2026-08-18 - Estructura inicial de meta summary
+#### Cambio 2026-08-18 09:00 - Estructura inicial de meta summary
 - Autor: IA / equipo
 - Alcance: documentación / colaboración
 - Archivos principales: [meta.md]
@@ -74,6 +74,35 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
   - Requiere mantener este archivo actualizado para que siga siendo útil.
 - Validación:
   - Se verificó la existencia del archivo y su estructura inicial.
+
+#### Cambio 2026-08-18 11:15 - Ampliación de validación V4 y nuevos tests de stress
+- Autor: [equipo / desarrollador actual]
+- Alcance: tests / validación / infraestructura de comparación del modelo V4
+- Archivos principales:
+  - [tests/opp_v4/tests/normal/test_opp_v4_model_19.py](tests/opp_v4/tests/normal/test_opp_v4_model_19.py)
+  - [tests/opp_v4/tests/route_assertions.py](tests/opp_v4/tests/route_assertions.py)
+  - [tests/opp_v4/tests/stress/test_opp_v4_model_12.py](tests/opp_v4/tests/stress/test_opp_v4_model_12.py)
+  - [tests/opp_v4/tests/stress/test_opp_v4_model_13.py](tests/opp_v4/tests/stress/test_opp_v4_model_13.py)
+  - [tests/opp_v4/tests/stress/test_opp_v4_model_14.py](tests/opp_v4/tests/stress/test_opp_v4_model_14.py)
+  - [tests/opp_v4/tests/stress/test_opp_v4_model_24.py](tests/opp_v4/tests/stress/test_opp_v4_model_24.py)
+  - [tests/opp_v4/tests/stress/test_opp_v4_model_25.py](tests/opp_v4/tests/stress/test_opp_v4_model_25.py)
+  - [tests/opp_v4/tests/stress/test_opp_v4_model_26.py](tests/opp_v4/tests/stress/test_opp_v4_model_26.py)
+  - [tests/opp_v4/tests/stress/test_opp_v4_model_27.py](tests/opp_v4/tests/stress/test_opp_v4_model_27.py)
+  - [tests/opp_v4/scenarios/stress/](tests/opp_v4/scenarios/stress/)
+- Qué se hizo:
+  - Se actualizó el test de ruta larga de V4 para validar un recorrido único que cubra los pedidos requeridos, en lugar de fijar una ruta concreta.
+  - Se agregó un conjunto de helpers de validación de rutas para comprobar cobertura, ciclos y estructura de camino.
+  - Se incorporaron nuevos tests de stress para V4, ampliando la cobertura de escenarios más complejos y con mayor cantidad de pedidos / rutas.
+  - El estado del repo indica que varios archivos de scenario/test stress quedaron como nuevos y no aún consolidados en el árbol principal.
+- Impacto:
+  - Mejora la validación funcional del modelo V4 basados en el modelo V2, y ayuda a distinguir entre fallas reales del solver y aserciones demasiado rígidas sobre la ruta exacta.
+  - Aumenta la capacidad de detectar regresiones y casos de caminos inválidos o ambigua ruta final.
+- Riesgo / atención:
+  - Algunos tests stress y escenarios aparecen como nuevos y pueden requerir inspección adicional para confirmar que están alineados con la convención del proyecto y con la lógica de escenarios de referencia.
+  - La validación del comportamiento exacto sigue siendo sensible a la interpretación de penalizaciones por earliness/tardiness y a la estructura del grafo.
+- Validación:
+  - Evidencia del estado actual: `git status --short` muestra cambios en [meta.md](meta.md) y [tests/opp_v4/tests/normal/test_opp_v4_model_19.py](tests/opp_v4/tests/normal/test_opp_v4_model_19.py), además de nuevos archivos bajo [tests/opp_v4/tests/stress/](tests/opp_v4/tests/stress/) y [tests/opp_v4/scenarios/stress/](tests/opp_v4/scenarios/stress/).
+  - No se afirmaron resultados de tests completos ni ejecución exitosa de la suite, porque esa verificación no se ejecutó en esta revisión.
 
 ---
 
