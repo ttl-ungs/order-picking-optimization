@@ -14,8 +14,6 @@ from tests.opp.tests.opp_test_case import OPPTestCase
 from tests.opp_hc_2.scenarios.stress.scenario_double_grid import (
     scenario_two_grids_custom_setup,
 )
-from tests.test_config import RUN_LARGE_TESTS
-
 
 
 class TestOPPModel(OPPTestCase):
@@ -29,9 +27,6 @@ class TestOPPModel(OPPTestCase):
     congestion) to be an apples-to-apples join.
     """
 
-    @unittest.skipUnless(
-        RUN_LARGE_TESTS, "Requires RUN_LARGE_TESTS=1; model size is huge."
-    )
     def test_25_orders_per_batch_30_batches_double_50x50(self):
         opp_location_graph, V, B, N, y, a = scenario_two_grids_custom_setup(
             30, 750, rows=50, cols=50, connectors=10

@@ -13,17 +13,12 @@ from models.opp_v3.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
 from tests.opp_v3.scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
-from tests.test_config import RUN_LARGE_TESTS
-
 
 class TestOPPModel(OPPTestCase):
     """
     Test 13: 25 orders per batch. 30 batches, 750 orders. 100x100 grid.
     """
 
-    @unittest.skipUnless(
-        RUN_LARGE_TESTS, "Requires RUN_LARGE_TESTS=1; model size is huge."
-    )
     def test_25_orders_per_batch_30_batches_100x100(self):
         opp_location_graph, V, B, N, y, a = scenario_custom_setup(30, 750, 100, 100)
 

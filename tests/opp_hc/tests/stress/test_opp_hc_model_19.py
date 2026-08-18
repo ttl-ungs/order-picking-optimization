@@ -13,17 +13,12 @@ from models.opp_hc.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
 from tests.opp_hc.scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
-from tests.test_config import RUN_LARGE_TESTS
-
 
 class TestOPPModel(OPPTestCase):
     """
     Test 19: Extremely linear grid edge case. 50 orders per batch. 20 batches, 1000 orders. 2x500 grid.
     """
 
-    @unittest.skipUnless(
-        RUN_LARGE_TESTS, "Requires RUN_LARGE_TESTS=1; model size is huge."
-    )
     def test_extremely_linear_grid(self):
         location_graph, V, B, N, y, a = scenario_custom_setup(
             batches=20, orders=1000, rows=2, cols=500

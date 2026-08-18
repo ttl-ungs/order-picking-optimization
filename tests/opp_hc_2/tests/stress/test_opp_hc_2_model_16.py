@@ -15,17 +15,12 @@ from tests.opp_hc_2.scenarios.stress.scenario_double_grid import (
     scenario_two_grids_custom_setup,
 )
 
-from tests.test_config import RUN_LARGE_TESTS
-
 
 class TestOPPModel(OPPTestCase):
     """
     Test 16: 20 orders per batch. 40 batches, 800 orders. Two 50x50 grids with 10 connectors.
     """
 
-    @unittest.skipUnless(
-        RUN_LARGE_TESTS, "Requires RUN_LARGE_TESTS=1; model size is huge."
-    )
     def test_20_orders_per_batch_40_batches_double_50x50(self):
         location_graph, V, B, N, y, a = scenario_two_grids_custom_setup(
             40, 800, rows=50, cols=50, connectors=10

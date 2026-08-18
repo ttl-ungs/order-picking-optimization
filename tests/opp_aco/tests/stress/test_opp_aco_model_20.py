@@ -13,17 +13,12 @@ from models.opp_aco.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
 from tests.opp_aco.scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
-from tests.test_config import RUN_LARGE_TESTS
-
 
 class TestOPPModel(OPPTestCase):
     """
     Test 20: Extreme density edge case. 20 orders per batch. 100 batches, 2000 orders. 5x5 grid.
     """
 
-    @unittest.skipUnless(
-        RUN_LARGE_TESTS, "Requires RUN_LARGE_TESTS=1; model size is huge."
-    )
     def test_extreme_density(self):
         location_graph, V, B, N, y, a = scenario_custom_setup(
             batches=100, orders=2000, rows=5, cols=5
