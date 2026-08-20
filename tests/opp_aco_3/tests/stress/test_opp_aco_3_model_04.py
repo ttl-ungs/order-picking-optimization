@@ -59,15 +59,6 @@ class TestOPPModel(OPPTestCase):
         params.M = M
         params.Bn = y
 
-        # Default A_ants/Max_it (15/60) are tuned for small normal-scale
-        # instances -- too little search budget to even construct a single
-        # feasible ant solution at this order count, which surfaces as a
-        # spurious 'infeasible' (no ant ever found a valid route), not a
-        # meaningful quality result. Scaled up so this instance actually gets
-        # solved instead of just failing to start.
-        params.A_ants = 50
-        params.Max_it = 150
-
         model_dto = ModelDTO()
         model_dto.N = N
         model_dto.location_graph = opp_location_graph
