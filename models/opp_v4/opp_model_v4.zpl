@@ -82,8 +82,14 @@ param Bn[N * B] := read "../dat_files/Bn.dat"        as "<1s,2s> 3n" comment "#"
 param R_b[<b> in B] :=
     sum <i> in V with (i != v_1 and i != v_f and (sum <n> in N : A_ni[n,i] * Bn[n,b]) >= 1) : 1;
 
-# Parámetro Big-M local gigante para evitar cortes de presolve en variables continuas
-param M_seq := 100000;
+# Parámetro Big-M local para las restricciones de secuenciación sin solapamiento
+# (19)-(20). Antes era 100000: un valor tan grande frente a la escala real de
+# v_pb/t_exec_b (decenas-cientos) infla la fila numéricamente y hace que SCIP
+# acepte como "optimal" soluciones que violan la restricción por ~0.1 unidades
+# de tiempo (ver tests_opp_v4_model_10/11: solapamiento de picker detectado por
+# assert_no_time_overlap). 500 ya cubre la escala de las instancias actuales
+# manteniendo el margen necesario para que el presolve no recorte la variable.
+param M_seq := 500;
 
 ##############################################################################
 # VARIABLES
