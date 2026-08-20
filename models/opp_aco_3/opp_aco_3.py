@@ -70,7 +70,7 @@ class OPPAntColonyOptimization(Model):
     # it; the congestion tracker's reservations from a discarded attempt are
     # rolled back via CongestionTracker.snapshot()/restore() so a retry never
     # sees phantom reservations from its own previous, abandoned try.
-    _MAX_ROUTE_ATTEMPTS_PER_BATCH = 40
+    _MAX_ROUTE_ATTEMPTS_PER_BATCH = 100
 
     def __init__(self, dto: ModelDTO):
         super().__init__()
@@ -277,6 +277,7 @@ class OPPAntColonyOptimization(Model):
                 "Beta2": beta2,
                 "Min_dwell": min_dwell,
                 "Cataclysms_used": cataclysms_used,
+                "Max_route_attempts_per_batch": self._MAX_ROUTE_ATTEMPTS_PER_BATCH,
             },
         )
         solve_registry.register(solve_result)
@@ -305,6 +306,7 @@ class OPPAntColonyOptimization(Model):
                 "Max_it": getattr(params, "_Max_it", 60),
                 "Alpha": getattr(params, "_Alpha", 1.0),
                 "Beta": getattr(params, "_Beta", 2.0),
+                "Max_route_attempts_per_batch": self._MAX_ROUTE_ATTEMPTS_PER_BATCH,
             },
         ))
 

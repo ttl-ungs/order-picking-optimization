@@ -45,7 +45,7 @@ class OPPAntColonyOptimization(Model):
     # handful of batches. Retrying just the batch that failed
     # -- instead of discarding the whole multi-batch solution --
     # is what fixes that, since each batch's route is independent of the others.
-    _MAX_ROUTE_ATTEMPTS_PER_BATCH = 40
+    _MAX_ROUTE_ATTEMPTS_PER_BATCH = 100
 
     def __init__(self, dto: ModelDTO):
         super().__init__()
@@ -202,7 +202,8 @@ class OPPAntColonyOptimization(Model):
                 "A_ants": num_ants,
                 "Max_it": max_it,
                 "Alpha": alpha,
-                "Beta": beta
+                "Beta": beta,
+                "Max_route_attempts_per_batch": self._MAX_ROUTE_ATTEMPTS_PER_BATCH,
             },
         )
         solve_registry.register(solve_result)
@@ -231,6 +232,7 @@ class OPPAntColonyOptimization(Model):
                 "Max_it": getattr(params, "_Max_it", 60),
                 "Alpha": getattr(params, "_Alpha", 1.0),
                 "Beta": getattr(params, "_Beta", 2.5),
+                "Max_route_attempts_per_batch": self._MAX_ROUTE_ATTEMPTS_PER_BATCH,
             },
         ))
 
