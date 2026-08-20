@@ -63,6 +63,15 @@ from models.opp_aco_3.utils.constraints_validator import ConstraintsValidator
 class OPPAntColonyOptimization(Model):
     """ACO solver for OPP v4 - congestion-aware, multi-pheromone (m-ACO4)."""
 
+    # See opp_aco_2.OPPAntColonyOptimization._MAX_ROUTE_ATTEMPTS_PER_BATCH for
+    # why this exists: one ant needing every batch's random construction to
+    # come out loop-free simultaneously is effectively impossible past a
+    # handful of batches. Retrying just the batch that failed is what fixes
+    # it; the congestion tracker's reservations from a discarded attempt are
+    # rolled back via CongestionTracker.snapshot()/restore() so a retry never
+    # sees phantom reservations from its own previous, abandoned try.
+    _MAX_ROUTE_ATTEMPTS_PER_BATCH = 40
+
     def __init__(self, dto: ModelDTO):
         super().__init__()
         self.N = sorted(dto.N)
@@ -394,22 +403,32 @@ class OPPAntColonyOptimization(Model):
                 if not required_locations:
                     continue
 
-                route, congestion_wait, exec_extra = self._build_batch_route_congestion_aware(
-                    required_locations,
-                    pheromones_time,
-                    pheromones_congestion,
-                    alpha,
-                    beta,
-                    beta2,
-                    p_objective_switch,
-                    tracker,
-                    owner=picker,
-                    start_time=picker_current_time[picker],
-                    b_time=params.B_time,
-                    S=params.S if isinstance(params.S, dict) else {},
-                )
+                route = None
+                for _ in range(self._MAX_ROUTE_ATTEMPTS_PER_BATCH):
+                    tracker_snapshot = tracker.snapshot()
+                    candidate, candidate_wait, candidate_exec_extra = self._build_batch_route_congestion_aware(
+                        required_locations,
+                        pheromones_time,
+                        pheromones_congestion,
+                        alpha,
+                        beta,
+                        beta2,
+                        p_objective_switch,
+                        tracker,
+                        owner=picker,
+                        start_time=picker_current_time[picker],
+                        b_time=params.B_time,
+                        S=params.S if isinstance(params.S, dict) else {},
+                    )
+                    if candidate is not None and len(candidate) == len(set(candidate)):
+                        route, congestion_wait, exec_extra = candidate, candidate_wait, candidate_exec_extra
+                        break
+                    # Discard this attempt's reservations before retrying --
+                    # otherwise the next try would see phantom occupancy from
+                    # a route that never actually happened.
+                    tracker.restore(tracker_snapshot)
                 if route is None:
-                    return None  # Ant got stuck (infeasible route generated)
+                    return None  # Batch never came out loop-free even after retrying
 
                 solution.set_batch_route(batch, route[1:-1])
                 solution.set_batch_congestion_wait(batch, congestion_wait)
@@ -489,7 +508,17 @@ class OPPAntColonyOptimization(Model):
         current_time = start_time
         total_wait = 0.0
 
+        # Safety valve for the backtracking fallback below: bounds how long a
+        # single ant can wander before giving up, so allowing revisits can't
+        # turn into an unbounded walk on an unlucky draw.
+        max_steps = 4 * max(len(self.location_graph.get_vertices()), 1)
+        steps = 0
+
         while unvisited_req:
+            steps += 1
+            if steps > max_steps:
+                return None, 0.0, start_time  # Genuinely stuck wandering, not just one dead end
+
             neighbors = [
                 n
                 for n in self.location_graph.get_vertices()
@@ -499,7 +528,21 @@ class OPPAntColonyOptimization(Model):
             ]
 
             if not neighbors:
-                return None, 0.0, start_time  # Dead end reached
+                # See opp_aco_2._build_batch_route's comment: forbidding every
+                # node ever stepped on (not just the required locations)
+                # turns this into a self-avoiding walk that dead-ends
+                # constantly on anything but a tiny grid. Fall back to
+                # allowing a step onto an already-visited, non-required node
+                # so the ant can retrace its way out instead of the whole
+                # route (and every batch sharing this ant's solution) being
+                # discarded.
+                neighbors = [
+                    n
+                    for n in self.location_graph.get_vertices()
+                    if self.location_graph.has_edge(current, n) and n != final
+                ]
+                if not neighbors:
+                    return None, 0.0, start_time  # Truly isolated node -- no escape at all
 
             use_time_matrix = random.random() < p_objective_switch
 
@@ -549,7 +592,14 @@ class OPPAntColonyOptimization(Model):
                 unvisited_req.remove(next_node)
             current = next_node
 
+        # See opp_aco_2._build_batch_route's comment: try the clean path first
+        # (avoiding every node already stepped on), and only fall back to a
+        # revisit-permitting search if that fails -- trying the unrestricted
+        # search first could pick a revisiting path over an equally-short clean
+        # one that was actually available.
         tail_route = self._find_shortest_path_bfs(current, final, visited)
+        if tail_route is None:
+            tail_route = self._find_shortest_path_bfs(current, final, set())
         if tail_route is None:
             return None, 0.0, start_time
 

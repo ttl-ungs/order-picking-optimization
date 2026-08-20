@@ -71,19 +71,49 @@ sea válido), pensado para cubrir el rango de `N` (cantidad de pedidos) y `V`
   acoplamiento a ningún modelo) y copiar los parámetros numéricos del test
   original de `opp_hc_2`/`opp_v3` que se quiera portar.
 
-### Nota sobre ACO en estrés
+### Nota sobre ACO en estrés (bug corregido)
 
 Al portar el test 04 a `opp_aco_2`, con los hiperparámetros default (15
-hormigas, 60 iteraciones) el algoritmo **no encuentra solución factible** en
-esa instancia (misma instancia donde `opp_hc_2` sí converge). No es un bug
-del test: el propio historial de `opp_aco` (v1) ya tiene ese mismo resultado
-registrado (`status=failed`) en
-`tests/outputs/opp_aco/stress/output_opp_aco_stress_tests_20260617_123001.csv`
-para ese escenario y para la mayoría de las instancias medianas/grandes. Es
-en sí mismo un hallazgo real para la tesina — la tasa de éxito de ACO se
-degrada en estrés bajo estos hiperparámetros — y la sección 1 del pipeline
-(tasa de éxito/convergencia) está pensada justamente para cuantificarlo, no
-para esconderlo ajustando parámetros hasta que "pase".
+hormigas, 60 iteraciones) el algoritmo daba **siempre** `infeasible` en esa
+instancia (misma instancia donde `opp_hc_2` sí converge) — y ni subir
+`A_ants`/`Max_it` a valores mucho más altos (150×100 = 15.000 intentos)
+cambiaba el resultado. Investigado a fondo (2026-08-19), resultó ser un bug
+real de construcción de rutas en `models/opp_aco_2/opp_aco_2.py` (y su
+análoga en `models/opp_aco_3/opp_aco_3.py`), no una limitación inherente del
+heurístico ni cuestión de tuneo:
+
+1. **Fase 1** (caminata hacia las ubicaciones requeridas) prohibía pisar
+   cualquier nodo ya visitado, incluso nodos de paso sin importancia →
+   la hormiga se trababa sola en esquinas de grillas grandes.
+2. **Fase 2** (conexión final por BFS) tenía el mismo problema, y era la
+   causa **dominante** (~65% de los fallos medidos en una instancia de
+   prueba).
+3. Una vez arregladas 1 y 2, apareció el cuello de botella real: cada lote
+   puede salir "con loop" (repite un nodo, lo cual el validador rechaza
+   correctamente — esa restricción sí es compartida con el modelo exacto).
+   El diseño original exigía que **todos** los lotes de una hormiga salieran
+   sin loop *a la vez*; con una tasa de éxito por lote de 5-68%, la
+   probabilidad de los 25 lotes de `test_04` a la vez era ~1e-21 —
+   imposible sin importar el presupuesto de hormigas/iteraciones.
+
+El fix real: cada lote se reintenta individualmente (hasta 40 veces) hasta
+salir limpio, en vez de descartar toda la hormiga por un solo lote fallido
+(con rollback del `CongestionTracker` en `opp_aco_3`, vía
+`CongestionTracker.snapshot()`/`restore()`, para que un intento descartado no
+deje reservas fantasma). Con este fix, `test_04` (25 lotes) resuelve
+`optimal` en ~13 minutos con los hiperparámetros **default** (15×60) — sin
+necesidad de tocar `A_ants`/`Max_it`. Al portarlo, la Fase 2 tenía además una
+sutileza: hay que intentar primero la ruta *limpia* (evitando visitados) y
+solo si eso falla, permitir revisitar — invertir el orden causaba una
+regresión real en un test normal ya existente (`test_repeated_picking_locations_2`,
+detectada y corregida en el mismo trabajo).
+
+Esto sigue siendo relevante para la tesina: aunque ya no es un bug, sí
+confirma que la tasa de éxito de ACO en instancias con muchos lotes depende
+fuertemente de la calidad de la construcción de rutas, no solo de
+hiperparámetros — la sección 1 del pipeline (tasa de éxito/convergencia)
+sigue siendo la que hay que mirar para cuantificar cuánto tarda/falla en
+instancias grandes incluso con el fix.
 
 Los tests de estrés en el modelo exacto pueden tardar varios minutos por
 instancia — correrlos con tiempo de sobra. `opp_v4` requiere el binario

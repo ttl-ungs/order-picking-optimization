@@ -37,6 +37,16 @@ from models.opp_aco_2.utils.constraints_validator import ConstraintsValidator
 class OPPAntColonyOptimization(Model):
     """ACO solver for OPP v4 - validates ALL constraints, parallelizes over pickers."""
 
+    # How many times a single batch's route construction may be retried within
+    # one ant before that ant gives up entirely. Without this, one ant needs
+    # EVERY batch's random construction to come out loop-free simultaneously --
+    # with per-batch clean rates as low as ~5-10% on a 10x10+ grid, requiring
+    # all of them at once in one draw is effectively impossible past a
+    # handful of batches. Retrying just the batch that failed
+    # -- instead of discarding the whole multi-batch solution --
+    # is what fixes that, since each batch's route is independent of the others.
+    _MAX_ROUTE_ATTEMPTS_PER_BATCH = 40
+
     def __init__(self, dto: ModelDTO):
         super().__init__()
         self.N = sorted(dto.N)
@@ -285,9 +295,14 @@ class OPPAntColonyOptimization(Model):
             )
 
             if required_locations:
-                route = self._build_batch_route(required_locations, pheromones, alpha, beta)
+                route = None
+                for _ in range(self._MAX_ROUTE_ATTEMPTS_PER_BATCH):
+                    candidate = self._build_batch_route(required_locations, pheromones, alpha, beta)
+                    if candidate is not None and len(candidate) == len(set(candidate)):
+                        route = candidate
+                        break
                 if route is None:
-                    return None  # Ant got stuck (infeasible route generated)
+                    return None  # Batch never came out loop-free even after retrying
                 # Routes are stored excluding depot/final (RouteSolution convention)
                 solution.set_batch_route(batch, route[1:-1])
 
@@ -347,8 +362,18 @@ class OPPAntColonyOptimization(Model):
         unvisited_req = set(required_locations)
         current = depot
 
+        # Safety valve for the backtracking fallback below: bounds how long a
+        # single ant can wander before giving up, so allowing revisits can't
+        # turn into an unbounded walk on an unlucky draw.
+        max_steps = 4 * max(len(self.location_graph.get_vertices()), 1)
+        steps = 0
+
         # Phase 1: Visit all required nodes
         while unvisited_req:
+            steps += 1
+            if steps > max_steps:
+                return None  # Genuinely stuck wandering, not just one dead end
+
             neighbors = [
                 n
                 for n in self.location_graph.get_vertices()
@@ -358,7 +383,15 @@ class OPPAntColonyOptimization(Model):
             ]
 
             if not neighbors:
-                return None  # Dead end reached
+                # Fall back to allowing a step onto an already-visited,
+                # non-required node so the ant can retrace its way out.
+                neighbors = [
+                    n
+                    for n in self.location_graph.get_vertices()
+                    if self.location_graph.has_edge(current, n) and n != final
+                ]
+                if not neighbors:
+                    return None  # Truly isolated node
 
             # Roulette wheel selection based on pheromones and visibility
             probabilities = []
@@ -403,8 +436,15 @@ class OPPAntColonyOptimization(Model):
                 unvisited_req.remove(next_node)
             current = next_node
 
-        # Optimal deterministic connection (BFS) to the final node to avoid deadlocks
+        # Optimal deterministic connection (BFS) to the final node to avoid deadlocks.
+        # Try the clean path first (avoiding every node Phase 1 already stepped on --
+        # keeps the route loop-free). Only if THAT
+        # fails do we allow BFS to revisit an already-used node -- strictly a last
+        # resort, since trying the  unrestricted search first could pick a revisiting
+        # path over an equally-short clean one that was actually available.
         tail_route = self._find_shortest_path_bfs(current, final, visited)
+        if tail_route is None:
+            tail_route = self._find_shortest_path_bfs(current, final, set())
         if tail_route is None:
             return None  # There is no physical connection to the output node
 

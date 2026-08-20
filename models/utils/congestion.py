@@ -99,6 +99,19 @@ class CongestionTracker:
         """Node occupancy duration: max of the real service time and the min_dwell floor."""
         return max(self.min_dwell, service_time)
 
+    def snapshot(self) -> Dict[Hashable, List[Tuple[float, float, str]]]:
+        """
+        Cheap point-in-time copy of all reservations -- lets a
+        caller try a reservation sequence and roll it back with `restore()`
+        if it turns out to be wasted work, instead of committing every
+        `reserve()` call unconditionally.
+        """
+        return {resource: list(intervals) for resource, intervals in self._busy.items()}
+
+    def restore(self, snapshot: Dict[Hashable, List[Tuple[float, float, str]]]) -> None:
+        """Roll back to a previous `snapshot()`, discarding any reservations made since."""
+        self._busy = {resource: list(intervals) for resource, intervals in snapshot.items()}
+
 
 def simulate_route_congestion(
     location_graph,
