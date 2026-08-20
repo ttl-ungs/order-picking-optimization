@@ -1,0 +1,12 @@
+test,status,total_time,model_time,obj_val,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,A_ants,Max_it,Alpha,Beta
+test_opp_aco_3_model_01.TestOPPModel.test_100_locations,failed,5.142046213150024,4.505641937255859,,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,100,15,60,1.0,2.0
+test_opp_aco_3_model_02.TestOPPModel.test_400_locations,failed,70.10140895843506,32.208446979522705,,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,400,15,60,1.0,2.0
+test_opp_aco_3_model_03.TestOPPModel.test_625_locations,failed,224.09507608413696,80.40938091278076,,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,625,15,60,1.0,2.0
+test_opp_aco_3_model_04.TestOPPModel.test_4_orders_per_batch,failed,19.373968839645386,18.722471952438354,,9.0,1.0,1.0,1.0,40.0,0.5,1.0,1.0,1000.0,100,25,1,100,50,150,1.0,2.0
+test_opp_aco_3_model_05.TestOPPModel.test_10_orders_per_batch,failed,19.969226121902466,19.333109855651855,,9.0,1.0,1.0,1.0,250.0,0.5,1.0,1.0,1000.0,100,10,1,100,50,150,1.0,2.0
+test_opp_aco_3_model_06.TestOPPModel.test_empty_batches,failed,19.130340814590454,18.48937702178955,,9.0,1.0,1.0,1.0,10.0,0.5,1.0,1.0,1000.0,25,50,1,100,30,100,1.0,2.0
+test_opp_aco_3_model_07.TestOPPModel.test_infeasible_capacity,ok,0.014907121658325195,1.3828277587890625e-05,,9.0,1.0,1.0,1.0,40.0,0.5,1.0,1.0,1000.0,10,2,1,16,15,60,1.0,2.0
+test_opp_aco_3_model_08.TestOPPModel.test_8_orders_per_batch_7x7_320_orders,failed,22.444396018981934,22.349267959594727,,9.0,1.0,1.0,1.0,200.0,0.5,1.0,1.0,1000.0,320,40,1,49,80,250,1.0,2.0
+test_opp_aco_3_model_09.TestOPPModel.test_25_orders_per_batch_30_batches_10x10,failed,89.95692801475525,89.28788685798645,,9.0,1.0,1.0,1.0,250.0,0.5,1.0,1.0,1000.0,750,30,1,100,100,300,1.0,2.0
+test_opp_aco_3_model_10.TestOPPModel.test_25_orders_per_batch_30_batches_25x25,failed,851.7006051540375,706.9802050590515,,9.0,1.0,1.0,1.0,250.0,0.5,1.0,1.0,1000.0,750,30,1,625,100,300,1.0,2.0
+test_opp_aco_3_model_11.TestOPPModel.test_25_orders_per_batch_30_batches_double_50x50,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,,,
