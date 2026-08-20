@@ -1,0 +1,35 @@
+test,status,total_time,model_time,obj_val,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,Max_it,Max_imp
+test_opp_hc_2_model_01.TestOPPModel.test_100_locations,ok,0.23682284355163574,0.21974515914916992,5903.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,100,500,30
+test_opp_hc_2_model_02.TestOPPModel.test_400_locations,ok,2.375112771987915,2.319340705871582,9423.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,400,500,30
+test_opp_hc_2_model_03.TestOPPModel.test_625_locations,ok,5.726579189300537,5.61951470375061,11403.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,625,500,30
+test_opp_hc_2_model_04.TestOPPModel.test_4_orders_per_batch,ok,2.167464017868042,2.1402509212493896,397881.0,9.0,1.0,1.0,1.0,40.0,0.5,1.0,1.0,1000.0,100,25,1,100,500,30
+test_opp_hc_2_model_05.TestOPPModel.test_10_orders_per_batch,ok,18.524609088897705,18.504014015197754,175201.0,9.0,1.0,1.0,1.0,250.0,0.5,1.0,1.0,1000.0,100,10,1,100,500,30
+test_opp_hc_2_model_06.TestOPPModel.test_empty_batches,ok,0.4852888584136963,0.4578280448913574,152000.0,9.0,1.0,1.0,1.0,10.0,0.5,1.0,1.0,1000.0,25,50,1,100,500,30
+test_opp_hc_2_model_07.TestOPPModel.test_multi_location_orders,ok,0.9058091640472412,0.8912818431854248,33336.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,30,10,1,100,500,30
+test_opp_hc_2_model_08.TestOPPModel.test_shared_hotspots,ok,0.5881960391998291,0.5717141628265381,49260.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,30,10,1,100,500,30
+test_opp_hc_2_model_09.TestOPPModel.test_infeasible_capacity,ok,0.009018182754516602,1.5020370483398438e-05,,9.0,1.0,1.0,1.0,40.0,0.5,1.0,1.0,1000.0,10,2,,16,500,30
+test_opp_hc_2_model_10.TestOPPModel.test_disconnected_graph,ok,0.03454399108886719,0.025529861450195312,,1.0,10.0,1.0,5.0,20.0,0.5,1.0,1.0,1000.0,6,12,,34,500,30
+test_opp_hc_2_model_11.TestOPPModel.test_25_orders_per_batch_30_batches_10x10,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,
+test_opp_hc_2_model_12.TestOPPModel.test_25_orders_per_batch_30_batches_25x25,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,
+test_opp_hc_2_model_13.TestOPPModel.test_25_orders_per_batch_30_batches_100x100,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,
+test_opp_hc_2_model_14.TestOPPModel.test_30_orders_per_batch_20_batches_100x100,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,
+test_opp_hc_2_model_15.TestOPPModel.test_25_orders_per_batch_30_batches_double_50x50,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,
+test_opp_hc_2_model_16.TestOPPModel.test_20_orders_per_batch_40_batches_double_50x50,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,
+test_opp_hc_2_model_17.TestOPPModel.test_40_orders_per_batch_50_batches_100x100,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,
+test_opp_hc_2_model_18.TestOPPModel.test_40_orders_per_batch_50_batches_double_50x50,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,
+test_opp_hc_2_model_19.TestOPPModel.test_extremely_linear_grid,ok,296.41067695617676,295.93911719322205,18992426.0,9.0,1.0,1.0,1.0,500.0,0.5,1.0,1.0,1000.0,1000,20,1,1000,500,30
+test_opp_hc_2_model_20.TestOPPModel.test_extreme_density,ok,45.66076302528381,44.057724952697754,36088094.0,9.0,1.0,1.0,1.0,200.0,0.5,1.0,1.0,1000.0,2000,100,1,25,500,30
+test_opp_hc_2_model_21.TestOPPModel.test_4_orders_per_batch_10_x_10,ok,1.373272180557251,1.3528680801391602,398349.0,9.0,1.0,1.0,1.0,40,0.5,1.0,1.0,1000.0,100,25,1,100,500,30
+test_opp_hc_2_model_22.TestOPPModel.test_10_orders_per_batch_10_x_10,ok,8.154144048690796,8.140644788742065,175353.0,9.0,1.0,1.0,1.0,100,0.5,1.0,1.0,1000.0,100,10,1,100,500,30
+test_opp_hc_2_model_23.TestOPPModel.test_50_orders_per_batch_10_x_10,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,
+test_opp_hc_2_model_24.TestOPPModel.test_4_orders_per_batch_5_x_5,ok,0.15420794486999512,0.12023496627807617,267725.0,9.0,1.0,1.0,1.0,40,0.5,1.0,1.0,1000.0,100,25,1,25,500,30
+test_opp_hc_2_model_25.TestOPPModel.test_10_orders_per_batch_5_x_5,ok,0.6046772003173828,0.5942411422729492,141153.0,9.0,1.0,1.0,1.0,100,0.5,1.0,1.0,1000.0,100,10,1,25,500,30
+test_opp_hc_2_model_26.TestOPPModel.test_20_orders_per_batch_5_x_5,ok,10.800616025924683,10.7521231174469,2322197.0,9.0,1.0,1.0,1.0,200,0.5,1.0,1.0,1000.0,500,25,1,25,500,30
+test_opp_hc_2_model_27.TestOPPModel.test_50_orders_per_batch_5_x_5,ok,4.957296848297119,4.934977054595947,1766505.0,9.0,1.0,1.0,1.0,500,0.5,1.0,1.0,1000.0,500,10,1,25,500,30
+test_opp_hc_2_model_28.TestOPPModel.test_20_orders_per_batch_10_x_10,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,
+test_opp_hc_2_model_29.TestOPPModel.test_20_orders_per_batch_20_x_20,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,
+test_opp_hc_2_model_30.TestOPPModel.test_10_orders_per_batch_10_x_10,ok,97.87513375282288,97.73100209236145,4202373.0,9.0,1.0,1.0,1.0,200,0.5,1.0,1.0,10000.0,500,50,1,100,500,30
+test_opp_hc_2_model_31.TestOPPModel.test_10_orders_per_batch_5_x_5_250_orders,ok,1.3556349277496338,1.3284008502960205,847443.0,9.0,1.0,1.0,1.0,200,0.5,1.0,1.0,1000.0,250,25,1,25,500,30
+test_opp_hc_2_model_32.TestOPPModel.test_10_orders_per_batch_5_x_5_500_orders,ok,2.9051690101623535,2.7866098880767822,3296681.0,9.0,1.0,1.0,1.0,200,0.5,1.0,1.0,1000.0,500,50,1,25,500,30
+test_opp_hc_2_model_33.TestOPPModel.test_10_orders_per_batch_7_x_7_500_orders,ok,31.430402755737305,31.30535912513733,3733681.0,9.0,1.0,1.0,1.0,200,0.5,1.0,1.0,1000.0,500,50,1,49,500,30
+test_opp_hc_2_model_34.TestOPPModel.test_8_orders_per_batch_7_x_7_320_orders,ok,2.8483939170837402,2.7908480167388916,1713112.0,9.0,1.0,1.0,1.0,200,0.5,1.0,1.0,1000.0,320,40,1,49,500,30
