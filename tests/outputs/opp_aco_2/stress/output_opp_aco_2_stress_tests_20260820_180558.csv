@@ -1,0 +1,14 @@
+test,status,total_time,model_time,obj_val,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,A_ants,Max_it,Alpha,Beta
+test_opp_aco_2_model_01.TestOPPModel.test_100_locations,ok,35.71101999282837,35.059428691864014,5683.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,100,15,60,1.0,2.5
+test_opp_aco_2_model_02.TestOPPModel.test_400_locations,ok,566.2156641483307,523.4594030380249,9423.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,400,15,60,1.0,2.5
+test_opp_aco_2_model_03.TestOPPModel.test_625_locations,ok,1444.3947761058807,1300.7457439899445,11403.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,625,15,60,1.0,2.5
+test_opp_aco_2_model_04.TestOPPModel.test_4_orders_per_batch,ok,885.4447791576385,884.7947919368744,461945.0,9.0,1.0,1.0,1.0,40.0,0.5,1.0,1.0,1000.0,100,25,1,100,15,60,1.0,2.5
+test_opp_aco_2_model_05.TestOPPModel.test_10_orders_per_batch,ok,540.5787079334259,539.9027509689331,174745.0,9.0,1.0,1.0,1.0,250.0,0.5,1.0,1.0,1000.0,100,10,1,100,15,60,1.0,2.5
+test_opp_aco_2_model_06.TestOPPModel.test_empty_batches,ok,217.7710530757904,217.12355279922485,152000.0,9.0,1.0,1.0,1.0,10.0,0.5,1.0,1.0,1000.0,25,50,1,100,15,60,1.0,2.5
+test_opp_aco_2_model_07.TestOPPModel.test_infeasible_capacity,ok,0.015924930572509766,1.811981201171875e-05,,9.0,1.0,1.0,1.0,40.0,0.5,1.0,1.0,1000.0,10,2,1,16,15,60,1.0,2.5
+test_opp_aco_2_model_08.TestOPPModel.test_8_orders_per_batch_7x7_320_orders,ok,375.94463205337524,375.8437969684601,1763636.0,9.0,1.0,1.0,1.0,200.0,0.5,1.0,1.0,1000.0,320,40,1,49,15,60,1.0,2.5
+test_opp_aco_2_model_09.TestOPPModel.test_25_orders_per_batch_30_batches_10x10,failed,421.46253728866577,420.7943160533905,,9.0,1.0,1.0,1.0,250.0,0.5,1.0,1.0,1000.0,750,30,1,100,15,60,1.0,2.5
+test_opp_aco_2_model_10.TestOPPModel.test_25_orders_per_batch_30_batches_25x25,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,,,
+test_opp_aco_2_model_11.TestOPPModel.test_25_orders_per_batch_30_batches_double_50x50,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,,,
+
+--> EJECUTADO CON _MAX_ROUTE_ATTEMPTS_PER_BATCH = 40 Y CON STRESS_TEST_TIMEOUT_MINUTES = 25
