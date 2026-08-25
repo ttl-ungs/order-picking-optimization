@@ -65,7 +65,7 @@ Este modelo resuelve, para todos los lotes a la vez de forma independiente, el c
                     \NC 0 \MC \text{en otro caso} \NR
                  \stopmathcases \NR
     \NC f_{ijb} \NC = \text{Flujo de unidades sobre el arco } (i,j) \in \mathcal{E} \text{ en el lote } b \in \mathcal{B} \NR
-    \NC R\_b\_time_{b} \NC = \text{Tiempo de traslado + servicio del lote } b \in \mathcal{B} \text{ bajo la mejor ruta} \NR
+    \NC Rt_{b} \NC = \text{Tiempo de traslado + servicio del lote } b \in \mathcal{B} \text{ bajo la mejor ruta} \NR
 \stopalign
 \stopformula
 \stopsection
@@ -73,7 +73,7 @@ Este modelo resuelve, para todos los lotes a la vez de forma independiente, el c
 \startsection[title={Función objetivo}]
 \placeformula
 \startformula
-\min \sum_{b \in \mathcal{B}} R\_b\_time_{b}
+\min \sum_{b \in \mathcal{B}} Rt_{b}
 \stopformula
 \stopsection
 
@@ -113,7 +113,7 @@ Este modelo resuelve, para todos los lotes a la vez de forma independiente, el c
 \startsubsection[title={Tiempo de ruta del lote}]
 \startformula
 \startalign[n=2, align={right,left}]
-    \NC (13) \NC R\_b\_time_{b} = B_{time} \cdot \left( \sum_{(i,j) \in \mathcal{E}: i \ne v_f, j \ne v_1} d_{ij} \cdot z_{i j b} \right) \NR
+    \NC (13) \NC Rt_{b} = B_{time} \cdot \left( \sum_{(i,j) \in \mathcal{E}: i \ne v_f, j \ne v_1} d_{ij} \cdot z_{i j b} \right) \NR
     \NC \NC \quad + \sum_{i \in \mathcal{V} \setminus \{v_1,v_f\}} S_{i} \cdot \left( \sum_{j:(i,j) \in \mathcal{E}} z_{i j b} \right); \quad \forall b \in \mathcal{B} \NR
 \stopalign
 \stopformula
@@ -138,7 +138,6 @@ Recibe el resultado de ruteo de la Etapa 1. Decide la asignación a pickers hete
     \NC \mathcal{N} \NC = \text{Órdenes de clientes} \NR
     \NC \mathcal{P} \NC = \text{Pickers} \NR
     \NC \mathcal{B} \NC = \text{Lotes factibles de pedidos} \NR
-    \NC PB_{elig} \NC = \{ (p,b) \in \mathcal{P} \times \mathcal{B} : t\_exec\_pb_{p b} \le T\_frio\_max \} \NR
 \stopalign
 \stopformula
 \stopsection
@@ -151,12 +150,16 @@ Recibe el resultado de ruteo de la Etapa 1. Decide la asignación a pickers hete
     \NC M, M_{seq} \NC = \text{Constantes Big-M} \NR
     \NC C_{n} \NC = \text{Capacidad requerida por la orden } n \in \mathcal{N} \NR
     \NC Dd_{n} \NC = \text{Due date de la orden } n \in \mathcal{N} \NR
-    \NC Bn_{nb} \NC = \text{Pertenencia de orden } n \text{ a lote } b \NR
-    \NC R\_b\_time_{b} \NC = \text{Tiempo de ruta óptimo del lote } b \in \mathcal{B} \text{ (Dato de Etapa 1)} \NR
+    \NC Bn_{nb} \NC = \startmathcases
+                    \NC 1 \MC \text{si la orden } n \in \mathcal{N} \text{ pertenece al lote } b \in \mathcal{B} \NR
+                    \NC 0 \MC \text{en otro caso} \NR
+                 \stopmathcases \NR
+    \NC Rt_{b} \NC = \text{Tiempo de ruta óptimo del lote } b \in \mathcal{B} \text{ (Dato de Etapa 1)} \NR
     \NC V_{p} \NC = \text{Factor de velocidad del picker } p \in \mathcal{P} \NR
-    \NC T\_frio\_max \NC = \text{Tiempo máximo fuera de cámara de frío} \NR
-    \NC tiempo\_fijo_{b} \NC = B_{setup} + B_{picking} \cdot \left( \sum_{n \in \mathcal{N}} C_{n} \cdot Bn_{nb} \right) \NR
-    \NC t\_exec\_pb_{pb} \NC = tiempo\_fijo_{b} + \frac{R\_b\_time_{b}}{V_{p}} \quad \text{(Tiempo de ejecución como parámetro)} \NR
+    \NC T_{frio} \NC = \text{Tiempo máximo fuera de cámara de frío} \NR
+    \NC F_{b} \NC = B_{setup} + B_{picking} \cdot \left( \sum_{n \in \mathcal{N}} C_{n} \cdot Bn_{nb} \right) \NR
+    \NC t\_exec_{pb} \NC = F_{b} + \frac{Rt_{b}}{V_{p}} \quad \text{(Tiempo de ejecución como parámetro)} \NR
+    \NC \mathcal{PB}_{elig} \NC = \{ (p,b) \in \mathcal{P} \times \mathcal{B} : t\_exec_{pb} \le T_{frio} \} \NR
 \stopalign
 \stopformula
 \stopsection
@@ -165,10 +168,10 @@ Recibe el resultado de ruteo de la Etapa 1. Decide la asignación a pickers hete
 \startformula
 \startalign
     \NC X_{pb} \NC = \startmathcases
-                    \NC 1 \MC \text{si el lote } b \text{ es asignado al picker } p, \text{ con } (p,b) \in PB_{elig} \NR
+                    \NC 1 \MC \text{si el lote } b \text{ es asignado al picker } p, \text{ con } (p,b) \in \mathcal{PB}_{elig} \NR
                     \NC 0 \MC \text{en otro caso} \NR
                  \stopmathcases \NR
-    \NC v_{pb} \NC = \text{Tiempo de completitud del lote } b \text{ en el picker } p, \text{ con } (p,b) \in PB_{elig} \NR
+    \NC v_{pb} \NC = \text{Tiempo de completitud del lote } b \text{ en el picker } p, \text{ con } (p,b) \in \mathcal{PB}_{elig} \NR
     \NC v_{b} \NC = \text{Tiempo de completitud del lote } b \in \mathcal{B} \NR
     \NC Z_{bk} \NC = \startmathcases
                     \NC 1 \MC \text{si el lote } b \text{ va antes que } k \text{ en el mismo picker, para } b < k \NR
@@ -189,9 +192,9 @@ Recibe el resultado de ruteo de la Etapa 1. Decide la asignación a pickers hete
 \startsubsection[title={Asignación y Completitud}]
 \startformula
 \startalign[n=4, align={right,left,left,left}]
-    \NC (1) \NC \sum_{p: (p,b) \in PB_{elig}} X_{p b} = 1; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Asignación única en pares elegibles)} \NR
-    \NC (2) \NC t\_exec\_pb_{p b} \cdot X_{p b} \le v_{p b}; \NC \quad \forall (p,b) \in PB_{elig} \NC \quad \text{(Piso completitud sin Big-M)} \NR
-    \NC (3) \NC v_{p b} - M \cdot (1 - X_{p b}) \le v_{b}; \NC \quad \forall (p,b) \in PB_{elig} \NC \quad \text{(Completitud general del lote)} \NR
+    \NC (1) \NC \sum_{p: (p,b) \in \mathcal{PB}_{elig}} X_{p b} = 1; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Asignación única en pares elegibles)} \NR
+    \NC (2) \NC t\_exec_{p b} \cdot X_{p b} \le v_{p b}; \NC \quad \forall (p,b) \in \mathcal{PB}_{elig} \NC \quad \text{(Piso completitud sin Big-M)} \NR
+    \NC (3) \NC v_{p b} - M \cdot (1 - X_{p b}) \le v_{b}; \NC \quad \forall (p,b) \in \mathcal{PB}_{elig} \NC \quad \text{(Completitud general del lote)} \NR
 \stopalign
 \stopformula
 \stopsubsection
@@ -199,8 +202,8 @@ Recibe el resultado de ruteo de la Etapa 1. Decide la asignación a pickers hete
 \startsubsection[title={Secuenciamiento sin solapamiento}]
 \startformula
 \startalign[n=3, align={right,left,left}]
-    \NC (4) \NC v_{p k} \ge v_{p b} + t\_exec\_pb_{p k} - M_{seq} \cdot (3 - X_{p b} - X_{p k} - Z_{b k}); \NC \quad \forall p \in \mathcal{P},\ b < k,\ (p,b), (p,k) \in PB_{elig} \NR
-    \NC (5) \NC v_{p b} \ge v_{p k} + t\_exec\_pb_{p b} - M_{seq} \cdot (2 - X_{p b} - X_{p k} + Z_{b k}); \NC \quad \forall p \in \mathcal{P},\ b < k,\ (p,b), (p,k) \in PB_{elig} \NR
+    \NC (4) \NC v_{p k} \ge v_{p b} + t\_exec_{p k} - M_{seq} \cdot (3 - X_{p b} - X_{p k} - Z_{b k}); \NC \quad \forall p \in \mathcal{P},\ b < k,\ (p,b), (p,k) \in \mathcal{PB}_{elig} \NR
+    \NC (5) \NC v_{p b} \ge v_{p k} + t\_exec_{p b} - M_{seq} \cdot (2 - X_{p b} - X_{p k} + Z_{b k}); \NC \quad \forall p \in \mathcal{P},\ b < k,\ (p,b), (p,k) \in \mathcal{PB}_{elig} \NR
 \stopalign
 \stopformula
 \stopsubsection
@@ -208,8 +211,8 @@ Recibe el resultado de ruteo de la Etapa 1. Decide la asignación a pickers hete
 \startsubsection[title={Earliness y tardiness}]
 \startformula
 \startalign[n=4, align={right,left,left,left}]
-    \NC (6) \NC v_{p b} - Dd_{n} - M \cdot (2 - X_{p b} - Bn_{n b}) \le ta_{n}; \NC \quad \forall n \in \mathcal{N}, (p,b) \in PB_{elig}: Bn_{n b} = 1 \NC \quad \text{(Tardanza)} \NR
-    \NC (7) \NC Dd_{n} - v_{p b} - M \cdot (2 - X_{p b} - Bn_{n b}) \le ea_{n}; \NC \quad \forall n \in \mathcal{N}, (p,b) \in PB_{elig}: Bn_{n b} = 1 \NC \quad \text{(Adelanto)} \NR
+    \NC (6) \NC v_{p b} - Dd_{n} - M \cdot (2 - X_{p b} - Bn_{n b}) \le ta_{n}; \NC \quad \forall n \in \mathcal{N}, (p,b) \in \mathcal{PB}_{elig}: Bn_{n b} = 1 \NC \quad \text{(Tardanza)} \NR
+    \NC (7) \NC Dd_{n} - v_{p b} - M \cdot (2 - X_{p b} - Bn_{n b}) \le ea_{n}; \NC \quad \forall n \in \mathcal{N}, (p,b) \in \mathcal{PB}_{elig}: Bn_{n b} = 1 \NC \quad \text{(Adelanto)} \NR
 \stopalign
 \stopformula
 \stopsubsection
@@ -217,8 +220,8 @@ Recibe el resultado de ruteo de la Etapa 1. Decide la asignación a pickers hete
 \startsubsection[title={Dominio de variables}]
 \startformula
 \startalign[n=3, align={right,left,left}]
-    \NC (8) \NC ta_{n}, ea_{n}, v_{b}, v_{p b} \ge 0; \NC \quad \forall n \in \mathcal{N},\ b \in \mathcal{B},\ (p,b) \in PB_{elig} \NR
-    \NC (9) \NC X_{p b}, Z_{b k} \in \{0,1\}; \NC \quad \forall (p,b) \in PB_{elig},\ b < k \NR
+    \NC (8) \NC ta_{n}, ea_{n}, v_{b}, v_{p b} \ge 0; \NC \quad \forall n \in \mathcal{N},\ b \in \mathcal{B},\ (p,b) \in \mathcal{PB}_{elig} \NR
+    \NC (9) \NC X_{p b}, Z_{b k} \in \{0,1\}; \NC \quad \forall (p,b) \in \mathcal{PB}_{elig},\ b < k \NR
 \stopalign
 \stopformula
 \stopsubsection
