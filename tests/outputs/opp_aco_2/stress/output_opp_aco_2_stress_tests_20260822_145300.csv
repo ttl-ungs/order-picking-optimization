@@ -1,0 +1,10 @@
+test,status,total_time,model_time,obj_val,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,A_ants,Max_it,Alpha,Beta,Max_route_attempts_per_batch
+test_opp_aco_2_model_12.TestOPPModel.test_20_orders_10_batches_5x5,ok,6.0115697383880615,5.989579200744629,23721.0,9.0,1.0,1.0,1.0,150.0,0.5,1.0,1.0,1000.0,20,10,1,25,15,60,1.0,2.5,100
+test_opp_aco_2_model_13.TestOPPModel.test_20_orders_10_batches_15x15,ok,499.44653487205505,492.5182099342346,50781.0,9.0,1.0,1.0,1.0,150.0,0.5,1.0,1.0,1000.0,20,10,1,225,15,60,1.0,2.5,100
+test_opp_aco_2_model_14.TestOPPModel.test_20_orders_10_batches_20x20,ok,1636.7055459022522,1599.1240277290344,58525.0,9.0,1.0,1.0,1.0,150.0,0.5,1.0,1.0,1000.0,20,10,1,400,15,60,1.0,2.5,100
+test_opp_aco_2_model_15.TestOPPModel.test_60_orders_15_batches_10x10,ok,566.5282850265503,565.7423958778381,152796.0,9.0,1.0,1.0,1.0,150.0,0.5,1.0,1.0,1000.0,60,15,1,100,15,60,1.0,2.5,100
+test_opp_aco_2_model_16.TestOPPModel.test_100_orders_20_batches_10x10,ok,738.817794084549,738.167473077774,345124.0,9.0,1.0,1.0,1.0,200.0,0.5,1.0,1.0,1000.0,100,20,1,100,15,60,1.0,2.5,100
+test_opp_aco_2_model_17.TestOPPModel.test_100_orders_20_batches_15x15,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,,,,,,,,,,,,,,,,,,
+test_opp_aco_2_model_18.TestOPPModel.test_100_orders_20_batches_20x20,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,,,,,,,,,,,,,,,,,,
+test_opp_aco_2_model_19.TestOPPModel.test_100_orders_15_batches_10x10,ok,1026.777757883072,1026.12855219841,278459.0,9.0,1.0,1.0,1.0,200.0,0.5,1.0,1.0,1000.0,100,15,1,100,15,60,1.0,2.5,100
+test_opp_aco_2_model_20.TestOPPModel.test_60_orders_6_batches_10x10,ok,386.23078989982605,385.57634592056274,67911.0,9.0,1.0,1.0,1.0,200.0,0.5,1.0,1.0,1000.0,60,6,1,100,15,60,1.0,2.5,100
