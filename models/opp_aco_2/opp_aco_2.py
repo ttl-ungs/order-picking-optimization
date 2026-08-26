@@ -378,9 +378,8 @@ class OPPAntColonyOptimization(Model):
 
             neighbors = [
                 n
-                for n in self.location_graph.get_vertices()
-                if self.location_graph.has_edge(current, n)
-                and n not in visited
+                for n in self.location_graph.get_neighbors(current)
+                if n not in visited
                 and n != final
             ]
 
@@ -389,8 +388,8 @@ class OPPAntColonyOptimization(Model):
                 # non-required node so the ant can retrace its way out.
                 neighbors = [
                     n
-                    for n in self.location_graph.get_vertices()
-                    if self.location_graph.has_edge(current, n) and n != final
+                    for n in self.location_graph.get_neighbors(current)
+                    if n != final
                 ]
                 if not neighbors:
                     return None  # Truly isolated node
@@ -464,8 +463,8 @@ class OPPAntColonyOptimization(Model):
             node = path[-1]
             if node == end:
                 return path
-            for neighbor in self.location_graph.get_vertices():
-                if self.location_graph.has_edge(node, neighbor) and neighbor not in explored:
+            for neighbor in self.location_graph.get_neighbors(node):
+                if neighbor not in explored:
                     explored.add(neighbor)
                     new_path = list(path)
                     new_path.append(neighbor)

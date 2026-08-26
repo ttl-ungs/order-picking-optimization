@@ -293,9 +293,12 @@ class OPPHillClimbing(Model):
         """
         Shortest-path distances/predecessors from `source` over the subgraph
         that excludes `forbidden` vertices (source itself is always allowed,
-        even if present in `forbidden`).
+        even if present in `forbidden`). Uses get_neighbors() (adjacency
+        list) instead of scanning every vertex + has_edge per candidate --
+        see opp_hc_2._dijkstra's docstring for the profiling that found this
+        pattern responsible for ~82% of opp_aco_2's runtime on a stress
+        instance.
         """
-        vertices = self.location_graph.get_vertices()
         dist = {source: 0.0}
         prev: Dict = {}
         visited: Set = set()
@@ -307,10 +310,8 @@ class OPPHillClimbing(Model):
                 continue
             visited.add(u)
 
-            for v in vertices:
+            for v in self.location_graph.get_neighbors(u):
                 if v == u or (v in forbidden and v != source):
-                    continue
-                if not self.location_graph.has_edge(u, v):
                     continue
                 nd = d + self.location_graph.get_distance(u, v)
                 if nd < dist.get(v, float("inf")):
@@ -387,7 +388,6 @@ class OPPHillClimbing(Model):
 
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
-        vertices = self.location_graph.get_vertices()
 
         initial_remaining = frozenset(required_locations)
         queue: deque = deque([(depot, initial_remaining, [depot])])
@@ -397,8 +397,10 @@ class OPPHillClimbing(Model):
             node, remaining, path = queue.popleft()
             visited = set(path)
 
-            for vertex in vertices:
-                if vertex in visited or not self.location_graph.has_edge(node, vertex):
+            # get_neighbors() returns them sorted -- same deterministic
+            # exploration order get_vertices() gave here before.
+            for vertex in self.location_graph.get_neighbors(node):
+                if vertex in visited:
                     continue
 
                 if vertex == final:

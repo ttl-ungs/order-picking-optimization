@@ -287,11 +287,14 @@ class OPPHillClimbing(Model):
         """
         Shortest-path distances/predecessors from `source` over the subgraph
         that excludes `forbidden` vertices (source itself is always allowed,
-        even if present in `forbidden`). Runs in O(V^2) given the graph's
-        adjacency-by-lookup API - still far cheaper than an exponential
-        state-space search for the route sizes seen in practice.
+        even if present in `forbidden`). Uses get_neighbors() (adjacency
+        list, O(1) amortized) instead of scanning every vertex and checking
+        has_edge per candidate -- that used to make this O(V) per node
+        expansion regardless of actual degree; profiling opp_aco_2 on a
+        100-node stress instance found the equivalent scan responsible for
+        ~82% of total runtime, so it's worth avoiding here too even though
+        opp_hc_2 was already comparatively fast.
         """
-        vertices = self.location_graph.get_vertices()
         dist = {source: 0.0}
         prev: Dict = {}
         visited: Set = set()
@@ -303,10 +306,8 @@ class OPPHillClimbing(Model):
                 continue
             visited.add(u)
 
-            for v in vertices:
+            for v in self.location_graph.get_neighbors(u):
                 if v == u or (v in forbidden and v != source):
-                    continue
-                if not self.location_graph.has_edge(u, v):
                     continue
                 nd = d + self.location_graph.get_distance(u, v)
                 if nd < dist.get(v, float("inf")):
@@ -400,7 +401,6 @@ class OPPHillClimbing(Model):
 
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
-        vertices = self.location_graph.get_vertices()
 
         initial_remaining = frozenset(required_locations)
         # Each queue entry: (current_node, remaining_required, path_so_far)
@@ -411,8 +411,10 @@ class OPPHillClimbing(Model):
             node, remaining, path = queue.popleft()
             visited = set(path)
 
-            for vertex in vertices:  # sorted → deterministic exploration
-                if vertex in visited or not self.location_graph.has_edge(node, vertex):
+            # get_neighbors() returns them sorted, same order get_vertices()
+            # used to give here -> deterministic exploration, unchanged.
+            for vertex in self.location_graph.get_neighbors(node):
+                if vertex in visited:
                     continue
 
                 if vertex == final:
