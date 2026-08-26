@@ -59,17 +59,59 @@ sea válido), pensado para cubrir el rango de `N` (cantidad de pedidos) y `V`
   esa escala el solver exacto no converge en tiempo razonable (ver
   `tests/outputs/opp_v3/stress/complete_output_v3_stress_tests.csv`, y la
   hipótesis de "asintotismo exponencial" en `specs/model_analysis.md` sec. 5)
-  — correrlos ahí solo quemaría CPU para un timeout garantizado.
-- **`opp_aco_2`, `opp_hc_3`, `opp_aco_3` tienen los 11**, con 09/10/11
-  gateados detrás de `RUN_LARGE_TESTS=1` (mismo mecanismo que ya usaba
-  `opp_hc_2` test #15) porque son instancias pesadas (hasta 750 órdenes /
-  5000 nodos) — corren, pero tardan.
-- Si se necesita más resolución para la correlación paramétrica, se puede
-  ampliar el subconjunto siguiendo el mismo patrón: reusar el *builder* de
-  escenario de `opp_hc_2` (`scenario_custom_setup` / `scenario_double_grid` /
-  `scenario_six_missions_two_periods_grid_graph`, todos funciones puras sin
-  acoplamiento a ningún modelo) y copiar los parámetros numéricos del test
-  original de `opp_hc_2`/`opp_v3` que se quiera portar.
+  — correrlos ahí solo quemaría CPU para un timeout garantizado. Confirmado
+  empíricamente: de las 8 que sí tiene, solo 1 converge (la infeasible
+  instantánea).
+
+Sobre `RUN_LARGE_TESTS`: existía como gate para las instancias más pesadas
+(09/10/11 acá, y varias más en la batería completa de `opp_hc_2`), pero se
+eliminó (2026-08-19, a pedido explícito): todos los tests de estrés corren
+siempre. Si ves referencias viejas a esa variable en commits/documentación
+anteriores, ya no aplican.
+
+#### Instancias intermedias (2026-08-26): 9 escenarios más, densidad baja
+
+Con solo los 11 originales, la sección 6 (correlación) tenía muestras muy
+chicas (8-11 puntos `OK` por modelo, y varios con `N` y `V` moviéndose casi
+siempre juntos, sin poder aislar el efecto de cada uno). Se agregaron 9
+escenarios más (`scenario_custom_setup`, misma familia que 04-11), pensados
+específicamente para eso: densidad de pedidos-por-lote entre 2 y 10 (lejos
+de la zona ~20-25+ que colapsa la construcción de rutas de ACO
+independientemente del presupuesto — ver la nota de más abajo), y variando
+`N`/`V` de a uno por vez (mismo `N`/`B` con distinta grilla, y viceversa) en
+vez de siempre juntos:
+
+| Escenario | batches, orders, rows, cols | N   | B  | V   | densidad |
+|-----------|------------------------------|-----|----|-----|----------|
+| A         | 10, 20, 5, 5                 | 20  | 10 | 25  | 2        |
+| B         | 10, 20, 15, 15               | 20  | 10 | 225 | 2        |
+| C         | 10, 20, 20, 20               | 20  | 10 | 400 | 2        |
+| D         | 15, 60, 10, 10               | 60  | 15 | 100 | 4        |
+| E         | 20, 100, 10, 10              | 100 | 20 | 100 | 5        |
+| F         | 20, 100, 15, 15              | 100 | 20 | 225 | 5        |
+| G         | 20, 100, 20, 20              | 100 | 20 | 400 | 5        |
+| H         | 15, 100, 10, 10              | 100 | 15 | 100 | 6.67     |
+| I         | 6, 60, 10, 10                | 60  | 6  | 100 | 10       |
+
+Numeración: `opp_hc_2` las agregó como **35-43** (sigue su propia
+numeración 01-34 ya existente); `opp_aco_2`/`opp_hc_3`/`opp_aco_3` las
+agregaron como **12-20** (seguían su numeración 01-11). **No se agregaron a
+`opp_v4`** — ya no converge ni en las instancias más chicas que tiene
+(01-08), agregar más solo sumaría timeouts garantizados sin aportar datos.
+
+Resultado real (n `OK` en sección 6, estrés, antes → después de sumar estas
+9): `opp_hc_2` 23→32, `opp_aco_2` 8→15, `opp_hc_3` 8→20, `opp_aco_3` 4→7.
+`opp_aco_3` sigue siendo la muestra más chica — es un reflejo genuino de que
+le cuesta más converger (ver "Nota sobre ACO en estrés" abajo), no falta de
+instancias corridas.
+
+Si hace falta más resolución todavía, se puede seguir ampliando con el mismo
+patrón: reusar el *builder* de escenario de `opp_hc_2`
+(`scenario_custom_setup` / `scenario_double_grid` /
+`scenario_six_missions_two_periods_grid_graph`, todas funciones puras sin
+acoplamiento a ningún modelo), eligiendo densidad ≤10 para que converja de
+forma confiable, y siguiendo la numeración de cada modelo desde donde quedó
+(44+ en `opp_hc_2`, 21+ en los demás).
 
 ### Nota sobre ACO en estrés (bug corregido)
 
@@ -96,30 +138,56 @@ heurístico ni cuestión de tuneo:
    probabilidad de los 25 lotes de `test_04` a la vez era ~1e-21 —
    imposible sin importar el presupuesto de hormigas/iteraciones.
 
-El fix real: cada lote se reintenta individualmente (hasta 40 veces) hasta
-salir limpio, en vez de descartar toda la hormiga por un solo lote fallido
-(con rollback del `CongestionTracker` en `opp_aco_3`, vía
-`CongestionTracker.snapshot()`/`restore()`, para que un intento descartado no
-deje reservas fantasma). Con este fix, `test_04` (25 lotes) resuelve
-`optimal` en ~13 minutos con los hiperparámetros **default** (15×60) — sin
-necesidad de tocar `A_ants`/`Max_it`. Al portarlo, la Fase 2 tenía además una
-sutileza: hay que intentar primero la ruta *limpia* (evitando visitados) y
-solo si eso falla, permitir revisitar — invertir el orden causaba una
-regresión real en un test normal ya existente (`test_repeated_picking_locations_2`,
-detectada y corregida en el mismo trabajo).
+El fix real: cada lote se reintenta individualmente hasta salir limpio, en
+vez de descartar toda la hormiga por un solo lote fallido (con rollback del
+`CongestionTracker` en `opp_aco_3`, vía `CongestionTracker.snapshot()`/
+`restore()`, para que un intento descartado no deje reservas fantasma). El
+tope de reintentos (`_MAX_ROUTE_ATTEMPTS_PER_BATCH`, subido de 40 a 100 el
+2026-08-20 tras confirmar empíricamente que 100 ayuda en casos intermedios
+sin costo extra en los que ya andaban bien -- pero **no** en instancias con
+~25+ ubicaciones requeridas por lote, ver más abajo) queda registrado como
+columna en el CSV (`Max_route_attempts_per_batch`) para que quede trazable
+con qué presupuesto se corrió cada fila. Con este fix, `test_04` (25 lotes)
+resuelve `optimal` en ~13 minutos con los hiperparámetros **default**
+(15×60) -- sin necesidad de tocar `A_ants`/`Max_it`. Al portarlo, la Fase 2
+tenía además una sutileza: hay que intentar primero la ruta *limpia*
+(evitando visitados) y solo si eso falla, permitir revisitar -- invertir el
+orden causaba una regresión real en un test normal ya existente
+(`test_repeated_picking_locations_2`, detectada y corregida en el mismo
+trabajo).
 
 Esto sigue siendo relevante para la tesina: aunque ya no es un bug, sí
 confirma que la tasa de éxito de ACO en instancias con muchos lotes depende
 fuertemente de la calidad de la construcción de rutas, no solo de
-hiperparámetros — la sección 1 del pipeline (tasa de éxito/convergencia)
-sigue siendo la que hay que mirar para cuantificar cuánto tarda/falla en
-instancias grandes incluso con el fix.
+hiperparámetros. Con datos reales (2026-08-26, 20 instancias de estrés por
+modelo tras sumar las intermedias): tasa de éxito en estrés `opp_hc_3` 85%,
+`opp_aco_2` 75%, `opp_hc_2` 74% (34 instancias, batería heredada completa),
+`opp_aco_3` 35%, `opp_v4` 12.5%. El costo de modelar congestión en tiempo de
+estrés también es muy distinto entre arquitecturas: `opp_hc_3` no paga casi
+nada frente a `opp_hc_2` (+0.05%, dentro del ruido), `opp_aco_3` paga +263%
+frente a `opp_aco_2` -- la construcción determinística de HC compensa el
+costo de simular congestión; el switch probabilístico τ1/τ2 de ACO3 no.
 
-Los tests de estrés en el modelo exacto pueden tardar varios minutos por
-instancia — correrlos con tiempo de sobra. `opp_v4` requiere el binario
-`zimpl` instalado y en el `PATH` (no verificado en este sandbox: los tests
-nuevos compilan y siguen exactamente el patrón de los tests normales de
-`opp_v4`, que tampoco corren aquí por la misma razón).
+**Instancias que quedan fuera de alcance de cualquier tuneo** (no solo de
+ACO): `test_09`/`10`/`11` (750 órdenes, ~25 ubicaciones requeridas por lote)
+le dan timeout incluso a `opp_hc_2` en la corrida real, y hasta el método
+rápido de `opp_hc_2` (`_generate_feasible_route`, Dijkstra determinístico)
+devuelve `None` para esos lotes -- no es una debilidad puntual de ACO, es
+una densidad de ubicaciones-por-lote combinatoriamente dura para cualquier
+heurístico probado. Documentado como hallazgo, no como pendiente de tuneo.
+
+Los tests de estrés pueden tardar bastante por instancia, sobre todo en ACO
+(hasta ~38 min ya vistos en `opp_aco_3`) — correrlos con
+`STRESS_TEST_TIMEOUT_MINUTES=40` (el default de `TEST_TIMEOUT_MINUTES`, 25,
+se queda corto: algunas instancias que sí convergen tardan 24-25 min, muy al
+límite). No hace falta volver a correr nada que ya corriste con 25 min si
+convirgió (si convergió en X min, con cualquier timeout ≥ X también
+convergería) ni lo que ya dio timeout con un valor menor (con un timeout más
+chico todavía daría timeout) — el resultado a un timeout distinto se puede
+inferir del `total_time` ya registrado sin gastar cómputo de nuevo, salvo
+que quieras confirmarlo.
+
+`opp_v4` requiere el binario `zimpl` instalado y en el `PATH`.
 
 ## 2. Correr el pipeline
 

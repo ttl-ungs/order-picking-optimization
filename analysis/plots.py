@@ -24,16 +24,26 @@ def _save(fig, name: str) -> str:
 
 
 def plot_mean_time_by_scenario(time_stats_df, scenario: str) -> "str | None":
-    """Grouped bar: mean total_time per model, for one scenario."""
+    """
+    Grouped bar: mean total_time per model, for one scenario. Log-scaled
+    (times here span 3+ orders of magnitude, e.g. opp_hc_2's ~0.02s vs
+    opp_aco_3's ~1000s -- on a linear axis the fast models are literally
+    invisible next to the slow ones). Error bars are one-sided upward only:
+    total_time can't be negative, so a symmetric std bar (mean - std) would
+    dip below zero whenever std > mean, which happened here and is
+    meaningless for a duration.
+    """
     sub = time_stats_df[time_stats_df["scenario"] == scenario]
     if sub.empty:
         print(f"[plots] no time_stats data for scenario={scenario}, skipping bar chart.")
         return None
 
+    std = sub["std_time"].fillna(0)
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    ax.bar(sub["model"], sub["mean_time"], yerr=sub["std_time"].fillna(0),
+    ax.bar(sub["model"], sub["mean_time"], yerr=[[0] * len(sub), std],
            color=PALETTE[: len(sub)], capsize=4)
-    ax.set_ylabel("Tiempo medio (s)")
+    ax.set_yscale("log")
+    ax.set_ylabel("Tiempo medio (s, escala log)")
     ax.set_title(f"Tiempo de ejecución medio -- escenario {scenario}")
     ax.tick_params(axis="x", rotation=20)
     fig.tight_layout()
@@ -61,18 +71,35 @@ def plot_profiling_stacked(profiling_df) -> "str | None":
 
 
 def plot_quality_gap(quality_gap_df) -> "str | None":
-    """Grouped bar: mean optimality gap (%) per model x scenario."""
+    """
+    Grouped bar: mean AND median optimality gap (%) per model (normal
+    scenario only so far -- see metrics.quality_gap_table). Showing mean
+    alone is actively misleading here: it's pulled way up by a handful of
+    outlier instances while the median sits at 0% (more than half the
+    matched instances hit the exact optimum). A mean-only chart would
+    contradict the mean/median split already called out in the report text.
+    """
     if quality_gap_df.empty:
         print("[plots] no quality-gap data yet (need matching opp_v4 + heuristic OK "
               "runs on the same instances), skipping chart.")
         return None
 
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    pivot = quality_gap_df.pivot(index="model", columns="scenario", values="mean_gap_pct")
-    pivot.plot.bar(ax=ax, color=PALETTE[: len(pivot.columns)])
+    x = range(len(quality_gap_df))
+    width = 0.35
+    ax.bar([xi - width / 2 for xi in x], quality_gap_df["mean_gap_pct"], width,
+           label="media", color=PALETTE[0])
+    ax.bar([xi + width / 2 for xi in x], quality_gap_df["median_gap_pct"], width,
+           label="mediana", color=PALETTE[1])
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(
+        [f"{m}\n({s})" for m, s in zip(quality_gap_df["model"], quality_gap_df["scenario"])],
+        rotation=0,
+    )
     ax.set_ylabel("Gap vs. opp_v4 (%)")
-    ax.set_title("Gap de optimalidad de cada heurística vs. el modelo exacto")
+    ax.set_title("Gap de optimalidad vs. el modelo exacto (media vs. mediana)")
     ax.axhline(0, color="black", linewidth=0.8)
+    ax.legend()
     fig.tight_layout()
     return _save(fig, "quality_gap.png")
 
@@ -99,12 +126,14 @@ def plot_congestion_wait(congestion_df) -> "str | None":
     return _save(fig, "congestion_wait.png")
 
 
-def plot_scatter_time_vs_param(df, model: str, scenario: str, param: str) -> "str | None":
+def plot_scatter_time_vs_param(df, model: str, scenario: str, param: str,
+                                min_points: int = 3) -> "str | None":
     """Scatter of `param` (e.g. N or V) vs total_time, OK rows only, one model/scenario."""
     sub = df[(df["model"] == model) & (df["scenario"] == scenario) & (df["status"] == "ok")]
     sub = sub.dropna(subset=[param, "total_time"])
-    if sub.empty:
-        print(f"[plots] no data for {model}/{scenario} to scatter {param} vs total_time.")
+    if len(sub) < min_points:
+        print(f"[plots] only {len(sub)} OK point(s) for {model}/{scenario} ({param} vs "
+              f"total_time) -- need >= {min_points} for a scatter to say anything, skipping.")
         return None
 
     fig, ax = plt.subplots(figsize=(6, 4.5))

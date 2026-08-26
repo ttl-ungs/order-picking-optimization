@@ -76,9 +76,13 @@ def main():
     charts.append(plot_profiling_stacked(profiling))
     charts.append(plot_quality_gap(quality_gap))
     charts.append(plot_congestion_wait(congestion))
-    charts.append(plot_scatter_time_vs_param(df, model="opp_v4", scenario="stress", param="N"))
+    # opp_v4 stress isn't included here: it only ever has 1 OK point (see
+    # analysis/README.md), and plot_scatter_time_vs_param already skips
+    # anything under 3 points rather than draw a one-dot "scatter".
     charts.append(plot_scatter_time_vs_param(df, model="opp_hc_2", scenario="stress", param="N"))
     charts.append(plot_scatter_time_vs_param(df, model="opp_aco_2", scenario="stress", param="V"))
+    charts.append(plot_scatter_time_vs_param(df, model="opp_hc_3", scenario="stress", param="V"))
+    charts.append(plot_scatter_time_vs_param(df, model="opp_aco_3", scenario="stress", param="N"))
     charts = [c for c in charts if c]
 
     os.makedirs(ANALYSIS_OUTPUT_DIR, exist_ok=True)

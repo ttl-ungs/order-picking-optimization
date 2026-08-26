@@ -103,6 +103,7 @@
 - `profiling_exact_model.png`
 - `quality_gap.png`
 - `congestion_wait.png`
-- `scatter_opp_v4_stress_N.png`
 - `scatter_opp_hc_2_stress_N.png`
 - `scatter_opp_aco_2_stress_V.png`
+- `scatter_opp_hc_3_stress_V.png`
+- `scatter_opp_aco_3_stress_N.png`
