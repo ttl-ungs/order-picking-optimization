@@ -228,11 +228,17 @@ converger (densidad 25) también corre ~16x más rápido aunque el resultado
 final (`infeasible`) no cambia -- confirma que ese límite es matemático, no
 de velocidad.
 
-**Los números de tiempo de estrés para `opp_aco_2`/`opp_aco_3` en las
-tablas de este documento y en `analysis/output/report.md` son anteriores a
-este fix y están desactualizados** -- hay que volver a correr esas dos
-baterías de estrés para tener cifras reales. `opp_hc_2`/`opp_hc_3` también
-mejoraron, pero ya eran rápidas: no se espera que cambie la conclusión ahí.
+**Actualizado (2026-08-27): ya se re-corrieron `opp_aco_2`/`opp_aco_3` en
+estrés con el fix aplicado.** `analysis/output/report.md` refleja los
+números nuevos: `aco_2` stress mean 595s→52.6s (~11x), tasa de éxito
+75%→85%; `aco_3` stress mean 985s→274.5s (~3.6x), tasa de éxito 35%→70%.
+`opp_hc_2`/`opp_hc_3` también mejoraron, pero ya eran rápidas: no cambió la
+conclusión ahí. El ranking relativo NO se invirtió -- HC sigue siendo más
+rápido que ACO en ambos pares, porque ACO repite la construcción de ruta
+`A_ants × Max_it` veces por diseño; el fix arregla el costo anormal por
+paso, no la diferencia estructural esperada entre "una construcción greedy"
+y "una búsqueda con muchas hormigas". Ver `docs/results_outline.md`
+secciones 1-2 para el detalle.
 
 Los tests de estrés pueden tardar bastante por instancia, sobre todo en ACO
 (hasta ~38 min ya vistos en `opp_aco_3`) — correrlos con

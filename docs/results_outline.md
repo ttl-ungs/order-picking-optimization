@@ -9,28 +9,34 @@ gráfico/tabla citar**, **qué conclusión defendible se puede escribir**.
 - Tabla 1 + `mean_time_stress.png`.
 - `opp_v4` (exacto): 97.7% en normal, **12.5% en estrés** (1/8). Ninguna
   instancia no-trivial converge dentro de 25 min.
-- Heurísticas en estrés: `opp_hc_3` 85%, `opp_aco_2` 75%, `opp_hc_2` 74.4%
-  (batería de 34, la más grande), `opp_aco_3` 35%.
+- Heurísticas en estrés (post-fix de performance, 2026-08-27): `opp_hc_3`
+  85%, `opp_aco_2` 85%, `opp_hc_2` 74.4% (batería de 34, la más grande),
+  `opp_aco_3` 70%. `aco_2`/`aco_3` subieron su tasa de éxito respecto a la
+  medición pre-fix (75%→85% y 35%→70%) -- con rutas más rápidas de
+  construir, menos instancias pegan contra el timeout externo antes de que
+  el algoritmo termine de converger.
 - Conclusión: el modelo exacto deja de ser viable apenas se sale de
   instancias de juguete — sustenta la necesidad de heurísticos para
   cualquier caso de uso real. Entre los heurísticos, hay una jerarquía
   clara que **no** es "todos convergen igual".
 
-## 2. Tiempo de ejecución: ⚠️ números de estrés desactualizados, hay que
-   volver a correr antes de escribir esta sección
+## 2. Tiempo de ejecución (datos post-fix de performance, 2026-08-27)
 
 - Tabla 2 + `mean_time_normal.png` / `mean_time_stress.png` (escala log).
-- Los valores de estrés para `opp_aco_2`/`opp_aco_3` que están hoy en
-  `analysis/output/report.md` (`hc_2` ~18s, `hc_3` ~5s, `aco_2` ~595s,
-  `aco_3` ~985s) se midieron **antes** del fix de performance del
-  2026-08-27 (ver más abajo) y ya no son representativos — con el fix, un
-  caso que tardaba 566s ahora tarda 3.7s (~153x). Falta re-correr las
-  baterías de estrés de `aco_2`/`aco_3` para tener la tabla real.
-- Lo que **no** cambia con el fix: el ranking relativo entre modelos podría
-  invertirse o achicarse, pero recién se sabe con los datos nuevos — no
-  escribir esta sección hasta tenerlos.
-- Normal ya era rápido en los 4 heurísticos (ms), no se espera que cambie la
-  conclusión ahí; los números de esa tabla siguen siendo válidos.
+- Estrés, media de tiempo (solo casos `ok`): `opp_hc_3` 4.96s, `opp_hc_2`
+  18.3s, `opp_aco_2` **52.6s** (antes 595s, ~11x), `opp_aco_3` **274.5s**
+  (antes 985s, ~3.6x).
+- El fix de performance (sección siguiente) mejora mucho los tiempos
+  absolutos de ACO, pero **no invierte el ranking**: HC sigue siendo
+  bastante más rápido que ACO en ambos pares (`hc_2` < `aco_2`, `hc_3` <
+  `aco_3`). Tiene sentido -- HC construye la ruta una sola vez de forma
+  greedy; ACO repite la construcción `A_ants × Max_it` veces por
+  definición del algoritmo, así que aun con el mismo costo por paso
+  arreglado, hace muchísimo más trabajo total. El fix cerró la brecha que
+  era "anormal" (el bug O(V) por paso), no la brecha estructural esperada
+  entre construir una ruta y buscar entre muchas.
+- Normal ya era rápido en los 4 heurísticos (ms) y no cambió la conclusión
+  ahí.
 
 ## Hallazgo metodológico: bug de performance O(V) en la construcción de rutas
 
@@ -82,8 +88,14 @@ efectivamente se pueda correr a la escala que la tesina necesita.
 - Tabla 5 + `congestion_wait.png`.
 - `opp_hc_3`/`opp_aco_3` son los únicos que miden espera por congestión
   (`opp_hc_2`/`opp_aco_2`/`opp_v4` no la modelan — por diseño).
-- Sobrecosto de tiempo por modelar congestión, estrés: `opp_hc_3` +0.05%
-  (dentro del ruido) vs. `opp_hc_2`; `opp_aco_3` **+263%** vs. `opp_aco_2`.
+- Sobrecosto de tiempo por modelar congestión, estrés (post-fix,
+  2026-08-27): `opp_hc_3` +0.05% (dentro del ruido) vs. `opp_hc_2`;
+  `opp_aco_3` **+513%** vs. `opp_aco_2` (subió del +263% medido antes del
+  fix -- no porque `aco_3` haya empeorado en términos absolutos, sino
+  porque `aco_2` mejoró mucho más en términos relativos: el fix ayuda más
+  cuanto más simple es la construcción de ruta por paso, y `aco_2` no paga
+  el switch probabilístico τ1/τ2 que sí paga `aco_3`. La asimetría entre
+  arquitecturas es todavía más marcada con datos correctos, no menos).
 - Por qué: `opp_hc_3` sigue construyendo la ruta con Dijkstra determinístico
   y solo *precia* la congestión al final — casi gratis. `opp_aco_3` decide,
   paso a paso, entre la matriz de feromona de tiempo y la de congestión
@@ -95,17 +107,28 @@ efectivamente se pueda correr a la escala que la tesina necesita.
   incorporar congestión depende fuertemente de cómo está diseñado el
   heurístico base, no es un costo fijo del fenómeno en sí**.
 
-## 6. Sensibilidad paramétrica: V pesa más que N en estrés
+## 6. Sensibilidad paramétrica: V pesa más que N en estrés (matiz: no en aco_3)
 
 - Tabla 6 + los 4 scatters (`hc_2`/N, `aco_2`/V, `hc_3`/V, `aco_3`/N).
+  Números post-fix de performance (2026-08-27, más instancias `ok` que
+  antes al bajar el timeout externo).
 - En estrés, `V` (tamaño de grafo) correlaciona más fuerte con el tiempo que
-  `N` (cantidad de pedidos) tanto en `hc_2` (r=0.68) como `aco_2` (r=0.71).
-- En normal es al revés: `N` pesa más que `V` (`hc_2` r=0.57 vs. 0.33).
+  `N` (cantidad de pedidos) en `hc_2` (r=0.68) y `aco_2` (r=0.70).
+- `hc_3` en estrés: V (0.23) y N (0.17) parecidos, sin dominancia clara.
+  `aco_3` en estrés **rompe el patrón**: N (0.58) domina sobre V (0.24) --
+  lo opuesto a `aco_2`. Posible explicación: en `aco_3` el costo por paso ya
+  no es solo "moverse en el grafo" sino también el switch probabilístico
+  τ1/τ2 y el chequeo de congestión, que escalan más con la cantidad de
+  pedidos/lotes a programar (N) que con el tamaño del grafo (V) -- hipótesis
+  a mencionar como tal, no como conclusión firme dado el n chico.
+- En normal es al revés en `hc_2`: `N` pesa más que `V` (r=0.57 vs. 0.33).
 - Confirma la hipótesis original de `specs/model_analysis.md` sec. 5
-  ("asintotismo exponencial vs. V") — pero solo se manifiesta a escala de
-  estrés, no en instancias chicas.
-- Muestras: `hc_2` n=32, `hc_3` n=20 (confiables); `aco_2` n=15 (razonable);
-  `aco_3` n=7 (chica — aclarar como limitación, no ocultar).
+  ("asintotismo exponencial vs. V") para `hc_2`/`aco_2` -- pero solo se
+  manifiesta a escala de estrés, no en instancias chicas, y no es universal
+  entre los 4 heurísticos (`aco_3` es la excepción).
+- Muestras en estrés (post-fix): `hc_2` n=32, `hc_3` n=17, `aco_2` n=17
+  (subió de 15), `aco_3` n=14 (subió bastante de 7 -- ya no es una muestra
+  tan chica, aunque sigue siendo la más chica de las cuatro).
 
 ## Hallazgo transversal: el bug de construcción de rutas de ACO
 
@@ -167,17 +190,31 @@ directamente contra SCIP que la hipótesis es incorrecta**:
   candidato para la sección de "trabajo futuro" de la tesina -- por ejemplo,
   agregar backtracking real (no solo revisita aleatoria) a la construcción
   greedy de HC.
+- **Decisión (2026-08-27): no se implementa ningún fix para esto.** Se
+  evaluaron dos opciones concretas -- (a) en HC, caer a resolver el lote
+  puntual como sub-problema exacto vía SCIP cuando el greedy falla (~2s,
+  ya demostrado que funciona, pero le agrega a HC una dependencia de
+  `zimpl`/SCIP y cambia su naturaleza de heurístico puro); (b) en ACO,
+  agregar lookahead a la selección de vecino en vez de solo reintentar al
+  azar -- y se decidió dejarlo documentado como limitación conocida en vez
+  de implementarlas: el hallazgo es válido y defendible tal cual ("HC/ACO
+  tienen un límite estructural de construcción, demostrado contra SCIP") y
+  no compromete los stress tests ya corridos ni los que están en curso.
 
 ---
 
 ## Pendiente antes de dar esto por cerrado
 
-1. **Re-correr `opp_aco_2`/`opp_aco_3` en estrés** con el fix de performance
-   (sección 2) -- los números actuales del reporte son de la versión lenta.
-   *(En curso, 2026-08-27: Lucia corriendo de a poco.)*
+1. ~~Re-correr `opp_aco_2`/`opp_aco_3` en estrés con el fix de
+   performance~~ -- **hecho (2026-08-27)**: `aco_2` 595s→52.6s (~11x,
+   75%→85% éxito), `aco_3` 985s→274.5s (~3.6x, 35%→70% éxito). Pipeline
+   regenerado, `analysis/output/report.md` y este bosquejo ya reflejan los
+   números nuevos.
 2. ~~Correr `test_single_batch_infeasibility_check.py` contra SCIP~~ --
    **hecho (2026-08-27)**: `status=optimal` en 1.8s, hipótesis de
    infeasibilidad por construcción **refutada**. Ver hallazgo actualizado
    arriba.
-3. Con (1) ya se puede escribir la sección de resultados sin tener que
-   volver a corregirla después.
+
+Con (1) y (2) resueltos, ya no queda ningún dato pendiente de re-correr --
+se puede pasar a escribir la sección de resultados de la tesina a partir de
+este bosquejo.
