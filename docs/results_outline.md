@@ -4,6 +4,53 @@ Estructura sugerida, un sub-apartado por cada sección del pipeline
 (`analysis/output/report.md`). Cada uno: **qué muestra el dato**, **qué
 gráfico/tabla citar**, **qué conclusión defendible se puede escribir**.
 
+## Encuadre metodológico: por qué los modelos simples (`hc_2`/`aco_2`/`v4`)
+   siguen siendo necesarios aunque existan versiones más complejas
+
+Vale la pena dejar esto explícito antes de leer el resto, porque no es
+obvio a primera vista: con `hc_3`/`aco_3` (congestión) y `v5` (descomposición
+en 2 etapas, velocidad heterogénea, cadena de frío) ya en el repositorio, uno
+podría pensar que `hc_2`/`aco_2`/`v4` quedaron "atrás" -- versiones más
+simples que la complejidad más reciente dejó obsoletas. Es al revés: son el
+**grupo de control** que hace que las comparaciones con los modelos
+complejos signifiquen algo.
+
+- El diseño real del proyecto agrega **una sola variable por vez** sobre un
+  par base:
+  ```
+  hc_2  ──(+congestión)────────────────────> hc_3
+  aco_2 ──(+congestión)────────────────────> aco_3
+  v4    ──(+2 etapas, +V_p, +cadena de frío)> v5
+  ```
+- Esto es diseño experimental controlado, no un descuido. El resultado que
+  más vale la pena resaltar de todo el análisis (sección 5, el costo de
+  modelar congestión) **no existiría sin el par simple**: `hc_3` +0.05% vs.
+  `aco_3` +513% frente a sus baselines solo es interpretable porque hay un
+  `hc_2`/`aco_2` sin congestión contra el cual restar. Lo mismo aplica a
+  `v5`: la pregunta que lo hace valioso no es "¿v5 es mejor que v4?" en
+  abstracto, es "¿la descomposición en 2 etapas ayuda a que el exacto
+  escale?" -- y esa pregunta necesita que `v4` siga existiendo tal cual,
+  como referencia fija.
+- La alternativa (que cada modelo tuviera todas las features combinadas)
+  no aportaría más rigor, lo diluiría: con features mezcladas no se puede
+  atribuir ningún efecto a ninguna causa en particular, y el costo en
+  trabajo escala combinatoriamente (features × arquitecturas) sin ningún
+  beneficio metodológico a cambio -- se evaluó concretamente cuánto costaría
+  sumarle velocidad heterogénea y cadena de frío a `hc_2`/`aco_2` (~1 día de
+  trabajo por los dos, entre código core, escenarios/tests nuevos y
+  regresión) y se decidió no hacerlo por este motivo, no por falta de
+  tiempo.
+- Consecuencia práctica: sin `hc_2`/`aco_2` tampoco habría muestra grande
+  para el gap de calidad contra `v4` (sección 4 -- son los heurísticos más
+  rápidos de correr, de ahí la mayor cantidad de instancias comparables), ni
+  existiría el hallazgo del bug de construcción de rutas (sección
+  "Hallazgo transversal" -- se encontró comparando la versión simple, que
+  debería ser la más confiable, contra el exacto).
+- Para la tesina: dejar esto como una **decisión de diseño metodológico
+  explícita**, no como una limitación a disculpar -- cada complejidad se
+  aísla a propósito contra su par simple, en vez de perseguir el modelo más
+  realista posible.
+
 ## 1. Convergencia: el exacto no escala, las heurísticas sí (con matices)
 
 - Tabla 1 + `mean_time_stress.png`.
