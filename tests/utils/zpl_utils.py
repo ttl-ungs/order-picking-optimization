@@ -6,10 +6,18 @@ from dtos.opp.solve_result import SolveResult
 import models.utils.solve_registry as solve_registry
 from models.utils.input_validation import overloaded_batches, orders_without_exactly_one_batch
 
-def solve_zpl(zpl_path, dat_dir=None, params=None):
+def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
     """
     Compila el .zpl a .lp usando el binario `zimpl` y lo resuelve con SCIP.
     Inyecta automáticamente las variables > 0 en params para los reportes CSV.
+
+    time_limit_seconds: optional SCIP time limit (`limits/time`). Default
+    None keeps the previous behaviour (no limit, relies on the external
+    test-runner timeout / a process kill to bound wall time). Pass an
+    explicit limit when you need SCIP itself to conclude cleanly -- e.g. to
+    tell apart "SCIP proved infeasible" from "still searching, ran out of
+    time" for a diagnostic run, which an external kill can't distinguish
+    (it might kill SCIP moments before it would have concluded infeasible).
     """
     if dat_dir is None:
         dat_dir = os.path.dirname(zpl_path)
@@ -70,6 +78,8 @@ def solve_zpl(zpl_path, dat_dir=None, params=None):
     # Paso 2: resolver el .lp con PySCIPOpt
     model = pyscipopt.Model()
     model.hideOutput()
+    if time_limit_seconds is not None:
+        model.setParam("limits/time", time_limit_seconds)
     model.readProblem(lp_path)
 
     t0 = time.time()

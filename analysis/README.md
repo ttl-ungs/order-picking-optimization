@@ -168,13 +168,58 @@ nada frente a `opp_hc_2` (+0.05%, dentro del ruido), `opp_aco_3` paga +263%
 frente a `opp_aco_2` -- la construcción determinística de HC compensa el
 costo de simular congestión; el switch probabilístico τ1/τ2 de ACO3 no.
 
-**Instancias que quedan fuera de alcance de cualquier tuneo** (no solo de
-ACO): `test_09`/`10`/`11` (750 órdenes, ~25 ubicaciones requeridas por lote)
-le dan timeout incluso a `opp_hc_2` en la corrida real, y hasta el método
-rápido de `opp_hc_2` (`_generate_feasible_route`, Dijkstra determinístico)
-devuelve `None` para esos lotes -- no es una debilidad puntual de ACO, es
-una densidad de ubicaciones-por-lote combinatoriamente dura para cualquier
-heurístico probado. Documentado como hallazgo, no como pendiente de tuneo.
+**Instancias que quedan fuera de alcance de cualquier tuneo, y por qué**
+(2026-08-27): `test_09`/`10`/`11` (750 órdenes, ~25 ubicaciones requeridas
+por lote) le dan timeout incluso a `opp_hc_2` en la corrida real, y hasta el
+método rápido de `opp_hc_2` (`_generate_feasible_route`, Dijkstra
+determinístico) devuelve `None` para esos lotes. Se investigó **si existe
+siquiera una ruta simple** (sin repetir ningún nodo) que visite esas 25
+ubicaciones en esa grilla de 10x10, probando 2000 órdenes de visita
+distintos (al azar, no solo "el más cercano primero") con el mismo Dijkstra
+de `opp_hc_2` -- **ninguno de los 2000 encontró una ruta simple**
+(verificado que el método en sí no tiene un bug: en un lote fácil de 4
+ubicaciones, sí encuentra rutas válidas en 17/200 intentos).
+
+Esto probablemente significa que **la instancia es infeasible por
+construcción bajo la restricción "sin loops" (17)** -- compartida por los 5
+modelos, incluido el exacto -- no que sea "difícil de resolver". Explicaría
+de una sola vez por qué fallan los cinco: no es debilidad puntual de ningún
+algoritmo, es que el problema, tal como está planteado, puede no tener
+solución. La causa más probable: `scenario_custom_setup` reparte pedidos a
+lotes por *round-robin* sin verificar si el conjunto de ubicaciones
+resultante por lote admite una ruta simple en la grilla -- a partir de
+cierta densidad (pedidos por lote) es fácil terminar con un lote cuyas
+ubicaciones no se pueden recorrer sin pasar dos veces por el mismo pasillo.
+No se investigó (todavía) agregar una validación de feasibility geométrica
+al generador; ver la sección "Sobre permitir ciclos en las rutas" más abajo
+para la discusión de qué implicaría relajar esa restricción en vez de
+evitar generar estas instancias.
+
+### Optimización de rendimiento (2026-08-27): ~57-150x más rápido
+
+Un profiling encontró que `_build_batch_route`/`_find_shortest_path_bfs`
+(ACO2/ACO3) y `_dijkstra`/`_generate_feasible_route_bff` (HC2/HC3) hacían
+`for n in location_graph.get_vertices(): if location_graph.has_edge(current, n)`
+para encontrar los vecinos de un nodo -- un escaneo O(V) (con
+`has_edge`/`get_distance` reconstruyendo un objeto `OPPLocation` nuevo por
+cada candidato, solo para hashearlo) en vez de O(grado real, ~4 en una
+grilla). En una instancia de estrés de 100 nodos, `has_edge` sola explicaba
+~82% del tiempo total (87M de llamadas). Se agregó
+`OPPLocationGraph.get_neighbors()` (lista de adyacencia precalculada,
+ordenada -- mismo orden que `get_vertices()`, así que no cambia qué ruta
+determinística eligen `opp_hc_2`/`opp_hc_3` cuando hay varias igual de
+cortas) y se reemplazó el patrón en los 4 lugares. Resultado, mismo
+resultado, más rápido nada más: `test_02` (400 nodos) 566s→3.7s (~153x);
+perfil completo de un caso 149.8s→2.6s (~57x); el caso que sigue sin
+converger (densidad 25) también corre ~16x más rápido aunque el resultado
+final (`infeasible`) no cambia -- confirma que ese límite es matemático, no
+de velocidad.
+
+**Los números de tiempo de estrés para `opp_aco_2`/`opp_aco_3` en las
+tablas de este documento y en `analysis/output/report.md` son anteriores a
+este fix y están desactualizados** -- hay que volver a correr esas dos
+baterías de estrés para tener cifras reales. `opp_hc_2`/`opp_hc_3` también
+mejoraron, pero ya eran rápidas: no se espera que cambie la conclusión ahí.
 
 Los tests de estrés pueden tardar bastante por instancia, sobre todo en ACO
 (hasta ~38 min ya vistos en `opp_aco_3`) — correrlos con

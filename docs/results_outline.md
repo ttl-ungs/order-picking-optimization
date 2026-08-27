@@ -16,18 +16,43 @@ gráfico/tabla citar**, **qué conclusión defendible se puede escribir**.
   cualquier caso de uso real. Entre los heurísticos, hay una jerarquía
   clara que **no** es "todos convergen igual".
 
-## 2. Tiempo de ejecución: ACO es sistemáticamente más lento que HC
+## 2. Tiempo de ejecución: ⚠️ números de estrés desactualizados, hay que
+   volver a correr antes de escribir esta sección
 
 - Tabla 2 + `mean_time_normal.png` / `mean_time_stress.png` (escala log).
-- Normal: `hc_2` ~9ms, `hc_3` ~4ms, `aco_2` ~236ms, `aco_3` ~26ms — HC ya es
-  1-2 órdenes de magnitud más rápido acá.
-- Estrés: `hc_2` ~18s, `hc_3` ~5s, `aco_2` ~595s, `aco_3` ~985s — la brecha
-  se agranda, no se achica, con el tamaño de la instancia.
-- **Punto a resolver antes de escribir esto como conclusión final**: no es
-  el resultado esperado a priori (ACO suele venderse como más rápido que
-  búsqueda local por batch). Está en investigación si es inherente al
-  diseño (población de hormigas + reintento por lote) o una ineficiencia de
-  implementación corregible — ver hallazgo de performance más abajo.
+- Los valores de estrés para `opp_aco_2`/`opp_aco_3` que están hoy en
+  `analysis/output/report.md` (`hc_2` ~18s, `hc_3` ~5s, `aco_2` ~595s,
+  `aco_3` ~985s) se midieron **antes** del fix de performance del
+  2026-08-27 (ver más abajo) y ya no son representativos — con el fix, un
+  caso que tardaba 566s ahora tarda 3.7s (~153x). Falta re-correr las
+  baterías de estrés de `aco_2`/`aco_3` para tener la tabla real.
+- Lo que **no** cambia con el fix: el ranking relativo entre modelos podría
+  invertirse o achicarse, pero recién se sabe con los datos nuevos — no
+  escribir esta sección hasta tenerlos.
+- Normal ya era rápido en los 4 heurísticos (ms), no se espera que cambie la
+  conclusión ahí; los números de esa tabla siguen siendo válidos.
+
+## Hallazgo metodológico: bug de performance O(V) en la construcción de rutas
+
+Vale la pena una subsección propia (no es parte del pipeline, pero explica
+por qué la sección 2 se reescribe): profiling encontró que
+`_build_batch_route`/`_find_shortest_path_bfs` (ACO2/ACO3) y
+`_dijkstra`/`_generate_feasible_route_bff` (HC2/HC3) buscaban los vecinos de
+un nodo escaneando **todos** los vértices del grafo y probando `has_edge`
+uno por uno (O(V) por paso, con `has_edge` reconstruyendo un objeto nuevo
+por candidato solo para hashearlo) en vez de usar la adyacencia real
+(grado ~4 en una grilla). En una instancia de 100 nodos, `has_edge` sola
+explicaba **~82% del tiempo total** (87 millones de llamadas). Se agregó
+`OPPLocationGraph.get_neighbors()` (adyacencia precalculada, mismo orden
+que antes -- no cambia qué ruta determinística eligen HC2/HC3 cuando hay
+varias igual de cortas, verificado con la suite normal completa antes/
+después). Mismo resultado, mucho más rápido: 149.8s→2.6s (~57x) en un
+perfil completo; 566s→3.7s (~153x) en la instancia más grande medida; hasta
+el caso que sigue sin converger corre ~16x más rápido (confirma que ese
+límite es matemático, no de velocidad -- ver más abajo). Se puede mencionar
+en la tesina como parte del trabajo de implementación, no solo de
+modelado -- es la clase de detalle que separa un prototipo de algo que
+efectivamente se pueda correr a la escala que la tesina necesita.
 
 ## 3. Profiling del exacto
 
@@ -97,18 +122,50 @@ real, no un artefacto:
   rollback del `CongestionTracker` en ACO3.
 - Con el fix, `opp_v4`-equivalente de 25 lotes pasó de `infeasible` siempre
   a `optimal` en ~13 min con hiperparámetros default.
-- Instancias de ~25+ ubicaciones requeridas por lote (`test_09/10/11`)
-  siguen sin converger — pero **tampoco convergen en HC** (ni con su
-  algoritmo rápido determinístico), así que es un límite combinatorio real
-  de la instancia, no una debilidad puntual de ACO.
+
+## Hallazgo más fuerte todavía: algunas instancias de estrés podrían ser
+   infeasibles *por construcción*, no solo difíciles
+
+Las instancias de ~25+ ubicaciones requeridas por lote (`test_09/10/11`)
+siguen sin converger en ningún modelo -- pero investigando por qué, se
+encontró algo más preciso que "es un límite combinatorio duro para todos":
+
+- Con 2000 órdenes de visita distintos (al azar) sobre el Dijkstra
+  determinístico de `opp_hc_2`, **ninguno** encontró una ruta simple para el
+  lote de 25 ubicaciones de `test_09` (verificado que el método no tiene un
+  bug: en un lote fácil de 4 ubicaciones sí encuentra rutas en 17/200).
+- La restricción "sin loops" (17) es compartida por los 5 modelos,
+  incluido el exacto (está entrelazada con la conservación de flujo,
+  constraints (13)-(15)). Si de verdad no existe ninguna ruta simple para
+  ese lote, **la instancia de 30 lotes es infeasible por construcción**, no
+  "difícil de resolver" -- explicaría de una sola vez por qué fallan los 5
+  modelos, exacto incluido (que da `timeout`, pero probar infeasibilidad de
+  un MILP grande puede tardar tanto o más que encontrar una solución, así
+  que `timeout` no contradice esto).
+- Causa raíz probable: `scenario_custom_setup` reparte pedidos a lotes por
+  *round-robin* sin verificar si el conjunto de ubicaciones resultante por
+  lote admite una ruta simple en la grilla -- a partir de cierta densidad,
+  es fácil generar un lote sin solución posible.
+- **Pendiente de confirmar directamente contra SCIP** (no solo por el lado
+  heurístico): `tests/opp_v4/tests/diagnostics/test_single_batch_infeasibility_check.py`
+  aísla ese único lote (mismos 25 pedidos, misma grilla) y le da a SCIP un
+  límite de tiempo explícito para que concluya `infeasible` en vez de
+  quedar indefinido -- correr con `zimpl` disponible y traer el veredicto.
+- Se discutió permitir ciclos en las rutas para evitar este problema, pero
+  se decidió no implementarlo sin más discusión: rompe la equivalencia de
+  restricciones con el exacto a menos que se relaje ahí también (ver
+  `analysis/README.md` sección "Sobre permitir ciclos en las rutas"). Buen
+  candidato para la sección de "trabajo futuro" de la tesina en vez de un
+  fix de esta etapa.
 
 ---
 
 ## Pendiente antes de dar esto por cerrado
 
-Investigando en paralelo (ver mensaje siguiente) si la brecha de tiempo
-ACO vs. HC (sección 2) es inherente al diseño o una ineficiencia de
-implementación corregible con bajo riesgo. Si es lo segundo, conviene
-arreglarlo **antes** de fijar los números de la sección 2 en la tesina —
-volver a redactarla después de publicar sería peor que esperar unos
-minutos más al profiling.
+1. **Re-correr `opp_aco_2`/`opp_aco_3` en estrés** con el fix de performance
+   (sección 2) -- los números actuales del reporte son de la versión lenta.
+2. **Correr `test_single_batch_infeasibility_check.py`** (requiere `zimpl`)
+   para confirmar o refutar la hipótesis de infeasibilidad por construcción
+   contra SCIP directamente, no solo por el lado heurístico.
+3. Con esos dos datos ya se puede escribir la sección de resultados sin
+   tener que volver a corregirla después.
