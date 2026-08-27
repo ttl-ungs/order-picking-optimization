@@ -1,0 +1,108 @@
+import os
+import sys
+import unittest
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+
+from models.utils.dat_files_builder import build_dat_files, write_indexed_dat, write_scalar_dat
+from tests.opp_v5.config import DAT_DIR, STAGE1_ZPL_PATH, STAGE2_ZPL_PATH
+from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
+
+
+class OPPTestCaseV5(unittest.TestCase):
+    """Runs both OPP v5 stages and exposes assertions for their contract."""
+
+    def run_pipeline(self, scenario, solve_stage2=True):
+        build_dat_files(DAT_DIR, scenario)
+        stage1_status, stage1_values = solve_zpl(STAGE1_ZPL_PATH, dat_dir=DAT_DIR)
+        self.assertIn(stage1_status, ("optimal", "feasible"), "Stage 1 did not solve")
+
+        route_times = self.extract_route_times(stage1_values, scenario["B"])
+        self.assertEqual(set(route_times), set(scenario["B"]), "Stage 1 did not export every batch time")
+        write_indexed_dat(os.path.join(DAT_DIR, "route_time_b.dat"), route_times)
+        write_indexed_dat(os.path.join(DAT_DIR, "velocities.dat"), scenario["V_p"])
+        write_scalar_dat(os.path.join(DAT_DIR, "frio.dat"), scenario["T_frio_max"])
+
+        if not solve_stage2:
+            return stage1_values, route_times, None, None
+
+        stage2_status, stage2_values = solve_zpl(STAGE2_ZPL_PATH, dat_dir=DAT_DIR)
+        return stage1_values, route_times, stage2_status, stage2_values
+
+    def extract_route_times(self, values, batches):
+        result = {}
+        for name, value in values.items():
+            if name.lower().startswith("r_b_time$"):
+                batch = name.split("$")[-1]
+                if batch in batches:
+                    result[batch] = value
+        return result
+
+    def assignments(self, values, pickers, batches):
+        result = {}
+        for name, value in values.items():
+            if not name.lower().startswith("x_pb$") or value <= 0.5:
+                continue
+            _, picker, batch = name.split("$")
+            if picker in pickers and batch in batches:
+                result[batch] = picker
+        return result
+
+    def completion_times(self, values, pickers, batches):
+        result = {}
+        for name, value in values.items():
+            if name.lower().startswith("v_pb$"):
+                _, picker, batch = name.split("$")
+                if picker in pickers and batch in batches:
+                    result[(picker, batch)] = value
+        return result
+
+    def assert_routes_cover_requirements(self, values, scenario):
+        arcs_by_batch = extract_active_arcs(values, scenario["B"])
+        for batch, arcs in arcs_by_batch.items():
+            self.assertTrue(arcs, f"{batch} has no route")
+            self.assertEqual(sum(i == scenario["depot"] for i, _ in arcs), 1)
+            self.assertEqual(sum(j == scenario["final"] for _, j in arcs), 1)
+            required = {
+                location for location in scenario["V"]
+                if any(scenario["A_ni"][(order, location)] * scenario["Bn"][(order, batch)]
+                       for order in scenario["N"])
+            }
+            visited = {node for arc in arcs for node in arc}
+            self.assertTrue(required <= visited, f"{batch} misses {required - visited}")
+
+    def assert_no_overlap(self, values, scenario, route_times):
+        assignments = self.assignments(values, scenario["P"], scenario["B"])
+        completions = self.completion_times(values, scenario["P"], scenario["B"])
+        for batch, picker in assignments.items():
+            duration = scenario["B_setup"] + scenario["B_picking"] * sum(
+                scenario["C_n"][order] * scenario["Bn"][(order, batch)] for order in scenario["N"]
+            ) + route_times[batch] / scenario["V_p"][picker]
+            self.assertGreaterEqual(completions[(picker, batch)] + 1e-5, duration)
+
+        for picker in scenario["P"]:
+            intervals = []
+            for batch, assigned_picker in assignments.items():
+                if assigned_picker == picker:
+                    end = completions[(picker, batch)]
+                    duration = scenario["B_setup"] + scenario["B_picking"] * sum(
+                        scenario["C_n"][order] * scenario["Bn"][(order, batch)] for order in scenario["N"]
+                    ) + route_times[batch] / scenario["V_p"][picker]
+                    intervals.append((end - duration, end, batch))
+            intervals.sort()
+            for (_, end, first), (start, _, second) in zip(intervals, intervals[1:]):
+                self.assertGreaterEqual(start + 1e-5, end, f"{first} overlaps {second} on {picker}")
+
+    @staticmethod
+    def eligible_pairs(scenario, route_times):
+        """Replicates the PB_elig definition before compiling Stage 2."""
+        pairs = set()
+        for picker in scenario["P"]:
+            for batch in scenario["B"]:
+                fixed_time = scenario["B_setup"] + scenario["B_picking"] * sum(
+                    scenario["C_n"][order] * scenario["Bn"][(order, batch)]
+                    for order in scenario["N"]
+                )
+                if fixed_time + route_times[batch] / scenario["V_p"][picker] <= scenario["T_frio_max"]:
+                    pairs.add((picker, batch))
+        return pairs
