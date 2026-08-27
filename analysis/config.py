@@ -9,6 +9,15 @@ opp_v3 / opp_hc / opp_aco) to the current model lineup:
 - opp_aco_2 : ACO, parallel pickers, no congestion
 - opp_hc_3  : Hill Climbing, congestion-aware
 - opp_aco_3 : ACO, congestion-aware, multi-pheromone
+- opp_v5    : exact model, 2-stage decomposition (routing then scheduling),
+              no congestion -- migrated normal/stress tests neutralize its
+              two extra features (heterogeneous picker speed, cold-chain
+              limit) via tests/opp_v5/tests/v4_compat.py, so those rows
+              solve the same problem as opp_v4/opp_hc_2/opp_aco_2. Kept
+              OUT of CONGESTION_AWARE_MODELS and NOT set as EXACT_MODEL
+              (still opp_v4) -- it's compared AGAINST opp_v4, not used to
+              replace it, until the 2-stage decomposition's optimality is
+              independently confirmed.
 
 Each entry maps a short label -> the directory name under tests/outputs/.
 Add/remove entries here as models evolve; nothing else in the pipeline
@@ -28,6 +37,7 @@ MODEL_DIRS = {
     "opp_aco_2": "opp_aco_2",
     "opp_hc_3": "opp_hc_3",
     "opp_aco_3": "opp_aco_3",
+    "opp_v5": "opp_v5",
 }
 
 SCENARIOS = ["normal", "stress"]
