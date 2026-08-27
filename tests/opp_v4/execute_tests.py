@@ -14,16 +14,16 @@ if __name__ == "__main__":
         timeout_minutes=TEST_TIMEOUT_MINUTES,
         write_csv=WRITE_RESULTS_CSV,
         model_name="opp_v4",
-        test_type="stress",
+        test_type="normal",
     )
 
     suite = unittest.TestLoader().discover(
-        start_dir=os.path.join(os.path.dirname(__file__), "tests", "stress"),
+        start_dir=os.path.join(os.path.dirname(__file__), "tests", "normal"),
         pattern="test_*.py",
     )
     test_ids = TestRunner.collect_test_ids(suite)
 
     results = runner.run(test_ids)
-    runner.print_summary(results, "STRESS TESTS")
+    runner.print_summary(results, "NORMAL TESTS")
 
     sys.exit(0 if runner.succeeded(results) else 1)
