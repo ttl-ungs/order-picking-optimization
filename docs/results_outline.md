@@ -123,40 +123,50 @@ real, no un artefacto:
 - Con el fix, `opp_v4`-equivalente de 25 lotes pasó de `infeasible` siempre
   a `optimal` en ~13 min con hiperparámetros default.
 
-## Hallazgo más fuerte todavía: algunas instancias de estrés podrían ser
-   infeasibles *por construcción*, no solo difíciles
+## Hallazgo más fuerte todavía: no es infeasibilidad por construcción --
+   es que la construcción greedy de HC no tiene vuelta atrás (confirmado
+   contra SCIP, 2026-08-27)
 
 Las instancias de ~25+ ubicaciones requeridas por lote (`test_09/10/11`)
-siguen sin converger en ningún modelo -- pero investigando por qué, se
-encontró algo más preciso que "es un límite combinatorio duro para todos":
+siguen sin converger en `opp_hc_2`/`opp_hc_3` -- la hipótesis inicial era
+que esas instancias fueran infeasibles por construcción. **Se confirmó
+directamente contra SCIP que la hipótesis es incorrecta**:
 
 - Con 2000 órdenes de visita distintos (al azar) sobre el Dijkstra
   determinístico de `opp_hc_2`, **ninguno** encontró una ruta simple para el
   lote de 25 ubicaciones de `test_09` (verificado que el método no tiene un
-  bug: en un lote fácil de 4 ubicaciones sí encuentra rutas en 17/200).
-- La restricción "sin loops" (17) es compartida por los 5 modelos,
-  incluido el exacto (está entrelazada con la conservación de flujo,
-  constraints (13)-(15)). Si de verdad no existe ninguna ruta simple para
-  ese lote, **la instancia de 30 lotes es infeasible por construcción**, no
-  "difícil de resolver" -- explicaría de una sola vez por qué fallan los 5
-  modelos, exacto incluido (que da `timeout`, pero probar infeasibilidad de
-  un MILP grande puede tardar tanto o más que encontrar una solución, así
-  que `timeout` no contradice esto).
-- Causa raíz probable: `scenario_custom_setup` reparte pedidos a lotes por
-  *round-robin* sin verificar si el conjunto de ubicaciones resultante por
-  lote admite una ruta simple en la grilla -- a partir de cierta densidad,
-  es fácil generar un lote sin solución posible.
-- **Pendiente de confirmar directamente contra SCIP** (no solo por el lado
-  heurístico): `tests/opp_v4/tests/diagnostics/test_single_batch_infeasibility_check.py`
-  aísla ese único lote (mismos 25 pedidos, misma grilla) y le da a SCIP un
-  límite de tiempo explícito para que concluya `infeasible` en vez de
-  quedar indefinido -- correr con `zimpl` disponible y traer el veredicto.
-- Se discutió permitir ciclos en las rutas para evitar este problema, pero
-  se decidió no implementarlo sin más discusión: rompe la equivalencia de
+  bug genérico: en un lote fácil de 4 ubicaciones sí encuentra rutas en
+  17/200) -- esto en su momento parecía fuerte evidencia de infeasibilidad.
+- **Se corrió `tests/opp_v4/tests/diagnostics/test_single_batch_infeasibility_check.py`
+  contra SCIP real** (límite de 1800s, `zimpl` vía conda env `optimizacion`):
+  SCIP resuelve ese mismo lote en **1.8 segundos**, `status=optimal`,
+  con una ruta simple de 56 nodos (55 arcos, sin loops) que visita las 25
+  ubicaciones -- verificado reconstruyendo la ruta desde las variables
+  activas. **La instancia es factible.** La ruta óptima recorre la grilla en
+  zigzag, sin nada patológico que explique por qué 2000/2000 intentos
+  aleatorios de Dijkstra fallaron.
+- Conclusión correcta: el problema es que la construcción por
+  vecino-más-cercano (Dijkstra greedy, sin backtracking) de
+  `opp_hc_2`/`opp_hc_3` puede meterse en un callejón sin salida del que no
+  puede deshacer una elección anterior -- y como es 100% determinístico,
+  **da igual el orden de visita**: siempre comete el mismo error. Es la
+  misma familia de bug que el de construcción de rutas de ACO (self-avoiding
+  walk sin retroceso, sección anterior) pero sin la vía de escape que tiene
+  ACO (reintento aleatorio por lote con revisita como último recurso) --
+  por eso ACO puede llegar a resolver instancias de este tipo con su fix y
+  HC nunca, aunque HC sea mucho más rápido en el caso general.
+- Esto es un límite real y defendible de la estrategia de construcción de
+  HC, no de la instancia ni de una casualidad del generador de escenarios
+  -- vale la pena mencionarlo en la tesina como una limitación conocida del
+  enfoque greedy sin backtracking, con evidencia directa (SCIP resuelve en
+  ~2s lo que HC nunca resuelve).
+- Se discutió permitir ciclos en las rutas como fix general, pero se
+  decidió no implementarlo sin más discusión: rompe la equivalencia de
   restricciones con el exacto a menos que se relaje ahí también (ver
   `analysis/README.md` sección "Sobre permitir ciclos en las rutas"). Buen
-  candidato para la sección de "trabajo futuro" de la tesina en vez de un
-  fix de esta etapa.
+  candidato para la sección de "trabajo futuro" de la tesina -- por ejemplo,
+  agregar backtracking real (no solo revisita aleatoria) a la construcción
+  greedy de HC.
 
 ---
 
@@ -164,8 +174,10 @@ encontró algo más preciso que "es un límite combinatorio duro para todos":
 
 1. **Re-correr `opp_aco_2`/`opp_aco_3` en estrés** con el fix de performance
    (sección 2) -- los números actuales del reporte son de la versión lenta.
-2. **Correr `test_single_batch_infeasibility_check.py`** (requiere `zimpl`)
-   para confirmar o refutar la hipótesis de infeasibilidad por construcción
-   contra SCIP directamente, no solo por el lado heurístico.
-3. Con esos dos datos ya se puede escribir la sección de resultados sin
-   tener que volver a corregirla después.
+   *(En curso, 2026-08-27: Lucia corriendo de a poco.)*
+2. ~~Correr `test_single_batch_infeasibility_check.py` contra SCIP~~ --
+   **hecho (2026-08-27)**: `status=optimal` en 1.8s, hipótesis de
+   infeasibilidad por construcción **refutada**. Ver hallazgo actualizado
+   arriba.
+3. Con (1) ya se puede escribir la sección de resultados sin tener que
+   volver a corregirla después.

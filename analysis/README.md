@@ -168,32 +168,45 @@ nada frente a `opp_hc_2` (+0.05%, dentro del ruido), `opp_aco_3` paga +263%
 frente a `opp_aco_2` -- la construcción determinística de HC compensa el
 costo de simular congestión; el switch probabilístico τ1/τ2 de ACO3 no.
 
-**Instancias que quedan fuera de alcance de cualquier tuneo, y por qué**
-(2026-08-27): `test_09`/`10`/`11` (750 órdenes, ~25 ubicaciones requeridas
-por lote) le dan timeout incluso a `opp_hc_2` en la corrida real, y hasta el
-método rápido de `opp_hc_2` (`_generate_feasible_route`, Dijkstra
-determinístico) devuelve `None` para esos lotes. Se investigó **si existe
-siquiera una ruta simple** (sin repetir ningún nodo) que visite esas 25
-ubicaciones en esa grilla de 10x10, probando 2000 órdenes de visita
-distintos (al azar, no solo "el más cercano primero") con el mismo Dijkstra
-de `opp_hc_2` -- **ninguno de los 2000 encontró una ruta simple**
-(verificado que el método en sí no tiene un bug: en un lote fácil de 4
-ubicaciones, sí encuentra rutas válidas en 17/200 intentos).
+**Instancias que quedan fuera de alcance de cualquier tuneo -- y por qué NO
+es infeasibilidad por construcción (hipótesis refutada, 2026-08-27)**:
+`test_09`/`10`/`11` (750 órdenes, ~25 ubicaciones requeridas por lote) le
+dan timeout incluso a `opp_hc_2` en la corrida real, y hasta el método
+rápido de `opp_hc_2` (`_generate_feasible_route`, Dijkstra determinístico)
+devuelve `None` para esos lotes. Con 2000 órdenes de visita distintos (al
+azar) sobre ese mismo Dijkstra, ninguno encontró una ruta simple para el
+lote B1 de `test_09` -- lo que en su momento se documentó acá como fuerte
+evidencia de que **la instancia sería infeasible por construcción** bajo la
+restricción "sin loops" (17), compartida por los 5 modelos.
 
-Esto probablemente significa que **la instancia es infeasible por
-construcción bajo la restricción "sin loops" (17)** -- compartida por los 5
-modelos, incluido el exacto -- no que sea "difícil de resolver". Explicaría
-de una sola vez por qué fallan los cinco: no es debilidad puntual de ningún
-algoritmo, es que el problema, tal como está planteado, puede no tener
-solución. La causa más probable: `scenario_custom_setup` reparte pedidos a
-lotes por *round-robin* sin verificar si el conjunto de ubicaciones
-resultante por lote admite una ruta simple en la grilla -- a partir de
-cierta densidad (pedidos por lote) es fácil terminar con un lote cuyas
-ubicaciones no se pueden recorrer sin pasar dos veces por el mismo pasillo.
-No se investigó (todavía) agregar una validación de feasibility geométrica
-al generador; ver la sección "Sobre permitir ciclos en las rutas" más abajo
-para la discusión de qué implicaría relajar esa restricción en vez de
-evitar generar estas instancias.
+**Se corrió el chequeo directo contra SCIP
+(`tests/opp_v4/tests/diagnostics/test_single_batch_infeasibility_check.py`,
+con límite de 1800s) y la hipótesis quedó refutada**: SCIP resuelve ese
+mismo lote B1 (25 ubicaciones requeridas, mismo grid 10x10) en **1.8
+segundos**, `status=optimal`, encontrando una ruta simple de 56 nodos que
+visita las 25 ubicaciones sin repetir ninguna (verificado reconstruyendo la
+ruta desde las variables `z_ijb` activas -- 55 arcos, 56 nodos únicos, sin
+loops). La instancia **sí es factible**; el patrón de la ruta óptima no
+tiene nada patológico (recorre la grilla en zigzag), así que no es un caso
+límite raro que SCIP encontró "de casualidad".
+
+Esto redirige el hallazgo: el problema no es la instancia, es que **la
+construcción por vecino-más-cercano (Dijkstra determinístico greedy) que
+usa `opp_hc_2`/`opp_hc_3` no tiene backtracking** -- una vez que el greedy
+se mete en un callejón sin salida (visita ubicaciones en un orden que deja
+alguna ubicación requerida solo alcanzable revisitando un nodo ya usado),
+no hay forma de deshacer una elección anterior, y **da igual en qué orden
+se recorran las ubicaciones al azar**: 2000/2000 órdenes de visita fallaron
+porque el método en sí -- no la instancia -- no puede encontrar la ruta
+zigzag que SCIP sí encuentra explorando el espacio de soluciones completo
+(MILP) en vez de construir la ruta paso a paso sin vuelta atrás. Es la
+misma familia de bug que el de ACO (self-avoiding walk sin retroceso, ver
+más abajo), pero en HC es 100% determinístico -- por eso ningún reintento
+ni cambio de semilla lo arregla, y por eso HC nunca lo resuelve mientras
+que ACO sí puede (con su fix de reintento-por-lote) porque ACO explora
+alternativas donde HC comete el mismo error todas las veces.
+Ver también `docs/results_outline.md` sección "Hallazgo más fuerte
+todavía..." (a corregir con este resultado) para el registro completo.
 
 ### Optimización de rendimiento (2026-08-27): ~57-150x más rápido
 
