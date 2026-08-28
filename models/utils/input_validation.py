@@ -26,7 +26,20 @@ def overloaded_batches(C_n: dict, Bn: dict, C_v: float, tolerance: float = 1e-9)
     for (n, b), assigned in Bn.items():
         if not assigned:
             continue
-        load_by_batch[b] = load_by_batch.get(b, 0.0) + C_n.get(n, 0.0)
+        if n not in C_n:
+            # Fix (2026-08-28, code audit): used to silently fall back to
+            # C_n.get(n, 0.0), so an order missing from C_n contributed
+            # ZERO load -- exactly backwards for a validator whose whole
+            # job is to catch batches that are too heavy. Missing capacity
+            # data for an order that IS assigned via Bn is itself a data
+            # problem the caller needs to know about, not something this
+            # check should paper over.
+            raise ValueError(
+                f"overloaded_batches: order {n!r} is assigned to batch {b!r} via Bn "
+                f"but has no entry in C_n -- can't validate vehicle capacity without "
+                f"a real capacity value for it."
+            )
+        load_by_batch[b] = load_by_batch.get(b, 0.0) + C_n[n]
 
     return {b for b, load in load_by_batch.items() if load > C_v + tolerance}
 
@@ -39,12 +52,20 @@ def orders_without_exactly_one_batch(Bn: dict, N, tolerance: float = 1e-9) -> se
     constraint opp_v2/opp_v3/opp_hc_2/opp_aco_2 enforce on the batch
     assignment decision variable.
     """
-    if not Bn or not N:
+    if not N:
         return set()
 
+    # Fix (2026-08-28, code audit): used to be `if not Bn or not N: return
+    # set()` -- an EMPTY Bn with a non-empty N means every order in N is
+    # unassigned, exactly the condition this function exists to catch, but
+    # the old short-circuit silently reported "nothing wrong" instead.
+    # Every order starts at count 0 regardless of whether Bn has any
+    # entries at all; only bump the count for entries that are actually
+    # there.
     assignment_count = {n: 0.0 for n in N}
-    for (n, _b), assigned in Bn.items():
-        if n in assignment_count:
-            assignment_count[n] += assigned
+    if Bn:
+        for (n, _b), assigned in Bn.items():
+            if n in assignment_count:
+                assignment_count[n] += assigned
 
     return {n for n, count in assignment_count.items() if abs(count - 1.0) > tolerance}

@@ -18,10 +18,13 @@ failures if they want to.
 
 import glob
 import os
+import re
 
 import pandas as pd
 
 from analysis.config import LATEST_FILE_OVERRIDES, MODEL_DIRS, OUTPUTS_ROOT, SCENARIOS
+
+_RUN_TIMESTAMP_RE = re.compile(r"(\d{8}_\d{6})")
 
 NUMERIC_COLUMNS = [
     "total_time",
@@ -41,12 +44,24 @@ NUMERIC_COLUMNS = [
 ]
 
 
+def _run_timestamp_key(path: str) -> str:
+    """
+    Extracts the "YYYYMMDD_HHMMSS" run timestamp embedded in a CSV's own
+    filename.
+    """
+    match = _RUN_TIMESTAMP_RE.search(os.path.basename(path))
+    if match:
+        return match.group(1)
+    return str(os.path.getmtime(path))
+
+
 def _pick_csv(model_dir: str, scenario: str) -> "tuple[str, list[str]]":
     """
     Returns (chosen_path, dropped_paths). Honors LATEST_FILE_OVERRIDES;
-    otherwise picks the most recently modified *.csv, and reports every
-    other candidate as dropped so a caller can log what was skipped
-    (never silently discard data without saying so).
+    otherwise picks the CSV whose filename encodes the most recent run
+    timestamp (see _run_timestamp_key), and reports every other candidate
+    as dropped so a caller can log what was skipped (never silently
+    discard data without saying so).
     """
     pattern = os.path.join(OUTPUTS_ROOT, model_dir, scenario, "*.csv")
     candidates = glob.glob(pattern)
@@ -59,7 +74,7 @@ def _pick_csv(model_dir: str, scenario: str) -> "tuple[str, list[str]]":
         if os.path.exists(forced):
             return forced, [c for c in candidates if c != forced]
 
-    chosen = max(candidates, key=os.path.getmtime)
+    chosen = max(candidates, key=_run_timestamp_key)
     return chosen, [c for c in candidates if c != chosen]
 
 

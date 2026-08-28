@@ -62,6 +62,5 @@ CORRELATION_INDEPENDENTS = ["N", "V", "B", "C_v", "W_full", "W_ea_ta"]
 # later partial run, or a specific high-density stress run). Keyed by
 # (model_label, scenario) -> exact filename (relative to its output dir).
 LATEST_FILE_OVERRIDES = {
-    ("opp_v3", "stress"): "complete_output_v3_stress_tests.csv",
-    ("opp_aco", "stress"): "output_opp_aco_stress_tests_20260617_123001.csv",
+    ("opp_v3", "stress"): "complete_output_v3_stress_tests.csv"
 }
