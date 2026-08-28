@@ -65,6 +65,11 @@ class OPPAntColonyOptimization(Model):
         Args:
             params (SolveAcoModelDTO): DTO containing exact model and ACO parameters.
         """
+        # Optional reproducibility (2026-08-28 audit finding) -- see
+        # opp_hc_2.solve()'s identical comment.
+        if params.Seed is not None:
+            random.seed(params.Seed)
+
         start_time = time.time()
 
         # Initial validation analogous to opp_v3 / opp_hc_2

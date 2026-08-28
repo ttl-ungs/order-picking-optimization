@@ -17,6 +17,7 @@ class SolveModelDTO:
         self._M: float = None
         self._x: dict = None
         self._y: dict = None
+        self._seed: int = None
 
     @property
     def W_full(self) -> float:
@@ -137,6 +138,26 @@ class SolveModelDTO:
     @Bn.setter
     def Bn(self, value: dict):
         self._y = value
+
+    @property
+    def Seed(self) -> int:
+        """
+        Optional RNG seed for reproducible heuristic runs (opp_hc_2/opp_hc_3/
+        opp_aco_2/opp_aco_3 -- opp_v4 is exact, no randomness involved).
+        Default None preserves the previous (unseeded, non-reproducible)
+        behavior: every solve() call reads/advances the shared global
+        `random` module state, so two runs of the same instance with the
+        same hyperparameters can produce different search trajectories and
+        final objective values with no way to reproduce a specific one.
+        Added 2026-08-28 (code audit finding) -- pass an explicit int here
+        to make a run's randomness reproducible for debugging or for
+        reporting a specific result.
+        """
+        return self._seed
+
+    @Seed.setter
+    def Seed(self, value: int):
+        self._seed = value
 
 
     def is_batch_assignment_valid(self) -> bool:

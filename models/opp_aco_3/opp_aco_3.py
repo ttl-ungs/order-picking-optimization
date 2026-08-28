@@ -88,6 +88,11 @@ class OPPAntColonyOptimization(Model):
         Args:
             params (SolveAco3ModelDTO): DTO with exact model + ACO + congestion params.
         """
+        # Optional reproducibility (2026-08-28 audit finding) -- see
+        # opp_hc_2.solve()'s identical comment.
+        if params.Seed is not None:
+            random.seed(params.Seed)
+
         start_time = time.time()
 
         if params.Bn is None:
@@ -831,6 +836,18 @@ class OPPAntColonyOptimization(Model):
             elitist_delta = 2.0  # Delta_tau=1 is the max per-ant reward; double it for the elite.
             self._deposit_solution(best_global_solution, pheromones_time, elitist_delta, depot, final)
             self._deposit_solution(best_global_solution, pheromones_congestion, elitist_delta, depot, final)
+            # Fix (2026-08-28): the elitist boost used to only reinforce the
+            # edge pheromone matrices, never picker_pheromones -- an
+            # unexplained inconsistency versus opp_aco_2, whose elitist
+            # deposit reinforces both (its _deposit_solution takes
+            # picker_pheromones directly). Mirror that here, at the same
+            # scale as the regular per-ant picker deposit below.
+            if best_global_cost > 0:
+                elitist_picker_amount = (q_factor / best_global_cost) * 2.0
+                for batch in self.B:
+                    elite_picker = best_global_solution.get_batch_picker(batch)
+                    if elite_picker is not None and (batch, elite_picker) in picker_pheromones:
+                        picker_pheromones[(batch, elite_picker)] += elitist_picker_amount
 
         for edge in pheromones_time:
             pheromones_time[edge] = min(max(pheromones_time[edge], tau_min), tau_max)

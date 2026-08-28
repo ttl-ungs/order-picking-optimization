@@ -49,6 +49,13 @@ class OPPHillClimbing(Model):
         Validates: All constraints
         Returns: Compatible output
         """
+        # Optional reproducibility (2026-08-28 audit finding): seeds the
+        # shared global `random` module state used throughout this file's
+        # neighbor-move selection. Default None (params.Seed unset) leaves
+        # global random state untouched, preserving prior behavior exactly.
+        if params.Seed is not None:
+            random.seed(params.Seed)
+
         # Real wall-clock reference for timing/timeout purposes. This is
         # intentionally separate from `self.T_0`, which is a domain value
         # (the picking schedule's start time) used only to offset reported

@@ -70,6 +70,11 @@ class OPPHillClimbing(Model):
         Validates: All constraints
         Returns: Compatible output
         """
+        # Optional reproducibility (2026-08-28 audit finding) -- see
+        # opp_hc_2.solve()'s identical comment.
+        if params.Seed is not None:
+            random.seed(params.Seed)
+
         wall_clock_start = time.time()
 
         if params.Bn is None:
