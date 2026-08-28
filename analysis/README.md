@@ -307,6 +307,31 @@ resultados. Los fixes #1/#2 no cambiaron ningún resultado ya observado
 cambia `test_09/10/11`) pero, para ser prolijos, conviene re-correr también
 `opp_hc_2`/`opp_hc_3` en estrés antes de dar los números por definitivos.
 
+### Auditoría de código, parte 2 (2026-08-28): secuenciación en ACO
+
+Revisando el hallazgo #4 de la auditoría (`opp_aco_2`/`opp_aco_3` nunca
+buscan en qué orden procesa un picker sus lotes -- la cola queda fija en
+orden de ID de lote, sin relación con fechas de vencimiento, a diferencia de
+`opp_hc_2`/`opp_hc_3` que sí exploran swaps de secuencia), se agregó un fix
+acotado en ambos modelos ACO: **ordenar la cola de cada picker por fecha de
+vencimiento más temprana** entre las órdenes de cada lote (empatado por ID
+de lote), justo después de la asignación lote→picker y antes de construir
+rutas (importa el orden en `opp_aco_3` porque también define el orden
+causal de congestión). Es la heurística clásica de scheduling (EDD) para
+reducir tardanza -- no una búsqueda exhaustiva de secuencias ni una nueva
+tabla de feromona (eso sería mucho más trabajo e incierto en su beneficio;
+ver discusión de alcance en el hallazgo #4 original), pero cierra la mayor
+parte de la brecha estructural frente a HC con un cambio chico y verificable.
+Verificado con un caso concreto (3 lotes, vencimientos 30/5/15 → queda
+ordenado 2do/3ro/1ro) y con las suites normales completas de `aco_2` (48/48)
+y `aco_3` (59/59), ambas OK.
+
+**Impacto en los datos ya generados**: este fix también cambia el
+comportamiento real de ambos solvers (`opp_aco_2` y `opp_aco_3`) en
+cualquier instancia con más de un lote por picker -- **hay que sumar
+`opp_aco_2` a la lista de baterías de estrés a re-correr** antes de cerrar
+la sección de resultados (ya estaba `opp_aco_3` por el fix #3 de arriba).
+
 ## 2. Correr el pipeline
 
 ```bash

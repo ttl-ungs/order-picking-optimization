@@ -276,3 +276,17 @@ Con (1) y (2) resueltos pero (3) pendiente, todavía falta una vuelta más de
 datos de estrés antes de escribir la sección de resultados de la tesina sin
 tener que corregirla después -- específicamente `opp_aco_3` (cambio real de
 comportamiento) y, para prolijidad, `opp_hc_2`/`opp_hc_3`.
+
+4. **Nuevo (2026-08-28): fix de secuenciación en ACO** (hallazgo #4 de la
+   auditoría) -- `opp_aco_2`/`opp_aco_3` ahora ordenan la cola de cada
+   picker por fecha de vencimiento más temprana (EDD) en vez de dejarla en
+   orden de ID de lote (sin relación con vencimientos). Cierra la brecha
+   estructural frente a HC (que sí explora el orden vía swaps) sin agregar
+   una nueva dimensión de feromona. **Cambia el comportamiento real de
+   `opp_aco_2` también** -- sumarlo a la lista de re-corridas de estrés
+   pendientes junto con `opp_aco_3`.
+
+**Estado de las re-corridas de estrés pendientes antes de escribir
+resultados**: `opp_aco_3` (fixes #3 y #4), `opp_aco_2` (fix #4),
+`opp_hc_2`/`opp_hc_3` (para confirmar que los fixes #1/#2 no cambiaron nada,
+por prolijidad más que por expectativa real de cambio).
