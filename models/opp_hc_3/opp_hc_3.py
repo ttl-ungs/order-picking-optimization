@@ -378,10 +378,24 @@ class OPPHillClimbing(Model):
 
         return route
 
+    # Same safety valve as opp_hc_2._MAX_BFF_EXPANSIONS -- see its docstring
+    # there for the full explanation of the bug this bounds.
+    _MAX_BFF_EXPANSIONS = 200_000
+
     def _generate_feasible_route_bff(self, required_locations: Set) -> Optional[List]:
         """
         Generate a feasible route visiting all required locations, via BFS
-        over states (current_node, frozenset(remaining_required)).
+        over states (current_node, remaining_required, path_so_far).
+
+        Does NOT prune a (node, remaining) state just because some other
+        path already reached it (fixed 2026-08-27, mirroring opp_hc_2's
+        identical fix): two different paths can reach the same (node,
+        remaining) pair having used up different intermediate nodes, and
+        only one of them may actually be completable -- pruning by state
+        alone could discard the only path that could finish, wrongly
+        reporting a routable batch as infeasible. Bounded by
+        _MAX_BFF_EXPANSIONS instead, since without state pruning this is
+        worst-case exponential.
         """
         if not required_locations:
             return []
@@ -391,9 +405,13 @@ class OPPHillClimbing(Model):
 
         initial_remaining = frozenset(required_locations)
         queue: deque = deque([(depot, initial_remaining, [depot])])
-        seen: Set = {(depot, initial_remaining)}
+        expansions = 0
 
         while queue:
+            expansions += 1
+            if expansions > self._MAX_BFF_EXPANSIONS:
+                return None  # Search budget exhausted, not necessarily infeasible
+
             node, remaining, path = queue.popleft()
             visited = set(path)
 
@@ -409,12 +427,9 @@ class OPPHillClimbing(Model):
                     continue
 
                 new_remaining = remaining - {vertex}
-                new_state = (vertex, new_remaining)
-                if new_state not in seen:
-                    seen.add(new_state)
-                    queue.append((vertex, new_remaining, path + [vertex]))
+                queue.append((vertex, new_remaining, path + [vertex]))
 
-        return None
+        return None  # No feasible path exists within the expansion budget
 
     def _generate_feasible_neighbor(
         self,
