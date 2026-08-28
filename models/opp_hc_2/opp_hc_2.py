@@ -384,17 +384,44 @@ class OPPHillClimbing(Model):
 
         return route
 
+    # Safety valve for _generate_feasible_route_bff: bounds how many search
+    # states it will expand before giving up, so the fix below (removing the
+    # cross-path state cache that was causing false negatives) can't turn
+    # into an unbounded/exponential search on a huge stress instance. Cheap
+    # for the small/medium graphs this fallback actually needs to solve
+    # (verified: the bug repro below completes in a handful of expansions);
+    # for graphs too large to search exhaustively, this bounds the cost and
+    # returns None -- same graceful degradation as before, just no longer
+    # ALSO returning None on cases that were actually solvable.
+    _MAX_BFF_EXPANSIONS = 200_000
+
     def _generate_feasible_route_bff(self, required_locations: Set) -> Optional[List]:
         """
         Generate a feasible route visiting all required locations.
 
-        Uses BFS over states (current_node, frozenset(remaining_required)) to
-        find the shortest path from depot through all required locations
-        to final, without using final as an intermediate stop.
+        BFS over states (current_node, remaining_required, path_so_far),
+        exploring in non-decreasing path length (so the first completion
+        found is a shortest one) -- but, unlike the previous version, does
+        NOT prune a (current_node, remaining_required) state just because
+        some other path already reached it. Two different paths can reach
+        the identical (node, remaining) pair while having used up different
+        sets of intermediate nodes; since only ONE of them may actually be
+        completable (a later required/final node might only be reachable
+        through a node the discarded path had "spent"), the old cross-path
+        pruning could throw away the only path that could actually finish,
+        making this method wrongly report a batch as unroutable even when a
+        valid route existed (found 2026-08-27, repro: depot D, required
+        {A,B}, edges D-P, D-Q, P-A, Q-A, P-B, B-final -- the discarded
+        branch via D-Q-A was the only one that could still reach B through
+        P). Bounded by _MAX_BFF_EXPANSIONS instead, since without ANY
+        pruning this is worst-case exponential (this is genuinely as hard as
+        finding a simple path through a required subset of nodes) -- graphs
+        too large to exhaust the budget on still return None, same
+        degradation as before.
 
         Intermediate nodes are included so the returned list represents the
         full physical traversal (excluding depot and final).  Returns None
-        when no valid path exists.
+        when no valid path exists within the expansion budget.
         """
         if not required_locations:
             return []
@@ -405,9 +432,13 @@ class OPPHillClimbing(Model):
         initial_remaining = frozenset(required_locations)
         # Each queue entry: (current_node, remaining_required, path_so_far)
         queue: deque = deque([(depot, initial_remaining, [depot])])
-        seen: Set = {(depot, initial_remaining)}
+        expansions = 0
 
         while queue:
+            expansions += 1
+            if expansions > self._MAX_BFF_EXPANSIONS:
+                return None  # Search budget exhausted, not necessarily infeasible
+
             node, remaining, path = queue.popleft()
             visited = set(path)
 
@@ -424,12 +455,9 @@ class OPPHillClimbing(Model):
                     continue
 
                 new_remaining = remaining - {vertex}
-                new_state = (vertex, new_remaining)
-                if new_state not in seen:
-                    seen.add(new_state)
-                    queue.append((vertex, new_remaining, path + [vertex]))
+                queue.append((vertex, new_remaining, path + [vertex]))
 
-        return None  # No feasible path exists
+        return None  # No feasible path exists within the expansion budget
 
 
     def _generate_feasible_neighbor(
@@ -703,7 +731,20 @@ class OPPHillClimbing(Model):
         return solution_info
 
     def _calculate_batch_execution_time(self, batch: str, route: List, params: SolveModelDTO) -> float:
-        """Calculate execution time for a batch given its route."""
+        """
+        Calculate execution time for a batch given its route:
+        t_exec = B_setup + B_picking * sum(C_n) + B_time * travel_distance + service_time
+        (same formula as RouteEvaluator._calculate_batch_execution_time and
+        opp_hc_3's own version of this method -- this used to diverge from
+        it: it indexed the service-time dict `S` (keyed by LOCATION) by
+        ORDER id instead, which always returned 0 since order/location ids
+        are disjoint key spaces, and it dropped the real C_n-based picking
+        term entirely. That only corrupted the batch_times/batch_completions/
+        tardiness/earliness reported here (solution_info, printed output) --
+        the actual hill-climbing search and obj_val always used
+        RouteEvaluator's correct formula, so acceptance decisions and the
+        reported objective were never affected).
+        """
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
 
@@ -721,14 +762,15 @@ class OPPHillClimbing(Model):
         # Setup time
         setup_time = params.B_setup
 
-        # Picking time (sum of service times for orders in this batch)
-        picking_time = 0
+        # Picking time: B_picking * sum of C_n (vehicle-capacity units) for
+        # orders in this batch.
         batch_assignments = params.extract_batch_assignments()
-        for order in batch_assignments.get(batch, set()):
-            picking_time += params.S.get(order, 0) if isinstance(params.S, dict) else 0
+        orders = batch_assignments.get(batch, set())
+        picking_capacity = sum(params.C_n.get(o, 0) for o in orders) if isinstance(params.C_n, dict) else 0
+        picking_time = params.B_picking * picking_capacity
 
-        # Capacity weight (from objective function)
-        capacity_weight = params.B_picking
+        # Service time: sum of service times for each location in the route.
+        service_time = sum(params.S.get(loc, 0) for loc in route) if isinstance(params.S, dict) else 0
 
-        total_time = params.B_time * travel_time + setup_time + capacity_weight * picking_time
+        total_time = setup_time + picking_time + params.B_time * travel_time + service_time
         return total_time
