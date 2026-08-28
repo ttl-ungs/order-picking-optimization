@@ -559,19 +559,44 @@ class OPPAntColonyOptimization(Model):
                     tracker, current, n, current_time, travel_time, owner, S
                 )
 
+                # "How close does stepping to n keep us to still-unvisited
+                # required locations" -- used by BOTH matrices (see fix note
+                # below for why tau2 needs this too, not just tau1).
+                if n in unvisited_req:
+                    closeness = 1.5 / dist
+                else:
+                    min_dist_to_req = min(
+                        self._sp_dist.get((n, req), float("inf")) for req in unvisited_req
+                    )
+                    min_dist_to_req = min_dist_to_req if min_dist_to_req > 0 else 0.01
+                    closeness = 1.0 / (dist + min_dist_to_req)
+
                 if use_time_matrix:
                     tau = pheromones_time.get((current, n), 1.0) ** alpha
-                    if n in unvisited_req:
-                        eta = (1.5 / dist) ** beta
-                    else:
-                        min_dist_to_req = min(
-                            self._sp_dist.get((n, req), float("inf")) for req in unvisited_req
-                        )
-                        min_dist_to_req = min_dist_to_req if min_dist_to_req > 0 else 0.01
-                        eta = (1.0 / (dist + min_dist_to_req)) ** beta
+                    eta = closeness ** beta
                 else:
                     tau = pheromones_congestion.get((current, n), 1.0) ** alpha
-                    eta = (1.0 / (1.0 + logical_wait)) ** beta2
+                    # Fix (2026-08-27): this used to be JUST
+                    # (1/(1+logical_wait))**beta2, with no distance/required-
+                    # location term at all. Whenever there's no real
+                    # concurrent contention to measure (single picker, or
+                    # pickers whose routes don't actually overlap in time/
+                    # space -- the common case), logical_wait is ~0 for
+                    # EVERY neighbor, so eta collapsed to the same value
+                    # regardless of whether n is a required location or a
+                    # pointless detour: roughly p_objective_switch's share of
+                    # all construction steps degraded to a distance-blind
+                    # coin flip (measured empirically: ~40% of tau2-guided
+                    # steps had all-tied logical_wait in a real congestion
+                    # scenario, and 92% of those had a mix of required and
+                    # non-required neighbors on the table). Folding the same
+                    # `closeness` term tau1 uses into eta2 means a tau2-
+                    # guided step still makes progress toward the batch's
+                    # required locations when there's nothing real to avoid,
+                    # while still discounting genuinely congested neighbors
+                    # via wait_avoidance when there IS contention.
+                    wait_avoidance = 1.0 / (1.0 + logical_wait)
+                    eta = (closeness * wait_avoidance) ** beta2
 
                 prob = tau * eta
                 probabilities.append((n, prob))
