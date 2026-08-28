@@ -23,6 +23,52 @@ def _ok(df: pd.DataFrame) -> pd.DataFrame:
     return df[df["status"] == "ok"].copy()
 
 
+def _dedupe_or_flag_collisions(df: pd.DataFrame, key_cols, compare_cols, label: str) -> pd.DataFrame:
+    """
+    `instance` is just the bare unittest *method* name (see analysis/load.py),
+    used to join the same scenario across models/CSVs -- but nothing
+    enforces that name is unique. Two rows can share (key_cols) for two
+    different reasons that need different handling:
+      - benign duplicate: the identical test loaded twice (e.g. from an
+        overlapping/leftover CSV) -- same compare_cols values, safe to
+        collapse to one row.
+      - real collision: two DIFFERENT test methods, defined in different
+        test files/classes, that happen to share a method name -- found
+        2026-08-28, e.g. opp_hc_2's own stress CSV defines
+        "test_10_orders_per_batch_10_x_10" in two files with unrelated
+        obj_val/total_time. Merging on the shared name here would silently
+        fan out into a comparison against the wrong instance. There's no
+        way to tell which of the two is "the real" one from this data
+        alone, so both are excluded and reported -- never guessed at.
+    """
+    key_cols = list(key_cols)
+    present_compare = [c for c in compare_cols if c in df.columns]
+    if not present_compare or df.empty:
+        return df.drop_duplicates(subset=key_cols)
+
+    keep_idx = []
+    collided = []
+    for key, group in df.groupby(key_cols, dropna=False):
+        if len(group) == 1:
+            keep_idx.append(group.index[0])
+            continue
+        identical = all(group[c].nunique(dropna=False) <= 1 for c in present_compare)
+        if identical:
+            keep_idx.append(group.index[0])
+        else:
+            collided.append(key if len(key_cols) > 1 else (key,))
+
+    if collided:
+        print(f"[{label}] {len(collided)} (scenario, instance) key(s) have rows with "
+              f"DIFFERENT {present_compare} under the same test method name -- these are "
+              f"two different test scenarios sharing a name across different test files, "
+              f"not a benign duplicate. Excluded entirely (can't tell which is 'the real' "
+              f"instance -- rename one of the colliding test methods to fix this at the "
+              f"source): {collided[:10]}{'...' if len(collided) > 10 else ''}")
+
+    return df.loc[keep_idx]
+
+
 def success_rate_table(df: pd.DataFrame) -> pd.DataFrame:
     """Total / OK / success rate per model x scenario, using ALL rows
     (timeouts and failures must count towards the denominator)."""
@@ -94,10 +140,18 @@ def quality_gap_table(df: pd.DataFrame, exact_model: str = EXACT_MODEL) -> pd.Da
     shape_cols_present = [c for c in SHAPE_COLUMNS if c in ok.columns]
     exact_cols = ["scenario", "instance", "obj_val"] + shape_cols_present
     exact = ok[ok["model"] == exact_model][exact_cols].copy()
+    exact = _dedupe_or_flag_collisions(
+        exact, key_cols=["scenario", "instance"], compare_cols=["obj_val"] + shape_cols_present,
+        label=f"quality_gap_table:{exact_model}",
+    )
     exact = exact.rename(columns={"obj_val": "obj_val_exact",
                                    **{c: f"{c}_exact" for c in shape_cols_present}})
 
     heuristics = ok[ok["model"] != exact_model]
+    heuristics = _dedupe_or_flag_collisions(
+        heuristics, key_cols=["model", "scenario", "instance"],
+        compare_cols=["obj_val"] + shape_cols_present, label="quality_gap_table:heuristics",
+    )
     merged = heuristics.merge(exact, on=["scenario", "instance"], how="left")
 
     no_exact_run = merged[merged["obj_val_exact"].isna()]
@@ -164,6 +218,14 @@ def congestion_reduction_table(df: pd.DataFrame) -> pd.DataFrame:
     for aware, baseline in pairs.items():
         a = ok[ok["model"] == aware][["scenario", "instance", "total_time", "obj_val"]]
         b = ok[ok["model"] == baseline][["scenario", "instance", "total_time", "obj_val"]]
+        a = _dedupe_or_flag_collisions(
+            a, key_cols=["scenario", "instance"], compare_cols=["total_time", "obj_val"],
+            label=f"congestion_reduction_table:{aware}",
+        )
+        b = _dedupe_or_flag_collisions(
+            b, key_cols=["scenario", "instance"], compare_cols=["total_time", "obj_val"],
+            label=f"congestion_reduction_table:{baseline}",
+        )
         m = a.merge(b, on=["scenario", "instance"], suffixes=("_aware", "_baseline"))
         if m.empty:
             print(f"[congestion_reduction_table] no matched instances for "
