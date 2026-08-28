@@ -62,5 +62,23 @@ CORRELATION_INDEPENDENTS = ["N", "V", "B", "C_v", "W_full", "W_ea_ta"]
 # later partial run, or a specific high-density stress run). Keyed by
 # (model_label, scenario) -> exact filename (relative to its output dir).
 LATEST_FILE_OVERRIDES = {
-    ("opp_v3", "stress"): "complete_output_v3_stress_tests.csv"
+    ("opp_v3", "stress"): "complete_output_v3_stress_tests.csv",
+    ("opp_aco", "stress"): "output_opp_aco_stress_tests_20260617_123001.csv",
+    # 2026-08-28: opp_v4's stress test files were renumbered/reshuffled at
+    # some point (the "Rename tests" commit) without a matching full stress
+    # re-run under the new numbering. The chronologically NEWER CSV
+    # (20260825_194316, 3 rows) tests scenario names
+    # (test_25_orders_per_batch_30_batches_25x25, etc.) that don't match ANY
+    # current tests/opp_v4/tests/stress/*.py file -- orphaned data from
+    # before the rename. This OLDER file's 8 test names match the current
+    # suite exactly (test_100_locations, test_infeasible_capacity, ...,
+    # test_10_orders_per_batch) -- pin to it explicitly rather than let
+    # _pick_csv's recency heuristic (correct in general, wrong here) choose
+    # the newer-but-stale one. Still only a partial answer: this file is
+    # itself from 2026-08-18 and hasn't been re-run since (the performance
+    # fix, the algorithm fixes from the 2026-08-27/28 code audit, etc.
+    # postdate it) -- a genuinely fresh, complete opp_v4 stress run is still
+    # pending (several of its 8 tests are known to take the full 25min
+    # timeout each, so budget hours, not minutes, for that run).
+    ("opp_v4", "stress"): "output_opp_v4_stress_tests_20260818_181050.csv",
 }
