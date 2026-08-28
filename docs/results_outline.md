@@ -54,8 +54,10 @@ complejos signifiquen algo.
 ## 1. Convergencia: el exacto no escala, las heurísticas sí (con matices)
 
 - Tabla 1 + `mean_time_stress.png`.
-- `opp_v4` (exacto): 97.7% en normal, **12.5% en estrés** (1/8). Ninguna
-  instancia no-trivial converge dentro de 25 min.
+- `opp_v4` (exacto): **97.8% en normal (45/46, re-confirmado 2026-08-28 con
+  una corrida completa fresca tras un bug real en `analysis/load.py` --
+  ver `analysis/README.md` "Auditoría de código, parte 4")**, 12.5% en
+  estrés (1/8). Ninguna instancia no-trivial converge dentro de 25 min.
 - Heurísticas en estrés (post-fix de performance, 2026-08-27): `opp_hc_3`
   85%, `opp_aco_2` 85%, `opp_hc_2` 74.4% (batería de 34, la más grande),
   `opp_aco_3` 70%. `aco_2`/`aco_3` subieron su tasa de éxito respecto a la
@@ -84,6 +86,33 @@ complejos signifiquen algo.
   entre construir una ruta y buscar entre muchas.
 - Normal ya era rápido en los 4 heurísticos (ms) y no cambió la conclusión
   ahí.
+
+**Aclaración (2026-08-28): "más lento" no es "peor" -- es el trade-off
+esperado, y los datos ya lo muestran en las otras dos dimensiones.** Es
+tentador leer estos tiempos como "ACO es peor que HC" porque en teoría es
+un algoritmo más sofisticado -- pero eso confunde "más avanzado" con
+"gana en todo". Comparando por dimensión, cada algoritmo gana donde su
+propio diseño predice que debería ganar:
+
+| Dimensión | HC | ACO | Gana |
+| --- | --- | --- | --- |
+| Velocidad (estrés) | más rápido | más lento (`A_ants × Max_it` construcciones vs. una sola) | HC |
+| Calidad (gap vs. exacto, normal, sección 4) | media 242% | media 71% | ACO |
+| Tasa de éxito (estrés, sección 1) | 74.4% | 85% | ACO |
+
+HC es rápido porque hace poco trabajo por corrida (una construcción greedy
++ búsqueda local acotada) -- pero por eso mismo queda atrapado sin salida
+cuando esa construcción se mete en un callejón sin salida (el bug de BFS y
+el de construcción sin backtracking, ambos documentados arriba). ACO paga
+en tiempo exactamente lo que le compra en robustez y calidad: muchas
+hormigas, muchas iteraciones, reintentos con revisita. Si ACO fuera
+también más rápido *y* de mejor calidad *y* más robusto, ahí sí habría
+algo sospechoso (una comparación injusta, o HC mal implementado). El
+patrón que muestran los datos -- cada uno gana en la dimensión que su
+propio diseño predice -- es el resultado esperado, no una debilidad de
+ACO. Conclusión a favor de la tesina: no "ACO es peor", sino "ACO cambia
+tiempo de cómputo por calidad y robustez frente a HC -- la elección
+depende de qué recurso es más escaso en el caso de uso real".
 
 ## Hallazgo metodológico: bug de performance O(V) en la construcción de rutas
 

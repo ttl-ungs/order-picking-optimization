@@ -332,6 +332,107 @@ cualquier instancia con más de un lote por picker -- **hay que sumar
 `opp_aco_2` a la lista de baterías de estrés a re-correr** antes de cerrar
 la sección de resultados (ya estaba `opp_aco_3` por el fix #3 de arriba).
 
+### Auditoría de código, parte 3 (2026-08-28): items menores pendientes
+
+Se retomaron los hallazgos #5/#7 de la auditoría original (el #6, agregar
+más posiciones de inserción al movimiento de reasignación de picker en HC,
+queda como trabajo futuro documentado -- no se implementó, es una mejora de
+alcance mayor, no un bug):
+
+- **#5 -- sin seed en ningún lado (`hc_2`/`hc_3`/`aco_2`/`aco_3`)**: se
+  agregó `Seed` (opcional, `None` por defecto) a `SolveModelDTO` (base
+  compartida por las 4 DTOs), que si se define llama a `random.seed()` al
+  inicio de `solve()`. Default `None` preserva el comportamiento anterior
+  exactamente (no cambia ningún resultado ya generado). Verificado:
+  mismo seed -> mismo `obj_val` en corridas repetidas.
+- **#7 -- asimetría de refuerzo elitista en `opp_aco_3`**: el boost elitista
+  solo reforzaba las matrices de feromona de arco (tiempo/congestión),
+  nunca `picker_pheromones` -- inconsistente con `opp_aco_2`, donde sí lo
+  hace. Agregado el mismo refuerzo elitista para `picker_pheromones` en
+  `opp_aco_3`, a la misma escala que `opp_aco_2`. **Cambia el
+  comportamiento real de `opp_aco_3`** (ya estaba en la lista de re-corridas
+  pendientes por los fixes #3/#4).
+
+Verificado con las 4 suites normales completas: `hc_2` 46/46, `hc_3` 51/51,
+`aco_2` 48/48, `aco_3` 59/59, todas OK.
+
+### Auditoría de código, parte 4 (2026-08-28): bug real en `analysis/load.py`
+   -- el 97.7% de `opp_v4` normal estaba mal (corregido a 97.8%, cambio
+   chico) -- y deduplicación en `metrics.py`
+
+Se auditó código todavía no revisado en las partes 1-3: `models/base/`,
+`models/utils/`, `models/opp_v4/opp_model_v4.zpl` (verificado con el
+binario real de `zimpl`), las 4 DTOs completas, y el propio pipeline de
+`analysis/` (la fuente de cada número citado en `docs/results_outline.md`).
+
+**Sin hallazgos críticos en el código compartido/`opp_v4`** -- solo gaps
+defensivos latentes, sin disparador actual. Corregidos los dos más
+concretos en `models/utils/input_validation.py`:
+- `orders_without_exactly_one_batch` reportaba "sin problema" si `Bn`
+  estaba vacío pero `N` no (justo el caso que debería atrapar).
+- `overloaded_batches` trataba un `C_n` faltante como capacidad 0 en
+  silencio (ahora lanza `ValueError` en vez de enmascarar el problema).
+
+**Sí hubo un hallazgo crítico real en `analysis/load.py`**: `_pick_csv`
+elegía el CSV "más reciente" por mtime del filesystem -- pero el mtime se
+resetea con cada `git checkout`/rebase al momento del checkout, no de la
+corrida real. Confirmado en los datos: dos CSVs de `opp_v4` normal
+compartían un mtime de checkout con solo 16 segundos de diferencia (un
+artefacto del orden de escritura del checkout, no de cuándo se generó cada
+uno realmente), y `_pick_csv` eligió la que casualmente cayó más tarde en
+esa ventana -- que resultó ser la más VIEJA en términos reales (de antes de
+que existieran `test_opp_v4_model_12/13/14`). El reporte publicado decía
+`opp_v4` normal 97.7% (43/44) sobre esa base.
+
+**Arreglado**: `load.py` ahora usa la fecha embebida en el *nombre* del
+archivo (`YYYYMMDD_HHMMSS`, que sí es confiable, no depende del
+filesystem) en vez de mtime. Se corrió la batería normal completa de
+`opp_v4` de nuevo (fresca, 2026-08-28) para tener un CSV genuinamente
+completo bajo la numeración actual de tests: **45/46 = 97.8%** (1 timeout
+real: `test_fractional_and_zero_capacities_feasible`, un caso
+numéricamente difícil para SCIP -- no un bug). **El número corregido
+(97.8%) es casi idéntico al que estaba publicado (97.7%)** -- el bug de
+`load.py` era real y merecía arreglarse por robustez, pero no
+correspondía a un error grande en el número ya citado en la tesina, así
+que no hace falta reescribir nada de lo ya redactado sobre este punto,
+solo actualizar el decimal.
+
+**Efecto colateral encontrado al aplicar el mismo fix a `opp_v4`
+estrés**: ahí sí importaba -- el archivo más reciente por nombre de
+archivo resultó ser una corrida *parcial* (3 de 8 tests) contra nombres de
+escenario que **ya no existen** en el código actual (huérfanos de la
+reorganización "Rename tests"). Se agregó un `LATEST_FILE_OVERRIDES`
+explícito para `("opp_v4", "stress")` señalando al archivo viejo (2026-08-18)
+cuyos 8 nombres de test sí coinciden con la suite actual, restaurando el
+12.5% (1/8) ya documentado. Ese archivo sigue sin reflejar los fixes de
+performance/algoritmo del 2026-08-27/28 -- correrlo de nuevo llevaría
+horas (varios de sus 8 tests ya se sabe que agotan el timeout de 25 min
+cada uno), así que queda pendiente como una corrida cara a programar,
+no algo urgente dado que el número actual sigue siendo válido como
+límite superior conocido.
+
+**Segundo hallazgo real en `metrics.py`**: `quality_gap_table` y
+`congestion_reduction_table` cruzaban filas por `(scenario, instance)` sin
+deduplicar -- y el nombre de test (`instance`) no es único: distintos
+archivos de test pueden definir un método con el mismo nombre para
+escenarios genuinamente distintos. Confirmado con datos reales: `opp_v4`
+tiene `test_bridge_disconnected_required_location` y
+`test_grid_multi_location_orders` definidos dos veces cada uno (con formas
+distintas), y `opp_hc_2` en estrés tiene `test_10_orders_per_batch_10_x_10`
+definido en dos archivos distintos con `obj_val`/`total_time` totalmente
+distintos. Un merge sin deduplicar podía inflar `n_matched` o, peor,
+promediar una comparación contra la instancia equivocada sin ningún error
+visible. **Arreglado**: nueva función `_dedupe_or_flag_collisions` en
+`metrics.py` -- colapsa duplicados benignos (mismos valores), pero excluye
+y reporta explícitamente cualquier colisión real (valores distintos bajo
+el mismo nombre), en vez de fusionar a ciegas. Ya está activo y reportando
+las 3 colisiones reales mencionadas arriba en cada corrida del pipeline.
+**Pendiente de limpieza en el código de tests** (no en `analysis/`,
+menor prioridad): renombrar los métodos de test colisionados en
+`opp_v4`/`opp_hc_2` para que dejen de compartir nombre -- mientras tanto,
+esas instancias específicas quedan excluidas de las tablas comparativas
+en vez de corromperlas.
+
 ## 2. Correr el pipeline
 
 ```bash
