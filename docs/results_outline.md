@@ -262,6 +262,17 @@ directamente contra SCIP que la hipótesis es incorrecta**:
    infeasibilidad por construcción **refutada**. Ver hallazgo actualizado
    arriba.
 
-Con (1) y (2) resueltos, ya no queda ningún dato pendiente de re-correr --
-se puede pasar a escribir la sección de resultados de la tesina a partir de
-este bosquejo.
+3. **Nuevo (2026-08-27): auditoría de código encontró y corrigió 3 bugs
+   reales en HC/ACO** (ver `analysis/README.md` sección "Auditoría de
+   código"). El fix #3 (visibilidad ciega a distancia en pasos guiados por
+   congestión en `opp_aco_3`) cambia el comportamiento real del solver --
+   **hay que re-correr la batería de estrés de `opp_aco_3` de nuevo** antes
+   de dar sus números por definitivos (los de la tabla de arriba, sección
+   2, quedaron desactualizados otra vez). Los fixes #1/#2 (HC) no cambiaron
+   ningún resultado ya observado, pero conviene re-correr `hc_2`/`hc_3` en
+   estrés también para confirmarlo con datos, no solo por inferencia.
+
+Con (1) y (2) resueltos pero (3) pendiente, todavía falta una vuelta más de
+datos de estrés antes de escribir la sección de resultados de la tesina sin
+tener que corregirla después -- específicamente `opp_aco_3` (cambio real de
+comportamiento) y, para prolijidad, `opp_hc_2`/`opp_hc_3`.

@@ -253,6 +253,60 @@ que quieras confirmarlo.
 
 `opp_v4` requiere el binario `zimpl` instalado y en el `PATH`.
 
+### Auditoría de código (2026-08-27): 3 bugs reales encontrados y corregidos
+
+Se hizo una revisión completa de `opp_hc_2`/`opp_hc_3`/`opp_aco_2`/`opp_aco_3`
+buscando bugs y mejoras (no solo performance). Encontró y corrigió:
+
+1. **HC -- `_generate_feasible_route_bff` (fallback exhaustivo de construcción
+   de ruta) podía reportar "infeasible" por error**, en `hc_2` y `hc_3` por
+   igual. La deduplicación de estados `(nodo, requeridos_restantes)` entre
+   caminos distintos podía descartar un camino que sí era viable, porque no
+   tenía en cuenta qué nodos opcionales había "gastado" cada camino.
+   Reproducido con un contraejemplo chico (depósito D, requeridos {A,B},
+   grafo D-P, D-Q, P-A, Q-A, P-B, B-final): el método devolvía `None` pese a
+   que `D→Q→A→P→B→final` es una ruta válida. Arreglado sacando la
+   deduplicación cruzada entre caminos (solo se evita revisitar un nodo
+   *dentro* del mismo camino) y agregando un presupuesto explícito de
+   expansiones (`_MAX_BFF_EXPANSIONS = 200_000`) para acotar el costo, ya que
+   sin ninguna poda esto es exponencial en el peor caso. **Verificado que
+   esto NO cambia el resultado de `test_09`/`10`/`11`** (25 ubicaciones
+   requeridas agota el presupuesto en ~1s, sigue devolviendo `None`) -- el
+   bug solo afectaba instancias chicas/medianas, no las gigantes de estrés.
+2. **HC -- `opp_hc_2._calculate_batch_execution_time` (solo usado para el
+   reporte/`solution_info`, no para la búsqueda) tenía una fórmula rota**:
+   indexaba el tiempo de servicio (`S`, por ubicación) usando IDs de orden,
+   siempre devolviendo 0, y descartaba el término real de capacidad
+   (`B_picking * sum(C_n)`). El objetivo que realmente optimiza el hill
+   climbing (`RouteEvaluator`, y por lo tanto `obj_val`) nunca estuvo mal --
+   `opp_hc_3` ya tenía la fórmula correcta (nunca se retro-portó a `hc_2`).
+   Confirmado que `analysis/` no usa `batch_times`/`tardiness`/`earliness`
+   de `solution_info` en ningún lado, solo `obj_val` -- este fix no invalida
+   ningún dato ya generado.
+3. **ACO -- en `opp_aco_3`, el paso de construcción guiado por la matriz de
+   feromona de congestión (tau2, mitad de los pasos por defecto) tenía una
+   visibilidad (`eta`) ciega a la distancia Y a si el vecino era una
+   ubicación requerida**, dependiendo solo de la espera por congestión.
+   Medido empíricamente: en un escenario con congestión real, 40% de los
+   pasos guiados por tau2 tuvieron espera empatada entre vecinos (sin señal
+   discriminante), y de esos, 92% tenían mezcla de vecinos requeridos/no
+   requeridos -- es decir, casi la mitad de todas las decisiones de
+   construcción en escenarios de baja/nula congestión (el caso común)
+   eran ruido puro. Arreglado combinando el mismo término de cercanía a
+   ubicaciones requeridas que ya usa tau1 con el término de evitar espera
+   (`eta = (closeness * wait_avoidance) ** beta2`), así un paso guiado por
+   congestión sigue avanzando hacia el objetivo cuando no hay nada real que
+   evitar, sin perder la discriminación por espera cuando sí la hay.
+
+**Impacto en los datos ya generados**: el fix #3 cambia el comportamiento
+real de `opp_aco_3.solve()` -- **la batería de estrés de `opp_aco_3` que se
+regeneró el 2026-08-27 (post-fix de performance) queda desactualizada de
+nuevo y hay que volver a correrla** antes de cerrar la sección de
+resultados. Los fixes #1/#2 no cambiaron ningún resultado ya observado
+(#2 no toca el objetivo optimizado; #1 se verificó explícitamente que no
+cambia `test_09/10/11`) pero, para ser prolijos, conviene re-correr también
+`opp_hc_2`/`opp_hc_3` en estrés antes de dar los números por definitivos.
+
 ## 2. Correr el pipeline
 
 ```bash
