@@ -312,7 +312,43 @@ class OPPAntColonyOptimization(Model):
             solution.assign_batch_to_picker(batch, picker)
             picker_load[picker] += 1
 
+        # Fix (2026-08-28): a picker's processing queue used to always be
+        # the sorted-by-batch-ID subsequence of its assigned batches (since
+        # the loop above always appends in `self.B` order, i.e. sorted
+        # batch IDs, which have no relationship to due dates) -- ACO never
+        # searched or even considered WHICH order to process a picker's
+        # batches in, unlike opp_hc_2's `_generate_sequence_swap_neighbor`,
+        # which explicitly explores swapping two batches' order. Sort each
+        # picker's queue by earliest-due-date instead (classic single-
+        # machine scheduling heuristic for reducing tardiness) so
+        # sequencing is at least informed by due dates, closing most of the
+        # gap versus HC without adding a new pheromone dimension.
+        self._sort_picker_queues_by_due_date(solution, batch_assignments, params.Dd)
+
         return solution
+
+    def _sort_picker_queues_by_due_date(
+        self,
+        solution: "RouteSolution",
+        batch_assignments: Dict[str, Set[str]],
+        due_dates: Dict[str, float],
+    ) -> None:
+        """
+        Reorders every picker's queue by ascending earliest-due-date among
+        the orders in each batch (ties broken by batch id for determinism).
+        A batch with no orders (shouldn't normally reach here) sorts last.
+        """
+        due_dates = due_dates if isinstance(due_dates, dict) else {}
+
+        def due_date_key(batch: str):
+            orders = batch_assignments.get(batch, set())
+            earliest = min((due_dates.get(o, float("inf")) for o in orders), default=float("inf"))
+            return (earliest, batch)
+
+        for picker in self.P:
+            sequence = solution.get_picker_sequence(picker)
+            if len(sequence) > 1:
+                solution.set_picker_sequence(picker, sorted(sequence, key=due_date_key))
 
     def _select_picker(
         self,

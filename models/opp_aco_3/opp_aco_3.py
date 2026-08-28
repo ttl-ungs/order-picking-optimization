@@ -387,6 +387,15 @@ class OPPAntColonyOptimization(Model):
             solution.assign_batch_to_picker(batch, picker)
             picker_load[picker] += 1
 
+        # Fix (2026-08-28), mirroring the identical fix in opp_aco_2: sort
+        # each picker's queue by earliest-due-date instead of leaving it as
+        # the sorted-by-batch-ID subsequence the loop above produces (batch
+        # IDs have no relationship to due dates). Done BEFORE route
+        # construction since the queue order here also drives the
+        # congestion causal ordering (slot 0 of every picker before slot 1,
+        # ...), not just final timing.
+        self._sort_picker_queues_by_due_date(solution, batch_assignments, params.Dd)
+
         tracker = CongestionTracker(min_dwell=min_dwell)
         picker_current_time: Dict[str, float] = {p: 0.0 for p in self.P}
         max_slots = max((len(solution.get_picker_sequence(p)) for p in self.P), default=0)
@@ -441,6 +450,29 @@ class OPPAntColonyOptimization(Model):
                 picker_current_time[picker] += exec_time
 
         return solution
+
+    def _sort_picker_queues_by_due_date(
+        self,
+        solution: RouteSolution,
+        batch_assignments: Dict[str, Set[str]],
+        due_dates: Dict[str, float],
+    ) -> None:
+        """
+        Reorders every picker's queue by ascending earliest-due-date among
+        the orders in each batch (ties broken by batch id for determinism).
+        Same fix/rationale as opp_aco_2._sort_picker_queues_by_due_date.
+        """
+        due_dates = due_dates if isinstance(due_dates, dict) else {}
+
+        def due_date_key(batch: str):
+            orders = batch_assignments.get(batch, set())
+            earliest = min((due_dates.get(o, float("inf")) for o in orders), default=float("inf"))
+            return (earliest, batch)
+
+        for picker in self.P:
+            sequence = solution.get_picker_sequence(picker)
+            if len(sequence) > 1:
+                solution.set_picker_sequence(picker, sorted(sequence, key=due_date_key))
 
     def _select_picker(
         self,

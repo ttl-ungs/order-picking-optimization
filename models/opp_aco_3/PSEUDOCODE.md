@@ -44,12 +44,20 @@ ALGORITHM OPPAntColonyOptimization.solve(params)                       (solve)
 SUBROUTINE BUILD_ANT_SOLUTION(tau1, tau2, tau_picker)                   (_build_ant_solution)
     S <- empty solution
 
-    # Pass 1: fix each picker's processing queue (order of batches unchanged
-    # from opp_aco_2 - X_pb assignment only, no congestion involved yet)
+    # Pass 1: assign each batch with orders to a picker (X_pb), no
+    # congestion involved yet.
     for batch in B with orders (in fixed batch order):
         picker <- ROULETTE_PICK_PICKER(batch, tau_picker, picker_load)   (_select_picker)
         S.assign_batch_to_picker(batch, picker)
         picker_load[picker] += 1
+
+    # Pass 1b (added 2026-08-28): sort each picker's queue by earliest-due-
+    # date among its batches' orders. Batch IDs (the order Pass 1 leaves
+    # queues in) have no relationship to due dates -- neither ACO variant
+    # searched or even considered sequencing order before this, unlike
+    # opp_hc_2/opp_hc_3's explicit sequence-swap neighbor move. This closes
+    # most of that gap with a standard scheduling heuristic instead of a
+    # new pheromone dimension. (_sort_picker_queues_by_due_date)
 
     # Pass 2: build routes round-robin by picker-queue SLOT, so a batch
     # always sees what earlier-slot batches on OTHER pickers already reserved
