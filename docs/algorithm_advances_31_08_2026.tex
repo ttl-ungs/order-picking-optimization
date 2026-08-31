@@ -14,7 +14,7 @@
 
 \starttext
 
-\title{\bf Avances: heurísticos y modelo exacto en dos etapas}
+\title{\bf Avances: heurísticas y modelo exacto en dos etapas}
 \blank[big]
 
 Este documento resume el estado de los algoritmos implementados para el
@@ -24,10 +24,7 @@ entre pickers concurrentes, y \type{opp_v5}, una reformulación en dos
 etapas del modelo exacto que agrega velocidad heterogénea de pickers y un
 límite de cadena de frío. Los cuatro heurísticos resuelven exactamente el
 mismo problema que el modelo exacto (\type{opp_v4}), con las mismas
-restricciones, verificado por validador explícito en cada uno. Los
-resultados empíricos de la comparación entre los seis modelos están en un
-documento aparte (\type{resultados.tex}/\type{.pdf}); este documento se
-concentra en \emph{cómo funciona} cada uno.
+restricciones, verificado por un validador explícito en cada uno.
 
 \startsection[title={Hill Climbing (HC)}]
 
@@ -150,9 +147,7 @@ SUBRUTINA Evaluar(S)                    # reemplaza a Evaluar en hc_2
 capacidad 1 (adaptado de Chen et al., 2013): reservar un recurso ya
 ocupado hace esperar al picker que llega después. Como la ruta se
 construye igual que en \type{opp\_hc\_2} y la congestión solo se \emph{precia}
-al final, el costo de agregar esta capacidad es bajo. Resultado empírico
-en \type{resultados.tex}: \type{opp\_hc\_3} paga un sobrecosto de tiempo
-moderado frente a \type{opp\_hc\_2}.
+al final, el costo de agregar esta capacidad es bajo.
 
 \stopsubsection
 
@@ -255,8 +250,7 @@ La construcción de rutas usa un presupuesto acotado de reintentos por
 lote (\type{Max\_route\_attempts\_per\_batch}, 100 por defecto) con
 revisita como último recurso. Sin esto, exigir que \emph{todos} los lotes de una hormiga
 salieran sin loops simultáneamente volvía la construcción
-infeasible a partir de cierta cantidad de lotes (detalle en
-\type{resultados.tex}).
+infeasible a partir de cierta cantidad de lotes.
 
 \stopsubsection
 
@@ -371,27 +365,9 @@ variables de ruteo):
 indistinguible de cero (ruido de punto flotante). Esta es una validación cruzada de
 que la descomposición en dos etapas no pierde optimalidad frente a la
 formulación monolítica, en el régimen evaluado hasta ahora. Se agregaron tests que validan específicamente sus dos
-capacidades nuevas. Su batería de estrés está incompleta todavía, así que se excluye de las comparaciones de
-escalabilidad en \type{resultados.tex}.
+capacidades nuevas.
 
 \stopsubsection
-
-\stopsection
-
-\startsection[title={Referencias}]
-
-\startitemize
-\item \type{resultados.tex}/\type{.pdf}: comparación empírica completa de
-  los seis modelos (tasas de éxito, tiempos, gap de calidad, costo de
-  modelar congestión, sensibilidad paramétrica).
-\item \type{opp\_model\_v4.tex}/\type{.pdf}: definición formal del modelo
-  exacto monolítico.
-\item \type{opp\_v5.tex}/\type{.pdf}: definición formal completa de las
-  dos etapas de \type{opp\_v5}.
-\item \type{opp\_v4\_vs\_opp\_v5\_comparision.tex}/\type{.pdf}: comparación
-  de regresión funcional entre \type{opp\_v4} y \type{opp\_v5} sobre casos
-  equivalentes (no considera casos de estrés).
-\stopitemize
 
 \stopsection
 
