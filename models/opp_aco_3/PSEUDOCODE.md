@@ -93,10 +93,17 @@ SUBROUTINE BUILD_ROUTE(required, tau1, tau2, tracker, owner, start_time)  (_buil
         for each neighbor n of current not yet visited:
             predicted_wait <- tracker.peek_wait(edge(current,n) and, unless n is
                                                  depot/final, node(n), at time t)   (_peek_logical_wait)
+            closeness(n) <- heuristic_distance(n, unvisited)   # same term either matrix uses
             if use_tau1:
-                weight(n) <- tau1(current,n)^Alpha * heuristic_distance(n, unvisited)^Beta
+                weight(n) <- tau1(current,n)^Alpha * closeness(n)^Beta
             else:
-                weight(n) <- tau2(current,n)^Alpha * ( 1 / (1 + predicted_wait) )^Beta2
+                # Fix 2026-08-28: used to be tau2 * (1/(1+wait))^Beta2 alone, with
+                # NO distance term -- whenever there was no real congestion to
+                # measure (the common case), every neighbor tied on wait and the
+                # step degraded to noise, blind to progress. Folding closeness(n)
+                # in keeps tau2-guided steps progress-aware even with nothing to
+                # avoid, while still discounting genuinely congested neighbors.
+                weight(n) <- tau2(current,n)^Alpha * ( closeness(n) * (1 / (1 + predicted_wait)) )^Beta2
 
         next <- ROULETTE_WHEEL_PICK(candidates, weights)
 

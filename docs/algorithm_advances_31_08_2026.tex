@@ -1,0 +1,398 @@
+\setupcolors[state=start]
+\setupcolor[hex]
+\definecolor[darkblue][h=003366]
+\definecolor[darkgray][h=e6e6e6]
+\definecolor[redline][h=d9534f]
+\definecolor[blueline][h=5bc0de]
+\definecolor[greenline][h=5cb85c]
+
+\setuphead[section][style=\bfa, color=darkblue, before=\blank, after=\blank]
+\setuphead[subsection][style=\bf, color=black, before=\blank, after=\blank]
+\setuppapersize[A4][A4]
+\setupbodyfont[11pt]
+\setuplayout[width=middle, height=middle, topspace=2cm, bottomspace=2cm]
+
+\starttext
+
+\title{\bf Avances: heurísticos y modelo exacto en dos etapas}
+\blank[big]
+
+Este documento resume el estado de los algoritmos implementados para el
+problema de picking y ruteo en almacén (OPP): dos heurísticos (Hill Climbing y Ant Colony Optimization),
+cada uno con una variante base y una variante que incorpora congestión
+entre pickers concurrentes, y \type{opp_v5}, una reformulación en dos
+etapas del modelo exacto que agrega velocidad heterogénea de pickers y un
+límite de cadena de frío. Los cuatro heurísticos resuelven exactamente el
+mismo problema que el modelo exacto (\type{opp_v4}), con las mismas
+restricciones, verificado por validador explícito en cada uno. Los
+resultados empíricos de la comparación entre los seis modelos están en un
+documento aparte (\type{resultados.tex}/\type{.pdf}); este documento se
+concentra en \emph{cómo funciona} cada uno.
+
+\startsection[title={Hill Climbing (HC)}]
+
+Búsqueda local: parte de una solución inicial factible y explora vecinos
+mediante movimientos que preservan factibilidad, aceptando solo mejoras
+(sin annealing ni tabú). Es determinístico salvo por la elección aleatoria
+de \emph{qué} movimiento probar en cada paso. No hay ningún mecanismo
+probabilístico en la evaluación en sí.
+
+\startsubsection[title={Algoritmo base (\type{opp\_hc\_2})}]
+
+\starttyping[option=none]
+ALGORITMO Solve(params)
+    S <- GenerarSolucionInicialFactible()
+    si S es None: retornar infeasible
+
+    costo <- Evaluar(S)
+    iteracion <- 0 ; estancamiento <- 0
+
+    mientras iteracion < Max_it y estancamiento < Max_imp
+                                y tiempo_transcurrido < Max_time:
+        iteracion <- iteracion + 1
+        S' <- GenerarVecino(S)
+        si S' es None:
+            estancamiento <- estancamiento + 1 ; continuar
+
+        costo' <- Evaluar(S')
+        si costo' < costo:                    # steepest descent, sin annealing
+            S, costo <- S', costo'
+            estancamiento <- 0
+        si_no:
+            estancamiento <- estancamiento + 1
+
+    retornar S, costo
+
+
+SUBRUTINA GenerarSolucionInicialFactible()
+    S <- solución vacía
+    para cada lote en B con órdenes:
+        ruta <- DijkstraVecinoMasCercano(ubicaciones_requeridas(lote))
+        si ruta es None:
+            ruta <- BusquedaExhaustivaBFS(ubicaciones_requeridas(lote))
+        si ruta es None:
+            retornar None                     # grafo desconectado / inalcanzable
+        S.fijar_ruta(lote, ruta)
+
+    asignar cada lote con órdenes a un picker, round-robin (X_pb)
+    retornar S si Validar(S) si_no None
+
+
+SUBRUTINA GenerarVecino(S)
+    elegir al azar entre los movimientos aplicables:
+
+    2-opt en una ruta:
+        lote <- lote al azar con ruta no vacía
+        mejor <- None ; mejor_distancia <- distancia(ruta(lote))
+        para cada segmento [i,j] a invertir en la ruta:
+            candidata <- ruta con [i,j] invertido
+            si candidata es factible (requeridas cubiertas, arcos válidos,
+                                       sin repetir nodos)
+               y distancia(candidata) < mejor_distancia:
+                mejor, mejor_distancia <- candidata, distancia(candidata)
+        retornar S con ruta(lote) <- mejor  (o None si ninguna mejora)
+
+    Reasignar picker:
+        lote <- lote al azar con órdenes
+        picker <- picker al azar distinto del actual
+        retornar S con lote reasignado (rutas sin tocar)
+
+    Intercambiar secuencia:
+        picker <- picker al azar con >= 2 lotes en cola
+        intercambiar el orden de dos lotes al azar en esa cola
+        retornar S con esa cola reordenada
+\stoptyping
+
+La construcción de rutas (\type{DijkstraVecinoMasCercano}) es \emph{greedy}
+y no tiene mecanismo de retroceso: en instancias con muchas ubicaciones
+requeridas por lote puede quedar atrapada en un callejón sin salida del
+que no puede deshacer una elección anterior. El respaldo exhaustivo
+(\type{BusquedaExhaustivaBFS}) explora en dos niveles: una búsqueda
+rápida memoizada primero, y solo si falla, una búsqueda sin poda como
+último recurso, acotada.
+
+\stopsubsection
+
+\startsubsection[title={Qué agrega \type{opp\_hc\_3}: congestión}]
+
+La construcción de rutas y los tres movimientos de vecindad son
+idénticos a \type{opp\_hc\_2}: la congestión entra únicamente en
+\type{Evaluar}, no en cómo se construyen o modifican las rutas:
+
+\starttyping[option=none]
+SUBRUTINA Evaluar(S)                    # reemplaza a Evaluar en hc_2
+    tracker <- nuevo CongestionTracker(Min_dwell)
+    tiempo_picker[p] <- 0  para cada picker p
+
+    # Round-robin por SLOT de cola de picker: un lote se precia contra todo
+    # lo que ya reservaron los lotes que, dadas las colas fijas, corren
+    # antes o al mismo tiempo (misma aproximación causal que opp_aco_3).
+    para cada slot en 0 .. max(largo de cola sobre todos los pickers) - 1:
+        para cada picker en P (orden determinístico):
+            si el slot no tiene lote para este picker: continuar
+            lote <- S.secuencia[picker][slot]
+            ruta <- S.ruta(lote)
+
+            base <- B_setup + B_picking*capacidad(lote)
+                    + B_time*distancia(ruta) + tiempo_servicio(ruta)
+            espera <- SimularCongestionDeRuta(ruta, dueño=picker,
+                                               inicio=tiempo_picker[picker],
+                                               tracker)
+
+            tiempo_picker[picker] <- tiempo_picker[picker] + base + espera
+            completitud[lote] <- tiempo_picker[picker]
+
+    adelanto, tardanza <- comparar completitud[lote] vs. Dd(orden)
+    retornar W_full*sum(completitud) + W_ea_ta*(W_ea*adelanto + W_ta*tardanza)
+\stoptyping
+
+\type{CongestionTracker} modela cada nodo y cada arco como un recurso de
+capacidad 1 (adaptado de Chen et al., 2013): reservar un recurso ya
+ocupado hace esperar al picker que llega después. Como la ruta se
+construye igual que en \type{opp\_hc\_2} y la congestión solo se \emph{precia}
+al final, el costo de agregar esta capacidad es bajo. Resultado empírico
+en \type{resultados.tex}: \type{opp\_hc\_3} paga un sobrecosto de tiempo
+moderado frente a \type{opp\_hc\_2}.
+
+\stopsubsection
+
+\stopsection
+
+\startsection[title={Ant Colony Optimization (ACO)}]
+
+Metaheurística poblacional: en cada iteración, varias ''hormigas''
+construyen una solución completa cada una, guiadas por feromona
+depositada por hormigas anteriores más una heurística de visibilidad
+(distancia). Al final de la iteración, la feromona se evapora y se
+refuerza según qué tan buenas fueron las soluciones encontradas.
+
+\startsubsection[title={Algoritmo base (\type{opp\_aco\_2})}]
+
+\starttyping[option=none]
+ALGORITMO Solve(params)
+    tau       <- inicializar feromona de arco (todos los arcos válidos)
+    tau_picker <- inicializar feromona (lote, picker) en 1.0
+    mejor_solucion <- None ; mejor_costo <- +inf
+
+    para iteracion en 1 .. Max_it:
+        soluciones_hormiga <- []
+
+        para hormiga en 1 .. A_ants:
+            S <- ConstruirSolucionHormiga(tau, tau_picker)
+            si S no es None y Validar(S):
+                soluciones_hormiga.agregar( (S, Evaluar(S)) )
+
+        si soluciones_hormiga está vacío: continuar
+
+        mejor_iteracion <- el (S, costo) con menor costo
+        si mejor_iteracion.costo < mejor_costo:
+            mejor_solucion, mejor_costo <- copia(mejor_iteracion)
+
+        ActualizarFeromonas(tau, tau_picker, soluciones_hormiga,
+                             mejor_solucion, mejor_costo)
+
+    retornar mejor_solucion, mejor_costo
+
+
+SUBRUTINA ConstruirSolucionHormiga(tau, tau_picker)
+    S <- solución vacía
+    carga_picker[p] <- 0 para cada picker p
+
+    para cada lote en B con órdenes (orden fijo):
+        picker <- SeleccionRuleta(lote, tau_picker, carga_picker)  # favorece
+        S.asignar(lote, picker)                                    # pickers
+        carga_picker[picker] += 1                                  # con menos carga
+
+        ruta <- None
+        repetir hasta Max_route_attempts_per_batch veces:
+            candidata <- ConstruirRuta(ubicaciones_requeridas(lote), tau)
+            si candidata no es None y candidata no tiene loops:
+                ruta <- candidata ; salir del repetir
+        si ruta es None:
+            retornar None          # la hormiga entera se descarta
+        S.fijar_ruta(lote, ruta)
+
+    retornar S
+
+
+SUBRUTINA ConstruirRuta(requeridas, tau)
+    ruta <- [deposito] ; visitados <- {deposito} ; actual <- deposito
+    faltantes <- copia(requeridas)
+
+    mientras faltantes no esté vacío:
+        vecinos <- vecinos(actual) no visitados
+        si vecinos está vacío:               # respaldo: permitir revisitar
+            vecinos <- vecinos(actual) sin filtrar
+            si vecinos está vacío: retornar None
+
+        para cada vecino n:
+            tau_n <- tau(actual, n) ^ Alpha
+            si n en faltantes:
+                eta_n <- (1.5 / distancia(actual, n)) ^ Beta   # prioridad alta
+            si_no:
+                eta_n <- (1 / (distancia(actual,n)
+                              + distancia_a_mas_cercana_faltante(n))) ^ Beta
+            peso(n) <- tau_n * eta_n
+
+        siguiente <- SeleccionRuleta(vecinos, pesos)
+        ruta.agregar(siguiente) ; visitados.agregar(siguiente)
+        faltantes.quitar(siguiente) ; actual <- siguiente
+
+    ruta.agregar( camino_mas_corto(actual -> final) )   # BFS determinístico
+    retornar ruta
+
+
+SUBRUTINA ActualizarFeromonas(tau, tau_picker, soluciones, mejor, costo_mejor)
+    evaporar tau y tau_picker por factor (1 - E)
+    para (S, costo) en soluciones:
+        depositar Q/costo en tau, para cada arco que S usó
+        depositar Q/(1+costo) en tau_picker[(lote,picker)], por cada lote
+    si mejor existe:                                   # refuerzo elitista
+        depositar boost extra en tau y en tau_picker para la mejor solución
+\stoptyping
+
+La construcción de rutas usa un presupuesto acotado de reintentos por
+lote (\type{Max\_route\_attempts\_per\_batch}, 100 por defecto) con
+revisita como último recurso. Sin esto, exigir que \emph{todos} los lotes de una hormiga
+salieran sin loops simultáneamente volvía la construcción
+infeasible a partir de cierta cantidad de lotes (detalle en
+\type{resultados.tex}).
+
+\stopsubsection
+
+\startsubsection[title={Qué agrega \type{opp\_aco\_3}: congestión y arquitectura multi-feromona}]
+
+A diferencia de \type{opp\_hc\_3}, acá la congestión no se agrega solo al
+evaluar: se incorpora \emph{dentro} de la construcción de la ruta, paso a
+paso, con una segunda tabla de feromona dedicada (arquitectura m-ACO4(1,m)
+de Alaya et al., con la parametrización calibrada de Lesch et al., 2023):
+
+\starttyping[option=none]
+SUBRUTINA ConstruirRuta_con_congestion(requeridas, tau1, tau2, tracker,
+                                        dueño, tiempo_inicio)
+    ruta <- [deposito] ; actual <- deposito ; t <- tiempo_inicio
+    faltantes <- copia(requeridas)
+
+    mientras faltantes no esté vacío:
+        usar_tau1 <- ( azar() < P_objective_switch )   # UN objetivo por paso,
+                                                          # compartido por todos
+                                                          # los candidatos
+        para cada vecino n de actual, no visitado:
+            cercania(n) <- heurística de distancia hacia lo faltante
+            espera_estimada <- tracker.espera_estimada(arco(actual,n)
+                                                         [y nodo(n)], en t)
+            si usar_tau1:
+                peso(n) <- tau1(actual,n)^Alpha * cercania(n)^Beta
+            si_no:
+                # cercania(n) también entra acá (fix real, ver más abajo)
+                peso(n) <- tau2(actual,n)^Alpha *
+                           ( cercania(n) * 1/(1+espera_estimada) )^Beta2
+
+        siguiente <- SeleccionRuleta(vecinos, pesos)
+        t, espera <- tracker.reservar(arco(actual,siguiente), nodo(siguiente),
+                                       en t, dueño)
+        ruta.agregar(siguiente) ; actual <- siguiente
+
+    ruta.agregar( camino_mas_corto(actual -> final) )
+    retornar ruta, espera_total
+\stoptyping
+
+Además: el orden de procesamiento de los lotes de un picker se ordena por
+fecha de vencimiento más próxima antes de construir rutas (en vez de
+quedar en orden arbitrario de asignación); hay un mecanismo de
+''cataclismo'' que reinicia ambas tablas de feromona tras varias
+iteraciones sin mejora (Chen et al., 2013; Lesch et al., 2023); y las
+feromonas están acotadas en un rango \type{[Tau\_min, Tau\_max]} (MAX-MIN
+Ant System).
+
+\blank
+
+\stopsubsection
+
+\stopsection
+
+\startsection[title={\type{opp\_v5}: modelo exacto en dos etapas}]
+
+\type{opp\_v5} reformula el modelo exacto monolítico de \type{opp\_v4} en
+dos etapas resueltas en secuencia con SCIP, agregando dos capacidades que
+\type{opp\_v4} no tiene: velocidad heterogénea por picker y un límite de
+cadena de frío. La descomposición es válida porque el ruteo no depende de
+qué picker ejecuta el lote (no hay congestión modelada), así que
+optimizar cada lote de forma independiente en la Etapa 1 es equivalente a
+optimizarlo dentro del problema conjunto.
+
+\startsubsection[title={Etapa 1: ruteo por lote (independiente)}]
+
+Para cada lote, resuelve el camino de menor tiempo (traslado + servicio)
+que visita sus ubicaciones requeridas, sin considerar todavía qué
+picker lo va a ejecutar. Usa la misma familia de restricciones que
+\type{opp\_v4} para garantizar una ruta simple (salida del depósito,
+llegada al nodo final, conservación de flujo, sin ciclos), con
+eliminación de subtours vía una formulación de flujo de un solo producto
+(Gavish-Graves) en vez de la que usa \type{opp\_v4}. Exporta, para cada
+lote $b$, el tiempo óptimo de ruta $Rt_b$.
+
+\stopsubsection
+
+\startsubsection[title={Etapa 2: asignación, secuenciación y cadena de frío}]
+
+Toma $Rt_b$ como dato fijo (ya no es variable de decisión) y decide qué
+picker ejecuta cada lote, en qué orden, respetando adelanto/tardanza. El
+tiempo de ejecución de un lote en un picker,
+$t\_exec_{pb} = F_b + Rt_b / V_p$ (donde $F_b$ es el tiempo fijo de
+\emph{setup}+\emph{picking}, independiente del picker, y $V_p$ es el
+factor de velocidad del picker $p$), pasa a ser un parámetro
+derivado en vez de una variable (ya no hace falta linealizar con Big-M
+para vincularlo). La cadena de frío se implementa restringiendo el
+dominio de las variables de asignación al conjunto de pares
+elegibles $\mathcal{PB}_{elig} = \{(p,b) : t\_exec_{pb} \le T_{frio}\}$, en
+vez de agregar una restricción aparte.
+
+\blank
+
+La definición formal completa (conjuntos, parámetros, variables, función
+objetivo y las 9 restricciones de la Etapa 2) está en
+\type{opp\_v5.tex}/\type{.pdf}, con el mismo formato usado para
+\type{opp\_model\_v4.tex}. Función objetivo de la Etapa 2 (idéntica en
+forma a la de \type{opp\_v4}, aplicada sobre $v_b$ en vez de sobre
+variables de ruteo):
+
+\placeformula
+\startformula
+\min \left( W_{full} \cdot \sum_{b \in \mathcal{B}} v_{b} + W_{ea\_ta} \cdot \left( W_{ea} \cdot \sum_{n \in \mathcal{N}} ea_{n} + W_{ta} \cdot \sum_{n \in \mathcal{N}} ta_{n} \right) \right)
+\stopformula
+
+\stopsubsection
+
+\startsubsection[title={Estado y validación}]
+
+\type{opp\_v5} todavía está en desarrollo. Sobre instancias de test estándar (es decir, no de estrés), sus
+19 casos comparables contra \type{opp\_v4} dan un gap de calidad
+indistinguible de cero (ruido de punto flotante). Esta es una validación cruzada de
+que la descomposición en dos etapas no pierde optimalidad frente a la
+formulación monolítica, en el régimen evaluado hasta ahora. Se agregaron tests que validan específicamente sus dos
+capacidades nuevas. Su batería de estrés está incompleta todavía, así que se excluye de las comparaciones de
+escalabilidad en \type{resultados.tex}.
+
+\stopsubsection
+
+\stopsection
+
+\startsection[title={Referencias}]
+
+\startitemize
+\item \type{resultados.tex}/\type{.pdf}: comparación empírica completa de
+  los seis modelos (tasas de éxito, tiempos, gap de calidad, costo de
+  modelar congestión, sensibilidad paramétrica).
+\item \type{opp\_model\_v4.tex}/\type{.pdf}: definición formal del modelo
+  exacto monolítico.
+\item \type{opp\_v5.tex}/\type{.pdf}: definición formal completa de las
+  dos etapas de \type{opp\_v5}.
+\item \type{opp\_v4\_vs\_opp\_v5\_comparision.tex}/\type{.pdf}: comparación
+  de regresión funcional entre \type{opp\_v4} y \type{opp\_v5} sobre casos
+  equivalentes (no considera casos de estrés).
+\stopitemize
+
+\stopsection
+
+\stoptext
