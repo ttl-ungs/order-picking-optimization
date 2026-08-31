@@ -474,6 +474,56 @@ Lecturas clave:
 secciones (1, 2, 5, 6) y su lista de pendientes quedó cerrada -- no falta
 ninguna corrida más antes de pasar a redactar el texto de la tesina.
 
+### Tests de `opp_v5` (2026-08-31): cobertura completa + validación de sus
+   capacidades propias -- y un bug real encontrado
+
+Se completó la cobertura de tests normales de `opp_v5`
+(antes solo llegaba a `model_21`, sin los 9 casos que `opp_v4` tiene en
+`model_20/21/24-30`) y se agregaron tests nuevos que validan, no solo
+comparan, las dos capacidades propias de `opp_v5` (velocidad heterogénea de
+pickers, cadena de frío):
+
+- **Cobertura**: `tests/opp_v5/tests/normal/test_opp_v5_model_{22,...,30}.py`
+  -- una línea cada uno, usando el adaptador genérico `migrated_case()` que
+  ya existía en `v4_compat.py` (creado para portar `model_01-19`, nunca
+  extendido). `opp_v5` reusó los números 20/21 para sus propios tests de
+  velocidad/frío, así que los 9 casos que faltaban de `opp_v4`
+  (`model_20`=grilla, `model_21`=puente, `model_24-30`=pesos distintos,
+  vencimientos extremos, lote vacío, capacidades fraccionarias/cero, orden
+  en múltiples lotes, orden que excede el vehículo, tiempos de servicio) se
+  agregaron como `model_22-30`. También se agregó el test de estrés #08 que
+  faltaba (`tests/opp_v5/tests/stress/test_opp_v5_model_08.py`, el único de
+  los 8 de `opp_v4` que `opp_v5` no tenía).
+- **Validación de funcionalidad** (`tests/opp_v5/tests/normal/test_opp_v5_model_31.py`,
+  nuevo): más allá de los 4 tests básicos que ya existían (`model_20`/`21`,
+  "¿qué picker lo hace?"), se agregaron 3 tests que verifican la fórmula y
+  los casos límite exactos:
+  - Verifica numéricamente la fórmula documentada en
+    `stage2_scheduling.zpl` (`t_exec_pb = tiempo_fijo + R_b_time / V_p`,
+    donde `tiempo_fijo` NO se escala por velocidad) contra valores exactos
+    calculados a mano, no solo "qué picker ganó".
+  - Verifica el límite exacto de `T_frio_max` (`<=`, no `<`) -- un picker
+    cuyo `t_exec_pb` coincide exactamente con el límite debe seguir siendo
+    elegible.
+  - **Encontró un bug real**: cuando ningún picker es elegible para un
+    lote por cadena de frío, el comentario de `stage2_scheduling.zpl`
+    sobre `B_sin_picker_elegible` dice que "el modelo va a dar infactible
+    seguro" -- pero no es así. La restricción `assign_exactly_one_picker`
+    queda con una suma vacía (`0 == 1`), y **ZIMPL la rechaza en tiempo de
+    compilación** (`*** Error 106: Empty LHS, constraint trivially
+    violated`), antes de que SCIP llegue a correr. `solve_zpl` levanta un
+    `RuntimeError` sin manejar, no devuelve `status="infeasible"` como
+    cualquier llamador esperaría según el propio comentario del modelo. El
+    test documenta el comportamiento real (`assertRaises`), no lo
+    enmascara -- **pendiente reportar** como bug de
+    `models/opp_v5/stage2_scheduling.zpl` (el chequeo `eligible_pairs()`
+    del lado Python es, hoy, lo único que evita este crash).
+
+Verificado con la suite normal completa: 53 tests, 51 ok, 1 timeout
+(`model_27`, el mismo caso patológico de capacidades fraccionarias/cero que
+ya se conocía de `opp_v4` -- coherente, no es nuevo), 0 errores tras el fix
+del test de infeasibilidad.
+
 ## 2. Correr el pipeline
 
 ```bash

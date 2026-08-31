@@ -71,14 +71,21 @@ class TestOPPV5ColdChainEdgeCases(OPPTestCaseV5):
         assignments = self.assignments(values, scenario["P"], scenario["B"])
         self.assertEqual(assignments, {"B1": "P_fast"})
 
-    def test_no_eligible_picker_makes_scip_report_infeasible(self):
-        # Unlike model_21's test (which only checks the Python-side
-        # eligible_pairs() preflight helper never solves stage 2), this
-        # actually attempts the SCIP solve with an empty PB_elig for B1
-        # and asserts the model itself concludes "infeasible" -- confirms
-        # `assign_exactly_one_picker`'s domain restriction to PB_elig
-        # produces a real, correctly-detected infeasibility rather than a
-        # silently wrong or crashing model when no picker qualifies.
+    def test_no_eligible_picker_crashes_zimpl_instead_of_reporting_infeasible(self):
+        # BUG (found 2026-08-31, confirmed empirically): stage2_scheduling.zpl's
+        # own comment on B_sin_picker_elegible claims that a batch with no
+        # eligible (picker, batch) pair under the cold-chain limit will make
+        # "the model will surely come  back infeasible". That is NOT what happens.
+        # `assign_exactly_one_picker` (line ~136) when PB_elig has zero entries for a
+        # batch, the sum is empty and ZIMPL itself rejects it at COMPILE time:
+        #   *** Error 106: Empty LHS, constraint trivially violated
+        # -- i.e. `solve_zpl` never reaches SCIP at all; it raises a plain
+        # RuntimeError("ZIMPL compilation failed...") from the failed
+        # subprocess, not a clean status="infeasible" the caller can branch
+        # on. This is a real robustness gap in opp_v5's stage 2, not a test artifact:
+        # the scenario itself is a legitimate one a real batching stage could
+        # produce (a lot's fastest possible completion still exceeds the
+        # cold-chain limit for every picker).
         scenario = cold_chain_infeasible_for_every_picker()
         self.assertEqual(self.eligible_pairs(scenario, {"B1": 14.0}), set())
 
@@ -86,5 +93,6 @@ class TestOPPV5ColdChainEdgeCases(OPPTestCaseV5):
         # velocities.dat/frio.dat for us before returning -- no need to
         # rewrite them here, just solve stage 2 directly against them.
         self.run_pipeline(scenario, solve_stage2=False)
-        stage2_status, _ = solve_zpl(STAGE2_ZPL_PATH, dat_dir=DAT_DIR)
-        self.assertEqual(stage2_status, "infeasible")
+        with self.assertRaises(RuntimeError) as ctx:
+            solve_zpl(STAGE2_ZPL_PATH, dat_dir=DAT_DIR)
+        self.assertIn("ZIMPL compilation failed", str(ctx.exception))
