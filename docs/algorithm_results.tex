@@ -21,7 +21,7 @@ Este documento presenta el análisis comparativo de los seis modelos implementad
 
 \blank
 
-Los datos provienen de la ejecución completa y consolidada de las baterías de prueba ''estándar'' (instancias pequeñas, orientadas a verificar corrección) y ''estrés'' (instancias grandes, orientadas a medir escalabilidad) de cada modelo, procesadas mediante un pipeline de análisis del repositorio (\type{analysis/}). Todas las cifras de este documento corresponden a la última ejecución. %  final, posterior a una auditoría de código que identificó y corrigió varios errores de implementación -- documentados a medida que aparecen, porque varios de ellos son en sí mismos hallazgos relevantes para interpretar los datos.
+Los datos provienen de la ejecución completa y consolidada de las baterías de prueba ''unitarias'' (instancias pequeñas, orientadas a verificar corrección) y ''estrés'' (instancias grandes, orientadas a medir escalabilidad) de cada modelo, procesadas mediante un pipeline de análisis del repositorio (\type{analysis/}). Todas las cifras de este documento corresponden a la última ejecución. %  final, posterior a una auditoría de código que identificó y corrigió varios errores de implementación -- documentados a medida que aparecen, porque varios de ellos son en sí mismos hallazgos relevantes para interpretar los datos.
 
 \startsection[title={Diseño experimental: por qué se comparan pares simples y complejos}]
 
@@ -37,7 +37,7 @@ Cada modelo ''simple'' funciona como grupo de control del par ''complejo'' corre
 
 \blank
 
-\type{opp_v5} está todavía en desarrollo, por lo que su batería de estrés es parcial, y se excluye de las comparaciones de escalabilidad; sus datos estándar sí se incluyen como validación cruzada del modelo exacto (sección \in[sec:gap]).
+\type{opp_v5} está todavía en desarrollo, por lo que su batería de estrés es parcial, y se excluye de las comparaciones de escalabilidad; sus datos unitarios sí se incluyen como validación cruzada del modelo exacto (sección \in[sec:gap]).
 
 \stopsection
 
@@ -49,21 +49,21 @@ Cada modelo ''simple'' funciona como grupo de control del par ''complejo'' corre
 \bTABLE[split=yes, align=middle, frame=on, width=broad]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \bTR \bTH Modelo \eTH \bTH Escenario \eTH \bTH Total \eTH \bTH OK \eTH \bTH Timeout \eTH \bTH Failed \eTH \bTH Éxito (\%) \eTH \eTR
-\bTR \bTD \type{opp_v4} (exacto) \eTD \bTD estándar \eTD \bTD 46 \eTD \bTD 45 \eTD \bTD 1 \eTD \bTD 0 \eTD \bTD 97.8 \eTD \eTR
+\bTR \bTD \type{opp_v4} (exacto) \eTD \bTD unitario \eTD \bTD 46 \eTD \bTD 45 \eTD \bTD 1 \eTD \bTD 0 \eTD \bTD 97.8 \eTD \eTR
 \bTR \bTD \type{opp_v4} (exacto) \eTD \bTD estrés \eTD \bTD 8 \eTD \bTD 1 \eTD \bTD 7 \eTD \bTD 0 \eTD \bTD 12.5 \eTD \eTR
-\bTR \bTD \type{opp_hc_2} \eTD \bTD estándar \eTD \bTD 46 \eTD \bTD 46 \eTD \bTD 0 \eTD \bTD 0 \eTD \bTD 100.0 \eTD \eTR
+\bTR \bTD \type{opp_hc_2} \eTD \bTD unitario \eTD \bTD 46 \eTD \bTD 46 \eTD \bTD 0 \eTD \bTD 0 \eTD \bTD 100.0 \eTD \eTR
 \bTR \bTD \type{opp_hc_2} \eTD \bTD estrés \eTD \bTD 43 \eTD \bTD 32 \eTD \bTD 11 \eTD \bTD 0 \eTD \bTD 74.4 \eTD \eTR
-\bTR \bTD \type{opp_hc_3} \eTD \bTD estándar \eTD \bTD 6 \eTD \bTD 6 \eTD \bTD 0 \eTD \bTD 0 \eTD \bTD 100.0 \eTD \eTR
+\bTR \bTD \type{opp_hc_3} \eTD \bTD unitario \eTD \bTD 6 \eTD \bTD 6 \eTD \bTD 0 \eTD \bTD 0 \eTD \bTD 100.0 \eTD \eTR
 \bTR \bTD \type{opp_hc_3} \eTD \bTD estrés \eTD \bTD 20 \eTD \bTD 17 \eTD \bTD 3 \eTD \bTD 0 \eTD \bTD 85.0 \eTD \eTR
-\bTR \bTD \type{opp_aco_2} \eTD \bTD estándar \eTD \bTD 48 \eTD \bTD 48 \eTD \bTD 0 \eTD \bTD 0 \eTD \bTD 100.0 \eTD \eTR
+\bTR \bTD \type{opp_aco_2} \eTD \bTD unitario \eTD \bTD 48 \eTD \bTD 48 \eTD \bTD 0 \eTD \bTD 0 \eTD \bTD 100.0 \eTD \eTR
 \bTR \bTD \type{opp_aco_2} \eTD \bTD estrés \eTD \bTD 20 \eTD \bTD 17 \eTD \bTD 1 \eTD \bTD 2 \eTD \bTD 85.0 \eTD \eTR
-\bTR \bTD \type{opp_aco_3} \eTD \bTD estándar \eTD \bTD 12 \eTD \bTD 12 \eTD \bTD 0 \eTD \bTD 0 \eTD \bTD 100.0 \eTD \eTR
+\bTR \bTD \type{opp_aco_3} \eTD \bTD unitario \eTD \bTD 12 \eTD \bTD 12 \eTD \bTD 0 \eTD \bTD 0 \eTD \bTD 100.0 \eTD \eTR
 \bTR \bTD \type{opp_aco_3} \eTD \bTD estrés \eTD \bTD 20 \eTD \bTD 17 \eTD \bTD 1 \eTD \bTD 2 \eTD \bTD 85.0 \eTD \eTR
 \eTABLE
 
 \blank[medium]
 
-En instancias estándar los seis modelos convergen casi siempre: el único caso que no lo hace en \type{opp_v4} (\type{test\_fractional\_and\_zero\_capacities\_feasible}) es un caso límite numéricamente exigente para SCIP, no un defecto de la formulación. El panorama cambia radicalmente en estrés: \type{opp_v4} resuelve apenas el 12.5\% de sus ocho instancias (1/8) dentro del límite de 25 minutos, mientras que las cuatro heurísticas convergen entre el 74.4\% y el 85\% de los casos. Esto confirma la motivación central del trabajo: el modelo exacto deja de ser viable computacionalmente apenas se sale de instancias pequeñas, lo que sustenta la necesidad de heurísticas para cualquier caso de uso realista.
+En instancias unitarias los seis modelos convergen casi siempre: el único caso que no lo hace en \type{opp_v4} (\type{test\_fractional\_and\_zero\_capacities\_feasible}) es un caso límite numéricamente exigente para SCIP, no un defecto de la formulación. El panorama cambia radicalmente en estrés: \type{opp_v4} resuelve apenas el 12.5\% de sus ocho instancias (1/8) dentro del límite de 25 minutos, mientras que las cuatro heurísticas convergen entre el 74.4\% y el 85\% de los casos. Esto confirma la motivación central del trabajo: el modelo exacto deja de ser viable computacionalmente apenas se sale de instancias pequeñas, lo que sustenta la necesidad de heurísticas para cualquier caso de uso realista.
 
 \blank
 
@@ -76,21 +76,21 @@ Entre las heurísticas la tasa de éxito no es uniforme: \type{opp_hc_3} y \type
 \bTABLE[split=yes, align=middle, frame=on, width=broad]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \bTR \bTH Modelo \eTH \bTH Escenario \eTH \bTH Media (s) \eTH \bTH Desvío (s) \eTH \bTH Máximo (s) \eTH \bTH n \eTH \eTR
-\bTR \bTD \type{opp_v4} \eTD \bTD estándar \eTD \bTD 2.05 \eTD \bTD 5.83 \eTD \bTD 26.21 \eTD \bTD 45 \eTD \eTR
+\bTR \bTD \type{opp_v4} \eTD \bTD unitario \eTD \bTD 2.05 \eTD \bTD 5.83 \eTD \bTD 26.21 \eTD \bTD 45 \eTD \eTR
 \bTR \bTD \type{opp_v4} \eTD \bTD estrés \eTD \bTD 0.11 \eTD \bTD -- \eTD \bTD 0.11 \eTD \bTD 1 \eTD \eTR
-\bTR \bTD \type{opp_hc_2} \eTD \bTD estándar \eTD \bTD 0.0089 \eTD \bTD 0.0043 \eTD \bTD 0.022 \eTD \bTD 46 \eTD \eTR
+\bTR \bTD \type{opp_hc_2} \eTD \bTD unitario \eTD \bTD 0.0089 \eTD \bTD 0.0043 \eTD \bTD 0.022 \eTD \bTD 46 \eTD \eTR
 \bTR \bTD \type{opp_hc_2} \eTD \bTD estrés \eTD \bTD 2.97 \eTD \bTD 8.17 \eTD \bTD 43.73 \eTD \bTD 32 \eTD \eTR
-\bTR \bTD \type{opp_hc_3} \eTD \bTD estándar \eTD \bTD 0.0039 \eTD \bTD 0.0025 \eTD \bTD 0.0064 \eTD \bTD 6 \eTD \eTR
+\bTR \bTD \type{opp_hc_3} \eTD \bTD unitario \eTD \bTD 0.0039 \eTD \bTD 0.0025 \eTD \bTD 0.0064 \eTD \bTD 6 \eTD \eTR
 \bTR \bTD \type{opp_hc_3} \eTD \bTD estrés \eTD \bTD 0.56 \eTD \bTD 0.48 \eTD \bTD 1.42 \eTD \bTD 17 \eTD \eTR
-\bTR \bTD \type{opp_aco_2} \eTD \bTD estándar \eTD \bTD 0.24 \eTD \bTD 0.33 \eTD \bTD 1.44 \eTD \bTD 48 \eTD \eTR
+\bTR \bTD \type{opp_aco_2} \eTD \bTD unitario \eTD \bTD 0.24 \eTD \bTD 0.33 \eTD \bTD 1.44 \eTD \bTD 48 \eTD \eTR
 \bTR \bTD \type{opp_aco_2} \eTD \bTD estrés \eTD \bTD 54.83 \eTD \bTD 53.91 \eTD \bTD 168.57 \eTD \bTD 17 \eTD \eTR
-\bTR \bTD \type{opp_aco_3} \eTD \bTD estándar \eTD \bTD 0.026 \eTD \bTD 0.044 \eTD \bTD 0.12 \eTD \bTD 12 \eTD \eTR
+\bTR \bTD \type{opp_aco_3} \eTD \bTD unitario \eTD \bTD 0.026 \eTD \bTD 0.044 \eTD \bTD 0.12 \eTD \bTD 12 \eTD \eTR
 \bTR \bTD \type{opp_aco_3} \eTD \bTD estrés \eTD \bTD 176.55 \eTD \bTD 178.82 \eTD \bTD 588.23 \eTD \bTD 17 \eTD \eTR
 \eTABLE
 
 \blank[medium]
 
-En instancias estándar los cuatro heurísticos resuelven en milisegundos; la diferencia entre modelos sólo se vuelve relevante en estrés, donde \type{opp_hc_3} (0.56 s) y \type{opp_hc_2} (2.97 s) son uno y dos órdenes de magnitud más rápidos que \type{opp_aco_2} (54.8 s) y \type{opp_aco_3} (176.6 s) respectivamente.
+En instancias unitarias los cuatro heurísticos resuelven en milisegundos; la diferencia entre modelos sólo se vuelve relevante en estrés, donde \type{opp_hc_3} (0.56 s) y \type{opp_hc_2} (2.97 s) son uno y dos órdenes de magnitud más rápidos que \type{opp_aco_2} (54.8 s) y \type{opp_aco_3} (176.6 s) respectivamente.
 
 \blank
 
@@ -102,7 +102,7 @@ Si hacemos una comparación por dimensión, vemos que  cada algoritmo heurístic
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \bTR \bTH Dimensión \eTH \bTH Hill Climbing \eTH \bTH ACO \eTH \bTH Gana \eTH \eTR
 \bTR \bTD Velocidad (estrés) \eTD \bTD más rápido \eTD \bTD más lento \eTD \bTD HC \eTD \eTR
-\bTR \bTD Gap de calidad vs. exacto (estándar) \eTD \bTD media 242\% \eTD \bTD media 71\% \eTD \bTD ACO \eTD \eTR
+\bTR \bTD Gap de calidad vs. exacto (unitario) \eTD \bTD media 242\% \eTD \bTD media 71\% \eTD \bTD ACO \eTD \eTR
 \bTR \bTD Tasa de éxito (estrés) \eTD \bTD 74.4\% \eTD \bTD 85.0\% \eTD \bTD ACO \eTD \eTR
 \eTABLE
 
@@ -112,7 +112,7 @@ Hill Climbing es rápido porque hace poco trabajo por corrida: construye la ruta
 
 \startsubsection[title={Hallazgo metodológico: un error de performance de orden $O(V)$}]
 
-Durante el desarrollo se identificó que la construcción de rutas de los cuatro heurísticos (\type{\_build\_batch\_route}/\type{\_find\_shortest\_path\_bfs} en ACO, \type{\_dijkstra}/\type{\_generate\_feasible\_route\_bff} en HC) buscaba los vecinos de un nodo recorriendo \emph{todos} los vértices del grafo y probando la existencia de cada arco individualmente ($O(V)$ por paso), en lugar de usar una lista de adyacencia real (grado $\approx 4$ en una grilla). En una instancia de estrés de 100 nodos, esta verificación explicaba por sí sola cerca del 82\% del tiempo total de ejecución (87 millones de llamadas). Se agregó un método de adyacencia precalculada (\type{OPPLocationGraph.get\_neighbors()}, con el mismo orden determinístico que se usaba antes, verificado explícitamente contra la batería estándar completa para confirmar que no cambia qué ruta elige cada heurístico cuando hay varias igual de cortas) y se lo aplicó en los cuatro modelos. El mismo resultado se obtiene entre 57 y 153 veces más rápido según la instancia. Esta clase de detalle de implementación -- no de modelado -- es la que separa un prototipo funcional de algo que efectivamente puede correr a la escala que este trabajo necesita, y todas las cifras de este capítulo corresponden a la versión corregida.
+Durante el desarrollo se identificó que la construcción de rutas de los cuatro heurísticos (\type{\_build\_batch\_route}/\type{\_find\_shortest\_path\_bfs} en ACO, \type{\_dijkstra}/\type{\_generate\_feasible\_route\_bff} en HC) buscaba los vecinos de un nodo recorriendo \emph{todos} los vértices del grafo y probando la existencia de cada arco individualmente ($O(V)$ por paso), en lugar de usar una lista de adyacencia real (grado $\approx 4$ en una grilla). En una instancia de estrés de 100 nodos, esta verificación explicaba por sí sola cerca del 82\% del tiempo total de ejecución (87 millones de llamadas). Se agregó un método de adyacencia precalculada (\type{OPPLocationGraph.get\_neighbors()}, con el mismo orden determinístico que se usaba antes, verificado explícitamente contra la batería unitaria completa para confirmar que no cambia qué ruta elige cada heurístico cuando hay varias igual de cortas) y se lo aplicó en los cuatro modelos. El mismo resultado se obtiene entre 57 y 153 veces más rápido según la instancia. Esta clase de detalle de implementación -- no de modelado -- es la que separa un prototipo funcional de algo que efectivamente puede correr a la escala que este trabajo necesita, y todas las cifras de este capítulo corresponden a la versión corregida.
 
 \stopsubsection
 
@@ -123,7 +123,7 @@ Durante el desarrollo se identificó que la construcción de rutas de los cuatro
 \placefigure[force][fig:profiling]{Perfil de tiempo del modelo exacto: resolución del solver vs. overhead}
 {\externalfigure[../analysis/output/profiling_exact_model.png][width=0.85\textwidth]}
 
-En instancias estándar, el 90.5\% del tiempo total de \type{opp_v4} corresponde al solver SCIP resolviendo el modelo, y el 9.5\% restante al overhead de compilación ZIMPL y orquestación en Python. En estrés no hay datos de perfil significativos: el único caso \type{ok} es una instancia trivialmente infeasible por capacidad (detectada antes de invocar al solver), y ninguna instancia no trivial converge dentro del límite de tiempo.
+En instancias unitarias, el 90.5\% del tiempo total de \type{opp_v4} corresponde al solver SCIP resolviendo el modelo, y el 9.5\% restante al overhead de compilación ZIMPL y orquestación en Python. En estrés no hay datos de perfil significativos: el único caso \type{ok} es una instancia trivialmente infeasible por capacidad (detectada antes de invocar al solver), y ninguna instancia no trivial converge dentro del límite de tiempo.
 
 \stopsection
 
@@ -142,11 +142,11 @@ En instancias estándar, el 90.5\% del tiempo total de \type{opp_v4} corresponde
 
 \blank[medium]
 
-El gap se mide únicamente sobre instancias estándar donde el modelo exacto convergió, dado que en estrés \type{opp_v4} resuelve muy pocos casos como para sostener una comparación (sección anterior). El dato más relevante de esta tabla no es la media sino la \emph{mediana}: es 0\% tanto para \type{opp_hc_2} como para \type{opp_aco_2}, es decir, en más de la mitad de las instancias comparables cada heurística encuentra exactamente el óptimo exacto. Las medias (242\% y 71\% respectivamente) están infladas por un pequeño número de instancias atípicas donde la heurística converge a un resultado bastante peor. Por lo tanto, la mediana es la medida más representativa del comportamiento típico.
+El gap se mide únicamente sobre instancias unitarias donde el modelo exacto convergió, dado que en estrés \type{opp_v4} resuelve muy pocos casos como para sostener una comparación (sección anterior). El dato más relevante de esta tabla no es la media sino la \emph{mediana}: es 0\% tanto para \type{opp_hc_2} como para \type{opp_aco_2}, es decir, en más de la mitad de las instancias comparables cada heurística encuentra exactamente el óptimo exacto. Las medias (242\% y 71\% respectivamente) están infladas por un pequeño número de instancias atípicas donde la heurística converge a un resultado bastante peor. Por lo tanto, la mediana es la medida más representativa del comportamiento típico.
 
 \blank
 
-\type{opp_v5}, el modelo exacto descompuesto en dos etapas que reemplaza el ruteo monolítico de \type{opp_v4} por un ruteo independiente por lote seguido de una etapa de asignación y secuenciación, reproduce el óptimo de \type{opp_v4} con un gap indistinguible de cero (del orden de $10^{-13}$\%, es decir, ruido de punto flotante) sobre 19 instancias comparables -- una validación cruzada fuerte de que la descomposición en dos etapas no pierde optimalidad frente a la formulación monolítica, al menos en el régimen de instancias estándar evaluado hasta ahora.
+\type{opp_v5}, el modelo exacto descompuesto en dos etapas que reemplaza el ruteo monolítico de \type{opp_v4} por un ruteo independiente por lote seguido de una etapa de asignación y secuenciación, reproduce el óptimo de \type{opp_v4} con un gap indistinguible de cero (del orden de $10^{-13}$\%, es decir, ruido de punto flotante) sobre 19 instancias comparables -- una validación cruzada fuerte de que la descomposición en dos etapas no pierde optimalidad frente a la formulación monolítica, al menos en el régimen de instancias unitarias evaluado hasta ahora.
 
 \blank
 
@@ -166,9 +166,9 @@ Esta es la comparación central del trabajo, porque es la única que aísla el e
 \bTABLE[split=yes, align=middle, frame=on, width=broad]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \bTR \bTH Par (consciente vs. base) \eTH \bTH Escenario \eTH \bTH Sobrecosto de tiempo \eTH \bTH n \eTH \eTR
-\bTR \bTD \type{opp\_hc\_3} vs. \type{opp\_hc\_2} \eTD \bTD estándar \eTD \bTD -15.6\% (ruido, n=1) \eTD \bTD 1 \eTD \eTR
+\bTR \bTD \type{opp\_hc\_3} vs. \type{opp\_hc\_2} \eTD \bTD unitario \eTD \bTD -15.6\% (ruido, n=1) \eTD \bTD 1 \eTD \eTR
 \bTR \bTD \type{opp\_hc\_3} vs. \type{opp\_hc\_2} \eTD \bTD estrés \eTD \bTD +18.5\% \eTD \bTD 16 \eTD \eTR
-\bTR \bTD \type{opp\_aco\_3} vs. \type{opp\_aco\_2} \eTD \bTD estándar \eTD \bTD +99.6\% (n=1) \eTD \bTD 1 \eTD \eTR
+\bTR \bTD \type{opp\_aco\_3} vs. \type{opp\_aco\_2} \eTD \bTD unitario \eTD \bTD +99.6\% (n=1) \eTD \bTD 1 \eTD \eTR
 \bTR \bTD \type{opp\_aco\_3} vs. \type{opp\_aco\_2} \eTD \bTD estrés \eTD \bTD +231.0\% \eTD \bTD 17 \eTD \eTR
 \eTABLE
 
@@ -205,17 +205,17 @@ Para identificar qué características de una instancia explican mejor su tiempo
 \bTABLE[split=yes, align=middle, frame=on, width=broad]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \bTR \bTH Modelo \eTH \bTH Escenario \eTH \bTH $r_N$ \eTH \bTH $r_V$ \eTH \bTH $r_B$ \eTH \bTH $r_{C_v}$ \eTH \bTH n \eTH \eTR
-\bTR \bTD \type{opp\_hc\_2} \eTD \bTD estándar \eTD \bTD 0.57 \eTD \bTD 0.33 \eTD \bTD 0.26 \eTD \bTD 0.05 \eTD \bTD 46 \eTD \eTR
+\bTR \bTD \type{opp\_hc\_2} \eTD \bTD unitario \eTD \bTD 0.57 \eTD \bTD 0.33 \eTD \bTD 0.26 \eTD \bTD 0.05 \eTD \bTD 46 \eTD \eTR
 \bTR \bTD \type{opp\_hc\_2} \eTD \bTD estrés \eTD \bTD 0.67 \eTD \bTD 0.63 \eTD \bTD 0.31 \eTD \bTD 0.59 \eTD \bTD 32 \eTD \eTR
 \bTR \bTD \type{opp\_hc\_3} \eTD \bTD estrés \eTD \bTD 0.65 \eTD \bTD -0.07 \eTD \bTD 0.16 \eTD \bTD 0.76 \eTD \bTD 17 \eTD \eTR
-\bTR \bTD \type{opp\_aco\_2} \eTD \bTD estándar \eTD \bTD 0.45 \eTD \bTD 0.48 \eTD \bTD 0.50 \eTD \bTD 0.08 \eTD \bTD 48 \eTD \eTR
+\bTR \bTD \type{opp\_aco\_2} \eTD \bTD unitario \eTD \bTD 0.45 \eTD \bTD 0.48 \eTD \bTD 0.50 \eTD \bTD 0.08 \eTD \bTD 48 \eTD \eTR
 \bTR \bTD \type{opp\_aco\_2} \eTD \bTD estrés \eTD \bTD 0.21 \eTD \bTD 0.71 \eTD \bTD 0.05 \eTD \bTD 0.19 \eTD \bTD 17 \eTD \eTR
 \bTR \bTD \type{opp\_aco\_3} \eTD \bTD estrés \eTD \bTD 0.53 \eTD \bTD 0.27 \eTD \bTD 0.24 \eTD \bTD 0.49 \eTD \bTD 17 \eTD \eTR
 \eTABLE
 
 \blank[medium]
 
-En estrés, la variable dominante \emph{no} es la misma para todos los modelos. En \type{opp\_hc\_2} y \type{opp\_aco\_2}, el tamaño del grafo ($V$) correlaciona más fuerte con el tiempo que la cantidad de pedidos ($N$). Esto confirma que el costo de recorrer el almacén domina sobre el costo de decidir qué recoger, pero sólo se manifiesta a la escala de estrés: en instancias estándar el patrón se invierte ($N$ pesa más que $V$ en \type{opp\_hc\_2}, 0.57 contra 0.33).
+En estrés, la variable dominante \emph{no} es la misma para todos los modelos. En \type{opp\_hc\_2} y \type{opp\_aco\_2}, el tamaño del grafo ($V$) correlaciona más fuerte con el tiempo que la cantidad de pedidos ($N$). Esto confirma que el costo de recorrer el almacén domina sobre el costo de decidir qué recoger, pero sólo se manifiesta a la escala de estrés: en instancias unitarias el patrón se invierte ($N$ pesa más que $V$ en \type{opp\_hc\_2}, 0.57 contra 0.33).
 
 \blank
 
@@ -255,7 +255,7 @@ Una revisión sistemática del código de los cuatro modelos heurísticos, del c
 \item Un error en el método de respaldo exhaustivo de construcción de ruta de HC (\type{\_generate\_feasible\_route\_bff}) podía reportar una instancia como infeasible por error, al descartar un camino válido solamente porque otro camino había llegado antes al mismo estado intermedio (sin tener en cuenta qué nodos opcionales había consumido cada camino). Se corrigió con una búsqueda en dos niveles: la búsqueda rápida memoizada de siempre, y sólo si ésta falla, una búsqueda exhaustiva sin poda como último recurso, acotada explícitamente para no volverse intratable en grafos grandes.
 \item En \type{opp\_aco\_3}, la visibilidad usada para guiar los pasos de construcción cuando el algoritmo consulta la matriz de feromona de congestión dependía únicamente de la espera medida, sin ningún término de distancia. En cualquier escenario sin contención real (el caso común), esto degradaba aproximadamente la mitad de las decisiones de construcción a una elección aleatoria, ciega a si el paso acercaba o alejaba a la hormiga de su objetivo. Se corrigió combinando el mismo término de cercanía que ya usa la matriz de tiempo con el término de espera.
 \item Ni \type{opp\_hc\_2}/\type{opp\_hc\_3} ni \type{opp\_aco\_2}/\type{opp\_aco\_3} consideraban, antes de esta auditoría, el orden en que un mismo picker procesa los lotes que tiene asignados más allá del orden arbitrario de asignación (a diferencia de Hill Climbing, que sí explora ese orden mediante un movimiento de intercambio explícito). Se agregó a ambas variantes de ACO un ordenamiento por fecha de vencimiento más temprana, cerrando gran parte de esa brecha estructural.
-%\item En el propio pipeline de análisis, la selección del archivo de resultados más reciente por cada (modelo, escenario) se basaba en la fecha de modificación del archivo en el sistema de archivos: un criterio que deja de ser confiable después de una operación de \type{git checkout}, que resetea esas fechas al momento del checkout y no de la corrida real. Esto había llevado a calcular la tasa de éxito estándar de \type{opp\_v4} sobre un archivo desactualizado; corregido, el número pasó de 97.7\% a 97.8\% -- un cambio pequeño en este caso puntual, pero el error de diseño era real y podía haber sido arbitrariamente grande en otro momento del proyecto.
+%\item En el propio pipeline de análisis, la selección del archivo de resultados más reciente por cada (modelo, escenario) se basaba en la fecha de modificación del archivo en el sistema de archivos: un criterio que deja de ser confiable después de una operación de \type{git checkout}, que resetea esas fechas al momento del checkout y no de la corrida real. Esto había llevado a calcular la tasa de éxito en tests unitarios de \type{opp\_v4} sobre un archivo desactualizado; corregido, el número pasó de 97.7\% a 97.8\% -- un cambio pequeño en este caso puntual, pero el error de diseño era real y podía haber sido arbitrariamente grande en otro momento del proyecto.
 \item El cruce de filas para calcular el gap de calidad y el sobrecosto de congestión (secciones \in[sec:gap] y \in[sec:congestion]) se hacía por nombre de instancia sin verificar que ese nombre fuera único, y no lo es: distintos archivos de prueba pueden definir un método con el mismo nombre para escenarios genuinamente distintos. Se agregó una verificación explícita que colapsa duplicados benignos (mismos valores) pero excluye y reporta cualquier colisión real, en vez de promediar silenciosamente una comparación contra la instancia equivocada.
 \stopitemize
 
@@ -270,7 +270,7 @@ Todas las cifras de este capítulo corresponden a la versión del código poster
 \startsection[title={Síntesis}]
 
 \startitemize[n]
-\item {\bf El modelo exacto no escala más allá de instancias pequeñas:} 97.8\% de éxito en escenario estándar cae a 12.5\% en estrés, sustentando la necesidad de heurísticos para cualquier caso de uso realista, pero los casos que no resuelve en estrés son computacionalmente difíciles, no infeasibles: el mismo motivo (dificultad combinatoria genuina, confirmada contra SCIP) explica porqué las cuatro heurísticas fallan exactamente en las mismas tres instancias extremas.
+\item {\bf El modelo exacto no escala más allá de instancias pequeñas:} 97.8\% de éxito en escenario unitario cae a 12.5\% en estrés, sustentando la necesidad de heurísticos para cualquier caso de uso realista, pero los casos que no resuelve en estrés son computacionalmente difíciles, no infeasibles: el mismo motivo (dificultad combinatoria genuina, confirmada contra SCIP) explica porqué las cuatro heurísticas fallan exactamente en las mismas tres instancias extremas.
 \item {\bf HC y ACO no son comparables en una sola dimensión:} HC es más rápido; ACO converge más seguido y encuentra soluciones más cercanas al óptimo exacto. Es el trade-off esperado entre una búsqueda local barata y una metaheurística poblacional que paga exploración con tiempo de cómputo. La elección entre ambos depende de qué recurso sea más escaso en el caso de uso real, no de cuál es ''mejor'' en abstracto.
 \item {\bf El costo de modelar congestión depende del diseño del heurístico base, no es fijo:} \type{opp\_hc\_3} lo incorpora casi gratis (+18.5\% de tiempo) porque sólo lo precia al final de una construcción determinística; \type{opp\_aco\_3} lo paga caro (+231\%) porque lo incorpora paso a paso durante la construcción estocástica de la ruta, compitiendo con el avance hacia el objetivo. Es, posiblemente, el hallazgo más transferible del trabajo a otros contextos de diseño de heurísticos.
 \item {\bf La validez de estas comparaciones se sostiene sobre una auditoría de código real, no sobre confianza en la primera implementación:} varios de los hallazgos anteriores (la asimetría de congestión, la tasa de convergencia de \type{opp\_aco\_3}) cambiaron de forma medible a partir de bugs identificados y corregidos durante este mismo trabajo, lo que subraya que la comparación entre heurísticos depende tanto de decisiones de diseño algorítmico como de la calidad de la implementación que las materializa.

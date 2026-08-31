@@ -14,11 +14,11 @@
 
 \starttext
 
-\title{\bf Comparación de OPP\_v4 y OPP\_v5: pruebas estándar equivalentes}
+\title{\bf Comparación de OPP\_v4 y OPP\_v5: pruebas unitarias equivalentes}
 \blank[big]
 
 \startsection[title={Objetivo y alcance}]
-Este documento compara las ejecuciones de tests estándar (es decir, no de estrés) de OPP\_v4 y OPP\_v5 que poseen una correspondencia uno a uno. El objetivo es verificar la regresión funcional de la versión v5 y describir las diferencias de tiempo observadas bajo el mismo conjunto de escenarios heredados.
+Este documento compara las ejecuciones de tests unitarios (es decir, no de estrés) de OPP\_v4 y OPP\_v5 que poseen una correspondencia uno a uno. El objetivo es verificar la regresión funcional de la versión v5 y describir las diferencias de tiempo observadas bajo el mismo conjunto de escenarios heredados.
 
 La comparación utiliza exclusivamente las salidas:
 \startitemize
@@ -120,7 +120,7 @@ El estado \type{failed} no implica necesariamente infactibilidad del modelo: ide
 \startsection[title={Conclusiones y próximos pasos}]
 \startitemize[n]
 \item {\bf Regresión funcional:} v5 completó los 24 casos heredados equivalentes, incluidos los dos que v4 marcó como fallidos. Los 22 pares exitosos conservan las aserciones de rutas, asignación y calendario heredadas.
-\item {\bf Rendimiento estándar:} para instancias pequeñas, v5 presenta en general un sobrecosto moderado atribuible al pipeline de dos etapas. La mediana es 0,187 s en v5 frente a 0,168 s en v4.
+\item {\bf Rendimiento en tests unitarios:} para instancias pequeñas, v5 presenta en general un sobrecosto moderado atribuible al pipeline de dos etapas. La mediana es 0,187 s en v5 frente a 0,168 s en v4.
 \item {\bf Instancias estructuradas:} el caso 17 reduce el tiempo de 6,831 s a 0,310 s. Esta observación explica la mejora de 55,4\% en la media, pero debe confirmarse con más instancias antes de generalizarla.
 \item {\bf Alcance pendiente:} incorporar los CSV de estrés, separando los escenarios exitosos y reportando su tasa de éxito, tiempos y escalabilidad. Allí será especialmente relevante medir el efecto de descomponer ruteo y scheduling.
 \stopitemize
