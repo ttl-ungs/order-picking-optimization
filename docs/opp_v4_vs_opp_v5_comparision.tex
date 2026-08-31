@@ -14,11 +14,11 @@
 
 \starttext
 
-\title{\bf Comparación de OPP\_v4 y OPP\_v5: pruebas normales equivalentes}
+\title{\bf Comparación de OPP\_v4 y OPP\_v5: pruebas estándar equivalentes}
 \blank[big]
 
 \startsection[title={Objetivo y alcance}]
-Este documento compara las ejecuciones normales de OPP\_v4 y OPP\_v5 que poseen una correspondencia uno a uno. El objetivo es verificar la regresión funcional de la versión v5 y describir las diferencias de tiempo observadas bajo el mismo conjunto de escenarios heredados.
+Este documento compara las ejecuciones de tests estándar (es decir, no de estrés) de OPP\_v4 y OPP\_v5 que poseen una correspondencia uno a uno. El objetivo es verificar la regresión funcional de la versión v5 y describir las diferencias de tiempo observadas bajo el mismo conjunto de escenarios heredados.
 
 La comparación utiliza exclusivamente las salidas:
 \startitemize
@@ -30,7 +30,7 @@ No se incorporan aún resultados de estrés. Estos deberán añadirse en una sec
 \stopsection
 
 \startsection[title={Criterio de equivalencia}]
-Los archivos \type{test_opp_v5_model_01.py} a \type{test_opp_v5_model_19.py}, incluidas las variantes \type{02_01}, \type{02_02} y \type{02_03}, migran uno a uno los escenarios y las aserciones normales de OPP\_v4. En la migración, v5 ejecuta primero el modelo de ruteo y luego el de asignación y secuenciación.
+Los archivos \type{test_opp_v5_model_01.py} a \type{test_opp_v5_model_19.py}, incluidas las variantes \type{02_01}, \type{02_02} y \type{02_03}, migran uno a uno los escenarios y las aserciones de OPP\_v4. En la migración, v5 ejecuta primero el modelo de ruteo y luego el de asignación y secuenciación.
 
 Para aislar el comportamiento heredado de v4, las capacidades nuevas de v5 se neutralizan en esos casos: todos los pickers usan \(V_p=1\) y el límite de frío se fija en un valor no restrictivo. Así, las pruebas comparan factibilidad, rutas, asignación, secuenciación y penalizaciones sobre escenarios equivalentes. Las pruebas v5 específicas de velocidades heterogéneas y cadena de frío (modelos 20 y 21) no se incluyen en la comparación uno a uno.
 
@@ -44,7 +44,7 @@ Se identificaron 24 pares de ejecuciones equivalentes. Veintidós pares finaliza
 \bTABLE[split=yes, align=middle, frame=on, width=fit]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \bTR \bTH Métrica \eTH \bTH OPP\_v4 \eTH \bTH OPP\_v5 \eTH \eTR
-\bTR \bTD Ejecuciones normales del CSV \eTD \bTD 24 \eTD \bTD 28 \eTD \eTR
+\bTR \bTD Ejecuciones del CSV \eTD \bTD 24 \eTD \bTD 28 \eTD \eTR
 \bTR \bTD Pares equivalentes \eTD \bTD 24 \eTD \bTD 24 \eTD \eTR
 \bTR \bTD Pares exitosos en ambos modelos \eTD \bTD 22 \eTD \bTD 22 \eTD \eTR
 \bTR \bTD Éxito en los pares equivalentes \eTD \bTD 22 / 24 (91,7\%) \eTD \bTD 24 / 24 (100,0\%) \eTD \eTR
@@ -120,7 +120,7 @@ El estado \type{failed} no implica necesariamente infactibilidad del modelo: ide
 \startsection[title={Conclusiones y próximos pasos}]
 \startitemize[n]
 \item {\bf Regresión funcional:} v5 completó los 24 casos heredados equivalentes, incluidos los dos que v4 marcó como fallidos. Los 22 pares exitosos conservan las aserciones de rutas, asignación y calendario heredadas.
-\item {\bf Rendimiento normal:} para instancias pequeñas, v5 presenta en general un sobrecosto moderado atribuible al pipeline de dos etapas. La mediana es 0,187 s en v5 frente a 0,168 s en v4.
+\item {\bf Rendimiento estándar:} para instancias pequeñas, v5 presenta en general un sobrecosto moderado atribuible al pipeline de dos etapas. La mediana es 0,187 s en v5 frente a 0,168 s en v4.
 \item {\bf Instancias estructuradas:} el caso 17 reduce el tiempo de 6,831 s a 0,310 s. Esta observación explica la mejora de 55,4\% en la media, pero debe confirmarse con más instancias antes de generalizarla.
 \item {\bf Alcance pendiente:} incorporar los CSV de estrés, separando los escenarios exitosos y reportando su tasa de éxito, tiempos y escalabilidad. Allí será especialmente relevante medir el efecto de descomponer ruteo y scheduling.
 \stopitemize
