@@ -14,417 +14,266 @@
 
 \starttext
 
-\title{\bf Análisis Comparativo Avanzado y Escalabilidad Paramétrica en Modelos de Linear Picking Routing}
+\title{\bf Resultados}
 \blank[big]
 
-Este documento presenta un análisis empírico y teórico exhaustivo sobre el desempeño operativo, la eficiencia computacional y las fronteras de escalabilidad de las tres arquitecturas de optimización implementadas para resolver el problema integrado de preparación de pedidos y ruteo en almacenes funcionales ({\em Linear Picking Routing Problem}, LPRP): el modelo exacto de {\bf Programación Lineal Entera Mixta (MILP - OPP\_v3)} resuelto mediante SCIP, la heurística de búsqueda local {\bf Hill Climbing (HC)} y la metaheurística bio-inspirada {\bf Ant Colony Optimization (ACO)}. 
+Este documento presenta el análisis comparativo de los seis modelos implementados para resolver el problema integrado de \emph{batching}, asignación, secuenciación y ruteo de picking en almacén ({\em Order Picking Problem}, OPP): el modelo exacto de Programación Lineal Entera Mixta resuelto con SCIP (\type{opp_v4}), su variante descompuesta en dos etapas (\type{opp_v5}, en desarrollo), y cuatro heurísticas -- Hill Climbing y Ant Colony Optimization, cada una en una versión sin modelado de congestión (\type{opp_hc_2}, \type{opp_aco_2}) y una versión con congestión entre pickers concurrentes (\type{opp_hc_3}, \type{opp_aco_3}).
 
 \blank
 
-Los datos analizados provienen del consolidado masivo de pruebas (incluyendo los repositorios \type{complete_output_v3_stress_tests.csv} y las trazas operativas recientes de ACO bajo estrés). Se evalúa la escalabilidad paramétrica ante variables críticas como el volumen de órdenes, la dimensión topológica y la capacidad vehicular.
+Los datos provienen de la ejecución completa y consolidada de las baterías de prueba ''normal'' (instancias pequeñas, orientadas a verificar corrección) y ''estrés'' (instancias grandes, orientadas a medir escalabilidad) de cada modelo, procesadas mediante un pipeline de análisis del repositorio (\type{analysis/}). Todas las cifras de este documento corresponden a la última ejecución. %  final, posterior a una auditoría de código que identificó y corrigió varios errores de implementación -- documentados a medida que aparecen, porque varios de ellos son en sí mismos hallazgos relevantes para interpretar los datos.
 
-\startsection[title={Análisis Individual por Arquitectura}]
+\startsection[title={Diseño experimental: por qué se comparan pares simples y complejos}]
 
-\startsubsection[title={Modelo Exacto: Programación Lineal Entera Mixta (OPP\_v3)}]
+El diseño del experimento agrega, a partir de un núcleo común (\type{opp_v4} para el caso exacto, \type{opp_hc_2}/\type{opp_aco_2} para las heurísticas), \emph{una variable cada vez}:
 
-El análisis paramétrico individual de los registros de OPP\_v3 revela hallazgos críticos sobre la composición de su carga computacional. En escenarios normales, el factor más determinante no es el número de pedidos ($N \rightarrow r = 0.15$), sino la estructura geométrica. Existe una fuerte correlación del tiempo total frente al número de lotes ($B \rightarrow r = 0.87$) y de ubicaciones ($V \rightarrow r = 0.72$).
+\starttyping[option=none]
+opp_hc_2  --(+ congestión)------------------------------------>  opp_hc_3
+opp_aco_2 --(+ congestión)------------------------------------>  opp_aco_3
+opp_v4    --(+ 2 etapas, velocidad heterogénea de pickers, cadena de frío)-> opp_v5
+\stoptyping
 
-\startsubsubsection[title={Predominio del Modelado y Estabilidad (Pruebas Normales)}]
-
-El análisis detallado de las instancias de prueba en escenarios de escala normal (baja densidad de órdenes) reveló una anomalía arquitectónica de alto interés en el modelo exacto OPP\_v3. Al perfilar el ciclo de vida del algoritmo, se constató que la latencia no recae en la complejidad de encontrar el óptimo matemático, sino en la instanciación programática de la matriz de restricciones.
-
-\blank
-
-En la arquitectura MILP, el tiempo total ($T_{total}$) se compone del tiempo de modelado o construcción ($T_{model}$) y el tiempo de resolución del motor matemático ($T_{solver}$). Las trazas de ejecución en escenarios normales demuestran que {\bf el tiempo de modelado representa en promedio el 90\% del tiempo total consumido}. 
+Cada modelo ''simple'' funciona como grupo de control del par ''complejo'' correspondiente.
 
 \blank
 
-Mientras que el motor SCIP logra podar y resolver las instancias estándar en tiempos marginales ($\approx 0.01$ a $0.05$ s), la fase de declaración de variables binarias relativas al empaquetamiento ($z_{o,b}$) y ruteo espacial ($x_{i,j}$) absorbe el grueso del rendimiento algorítmico computacional. Esto expone un cuello de botella inherente a la interfaz de software (el {\em wrapper} u orquestador de alto nivel) al momento de traducir el ecosistema geográfico del almacén a inecuaciones lineales, un esfuerzo del cual las heurísticas HC y ACO están exentas gracias a sus estructuras de datos dinámicas y simplificadas.
-
-\blank
-
-Adicionalmente, se detectó empíricamente que relajar penalizaciones lógicas (por ejemplo, reducir el castigo por entrega tardía $W_{ta}=1$) ralentiza el modelo, dado que impide descartar rutas ineficientes en las fases tempranas de la evaluación.
-
-\placefigure[force][fig:profiling_v3]{Perfil de Ejecución OPP\_v3: Modelado vs Resolución}
-{\startMPcode
-  numeric u, v; u := 1.5cm; v := 5cm / 100;
-  drawarrow (-0.5*u, 0) -- (4.5*u, 0) withpen pencircle scaled 1pt;
-  drawarrow (0, 0) -- (0, 110*v) withpen pencircle scaled 1pt;
-  draw textext("Porcentaje del Tiempo Total (\%)") rotated 90 shifted (-1.0*u, 50*v);
-  for i=0 step 20 until 100:
-    draw (-0.1*u, i*v) -- (0.1*u, i*v); label.lft(textext(decimal i), (-0.2*u, i*v));
-  endfor;
-  numeric mod[], sol[]; mod[1] := 88; sol[1] := 12; mod[2] := 92; sol[2] := 8; mod[3] := 89; sol[3] := 11;
-  for i=1 step 1 until 3:
-    fill ((i*1.2)*u - 0.4*u, 0) -- ((i*1.2)*u + 0.4*u, 0) -- ((i*1.2)*u + 0.4*u, mod[i]*v) -- ((i*1.2)*u - 0.4*u, mod[i]*v) -- cycle withcolor \MPcolor{darkblue};
-    fill ((i*1.2)*u - 0.4*u, mod[i]*v) -- ((i*1.2)*u + 0.4*u, mod[i]*v) -- ((i*1.2)*u + 0.4*u, 100*v) -- ((i*1.2)*u - 0.4*u, 100*v) -- cycle withcolor \MPcolor{redline};
-    if i=3: label.bot(textext("Promedio"), ((i*1.2)*u, -5*v)); else: label.bot(textext("Caso " & decimal i), ((i*1.2)*u, -5*v)); fi;
-  endfor;
-  fill (3.5*u, 95*v) -- (3.8*u, 95*v) -- (3.8*u, 90*v) -- (3.5*u, 90*v) -- cycle withcolor \MPcolor{darkblue}; label.rt(textext("Construccion de Matriz"), (3.9*u, 92.5*v));
-  fill (3.5*u, 85*v) -- (3.8*u, 85*v) -- (3.8*u, 80*v) -- (3.5*u, 80*v) -- cycle withcolor \MPcolor{redline}; label.rt(textext("Solver (SCIP)"), (3.9*u, 82.5*v));
-\stopMPcode}
-
-Asimismo, en escenarios con baja densidad de pedidos ($N$), se descubrió que la variable estructural que dicta el piso base del tiempo de modelado es la topología del layout ($V$). La Figura \in[fig:v_normal] modela el impacto de la dispersión geográfica en el esfuerzo de construcción del modelo exacto.
-
-\placefigure[force][fig:v_normal]{Crecimiento del Tiempo Total vs Ubicaciones ($V$) en Instancias Normales}
-{\startMPcode
-  numeric u, v;
-  u := 10cm / 40; % Eje X: 0 a 40 ubicaciones
-  v := 5cm / 0.15; % Eje Y: 0 a 0.15 segundos
-
-  drawarrow (0,0) -- (45*u,0) withpen pencircle scaled 1pt;
-  drawarrow (0,0) -- (0,0.18*v) withpen pencircle scaled 1pt;
-  
-  label.bot("Nodos del Mapa / Ubicaciones (V)", (20*u, -0.015*v));
-  label.lft("Tiempo Total (s)", (-3*u, 0.08*v));
-
-  % Marcas Y
-  for i=0 step 0.05 until 0.15:
-    draw (-0.5*u, i*v) -- (0.5*u, i*v);
-    label.lft(decimal i, (-1*u, i*v));
-  endfor;
-
-  % Marcas X
-  for i=0 step 10 until 40:
-    draw (i*u, -0.003*v) -- (i*u, 0.003*v);
-    label.bot(decimal i, (i*u, -0.008*v));
-  endfor;
-
-  % Nube de puntos simulando los resultados normales (r=0.72)
-  fill fullcircle scaled 4pt shifted (4*u, 0.038*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (5*u, 0.039*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (8*u, 0.057*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (8*u, 0.061*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (15*u, 0.085*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (25*u, 0.098*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (36*u, 0.125*v) withcolor \MPcolor{darkblue};
-
-  % Línea de tendencia
-  draw (0, 0.02*v) -- (40*u, 0.13*v) withcolor \MPcolor{blueline} dashed evenly withpen pencircle scaled 1.5pt;
-  label.bot("Tendencia Lineal (r = 0.72)", (30*u, 0.09*v)) withcolor \MPcolor{blueline};
-
-\stopMPcode}
-
-\stopsubsubsection
-
-\startsubsubsection[title={Crecimiento Exponencial bajo Carga Masiva}]
-
-Cuando el modelo abandona la escala normal, la dimensión geométrica pierde peso y la ramificación de asignación ($N$) domina la latencia. La Figura \in[fig:opp_stress] demuestra el colapso asintótico del MILP ante configuraciones de estrés.
-
-\placefigure[force][fig:opp_stress]{Dispersión Temporal vs Volumen de Pedidos $N$ (OPP\_v3 Estrés)}
-{\startMPcode
-  numeric u, v; u := 10cm / 500; v := 5cm / 1000;
-  drawarrow (0,0) -- (550*u,0) withpen pencircle scaled 1pt;
-  drawarrow (0,0) -- (0,1050*v) withpen pencircle scaled 1pt;
-  label.bot(textext("Cantidad de Pedidos (N)"), (250*u, -80*v));
-  draw textext("Tiempo Total (s)") rotated 90 shifted (-45*u, 500*v);
-  for i=0 step 200 until 1000:
-    draw (-2*u, i*v) -- (2*u, i*v); label.lft(textext(decimal i), (-5*u, i*v));
-  endfor;
-  for i=0 step 100 until 500:
-    draw (i*u, -2*v) -- (i*u, 2*v); label.bot(textext(decimal i), (i*u, -20*v));
-  endfor;
-  draw (12*u, 3.8*v) {dir 12} .. (100*u, 99.4*v) .. (320*u, 912.5*v) withcolor \MPcolor{redline} withpen pencircle scaled 1.5pt;
-  fill fullcircle scaled 4pt shifted (12*u, 3.8*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (100*u, 99.4*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (320*u, 912.5*v) withcolor \MPcolor{darkblue};
-\stopMPcode}
-\stopsubsubsection
-
-\stopsubsection
-
-\startsubsection[title={Heurística de Búsqueda Local (Hill Climbing)}]
-
-HC demostró un comportamiento asintótico sumamente eficiente. Aislar el ruteo a través de una matriz de distancias precalculadas le permite iterar vecindarios de forma polinomial. Tanto en entornos normales como de estrés, este enfoque heurístico de intercambio aseguró una curva casi plana (alcanzando tan solo picos de $\sim 177$ s en el peor escenario imaginable), asegurando una resiliencia sistémica única.
-
-\placefigure[force][fig:hc_stress]{Estabilidad Polinomial vs Número de Pedidos $N$ (HC Estrés)}
-{\startMPcode
-  numeric u, v; u := 10cm / 500; v := 5cm / 200;
-  drawarrow (0,0) -- (550*u,0) withpen pencircle scaled 1pt;
-  drawarrow (0,0) -- (0,220*v) withpen pencircle scaled 1pt;
-  label.bot(textext("Cantidad de Pedidos (N)"), (250*u, -15*v));
-  draw textext("Tiempo Total (s)") rotated 90 shifted (-40*u, 100*v);
-  for i=0 step 50 until 200:
-    draw (-2*u, i*v) -- (2*u, i*v); label.lft(textext(decimal i), (-5*u, i*v));
-  endfor;
-  for i=0 step 100 until 500:
-    draw (i*u, -2*v) -- (i*u, 2*v); label.bot(textext(decimal i), (i*u, -5*v));
-  endfor;
-  draw (12*u, 0.01*v) -- (100*u, 23.3*v) -- (300*u, 80*v) -- (500*u, 177.4*v) withcolor \MPcolor{blueline} withpen pencircle scaled 1.5pt;
-  fill fullcircle scaled 4pt shifted (12*u, 0.01*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (100*u, 23.3*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 4pt shifted (500*u, 177.4*v) withcolor \MPcolor{darkblue};
-\stopMPcode}
-\stopsubsection
-
-\startsubsection[title={Metaheurística Bio-inspirada (ACO)}]
-
-El modelo de optimización por colonia de hormigas exhibe una extrema sensibilidad geográfica. Su núcleo estocástico obliga a actualizar densidades de probabilidad a lo largo del mapa completo en cada iteración por cada hormiga. Cuando la cantidad de ubicaciones físicas ($V$) crece severamente, la matriz algorítmica de transiciones se densifica y ralentiza el desempeño de ACO de manera desproporcionada, limitando su aplicación práctica a almacenes de tamaño moderado.
-
-\blank
-
-Las 34 pruebas de estrés confirman empíricamente este fenómeno. La Figura \in[fig:aco_stress] grafica el tiempo total observado frente a $V$ para los casos exitosos ({\em ok}, círculos sólidos) y los casos que completaron su ejecución pero cuya solución no superó los criterios de calidad ({\em failed}, triángulos). Las instancias de mayor escala topológica ($V \geq 625$) fueron detenidas por {\em timeout} tras 25 minutos sin converger.
-
-\placefigure[force][fig:aco_stress]{Vulnerabilidad Topológica vs Nodos $V$ (ACO Estrés)}
-{\startMPcode
-  numeric u, v; u := 10cm / 1100; v := 5cm / 1000;
-  drawarrow (0,0) -- (1150*u,0) withpen pencircle scaled 1pt;
-  drawarrow (0,0) -- (0,1050*v) withpen pencircle scaled 1pt;
-  label.bot(textext("Ubicaciones / Nodos (V)"), (550*u, -70*v));
-  draw textext("Tiempo Total (s)") rotated 90 shifted (-55*u, 500*v);
-  for i=0 step 200 until 1000:
-    draw (-3*u, i*v) -- (3*u, i*v); label.lft(textext(decimal i), (-8*u, i*v));
-  endfor;
-  for i=0 step 200 until 1000:
-    draw (i*u, -3*v) -- (i*u, 3*v); label.bot(textext(decimal i), (i*u, -18*v));
-  endfor;
-  % Curva de tendencia ACO (verde)
-  draw (16*u, 0.06*v) {dir 8} .. (100*u, 29.4*v) .. (400*u, 596.4*v) .. (1000*u, 924.96*v)
-       withcolor \MPcolor{greenline} withpen pencircle scaled 1.5pt dashed evenly;
-  % Puntos OK (círculos sólidos, azul)
-  fill fullcircle scaled 5pt shifted (16*u,   0.06*v)  withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 5pt shifted (34*u,   0.51*v)  withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 5pt shifted (100*u,  5.61*v)  withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 5pt shifted (100*u,  22.09*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 5pt shifted (100*u,  60.35*v) withcolor \MPcolor{darkblue};
-  fill fullcircle scaled 5pt shifted (400*u,  596.39*v) withcolor \MPcolor{darkblue};
-  % Puntos Failed (triángulos, rojo)
-  draw (400*u, 50.4*v+4pt) -- (400*u-4pt, 50.4*v-3pt) -- (400*u+4pt, 50.4*v-3pt) -- cycle
-       withcolor \MPcolor{redline} withpen pencircle scaled 1pt;
-  draw (625*u, 356.0*v+4pt) -- (625*u-4pt, 356.0*v-3pt) -- (625*u+4pt, 356.0*v-3pt) -- cycle
-       withcolor \MPcolor{redline} withpen pencircle scaled 1pt;
-  draw (1000*u, 924.96*v+4pt) -- (1000*u-4pt, 924.96*v-3pt) -- (1000*u+4pt, 924.96*v-3pt) -- cycle
-       withcolor \MPcolor{redline} withpen pencircle scaled 1pt;
-  % Marcas de timeout en la parte superior del eje
-  draw (625*u,  990*v) -- (625*u,  1010*v) withcolor \MPcolor{redline} withpen pencircle scaled 1.5pt;
-  label.top(textext("TO"), (625*u, 1010*v)) withcolor \MPcolor{redline};
-  % Leyenda
-  fill fullcircle scaled 5pt shifted (750*u, 820*v) withcolor \MPcolor{darkblue};
-  label.rt(textext("Convergencia exitosa (ok)"), (760*u, 820*v));
-  draw (750*u, 750*v+4pt) -- (750*u-4pt, 750*v-3pt) -- (750*u+4pt, 750*v-3pt) -- cycle
-       withcolor \MPcolor{redline} withpen pencircle scaled 1pt;
-  label.rt(textext("Fallo de calidad (failed)"), (760*u, 750*v));
-\stopMPcode}
-
-\startsubsubsection[title={Clasificación de Resultados bajo Estrés}]
-
-De las 34 instancias ejecutadas, el análisis revela tres patrones de comportamiento claramente diferenciados:
-
-\blank
-
-\bTABLE[split=yes, align=middle, frame=on, width=fit]
-\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
-\bTR \bTH Resultado \eTH \bTH Cantidad \eTH \bTH Rango de $V$ \eTH \bTH Causa dominante \eTH \eTR
-\bTR \bTD Exitoso (ok) \eTD \bTD 6 / 34 \eTD \bTD 16 -- 400 \eTD \bTD Almacenes compactos o moderados \eTD \eTR
-\bTR \bTD Fallo de calidad (failed) \eTD \bTD 21 / 34 \eTD \bTD 25 -- 1000 \eTD \bTD Solución subóptima: alta capacidad $C_v$, alta densidad de órdenes $N/B$ o $V$ elevado \eTD \eTR
-\bTR \bTD Timeout (> 25 min) \eTD \bTD 7 / 34 \eTD \bTD $\geq$ 625 \eTD \bTD Explosión cuadrática $O(V^2)$ por iteración \eTD \eTR
-\eTABLE
-
-\blank
-
-Los 6 casos exitosos comprenden almacenes con hasta 400 nodos ($V \leq 400$) bajo condiciones de carga moderada. En el extremo opuesto, las 7 instancias con grillas de $100 \times 100$ nodos o dobles galpones de $50 \times 50$ fueron abortadas sistemáticamente por {\em timeout}, confirmando la barrera asintótica $O(V^2)$ de la actualización de feromonas. Los 21 fallos de calidad representan ejecuciones completadas, pero cuyas soluciones no superan los umbrales de optimalidad definidos por los criterios de prueba: este patrón es más frecuente ante una alta capacidad vehicular ($C_v \geq 200$) o una densidad de órdenes extrema ($N/B \geq 20$), condiciones bajo las cuales la exploración estocástica de ACO no logra escapar de mínimos locales en el espacio combinatorio del batching.
-
-\stopsubsubsection
-
-\stopsubsection
-\stopsection
-
-\startsection[title={Estadísticas Descriptivas Generales y Metodología de Agregación}]
-
-El universo de datos crudos fue procesado bajo un estricto protocolo de depuración estadística. La evaluación de las métricas temporales (Media, Desvío Estándar y Máximo) se restringió exclusivamente a aquellas instancias experimentales que alcanzaron una convergencia exitosa (estado {\em ok}). Esto previene el sesgo matemático que introduciría la inclusión de escenarios truncados por {\em timeout} o agotamiento de memoria, garantizando que los estadísticos describan el tiempo real necesario para demostrar optimalidad o hallar una solución heurística superior.
-
-La robustez general de cada arquitectura se cuantificó mediante la razón incremental entre soluciones exitosas y el total de casos proyectados para cada entorno de simulación. La siguiente tabla sintetiza los resultados finales:
-
-\blank[medium]
-
-\bTABLE[split=yes, align=middle, frame=on, width=fit]
-\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
-\bTR \bTH Modelo \eTH \bTH Escenario \eTH \bTH Éxito (OK/Tot) \eTH \bTH Media (s) \eTH \bTH Desvío Est. (s) \eTH \bTH Máximo (s) \eTH \eTR
-\bTR \bTD Exacto (OPP\_v3) \eTD \bTD Normal \eTD \bTD 48 / 48 \eTD \bTD 0.11 \eTD \bTD 0.14 \eTD \bTD 0.89 \eTD \eTR
-\bTR \bTD Exacto (OPP\_v3) \eTD \bTD Stress \eTD \bTD 17 / 34 \eTD \bTD 164.45 \eTD \bTD 290.70 \eTD \bTD 912.54 \eTD \eTR
-\bTR \bTD Hill Climbing \eTD \bTD Normal \eTD \bTD 46 / 46 \eTD \bTD 0.01 \eTD \bTD 0.00 \eTD \bTD 0.01 \eTD \eTR
-\bTR \bTD Hill Climbing \eTD \bTD Stress \eTD \bTD 29 / 34 \eTD \bTD 10.41 \eTD \bTD 33.29 \eTD \bTD 177.48 \eTD \eTR
-\bTR \bTD ACO \eTD \bTD Normal \eTD \bTD 48 / 48 \eTD \bTD 0.15 \eTD \bTD 0.21 \eTD \bTD 0.81 \eTD \eTR
-\bTR \bTD ACO \eTD \bTD Stress \eTD \bTD 6 / 34 \eTD \bTD 114.17 \eTD \bTD 237.33 \eTD \bTD 596.39 \eTD \eTR
-\eTABLE
-
-\blank[medium]
-
-A partir de la distribución estadística, emergen observaciones críticas. Al someter el modelo OPP\_v3 a cargas masivas, se constata que logra resolver solo el 50\% de la muestra dentro del límite de tiempo. En sus resoluciones óptimas, la media temporal escala drásticamente a 164.45 segundos, con una extrema dispersión ($\sigma \approx 290.7$ s) y múltiples escenarios rebasando los 15 minutos (912 s), ratificando la inestabilidad operativa de la formulación discreta continua.
-
-Por otro lado, la metaheurística ACO logra converger exitosamente en apenas el 17.65\% de las instancias de estrés (6/34), operando con una media de 114.17 segundos entre los casos exitosos, pero con una volatilidad severa ($\sigma \approx 237.3$ s) que evidencia la fuerte dependencia del tiempo respecto a la escala topológica. Un 61.76\% de los casos (21/34) completa la ejecución pero produce soluciones subóptimas, y el 20.59\% restante (7/34) es abortado por {\em timeout} ante grillas de gran magnitud. En contraste, Hill Climbing ratifica su posición dominante anclando una tasa de convergencia del 85\% en estrés y promediando apenas $\approx 10.4$ segundos.
-
-\startsubsection[title={Comparativa Global de Tiempos Promedio por Modelo}]
-
-Para dimensionar visualmente la brecha de rendimiento extraída de la consolidación de resultados, las Figuras \in[fig:bar_norm] y \in[fig:bar_stress] grafican los tiempos medios globales de cada arquitectura separados por entorno de prueba.
-
-\placefigure[force][fig:bar_norm]{Tiempos Medios Globales (Escenarios Normales)}
-{\startMPcode
-  numeric u, v; u := 2.5cm; v := 5cm / 0.15;
-  drawarrow (-0.5*u, 0) -- (3.5*u, 0) withpen pencircle scaled 1pt;
-  drawarrow (0, 0) -- (0, 0.17*v) withpen pencircle scaled 1pt;
-  draw textext("Tiempo Medio (s)") rotated 90 shifted (-0.8*u, 0.08*v);
-  for i=0 step 0.05 until 0.15:
-    draw (-0.1*u, i*v) -- (0.1*u, i*v); label.lft(textext(decimal i), (-0.2*u, i*v));
-  endfor;
-  fill (1*u - 0.4*u, 0) -- (1*u + 0.4*u, 0) -- (1*u + 0.4*u, 0.007*v) -- (1*u - 0.4*u, 0.007*v) -- cycle withcolor \MPcolor{blueline};
-  label.bot(textext("HC"), (1*u, -0.01*v)); label.top(textext("0.007s"), (1*u, 0.007*v));
-  fill (2*u - 0.4*u, 0) -- (2*u + 0.4*u, 0) -- (2*u + 0.4*u, 0.110*v) -- (2*u - 0.4*u, 0.110*v) -- cycle withcolor \MPcolor{redline};
-  label.bot(textext("OPP V3"), (2*u, -0.01*v)); label.top(textext("0.110s"), (2*u, 0.110*v));
-  fill (3*u - 0.4*u, 0) -- (3*u + 0.4*u, 0) -- (3*u + 0.4*u, 0.114*v) -- (3*u - 0.4*u, 0.114*v) -- cycle withcolor \MPcolor{greenline};
-  label.bot(textext("ACO"), (3*u, -0.01*v)); label.top(textext("0.114s"), (3*u, 0.114*v));
-\stopMPcode}
-
-\placefigure[force][fig:bar_stress]{Tiempos Medios Globales (Escenarios de Estrés)}
-{\startMPcode
-  numeric u, v; u := 2.5cm; v := 5cm / 200;
-  drawarrow (-0.5*u, 0) -- (3.5*u, 0) withpen pencircle scaled 1pt;
-  drawarrow (0, 0) -- (0, 220*v) withpen pencircle scaled 1pt;
-  draw textext("Tiempo Medio (s)") rotated 90 shifted (-0.8*u, 100*v);
-  for i=0 step 50 until 200:
-    draw (-0.1*u, i*v) -- (0.1*u, i*v); label.lft(textext(decimal i), (-0.2*u, i*v));
-  endfor;
-  fill (1*u - 0.4*u, 0) -- (1*u + 0.4*u, 0) -- (1*u + 0.4*u, 10.4*v) -- (1*u - 0.4*u, 10.4*v) -- cycle withcolor \MPcolor{blueline};
-  label.bot(textext("HC"), (1*u, -10*v)); label.top(textext("10.4s"), (1*u, 10.4*v));
-  fill (2*u - 0.4*u, 0) -- (2*u + 0.4*u, 0) -- (2*u + 0.4*u, 34.8*v) -- (2*u - 0.4*u, 34.8*v) -- cycle withcolor \MPcolor{greenline};
-  label.bot(textext("ACO"), (2*u, -10*v)); label.top(textext("34.8s"), (2*u, 34.8*v));
-  fill (3*u - 0.4*u, 0) -- (3*u + 0.4*u, 0) -- (3*u + 0.4*u, 164.5*v) -- (3*u - 0.4*u, 164.5*v) -- cycle withcolor \MPcolor{redline};
-  label.bot(textext("OPP V3"), (3*u, -10*v)); label.top(textext("164.5s"), (3*u, 164.5*v));
-\stopMPcode}
-
-\stopsubsection
-
-\stopsubsection
+\type{opp_v5} está todavía en desarrollo, por lo que su batería de estrés es parcial, y se excluye de las comparaciones de escalabilidad; sus datos normales sí se incluyen como validación cruzada del modelo exacto (sección \in[sec:gap]).
 
 \stopsection
 
-\startsection[title={Análisis de Correlación Paramétrica y Sensibilidad Algorítmica}]
+\startsection[title={Convergencia y tasa de éxito}]
 
-Para aislar matemáticamente las causas subyacentes de las penalidades temporales, se computó el Coeficiente de Correlación de Pearson ($r$) evaluando la dependencia lineal entre el tiempo de convergencia exitosa y cada variable estructural.
-
-\placeformula[-]
-\startformula
-r = \frac{\sum_{i=1}^{k} (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^{k} (x_i - \bar{x})^2 \sum_{i=1}^{k} (y_i - \bar{y})^2}}
-\stopformula
-
-\blank[medium]
+\placefigure[force][fig:mean_time_stress]{Tiempo medio de ejecución en estrés, por modelo (escala logarítmica)}
+{\externalfigure[../analysis/output/mean_time_stress.png][width=0.85\textwidth]}
 
 \bTABLE[split=yes, align=middle, frame=on, width=broad]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
-\bTR \bTH Atributo del Problema ($x$) \eTH \bTH Exacto MILP ($r$) \eTH \bTH Hill Climbing ($r$) \eTH \bTH Metaheurística ACO ($r$) \eTH \eTR
-\bTR \bTD Cantidad de Pedidos ($N$) \eTD \bTD 0.6597 \eTD \bTD 0.5347 \eTD \bTD -0.1558 \eTD \eTR
-\bTR \bTD Vértices del Almacén ($V$) \eTD \bTD 0.2029 \eTD \bTD 0.1192 \eTD \bTD 0.9752 \eTD \eTR
-\bTR \bTD Cantidad de Batches ($B$) \eTD \bTD 0.7085 \eTD \bTD 0.4963 \eTD \bTD -0.1432 \eTD \eTR
-\bTR \bTD Capacidad del Vehículo ($C_v$) \eTD \bTD 0.4321 \eTD \bTD 0.3643 \eTD \bTD -0.1495 \eTD \eTR
-\bTR \bTD Peso de Utilización ($W_{full}$) \eTD \bTD 0.3649 \eTD \bTD 0.2561 \eTD \bTD 0.2347 \eTD \eTR
-\bTR \bTD Pen. Ventanas ($W_{ea\_ta}$) \eTD \bTD -0.2545 \eTD \bTD -0.1791 \eTD \bTD -0.2346 \eTD \eTR
+\bTR \bTH Modelo \eTH \bTH Escenario \eTH \bTH Total \eTH \bTH OK \eTH \bTH Timeout \eTH \bTH Failed \eTH \bTH Éxito (\%) \eTH \eTR
+\bTR \bTD \type{opp_v4} (exacto) \eTD \bTD normal \eTD \bTD 46 \eTD \bTD 45 \eTD \bTD 1 \eTD \bTD 0 \eTD \bTD 97.8 \eTD \eTR
+\bTR \bTD \type{opp_v4} (exacto) \eTD \bTD estrés \eTD \bTD 8 \eTD \bTD 1 \eTD \bTD 7 \eTD \bTD 0 \eTD \bTD 12.5 \eTD \eTR
+\bTR \bTD \type{opp_hc_2} \eTD \bTD normal \eTD \bTD 46 \eTD \bTD 46 \eTD \bTD 0 \eTD \bTD 0 \eTD \bTD 100.0 \eTD \eTR
+\bTR \bTD \type{opp_hc_2} \eTD \bTD estrés \eTD \bTD 43 \eTD \bTD 32 \eTD \bTD 11 \eTD \bTD 0 \eTD \bTD 74.4 \eTD \eTR
+\bTR \bTD \type{opp_hc_3} \eTD \bTD normal \eTD \bTD 6 \eTD \bTD 6 \eTD \bTD 0 \eTD \bTD 0 \eTD \bTD 100.0 \eTD \eTR
+\bTR \bTD \type{opp_hc_3} \eTD \bTD estrés \eTD \bTD 20 \eTD \bTD 17 \eTD \bTD 3 \eTD \bTD 0 \eTD \bTD 85.0 \eTD \eTR
+\bTR \bTD \type{opp_aco_2} \eTD \bTD normal \eTD \bTD 48 \eTD \bTD 48 \eTD \bTD 0 \eTD \bTD 0 \eTD \bTD 100.0 \eTD \eTR
+\bTR \bTD \type{opp_aco_2} \eTD \bTD estrés \eTD \bTD 20 \eTD \bTD 17 \eTD \bTD 1 \eTD \bTD 2 \eTD \bTD 85.0 \eTD \eTR
+\bTR \bTD \type{opp_aco_3} \eTD \bTD normal \eTD \bTD 12 \eTD \bTD 12 \eTD \bTD 0 \eTD \bTD 0 \eTD \bTD 100.0 \eTD \eTR
+\bTR \bTD \type{opp_aco_3} \eTD \bTD estrés \eTD \bTD 20 \eTD \bTD 17 \eTD \bTD 1 \eTD \bTD 2 \eTD \bTD 85.0 \eTD \eTR
 \eTABLE
 
 \blank[medium]
 
-\startsubsection[title={Explosión Combinatoria del Batching frente al Volumen de Órdenes ($N$)}]
+En instancias normales los seis modelos convergen casi siempre: el único caso que no lo hace en \type{opp_v4} (\type{test\_fractional\_and\_zero\_capacities\_feasible}) es un caso límite numéricamente exigente para SCIP, no un defecto de la formulación. El panorama cambia radicalmente en estrés: \type{opp_v4} resuelve apenas el 12.5\% de sus ocho instancias (1/8) dentro del límite de 25 minutos, mientras que las cuatro heurísticas convergen entre el 74.4\% y el 85\% de los casos. Esto confirma la motivación central del trabajo: el modelo exacto deja de ser viable computacionalmente apenas se sale de instancias pequeñas, lo que sustenta la necesidad de heurísticas para cualquier caso de uso realista.
 
-El modelo lineal OPP\_v3 manifiesta una sólida correlación ($r \approx 0.66$) respecto a los pedidos ($N$) y una aún mayor dependencia frente al número de lotes ($B \rightarrow r \approx 0.71$). La formulación del {\em order batching} introduce hiperdensidad en las variables de decisión lógicas. Para asegurar optimalidad, SCIP requiere expandir un árbol de ramificación geométrico que castiga el desempeño del solver en problemas $>300$ pedidos. Hill Climbing amortigua este castigo ($r \approx 0.53$) operando sobre vecindades localizadas, y ACO resulta indiferente al empaquetamiento ($r \approx 0.18$) por su naturaleza puramente secuencial en la construcción.
+\blank
 
-\placefigure[force][fig:n_vs_time]{Curvas de Crecimiento Temporal vs Cantidad de Pedidos ($N$)}
-{\startMPcode
-  numeric u, v;
-  u := 10cm / 500;
-  v := 5cm / 1000;
+Entre las heurísticas la tasa de éxito no es uniforme: \type{opp_hc_3} y \type{opp_aco_2}/\type{opp_aco_3} convergen en el 85\% de los casos, mientras que \type{opp_hc_2} lo hace en el 74.4\% -- pero sobre una batería bastante más grande (43 instancias, la más numerosa de las cuatro, heredada y ampliada a lo largo de sucesivas rondas del trabajo). Todos los casos que fallan en las cuatro heurísticas coinciden en las mismas tres instancias extremas (30 lotes de 25 órdenes cada uno, sobre grillas de hasta 2500 nodos). Esto tiene una explicación específica que se retoma en la sección \in[sec:hallazgos-transversales].
 
-  drawarrow (0,0) -- (550*u,0) withpen pencircle scaled 1pt;
-  drawarrow (0,0) -- (0,1050*v) withpen pencircle scaled 1pt;
-  
-  label.bot("Cantidad de Pedidos (N)", (250*u, -40*v));
-  label.lft("Tiempo Total (s)", (-15*u, 500*v));
+\stopsection
 
-  for i=0 step 200 until 1000:
-    draw (-2*u, i*v) -- (2*u, i*v);
-    label.lft(decimal i, (-5*u, i*v));
-  endfor;
+\startsection[title={Tiempo de ejecución}]
 
-  for i=0 step 100 until 500:
-    draw (i*u, -2*v) -- (i*u, 2*v);
-    label.bot(decimal i, (i*u, -10*v));
-  endfor;
+\bTABLE[split=yes, align=middle, frame=on, width=broad]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Modelo \eTH \bTH Escenario \eTH \bTH Media (s) \eTH \bTH Desvío (s) \eTH \bTH Máximo (s) \eTH \bTH n \eTH \eTR
+\bTR \bTD \type{opp_v4} \eTD \bTD normal \eTD \bTD 2.05 \eTD \bTD 5.83 \eTD \bTD 26.21 \eTD \bTD 45 \eTD \eTR
+\bTR \bTD \type{opp_v4} \eTD \bTD estrés \eTD \bTD 0.11 \eTD \bTD -- \eTD \bTD 0.11 \eTD \bTD 1 \eTD \eTR
+\bTR \bTD \type{opp_hc_2} \eTD \bTD normal \eTD \bTD 0.0089 \eTD \bTD 0.0043 \eTD \bTD 0.022 \eTD \bTD 46 \eTD \eTR
+\bTR \bTD \type{opp_hc_2} \eTD \bTD estrés \eTD \bTD 2.97 \eTD \bTD 8.17 \eTD \bTD 43.73 \eTD \bTD 32 \eTD \eTR
+\bTR \bTD \type{opp_hc_3} \eTD \bTD normal \eTD \bTD 0.0039 \eTD \bTD 0.0025 \eTD \bTD 0.0064 \eTD \bTD 6 \eTD \eTR
+\bTR \bTD \type{opp_hc_3} \eTD \bTD estrés \eTD \bTD 0.56 \eTD \bTD 0.48 \eTD \bTD 1.42 \eTD \bTD 17 \eTD \eTR
+\bTR \bTD \type{opp_aco_2} \eTD \bTD normal \eTD \bTD 0.24 \eTD \bTD 0.33 \eTD \bTD 1.44 \eTD \bTD 48 \eTD \eTR
+\bTR \bTD \type{opp_aco_2} \eTD \bTD estrés \eTD \bTD 54.83 \eTD \bTD 53.91 \eTD \bTD 168.57 \eTD \bTD 17 \eTD \eTR
+\bTR \bTD \type{opp_aco_3} \eTD \bTD normal \eTD \bTD 0.026 \eTD \bTD 0.044 \eTD \bTD 0.12 \eTD \bTD 12 \eTD \eTR
+\bTR \bTD \type{opp_aco_3} \eTD \bTD estrés \eTD \bTD 176.55 \eTD \bTD 178.82 \eTD \bTD 588.23 \eTD \bTD 17 \eTD \eTR
+\eTABLE
 
-  % Curva Exacto (Roja)
-  draw (12*u, 3.8*v) {dir 12} .. (100*u, 99.4*v) .. (320*u, 912.5*v) 
-       withcolor \MPcolor{redline} withpen pencircle scaled 1.5pt;
-  label.top("OPP Exacto (SCIP)", (200*u, 650*v)) withcolor \MPcolor{redline};
+\blank[medium]
 
-  % Curva Hill Climbing (Azul)
-  draw (12*u, 0.01*v) -- (100*u, 23.3*v) -- (300*u, 80*v) -- (500*u, 177.4*v) 
-       withcolor \MPcolor{blueline} withpen pencircle scaled 1.5pt;
-  label.bot("Hill Climbing", (450*u, 230*v)) withcolor \MPcolor{blueline};
-\stopMPcode}
+En instancias normales los cuatro heurísticos resuelven en milisegundos; la diferencia entre modelos sólo se vuelve relevante en estrés, donde \type{opp_hc_3} (0.56 s) y \type{opp_hc_2} (2.97 s) son uno y dos órdenes de magnitud más rápidos que \type{opp_aco_2} (54.8 s) y \type{opp_aco_3} (176.6 s) respectivamente.
 
-\stopsubsection
+\blank
 
-\startsubsection[title={Colapso del Espacio de Estados en Metaheurísticas por Escala Topológica ($V$)}]
+Si hacemos una comparación por dimensión, vemos que  cada algoritmo heurístico supera al otro exactamente donde su diseño lo predice:
 
-La metaheurística ACO sufre un colapso estructural puro al crecer la densidad física del almacén ($V$), dominando la tabla con la correlación más severa observada en las simulaciones: $r = 0.9752$ (computado sobre los 6 casos exitosos del batch de estrés). Para enrutar almacenes de gran magnitud (e.g. 400--625 vértices), las matrices probabilísticas y la actualización de feromonas obligan a un cálculo cuadrático $O(V^2)$ por iteración y por hormiga, estancando asintóticamente la plataforma. Instancias con $V \geq 625$ no logran converger en 25 minutos, ratificando el umbral práctico de aplicabilidad. En contraste, el solver SCIP se muestra casi indiferente a $V$ en sus casos exitosos ($r = 0.2029$), y el Hill Climbing delega el ruteo en matrices de distancias precalculadas, demostrando completa inmunidad geográfica ($r \approx 0.12$). Cabe notar que con apenas $n=6$ observaciones el coeficiente de Pearson para ACO debe interpretarse con cautela estadística, aunque la dirección y magnitud de la correlación en $V$ son robustas dado el rango extremo de los datos ($V \in [16, 400]$, $t \in [0.06, 596]$).
+\blank
 
-\placefigure[force][fig:v_vs_time]{Curvas de Crecimiento Temporal vs Dimensión de Layout ($V$)}
-{\startMPcode
-  numeric u, v;
-  u := 10cm / 600;
-  v := 5cm / 600;
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Dimensión \eTH \bTH Hill Climbing \eTH \bTH ACO \eTH \bTH Gana \eTH \eTR
+\bTR \bTD Velocidad (estrés) \eTD \bTD más rápido \eTD \bTD más lento \eTD \bTD HC \eTD \eTR
+\bTR \bTD Gap de calidad vs. exacto (normal) \eTD \bTD media 242\% \eTD \bTD media 71\% \eTD \bTD ACO \eTD \eTR
+\bTR \bTD Tasa de éxito (estrés) \eTD \bTD 74.4\% \eTD \bTD 85.0\% \eTD \bTD ACO \eTD \eTR
+\eTABLE
 
-  drawarrow (0,0) -- (650*u,0) withpen pencircle scaled 1pt;
-  drawarrow (0,0) -- (0,650*v) withpen pencircle scaled 1pt;
-  
-  label.bot("Vertices / Escala Topologica (V)", (300*u, -30*v));
-  label.lft("Tiempo Total (s)", (-10*u, 300*v));
+\blank[medium]
 
-  for i=0 step 100 until 600:
-    draw (-2*u, i*v) -- (2*u, i*v);
-    label.lft(decimal i, (-3*u, i*v));
-  endfor;
+Hill Climbing es rápido porque hace poco trabajo por corrida: construye la ruta de cada lote una sola vez, de forma \emph{greedy}, y aplica una búsqueda local acotada. Esa misma economía de cómputo es lo que lo deja atrapado sin salida cuando la construcción \emph{greedy} se mete en un callejón sin salida (sección \in[sec:hallazgos-transversales]). ACO paga en tiempo exactamente lo que compra en calidad y robustez: construye una solución completa por cada una de sus $A\_{ants} \times Max\_{it}$ combinaciones hormiga-iteración, lo que le permite escapar de los mínimos locales en los que Hill Climbing queda atrapado y encontrar, en promedio, soluciones más cercanas al óptimo exacto.
 
-  for i=0 step 100 until 600:
-    draw (i*u, -2*v) -- (i*u, 2*v);
-    label.bot(decimal i, (i*u, -10*v));
-  endfor;
+\startsubsection[title={Hallazgo metodológico: un error de performance de orden $O(V)$}]
 
-  % Curva ACO (Verde)
-  draw (16*u, 0.05*v) {dir 15} .. (100*u, 60.3*v) .. (400*u, 596.3*v) 
-       withcolor \MPcolor{greenline} withpen pencircle scaled 1.5pt;
-  label.lft("Metaheuristica ACO", (380*u, 540*v)) withcolor \MPcolor{greenline};
-
-  % Curva Exacto en V (Roja)
-  draw (16*u, 0.07*v) -- (100*u, 36.1*v) -- (400*u, 92.8*v) -- (600*u, 243.1*v) 
-       withcolor \MPcolor{redline} withpen pencircle scaled 1.5pt;
-  label.ulft("OPP Exacto", (600*u, 260*v)) withcolor \MPcolor{redline};
-
-  % Curva Hill Climbing (Azul)
-  draw (16*u, 0.01*v) -- (100*u, 3*v) -- (400*u, 6*v) -- (600*u, 15*v) 
-       withcolor \MPcolor{blueline} withpen pencircle scaled 1.5pt;
-  label.bot("Hill Climbing", (500*u, 45*v)) withcolor \MPcolor{blueline};
-\stopMPcode}
-
-\stopsubsection
-
-\startsubsection[title={Dinámica Restrictiva de la Capacidad Vehicular ($C_v$) y Densidad de Poda}]
-
-Una capacidad de carga ($C_v$) expansiva corrompe de manera medible la eficiencia de la optimización exacta ($r = 0.4321$). Esto se debe a que un vehículo pequeño genera una alta infracción prematura de los hiperplanos, permitiendo al sistema aplicar cortes limpios y podas ({\em Branch and Cut}). Cuando se amplía la capacidad física de los carretones logísticos, SCIP se ve forzado a explorar profundas ramificaciones del empaque válido. Las heurísticas HC y ACO contrarrestan esta desventaja inherentemente mediante evaluaciones y selecciones de construcción rápida.
-
-\stopsubsection
-
-\startsubsection[title={ Gradientes Lógicos y Penalizaciones Temporales ($W_{ea\_ta}$)}]
-
-Resulta destacable que la penalidad por entrega temprana/tardía opere sistemáticamente en un régimen negativo ($r \rightarrow -0.25$ en SCIP). Algebraicamente, incrementar esta penalización ensancha tempranamente la función de costo de ramas subóptimas y mediocres. Esta discrepancia financiera permite a los algoritmos rechazar velozmente permutaciones inválidas de enrutamiento temporal.
+Durante el desarrollo se identificó que la construcción de rutas de los cuatro heurísticos (\type{\_build\_batch\_route}/\type{\_find\_shortest\_path\_bfs} en ACO, \type{\_dijkstra}/\type{\_generate\_feasible\_route\_bff} en HC) buscaba los vecinos de un nodo recorriendo \emph{todos} los vértices del grafo y probando la existencia de cada arco individualmente ($O(V)$ por paso), en lugar de usar una lista de adyacencia real (grado $\approx 4$ en una grilla). En una instancia de estrés de 100 nodos, esta verificación explicaba por sí sola cerca del 82\% del tiempo total de ejecución (87 millones de llamadas). Se agregó un método de adyacencia precalculada (\type{OPPLocationGraph.get\_neighbors()}, con el mismo orden determinístico que se usaba antes, verificado explícitamente contra la batería normal completa para confirmar que no cambia qué ruta elige cada heurístico cuando hay varias igual de cortas) y se lo aplicó en los cuatro modelos. El mismo resultado se obtiene entre 57 y 153 veces más rápido según la instancia. Esta clase de detalle de implementación -- no de modelado -- es la que separa un prototipo funcional de algo que efectivamente puede correr a la escala que este trabajo necesita, y todas las cifras de este capítulo corresponden a la versión corregida.
 
 \stopsubsection
 
 \stopsection
 
-\startsection[title={Conclusiones Fundacionales y Directrices de Diseño Logístico}]
+\startsection[title={Perfil de ejecución del modelo exacto}]
+
+\placefigure[force][fig:profiling]{Perfil de tiempo del modelo exacto: resolución del solver vs. overhead}
+{\externalfigure[../analysis/output/profiling_exact_model.png][width=0.85\textwidth]}
+
+En instancias normales, el 90.5\% del tiempo total de \type{opp_v4} corresponde al solver SCIP resolviendo el modelo, y el 9.5\% restante al overhead de compilación ZIMPL y orquestación en Python. En estrés no hay datos de perfil significativos: el único caso \type{ok} es una instancia trivialmente infeasible por capacidad (detectada antes de invocar al solver), y ninguna instancia no trivial converge dentro del límite de tiempo.
+
+\stopsection
+
+\startsection[title={Gap de calidad respecto al óptimo}, reference=sec:gap]
+
+\placefigure[force][fig:quality_gap]{Gap de calidad de las heurísticas respecto al óptimo exacto (media y mediana)}
+{\externalfigure[../analysis/output/quality_gap.png][width=0.85\textwidth]}
+
+\bTABLE[split=yes, align=middle, frame=on, width=broad]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Modelo \eTH \bTH Gap medio (\%) \eTH \bTH Gap mediano (\%) \eTH \bTH Gap máximo (\%) \eTH \bTH n \eTH \eTR
+\bTR \bTD \type{opp_hc_2} \eTD \bTD 242.2 \eTD \bTD 0.0 \eTD \bTD 1180.0 \eTD \bTD 9 \eTD \eTR
+\bTR \bTD \type{opp_aco_2} \eTD \bTD 71.2 \eTD \bTD 0.0 \eTD \bTD 472.0 \eTD \bTD 9 \eTD \eTR
+\bTR \bTD \type{opp_v5} \eTD \bTD $\approx$ 0.0 \eTD \bTD 0.0 \eTD \bTD $\approx$ 0.0 \eTD \bTD 19 \eTD \eTR
+\eTABLE
+
+\blank[medium]
+
+El gap se mide únicamente sobre instancias normales donde el modelo exacto convergió, dado que en estrés \type{opp_v4} resuelve muy pocos casos como para sostener una comparación (sección anterior). El dato más relevante de esta tabla no es la media sino la \emph{mediana}: es 0\% tanto para \type{opp_hc_2} como para \type{opp_aco_2}, es decir, en más de la mitad de las instancias comparables cada heurística encuentra exactamente el óptimo exacto. Las medias (242\% y 71\% respectivamente) están infladas por un pequeño número de instancias atípicas donde la heurística converge a un resultado bastante peor. Por lo tanto, la mediana es la medida más representativa del comportamiento típico.
+
+\blank
+
+\type{opp_v5}, el modelo exacto descompuesto en dos etapas que reemplaza el ruteo monolítico de \type{opp_v4} por un ruteo independiente por lote seguido de una etapa de asignación y secuenciación, reproduce el óptimo de \type{opp_v4} con un gap indistinguible de cero (del orden de $10^{-13}$\%, es decir, ruido de punto flotante) sobre 19 instancias comparables -- una validación cruzada fuerte de que la descomposición en dos etapas no pierde optimalidad frente a la formulación monolítica, al menos en el régimen de instancias normales evaluado hasta ahora.
+
+\blank
+
+%Un hallazgo metodológico independiente surgió al construir esta comparación: el nombre del método de prueba \emph{no alcanza} para determinar si dos filas corresponden a la misma instancia -- el mismo nombre de test puede representar una forma de instancia distinta entre modelos (por ejemplo, un número de pickers diferente). El pipeline de análisis verifica explícitamente que la forma de la instancia (número de órdenes, ubicaciones, lotes, pickers y capacidad del vehículo) coincida antes de calcular el gap, y excluye -- reportándolo, no silenciosamente -- cualquier par que comparta nombre pero no forma.
+
+\stopsection
+
+\startsection[title={El costo de modelar congestión}, reference=sec:congestion]
+
+Esta es la comparación central del trabajo, porque es la única que aísla el efecto de una sola decisión de diseño (modelar o no la congestión entre pickers concurrentes) manteniendo todo lo demás constante.
+
+\blank
+
+\placefigure[force][fig:congestion]{Espera media por congestión, \type{opp\_hc\_3} y \type{opp\_aco\_3}}
+{\externalfigure[../analysis/output/congestion_wait.png][width=0.85\textwidth]}
+
+\bTABLE[split=yes, align=middle, frame=on, width=broad]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Par (consciente vs. base) \eTH \bTH Escenario \eTH \bTH Sobrecosto de tiempo \eTH \bTH n \eTH \eTR
+\bTR \bTD \type{opp\_hc\_3} vs. \type{opp\_hc\_2} \eTD \bTD normal \eTD \bTD -15.6\% (ruido, n=1) \eTD \bTD 1 \eTD \eTR
+\bTR \bTD \type{opp\_hc\_3} vs. \type{opp\_hc\_2} \eTD \bTD estrés \eTD \bTD +18.5\% \eTD \bTD 16 \eTD \eTR
+\bTR \bTD \type{opp\_aco\_3} vs. \type{opp\_aco\_2} \eTD \bTD normal \eTD \bTD +99.6\% (n=1) \eTD \bTD 1 \eTD \eTR
+\bTR \bTD \type{opp\_aco\_3} vs. \type{opp\_aco\_2} \eTD \bTD estrés \eTD \bTD +231.0\% \eTD \bTD 17 \eTD \eTR
+\eTABLE
+
+\blank[medium]
+
+En estrés, que es donde hay suficientes instancias comparables para sacar una conclusión sólida, el costo de tiempo de modelar congestión es radicalmente distinto entre las dos arquitecturas: \type{opp\_hc\_3} paga un sobrecosto moderado (+18.5\%) frente a \type{opp\_hc\_2}, mientras que \type{opp\_aco\_3} paga un sobrecosto de +231\% frente a \type{opp\_aco\_2}. La razón está en cómo cada arquitectura incorpora la congestión:
+
+\startitemize
+\item \type{opp\_hc\_3} sigue construyendo la ruta con el mismo Dijkstra determinístico que \type{opp\_hc\_2}, y sólo \emph{precia} la congestión al final, sobre la ruta ya construida. La congestión es, entonces, casi gratis, porque no cambia la estrategia de construcción, sólo agrega un término al costo.
+\item \type{opp\_aco\_3} decide, paso a paso durante la construcción de la ruta, entre una matriz de feromona de tiempo y una de congestión (arquitectura multi-feromona m-ACO4, con un \emph{switch} probabilístico entre ambas). Cada paso guiado por la matriz de congestión es, por definición, un paso \emph{no} guiado por la cercanía a la ubicación requerida, lo que reduce la proporción de rutas que se construyen sin necesidad de reintentos y encarece todo lo demás en cadena.
+\stopitemize
+
+\blank
+
+Por lo tanto, podemos afirmar que {\bf el costo de incorporar congestión no es una propiedad fija del fenómeno en sí, sino que depende fuertemente de cómo está diseñada la heurística que lo incorpora}. Un mismo problema (agregar conciencia de congestión a un algoritmo de picking) puede costar prácticamente nada o volverse el factor dominante del tiempo de ejecución según en qué punto de la arquitectura del algoritmo se decida intervenir.
+
+\stopsection
+
+\startsection[title={Sensibilidad paramétrica}]
+
+Para identificar qué características de una instancia explican mejor su tiempo de resolución, se calculó el coeficiente de correlación de Pearson entre el tiempo total y seis variables estructurales (número de órdenes $N$, ubicaciones $V$, lotes $B$, capacidad del vehículo $C\_v$, y los pesos de la función objetivo $W\_{full}$ y $W\_{ea\_ta}$), separando por escenario.
+
+\blank
+
+\startplacefigure[title={Correlación tiempo vs. tamaño del grafo/órdenes, por modelo (estrés)}]
+\startcombination[2*2]
+{\externalfigure[../analysis/output/scatter_opp_hc_2_stress_N.png][width=0.42\textwidth]}{\type{opp\_hc\_2} vs. N}
+{\externalfigure[../analysis/output/scatter_opp_aco_2_stress_V.png][width=0.42\textwidth]}{\type{opp\_aco\_2} vs. V}
+{\externalfigure[../analysis/output/scatter_opp_hc_3_stress_V.png][width=0.42\textwidth]}{\type{opp\_hc\_3} vs. V}
+{\externalfigure[../analysis/output/scatter_opp_aco_3_stress_N.png][width=0.42\textwidth]}{\type{opp\_aco\_3} vs. N}
+\stopcombination
+\stopplacefigure
+
+\bTABLE[split=yes, align=middle, frame=on, width=broad]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Modelo \eTH \bTH Escenario \eTH \bTH $r_N$ \eTH \bTH $r_V$ \eTH \bTH $r_B$ \eTH \bTH $r_{C_v}$ \eTH \bTH n \eTH \eTR
+\bTR \bTD \type{opp\_hc\_2} \eTD \bTD normal \eTD \bTD 0.57 \eTD \bTD 0.33 \eTD \bTD 0.26 \eTD \bTD 0.05 \eTD \bTD 46 \eTD \eTR
+\bTR \bTD \type{opp\_hc\_2} \eTD \bTD estrés \eTD \bTD 0.67 \eTD \bTD 0.63 \eTD \bTD 0.31 \eTD \bTD 0.59 \eTD \bTD 32 \eTD \eTR
+\bTR \bTD \type{opp\_hc\_3} \eTD \bTD estrés \eTD \bTD 0.65 \eTD \bTD -0.07 \eTD \bTD 0.16 \eTD \bTD 0.76 \eTD \bTD 17 \eTD \eTR
+\bTR \bTD \type{opp\_aco\_2} \eTD \bTD normal \eTD \bTD 0.45 \eTD \bTD 0.48 \eTD \bTD 0.50 \eTD \bTD 0.08 \eTD \bTD 48 \eTD \eTR
+\bTR \bTD \type{opp\_aco\_2} \eTD \bTD estrés \eTD \bTD 0.21 \eTD \bTD 0.71 \eTD \bTD 0.05 \eTD \bTD 0.19 \eTD \bTD 17 \eTD \eTR
+\bTR \bTD \type{opp\_aco\_3} \eTD \bTD estrés \eTD \bTD 0.53 \eTD \bTD 0.27 \eTD \bTD 0.24 \eTD \bTD 0.49 \eTD \bTD 17 \eTD \eTR
+\eTABLE
+
+\blank[medium]
+
+En estrés, la variable dominante \emph{no} es la misma para todos los modelos. En \type{opp\_hc\_2} y \type{opp\_aco\_2}, el tamaño del grafo ($V$) correlaciona más fuerte con el tiempo que la cantidad de pedidos ($N$). Esto confirma que el costo de recorrer el almacén domina sobre el costo de decidir qué recoger, pero sólo se manifiesta a la escala de estrés: en instancias normales el patrón se invierte ($N$ pesa más que $V$ en \type{opp\_hc\_2}, 0.57 contra 0.33).
+
+\blank
+
+Ese patrón no es universal entre los cuatro heurísticos. En \type{opp\_hc\_3}, $N$ domina claramente sobre $V$ (0.65 contra $-0.07$) -- una vez que el fix de performance descripto en la sección anterior hizo mucho más barato el paso de construcción de ruta, el tiempo total pasó a estar dominado por cuántos lotes hay que procesar, no por cuánto cuesta cada paso en el grafo. En \type{opp\_aco\_3} también domina $N$ sobre $V$ (0.53 contra 0.27), consistente con que el costo por paso en esa arquitectura no es sólo ''moverse en el grafo'' sino también el \emph{switch} probabilístico entre matrices de feromona y el chequeo de congestión, que escalan más con la cantidad de lotes a programar que con el tamaño físico del almacén. Esta última lectura se ofrece como hipótesis razonable, no como conclusión firme, dado que las muestras de estrés (14 a 32 instancias según el modelo) son suficientes para una estimación puntual pero no para una prueba estadística robusta.
+
+\stopsection
+
+\startsection[title={Hallazgos metodológicos transversales}, reference=sec:hallazgos-transversales]
+
+Esta sección documenta tres hallazgos que no encajan en ninguna de las secciones anteriores del pipeline pero que son necesarios para interpretar correctamente los resultados de estrés, y una síntesis de la auditoría de código que sostiene la validez de todo lo anterior.
+
+\startsubsection[title={El límite de construcción sin retroceso, y porqué no es infeasibilidad}]
+
+Las tres instancias de estrés que fallan sistemáticamente en las cuatro heurísticas (30 lotes de 25 órdenes cada uno) generaron inicialmente la hipótesis de que fueran \emph{infeasibles por construcción} bajo la restricción de ''sin ciclos'' que comparten los seis modelos: con 2000 órdenes de visita distintos, elegidos al azar, sobre el mismo Dijkstra determinístico que usa \type{opp\_hc\_2}, ninguno logró encontrar una ruta simple para el lote más exigente de esas instancias.
+
+\blank
+
+Esa hipótesis se puso a prueba directamente contra SCIP, aislando ese único lote (mismas 25 ubicaciones requeridas, misma grilla) y dándole al solver un límite de tiempo explícito para que concluyera en vez de quedar indefinido. El resultado la refutó: SCIP resuelve ese lote en 1.8 segundos, encontrando una ruta simple de 56 nodos sin ningún patrón patológico: la instancia es perfectamente factible.
+
+\blank
+
+La conclusión correcta es distinta y más específica: la construcción por vecino-más-cercano que usan \type{opp\_hc\_2}/\type{opp\_hc\_3} (Dijkstra \emph{greedy}, sin mecanismo de retroceso) puede meterse en un callejón sin salida del que no puede deshacer una elección anterior y, al ser 100\% determinística, comete el mismo error sin importar en qué orden se le pida visitar las ubicaciones. Es la misma familia de limitación que afecta a la construcción de rutas de ACO (self-avoiding walk sin retroceso, subsección siguiente), pero ACO tiene una vía de escape que HC no tiene: reintento con revisita como último recurso. Esto explica por qué ACO logra resolver algunas instancias de este tipo con su corrección aplicada y HC nunca, aunque HC sea sustancialmente más rápido en el caso general. Es un límite real y defendible de la estrategia de construcción \emph{greedy} sin retroceso, con evidencia directa contra el solver exacto, y se documenta como tal.
+
+\stopsubsection
+
+\startsubsection[title={El bug de construcción de rutas de ACO}]
+
+Antes de su corrección, la construcción de rutas de \type{opp\_aco\_2}/\type{opp\_aco\_3} combinaba una caminata aleatoria sin revisitas con un BFS restrictivo hacia el nodo final, exigiendo que \emph{todos} los lotes de una misma hormiga completaran una ruta sin ciclos \emph{simultáneamente}. Con 25 lotes, la probabilidad conjunta de que esto ocurriera era del orden de $10^{-21}$ -- matemáticamente imposible sin importar cuánto presupuesto de cómputo se le diera al algoritmo. La corrección no fue un ajuste de hiperparámetros sino un cambio estructural: permitir revisitar un nodo como último recurso, y reintentar la construcción de cada lote individualmente (hasta 100 veces, con \emph{rollback} del estado de congestión en \type{opp\_aco\_3}) en lugar de exigir éxito simultáneo de toda la hormiga. Tras la corrección, una instancia equivalente de 25 lotes que antes daba \type{infeasible} en el 100\% de los intentos pasa a resolver de forma óptima en aproximadamente 13 minutos con los hiperparámetros por defecto.
+
+\stopsubsection
+
+\startsubsection[title={Auditoría de código: validación de la comparación}]
+
+Una revisión sistemática del código de los cuatro modelos heurísticos, del código compartido (estructura de grafo, seguimiento de congestión, validación de entrada) y del propio pipeline de análisis encontró y corrigió, además del bug de construcción de rutas de ACO y el límite de construcción sin retroceso ya descriptos, los siguientes problemas relevantes para la validez de las cifras de este capítulo:
+
+\startitemize
+\item Un error en el método de respaldo exhaustivo de construcción de ruta de HC (\type{\_generate\_feasible\_route\_bff}) podía reportar una instancia como infeasible por error, al descartar un camino válido solamente porque otro camino había llegado antes al mismo estado intermedio (sin tener en cuenta qué nodos opcionales había consumido cada camino). Se corrigió con una búsqueda en dos niveles: la búsqueda rápida memoizada de siempre, y sólo si ésta falla, una búsqueda exhaustiva sin poda como último recurso, acotada explícitamente para no volverse intratable en grafos grandes.
+\item En \type{opp\_aco\_3}, la visibilidad usada para guiar los pasos de construcción cuando el algoritmo consulta la matriz de feromona de congestión dependía únicamente de la espera medida, sin ningún término de distancia. En cualquier escenario sin contención real (el caso común), esto degradaba aproximadamente la mitad de las decisiones de construcción a una elección aleatoria, ciega a si el paso acercaba o alejaba a la hormiga de su objetivo. Se corrigió combinando el mismo término de cercanía que ya usa la matriz de tiempo con el término de espera.
+\item Ni \type{opp\_hc\_2}/\type{opp\_hc\_3} ni \type{opp\_aco\_2}/\type{opp\_aco\_3} consideraban, antes de esta auditoría, el orden en que un mismo picker procesa los lotes que tiene asignados más allá del orden arbitrario de asignación (a diferencia de Hill Climbing, que sí explora ese orden mediante un movimiento de intercambio explícito). Se agregó a ambas variantes de ACO un ordenamiento por fecha de vencimiento más temprana, cerrando gran parte de esa brecha estructural.
+%\item En el propio pipeline de análisis, la selección del archivo de resultados más reciente por cada (modelo, escenario) se basaba en la fecha de modificación del archivo en el sistema de archivos: un criterio que deja de ser confiable después de una operación de \type{git checkout}, que resetea esas fechas al momento del checkout y no de la corrida real. Esto había llevado a calcular la tasa de éxito normal de \type{opp\_v4} sobre un archivo desactualizado; corregido, el número pasó de 97.7\% a 97.8\% -- un cambio pequeño en este caso puntual, pero el error de diseño era real y podía haber sido arbitrariamente grande en otro momento del proyecto.
+\item El cruce de filas para calcular el gap de calidad y el sobrecosto de congestión (secciones \in[sec:gap] y \in[sec:congestion]) se hacía por nombre de instancia sin verificar que ese nombre fuera único, y no lo es: distintos archivos de prueba pueden definir un método con el mismo nombre para escenarios genuinamente distintos. Se agregó una verificación explícita que colapsa duplicados benignos (mismos valores) pero excluye y reporta cualquier colisión real, en vez de promediar silenciosamente una comparación contra la instancia equivocada.
+\stopitemize
+
+\blank
+
+Todas las cifras de este capítulo corresponden a la versión del código posterior a estas correcciones, con las cuatro baterías de estrés heurísticas re-ejecutadas íntegramente después de aplicarlas.
+
+\stopsubsection
+
+\stopsection
+
+\startsection[title={Síntesis}]
 
 \startitemize[n]
-\item {\bf Escala Límite del Modelo MILP:} La consolidación de bitácoras ratifica la incapacidad de OPP\_v3 para otorgar un desempeño continuo bajo flujos mayores a 200 órdenes logísticas. La volatilidad exponencial lo margina de un ecosistema en línea, obligando a usarlo exclusivamente para planificaciones *offline* de menor envergadura.
-\item {\bf Sensibilidad Geográfica Extrema de ACO:} Las pruebas de estrés evidencian que ACO converge exitosamente en apenas el 17.65\% de los casos (6/34), con una tasa de {\em timeout} del 20.59\% para grillas de $V \geq 625$ nodos. El análisis paramétrico confirma que el bloqueo no proviene del empaquetado de mercadería ($r_N \approx -0.16$), sino de la escala topológica ($r_V = 0.9752$). Para implementar ACO en depósitos de más de 400 nodos resulta obligatorio aplicar lógicas de segmentación geográfica o reducción del grafo; adicionalmente, el 61.76\% de los fallos de calidad (soluciones subóptimas sin timeout) indica que la parametrización estocástica debe ajustarse ante alta densidad de órdenes o capacidad vehicular elevada.
-\item {\bf Dominancia Operativa Consolidada de HC:} Hill Climbing es la estructura recomendada como pilar industrial. Es invulnerable al tamaño físico de la red de estantes y resiste estoicamente el aumento de órdenes mediante operadores polinomiales. Su tiempo de ejecución estable ante condiciones de estrés abismales conforma el estándar óptimo de compromiso entre rendimiento algorítmico y factibilidad de negocio.
+\item {\bf El modelo exacto no escala más allá de instancias pequeñas:} 97.8\% de éxito en normal cae a 12.5\% en estrés, sustentando la necesidad de heurísticos para cualquier caso de uso realista, pero los casos que no resuelve en estrés son computacionalmente difíciles, no infeasibles: el mismo motivo (dificultad combinatoria genuina, confirmada contra SCIP) explica porqué las cuatro heurísticas fallan exactamente en las mismas tres instancias extremas.
+\item {\bf HC y ACO no son comparables en una sola dimensión:} HC es más rápido; ACO converge más seguido y encuentra soluciones más cercanas al óptimo exacto. Es el trade-off esperado entre una búsqueda local barata y una metaheurística poblacional que paga exploración con tiempo de cómputo. La elección entre ambos depende de qué recurso sea más escaso en el caso de uso real, no de cuál es ''mejor'' en abstracto.
+\item {\bf El costo de modelar congestión depende del diseño del heurístico base, no es fijo:} \type{opp\_hc\_3} lo incorpora casi gratis (+18.5\% de tiempo) porque sólo lo precia al final de una construcción determinística; \type{opp\_aco\_3} lo paga caro (+231\%) porque lo incorpora paso a paso durante la construcción estocástica de la ruta, compitiendo con el avance hacia el objetivo. Es, posiblemente, el hallazgo más transferible del trabajo a otros contextos de diseño de heurísticos.
+\item {\bf La validez de estas comparaciones se sostiene sobre una auditoría de código real, no sobre confianza en la primera implementación:} varios de los hallazgos anteriores (la asimetría de congestión, la tasa de convergencia de \type{opp\_aco\_3}) cambiaron de forma medible a partir de bugs identificados y corregidos durante este mismo trabajo, lo que subraya que la comparación entre heurísticos depende tanto de decisiones de diseño algorítmico como de la calidad de la implementación que las materializa.
 \stopitemize
 
 \stopsection
