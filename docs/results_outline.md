@@ -54,36 +54,42 @@ complejos signifiquen algo.
 ## 1. Convergencia: el exacto no escala, las heurísticas sí (con matices)
 
 - Tabla 1 + `mean_time_stress.png`.
-- `opp_v4` (exacto): **97.8% en normal (45/46, re-confirmado 2026-08-28 con
-  una corrida completa fresca tras un bug real en `analysis/load.py` --
-  ver `analysis/README.md` "Auditoría de código, parte 4")**, 12.5% en
-  estrés (1/8). Ninguna instancia no-trivial converge dentro de 25 min.
-- Heurísticas en estrés (post-fix de performance, 2026-08-27): `opp_hc_3`
-  85%, `opp_aco_2` 85%, `opp_hc_2` 74.4% (batería de 34, la más grande),
-  `opp_aco_3` 70%. `aco_2`/`aco_3` subieron su tasa de éxito respecto a la
-  medición pre-fix (75%→85% y 35%→70%) -- con rutas más rápidas de
-  construir, menos instancias pegan contra el timeout externo antes de que
-  el algoritmo termine de converger.
+- `opp_v4` (exacto): 97.8% en normal (45/46), 12.5% en estrés (1/8).
+  Ninguna instancia no-trivial converge dentro de 25 min.
+- Heurísticas en estrés (**datos finales, post-auditoría de código
+  completa, 2026-08-30** -- performance + los 5 bugs corregidos en HC/ACO,
+  ver `analysis/README.md`): `opp_hc_3` 85%, `opp_aco_2` 85%, `opp_aco_3`
+  **85%** (subió de 70% pre-fix), `opp_hc_2` 74.4% (43/43, la batería más
+  grande, sin cambio respecto a antes de los fixes -- confirmado con
+  datos, no solo por inferencia).
+- `aco_3` es el único que cambió de tasa de éxito con la auditoría de
+  código (70%→85%) -- consistente con lo esperado: sus fixes (#3 visibilidad
+  ciega a distancia, #4 secuenciación EDD, #7 asimetría elitista) atacaban
+  directamente su capacidad de converger. `hc_2`/`hc_3`/`aco_2` se
+  mantuvieron estables porque sus fixes (#1/#2 HC, #4 ACO) no apuntaban a
+  la tasa de convergencia en sí.
 - Conclusión: el modelo exacto deja de ser viable apenas se sale de
   instancias de juguete — sustenta la necesidad de heurísticos para
   cualquier caso de uso real. Entre los heurísticos, hay una jerarquía
   clara que **no** es "todos convergen igual".
 
-## 2. Tiempo de ejecución (datos post-fix de performance, 2026-08-27)
+## 2. Tiempo de ejecución (datos finales, post-auditoría de código, 2026-08-30)
 
 - Tabla 2 + `mean_time_normal.png` / `mean_time_stress.png` (escala log).
-- Estrés, media de tiempo (solo casos `ok`): `opp_hc_3` 4.96s, `opp_hc_2`
-  18.3s, `opp_aco_2` **52.6s** (antes 595s, ~11x), `opp_aco_3` **274.5s**
-  (antes 985s, ~3.6x).
-- El fix de performance (sección siguiente) mejora mucho los tiempos
-  absolutos de ACO, pero **no invierte el ranking**: HC sigue siendo
-  bastante más rápido que ACO en ambos pares (`hc_2` < `aco_2`, `hc_3` <
-  `aco_3`). Tiene sentido -- HC construye la ruta una sola vez de forma
-  greedy; ACO repite la construcción `A_ants × Max_it` veces por
-  definición del algoritmo, así que aun con el mismo costo por paso
-  arreglado, hace muchísimo más trabajo total. El fix cerró la brecha que
-  era "anormal" (el bug O(V) por paso), no la brecha estructural esperada
-  entre construir una ruta y buscar entre muchas.
+- Estrés, media de tiempo (solo casos `ok`): `opp_hc_3` **0.56s** (bajó de
+  4.96s -- el fix del BFS de dos niveles también acelera el camino feliz,
+  ver más abajo), `opp_hc_2` **2.97s** (bajó de 18.3s, mismo motivo),
+  `opp_aco_2` 54.8s (~sin cambio vs. 52.6s), `opp_aco_3` **176.5s** (bajó de
+  274.5s -- converge más rápido además de más seguido, ver hallazgo de
+  congestión más abajo).
+- El ranking **no se invierte**: HC sigue siendo bastante más rápido que
+  ACO en ambos pares (`hc_2` < `aco_2`, `hc_3` < `aco_3`). Tiene sentido --
+  HC construye la ruta una sola vez de forma greedy; ACO repite la
+  construcción `A_ants × Max_it` veces por definición del algoritmo, así
+  que aun con el mismo costo por paso arreglado, hace muchísimo más
+  trabajo total. Los fixes de performance/auditoría cerraron brechas
+  anormales (bugs), no la brecha estructural esperada entre construir una
+  ruta y buscar entre muchas.
 - Normal ya era rápido en los 4 heurísticos (ms) y no cambió la conclusión
   ahí.
 
@@ -164,14 +170,21 @@ efectivamente se pueda correr a la escala que la tesina necesita.
 - Tabla 5 + `congestion_wait.png`.
 - `opp_hc_3`/`opp_aco_3` son los únicos que miden espera por congestión
   (`opp_hc_2`/`opp_aco_2`/`opp_v4` no la modelan — por diseño).
-- Sobrecosto de tiempo por modelar congestión, estrés (post-fix,
-  2026-08-27): `opp_hc_3` +0.05% (dentro del ruido) vs. `opp_hc_2`;
-  `opp_aco_3` **+513%** vs. `opp_aco_2` (subió del +263% medido antes del
-  fix -- no porque `aco_3` haya empeorado en términos absolutos, sino
-  porque `aco_2` mejoró mucho más en términos relativos: el fix ayuda más
-  cuanto más simple es la construcción de ruta por paso, y `aco_2` no paga
-  el switch probabilístico τ1/τ2 que sí paga `aco_3`. La asimetría entre
-  arquitecturas es todavía más marcada con datos correctos, no menos).
+- Sobrecosto de tiempo por modelar congestión, estrés (**datos finales,
+  2026-08-30**): `opp_hc_3` **+18.5%** vs. `opp_hc_2` (subió del +0.05%
+  "dentro del ruido" que se veía antes -- con el fix del BFS de dos
+  niveles, `hc_2` se volvió mucho más rápido en el camino feliz, así que el
+  costo fijo de simular congestión en `hc_3` ahora se nota proporcionalmente
+  más, aunque en términos absolutos sigue siendo chico: 0.56s vs. 2.97s de
+  media); `opp_aco_3` **+231%** vs. `opp_aco_2` (bajó bastante del +513%
+  pre-auditoría -- los fixes #3/#4/#7 hicieron que `aco_3` converja más
+  rápido Y más seguido, así que el sobrecosto relativo se achicó aunque
+  sigue siendo grande).
+- La asimetría central del hallazgo se mantiene igual de clara con los
+  datos finales: `hc_3` paga un costo chico y estable por modelar
+  congestión (~20% en el peor caso medido), `aco_3` paga un costo grande
+  (~230%) -- la arquitectura importa mucho más que cualquier detalle de
+  implementación puntual.
 - Por qué: `opp_hc_3` sigue construyendo la ruta con Dijkstra determinístico
   y solo *precia* la congestión al final — casi gratis. `opp_aco_3` decide,
   paso a paso, entre la matriz de feromona de tiempo y la de congestión
@@ -186,25 +199,29 @@ efectivamente se pueda correr a la escala que la tesina necesita.
 ## 6. Sensibilidad paramétrica: V pesa más que N en estrés (matiz: no en aco_3)
 
 - Tabla 6 + los 4 scatters (`hc_2`/N, `aco_2`/V, `hc_3`/V, `aco_3`/N).
-  Números post-fix de performance (2026-08-27, más instancias `ok` que
-  antes al bajar el timeout externo).
+  **Datos finales, 2026-08-30** (post-auditoría de código completa, todos
+  los `n` de estrés en su valor final).
 - En estrés, `V` (tamaño de grafo) correlaciona más fuerte con el tiempo que
-  `N` (cantidad de pedidos) en `hc_2` (r=0.68) y `aco_2` (r=0.70).
-- `hc_3` en estrés: V (0.23) y N (0.17) parecidos, sin dominancia clara.
-  `aco_3` en estrés **rompe el patrón**: N (0.58) domina sobre V (0.24) --
-  lo opuesto a `aco_2`. Posible explicación: en `aco_3` el costo por paso ya
-  no es solo "moverse en el grafo" sino también el switch probabilístico
-  τ1/τ2 y el chequeo de congestión, que escalan más con la cantidad de
-  pedidos/lotes a programar (N) que con el tamaño del grafo (V) -- hipótesis
-  a mencionar como tal, no como conclusión firme dado el n chico.
+  `N` (cantidad de pedidos) en `hc_2` (r=0.63) y `aco_2` (r=0.71).
+- `hc_3` en estrés: V (-0.07) y N (0.65) -- **ahora N domina claramente**,
+  al revés de lo que se veía antes del fix del BFS (V/N parecidos, sin
+  dominancia clara). Con el camino feliz mucho más rápido, el tiempo pasó
+  a estar dominado por cuántos lotes/pedidos hay que procesar, no por
+  cuánto cuesta cada paso de construcción de ruta en el grafo.
+  `aco_3` en estrés **sigue rompiendo el patrón de hc_2/aco_2**: N (0.53)
+  domina sobre V (0.27) -- mismo patrón que antes del fix (era N=0.58 vs.
+  V=0.24), consistente con la hipótesis de que en `aco_3` el costo por
+  paso no es solo "moverse en el grafo" sino también el switch
+  probabilístico τ1/τ2 y el chequeo de congestión, que escalan más con N.
 - En normal es al revés en `hc_2`: `N` pesa más que `V` (r=0.57 vs. 0.33).
 - Confirma la hipótesis original de `specs/model_analysis.md` sec. 5
   ("asintotismo exponencial vs. V") para `hc_2`/`aco_2` -- pero solo se
   manifiesta a escala de estrés, no en instancias chicas, y no es universal
-  entre los 4 heurísticos (`aco_3` es la excepción).
-- Muestras en estrés (post-fix): `hc_2` n=32, `hc_3` n=17, `aco_2` n=17
-  (subió de 15), `aco_3` n=14 (subió bastante de 7 -- ya no es una muestra
-  tan chica, aunque sigue siendo la más chica de las cuatro).
+  entre los 4 heurísticos (`hc_3` y `aco_3` son ahora ambos la excepción,
+  cada uno por su propio motivo).
+- Muestras en estrés (finales): `hc_2` n=32, `hc_3` n=17, `aco_2` n=17,
+  `aco_3` n=17 (subió de 14) -- las cuatro muestras ya son de tamaño
+  razonable, ninguna es chica al punto de aclarar como limitación fuerte.
 
 ## Hallazgo transversal: el bug de construcción de rutas de ACO
 
@@ -291,31 +308,21 @@ directamente contra SCIP que la hipótesis es incorrecta**:
    infeasibilidad por construcción **refutada**. Ver hallazgo actualizado
    arriba.
 
-3. **Nuevo (2026-08-27): auditoría de código encontró y corrigió 3 bugs
-   reales en HC/ACO** (ver `analysis/README.md` sección "Auditoría de
-   código"). El fix #3 (visibilidad ciega a distancia en pasos guiados por
-   congestión en `opp_aco_3`) cambia el comportamiento real del solver --
-   **hay que re-correr la batería de estrés de `opp_aco_3` de nuevo** antes
-   de dar sus números por definitivos (los de la tabla de arriba, sección
-   2, quedaron desactualizados otra vez). Los fixes #1/#2 (HC) no cambiaron
-   ningún resultado ya observado, pero conviene re-correr `hc_2`/`hc_3` en
-   estrés también para confirmarlo con datos, no solo por inferencia.
+3. ~~Auditoría de código encontró y corrigió bugs reales en HC/ACO (7
+   hallazgos entre el 2026-08-27 y 2026-08-28), + un bug crítico en
+   `analysis/load.py`/`metrics.py`~~ -- **hecho, con las 4 baterías de
+   estrés re-corridas y consolidadas (2026-08-30)**. Ver
+   `analysis/README.md` secciones "Auditoría de código, partes 1-4" para
+   el detalle completo de cada fix. Resultado: `aco_3` 70%→85% de éxito
+   (cambio real), `hc_2`/`hc_3`/`aco_2` estables en tasa de éxito pero con
+   tiempos bastante más rápidos en HC (el fix del BFS también acelera el
+   camino feliz, no solo corrige el caso raro que lo motivó).
 
-Con (1) y (2) resueltos pero (3) pendiente, todavía falta una vuelta más de
-datos de estrés antes de escribir la sección de resultados de la tesina sin
-tener que corregirla después -- específicamente `opp_aco_3` (cambio real de
-comportamiento) y, para prolijidad, `opp_hc_2`/`opp_hc_3`.
-
-4. **Nuevo (2026-08-28): fix de secuenciación en ACO** (hallazgo #4 de la
-   auditoría) -- `opp_aco_2`/`opp_aco_3` ahora ordenan la cola de cada
-   picker por fecha de vencimiento más temprana (EDD) en vez de dejarla en
-   orden de ID de lote (sin relación con vencimientos). Cierra la brecha
-   estructural frente a HC (que sí explora el orden vía swaps) sin agregar
-   una nueva dimensión de feromona. **Cambia el comportamiento real de
-   `opp_aco_2` también** -- sumarlo a la lista de re-corridas de estrés
-   pendientes junto con `opp_aco_3`.
-
-**Estado de las re-corridas de estrés pendientes antes de escribir
-resultados**: `opp_aco_3` (fixes #3 y #4), `opp_aco_2` (fix #4),
-`opp_hc_2`/`opp_hc_3` (para confirmar que los fixes #1/#2 no cambiaron nada,
-por prolijidad más que por expectativa real de cambio).
+**Estado final: no queda ninguna re-corrida pendiente** para los 5 modelos
+con datos completos (`opp_v4`, `opp_hc_2`, `opp_hc_3`, `opp_aco_2`,
+`opp_aco_3`). Excepciones documentadas y aceptadas: `opp_v4` en estrés
+sigue con el dataset de 2026-08-18 (8 tests, no se re-corrió porque tomaría
+horas y los fixes de esta auditoría no tocan `opp_v4`, que es exacto vía
+SCIP, no heurístico); `opp_v5` sigue fuera del alcance mientras está en
+construcción. Con esto, `docs/results_outline.md` está listo para pasar de
+bosquejo a texto real de la sección de resultados.

@@ -433,6 +433,47 @@ menor prioridad): renombrar los métodos de test colisionados en
 esas instancias específicas quedan excluidas de las tablas comparativas
 en vez de corromperlas.
 
+### Cierre de la auditoría (2026-08-30): las 4 baterías de estrés
+   re-corridas y consolidadas -- estado final
+
+Con los 7 fixes de comportamiento (partes 1-3) y los 2 fixes de pipeline
+(parte 4) ya aplicados, se re-corrieron `opp_hc_2`, `opp_hc_3`, `opp_aco_2`
+y `opp_aco_3` en estrés de punta a punta (`opp_hc_2` en dos tandas --
+`model_01-15` y `model_16-43` -- por comodidad de la persona corriéndolo,
+consolidadas en un único CSV antes de pasarlas al pipeline, mismo patrón
+usado anteriormente en el proyecto). Resultado, comparado con los números
+pre-auditoría:
+
+| Modelo | Éxito antes | Éxito después | Tiempo medio antes | Tiempo medio después |
+| --- | --- | --- | --- | --- |
+| `opp_hc_2` | 74.4% (32/43) | 74.4% (32/43) -- sin cambio | 18.3s | **2.97s** |
+| `opp_hc_3` | 85% (17/20) | 85% (17/20) -- sin cambio | 4.96s | **0.56s** |
+| `opp_aco_2` | 85% (17/20) | 85% (17/20) -- sin cambio | 52.6s | 54.8s -- sin cambio |
+| `opp_aco_3` | 70% (14/20) | **85% (17/20)** | 274.5s | **176.5s** |
+
+Lecturas clave:
+- **`aco_3` es el único que cambió de tasa de éxito**, y en la dirección
+  esperada -- sus tres fixes (#3 eta ciega a distancia, #4 secuenciación
+  EDD, #7 asimetría elitista) atacaban directamente su capacidad de
+  converger, no solo su velocidad.
+- **`hc_2`/`hc_3` se volvieron mucho más rápidos sin cambiar su tasa de
+  éxito** -- el fix del BFS de dos niveles (parte 1) no solo corrige el
+  caso raro de falso-infeasible, también acelera el camino feliz (tier 1
+  sigue siendo el mismo BFS memoizado rápido de siempre; antes de este
+  cierre, una versión intermedia del fix -- sin el segundo nivel -- había
+  *empeorado* la tasa de éxito por accidente al sacar la memoización
+  sin reemplazo; ver el fix corregido de 2026-08-28 en la parte 1).
+- El sobrecosto de congestión (`hc_3` vs. `hc_2`, `aco_3` vs. `aco_2`)
+  cambió de magnitud con los tiempos nuevos pero la asimetría central se
+  mantiene: `hc_3` +18.5% (antes ~0%, ahora se nota más porque `hc_2` se
+  volvió mucho más rápido) vs. `aco_3` +231% (bajó del +513% pre-auditoría,
+  porque `aco_3` mismo mejoró). Ver `docs/results_outline.md` sección 5
+  para el detalle.
+
+`docs/results_outline.md` ya refleja estos números finales en todas sus
+secciones (1, 2, 5, 6) y su lista de pendientes quedó cerrada -- no falta
+ninguna corrida más antes de pasar a redactar el texto de la tesina.
+
 ## 2. Correr el pipeline
 
 ```bash

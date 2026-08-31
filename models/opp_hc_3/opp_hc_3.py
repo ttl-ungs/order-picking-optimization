@@ -384,38 +384,48 @@ class OPPHillClimbing(Model):
         return route
 
     # Same safety valve as opp_hc_2._MAX_BFF_EXPANSIONS -- see its docstring
-    # there for the full explanation of the bug this bounds.
+    # there for the full explanation.
     _MAX_BFF_EXPANSIONS = 200_000
 
     def _generate_feasible_route_bff(self, required_locations: Set) -> Optional[List]:
         """
-        Generate a feasible route visiting all required locations, via BFS
-        over states (current_node, remaining_required, path_so_far).
-
-        Does NOT prune a (node, remaining) state just because some other
-        path already reached it (fixed 2026-08-27, mirroring opp_hc_2's
-        identical fix): two different paths can reach the same (node,
-        remaining) pair having used up different intermediate nodes, and
-        only one of them may actually be completable -- pruning by state
-        alone could discard the only path that could finish, wrongly
-        reporting a routable batch as infeasible. Bounded by
-        _MAX_BFF_EXPANSIONS instead, since without state pruning this is
-        worst-case exponential.
+        Generate a feasible route visiting all required locations. Two-tier
+        search, mirroring opp_hc_2's identical fix (2026-08-28) -- see its
+        docstring for the full rationale: tier 1 is the fast, memoized BFS
+        (can have false negatives from cross-path state pruning); tier 2,
+        tried only if tier 1 fails, is an unmemoized/exhaustive BFS bounded
+        by _MAX_BFF_EXPANSIONS (correct but slow -- layering it behind tier
+        1 avoids regressing real stress instances the way replacing tier 1
+        outright did).
         """
         if not required_locations:
             return []
 
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
-
         initial_remaining = frozenset(required_locations)
+
+        route = self._bff_search(depot, final, initial_remaining, memoize=True)
+        if route is None:
+            route = self._bff_search(depot, final, initial_remaining, memoize=False)
+        return route
+
+    def _bff_search(
+        self, depot, final, initial_remaining: frozenset, memoize: bool
+    ) -> Optional[List]:
+        """BFS over states (current_node, remaining_required, path_so_far).
+        memoize=True is tier 1 (fast, cross-path state pruning), memoize=
+        False is tier 2 (exhaustive, expansion-bounded). See
+        _generate_feasible_route_bff's docstring."""
         queue: deque = deque([(depot, initial_remaining, [depot])])
+        seen: Set = {(depot, initial_remaining)} if memoize else None
         expansions = 0
 
         while queue:
-            expansions += 1
-            if expansions > self._MAX_BFF_EXPANSIONS:
-                return None  # Search budget exhausted, not necessarily infeasible
+            if not memoize:
+                expansions += 1
+                if expansions > self._MAX_BFF_EXPANSIONS:
+                    return None  # Search budget exhausted, not necessarily infeasible
 
             node, remaining, path = queue.popleft()
             visited = set(path)
@@ -432,9 +442,14 @@ class OPPHillClimbing(Model):
                     continue
 
                 new_remaining = remaining - {vertex}
+                if memoize:
+                    new_state = (vertex, new_remaining)
+                    if new_state in seen:
+                        continue
+                    seen.add(new_state)
                 queue.append((vertex, new_remaining, path + [vertex]))
 
-        return None  # No feasible path exists within the expansion budget
+        return None  # No feasible path exists (or within tier 2's expansion budget)
 
     def _generate_feasible_neighbor(
         self,

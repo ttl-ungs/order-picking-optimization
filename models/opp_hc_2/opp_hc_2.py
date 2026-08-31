@@ -391,60 +391,73 @@ class OPPHillClimbing(Model):
 
         return route
 
-    # Safety valve for _generate_feasible_route_bff: bounds how many search
-    # states it will expand before giving up, so the fix below (removing the
-    # cross-path state cache that was causing false negatives) can't turn
-    # into an unbounded/exponential search on a huge stress instance. Cheap
-    # for the small/medium graphs this fallback actually needs to solve
-    # (verified: the bug repro below completes in a handful of expansions);
-    # for graphs too large to search exhaustively, this bounds the cost and
-    # returns None -- same graceful degradation as before, just no longer
-    # ALSO returning None on cases that were actually solvable.
+    # Safety valve for the unmemoized last-resort search in
+    # _generate_feasible_route_bff -- see that method's docstring.
     _MAX_BFF_EXPANSIONS = 200_000
 
     def _generate_feasible_route_bff(self, required_locations: Set) -> Optional[List]:
         """
         Generate a feasible route visiting all required locations.
 
-        BFS over states (current_node, remaining_required, path_so_far),
-        exploring in non-decreasing path length (so the first completion
-        found is a shortest one) -- but, unlike the previous version, does
-        NOT prune a (current_node, remaining_required) state just because
-        some other path already reached it. Two different paths can reach
-        the identical (node, remaining) pair while having used up different
-        sets of intermediate nodes; since only ONE of them may actually be
-        completable (a later required/final node might only be reachable
-        through a node the discarded path had "spent"), the old cross-path
-        pruning could throw away the only path that could actually finish,
-        making this method wrongly report a batch as unroutable even when a
-        valid route existed (found 2026-08-27, repro: depot D, required
-        {A,B}, edges D-P, D-Q, P-A, Q-A, P-B, B-final -- the discarded
-        branch via D-Q-A was the only one that could still reach B through
-        P). Bounded by _MAX_BFF_EXPANSIONS instead, since without ANY
-        pruning this is worst-case exponential (this is genuinely as hard as
-        finding a simple path through a required subset of nodes) -- graphs
-        too large to exhaust the budget on still return None, same
-        degradation as before.
+        Two-tier search:
+        1. Memoized BFS -- fast (bounded by O(V * 2^|required|) states via
+           the (node, remaining_required) cache), but can have false
+           negatives: pruning a state just because some OTHER path already
+           reached it can discard the only path that could actually finish,
+           since completability also depends on which non-required nodes
+           got "spent" along the way, not just (node, remaining) (found
+           2026-08-27, repro: depot D, required {A,B}, edges D-P, D-Q, P-A,
+           Q-A, P-B, B-final -- the discarded branch via D-Q-A was the only
+           one that could still reach B through P).
+        2. Only if (1) returns None: an unmemoized BFS (no cross-path
+           pruning at all) as a genuine last resort, bounded by
+           _MAX_BFF_EXPANSIONS -- correct (can't discard a working path) but
+           worst-case exponential, so only worth trying once the cheap tier
+           already failed.
+
+        Tier 1 alone regressed real stress instances when tier 2's
+        unmemoized search replaced it outright (2026-08-28): removing all
+        pruning made the search blow up before finding a completion on
+        graphs with more than a handful of required locations, turning
+        previously-solvable stress cases into false negatives -- the
+        opposite failure mode. Layering tier 2 behind tier 1 keeps tier 1's
+        speed for everything it already solved, and only pays tier 2's cost
+        on the rarer case tier 1 gets wrong.
 
         Intermediate nodes are included so the returned list represents the
-        full physical traversal (excluding depot and final).  Returns None
-        when no valid path exists within the expansion budget.
+        full physical traversal (excluding depot and final). Returns None
+        when no valid path exists (or none was found within tier 2's
+        expansion budget).
         """
         if not required_locations:
             return []
 
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
-
         initial_remaining = frozenset(required_locations)
+
+        route = self._bff_search(depot, final, initial_remaining, memoize=True)
+        if route is None:
+            route = self._bff_search(depot, final, initial_remaining, memoize=False)
+        return route
+
+    def _bff_search(
+        self, depot, final, initial_remaining: frozenset, memoize: bool
+    ) -> Optional[List]:
+        """BFS over states (current_node, remaining_required, path_so_far).
+        See _generate_feasible_route_bff's docstring for the two-tier
+        rationale -- memoize=True is tier 1 (fast, cross-path state
+        pruning), memoize=False is tier 2 (exhaustive, expansion-bounded)."""
         # Each queue entry: (current_node, remaining_required, path_so_far)
         queue: deque = deque([(depot, initial_remaining, [depot])])
+        seen: Set = {(depot, initial_remaining)} if memoize else None
         expansions = 0
 
         while queue:
-            expansions += 1
-            if expansions > self._MAX_BFF_EXPANSIONS:
-                return None  # Search budget exhausted, not necessarily infeasible
+            if not memoize:
+                expansions += 1
+                if expansions > self._MAX_BFF_EXPANSIONS:
+                    return None  # Search budget exhausted, not necessarily infeasible
 
             node, remaining, path = queue.popleft()
             visited = set(path)
@@ -462,9 +475,14 @@ class OPPHillClimbing(Model):
                     continue
 
                 new_remaining = remaining - {vertex}
+                if memoize:
+                    new_state = (vertex, new_remaining)
+                    if new_state in seen:
+                        continue
+                    seen.add(new_state)
                 queue.append((vertex, new_remaining, path + [vertex]))
 
-        return None  # No feasible path exists within the expansion budget
+        return None  # No feasible path exists (or within tier 2's expansion budget)
 
 
     def _generate_feasible_neighbor(
