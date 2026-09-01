@@ -9,8 +9,6 @@ from tests.opp_v5.scenarios.normal.two_stage_scenarios import (
     heterogeneous_speed_precise,
 )
 from tests.opp_v5.tests.opp_test_case_v5 import OPPTestCaseV5
-from tests.utils.zpl_utils import solve_zpl
-from tests.opp_v5.config import DAT_DIR, STAGE2_ZPL_PATH
 
 
 class TestOPPV5SpeedFormula(OPPTestCaseV5):
@@ -71,28 +69,20 @@ class TestOPPV5ColdChainEdgeCases(OPPTestCaseV5):
         assignments = self.assignments(values, scenario["P"], scenario["B"])
         self.assertEqual(assignments, {"B1": "P_fast"})
 
-    def test_no_eligible_picker_crashes_zimpl_instead_of_reporting_infeasible(self):
-        # BUG (found 2026-08-31, confirmed empirically): stage2_scheduling.zpl's
-        # own comment on B_sin_picker_elegible claims that a batch with no
-        # eligible (picker, batch) pair under the cold-chain limit will make
-        # "the model will surely come  back infeasible". That is NOT what happens.
-        # `assign_exactly_one_picker` (line ~136) when PB_elig has zero entries for a
-        # batch, the sum is empty and ZIMPL itself rejects it at COMPILE time:
-        #   *** Error 106: Empty LHS, constraint trivially violated
-        # -- i.e. `solve_zpl` never reaches SCIP at all; it raises a plain
-        # RuntimeError("ZIMPL compilation failed...") from the failed
-        # subprocess, not a clean status="infeasible" the caller can branch
-        # on. This is a real robustness gap in opp_v5's stage 2, not a test artifact:
-        # the scenario itself is a legitimate one a real batching stage could
-        # produce (a lot's fastest possible completion still exceeds the
-        # cold-chain limit for every picker).
+    def test_no_eligible_picker_returns_infeasible_gracefully(self):
+        # Regression test for the bug found 2026-08-31 and fixed 2026-09-01:
+        # stage2_scheduling.zpl's own comment on B_sin_picker_elegible claims
+        # a batch with no eligible (picker, batch) pair under the cold-chain
+        # limit "will surely come back infeasible", but ZIMPL itself rejects
+        # the resulting empty-sum constraint at COMPILE time,  raising a bare
+        # RuntimeError. This is a real scenario a batching stage could legitimately
+        #  produce, not a test artifact.
+        # Fixed in OPPTestCaseV5.run_pipeline via models/opp_v5/utils/cold_chain_validation.py.
+        # --> A Python-side pre-check that short-circuits to status="infeasible"
+        # before invoking ZIMPL, mirroring opp_v4's input_validation.py pattern.
         scenario = cold_chain_infeasible_for_every_picker()
         self.assertEqual(self.eligible_pairs(scenario, {"B1": 14.0}), set())
 
-        # run_pipeline(solve_stage2=False) already writes route_time_b.dat/
-        # velocities.dat/frio.dat for us before returning -- no need to
-        # rewrite them here, just solve stage 2 directly against them.
-        self.run_pipeline(scenario, solve_stage2=False)
-        with self.assertRaises(RuntimeError) as ctx:
-            solve_zpl(STAGE2_ZPL_PATH, dat_dir=DAT_DIR)
-        self.assertIn("ZIMPL compilation failed", str(ctx.exception))
+        _, _, status, values = self.run_pipeline(scenario)
+        self.assertEqual(status, "infeasible")
+        self.assertEqual(values, {})

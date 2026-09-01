@@ -549,14 +549,60 @@ estructuras desconectadas del camino depósito-final) sin que la
 función objetivo los penalice lo suficiente como para descartarlos --
 sería la contraparte, del lado exacto/`opp_v5`, del mismo tipo de
 problema de construcción de rutas que ya se investigó y corrigió del
-lado heurístico. **No se investigó más a fondo por presupuesto de
-tiempo**.
+lado heurístico.
+
+**Investigación más profunda (2026-09-01)**: aislando un solo lote de esa
+instancia (mismo patrón que el diagnóstico de infeasibilidad de `opp_v4`)
+se confirmó que **no es un bug del modelo de optimización en sí, sino de
+cómo ZIMPL nombra las variables en el `.lp` compilado para esta
+instancia**. Inspeccionando el `.lp` crudo:
+
+- Las variables `z_ijb` correspondientes a arcos que las restricciones
+  `no_inflow_depot`/`no_outflow_final` fuerzan a 0 (arcos que entran al
+  depósito o salen del final) aparecen con nombres corruptos tipo
+  `z_ijb$V100$V90@4` en vez de `z_ijb$V100$V90$B1` -- les falta el
+  sufijo de lote y tienen un sufijo hexadecimal en su lugar.
+- Peor: la variable que **sí importa** (el arco de *llegada* al nodo
+  final, p. ej. `z_ijb$V90$V100$B1`) **no aparece en absoluto** en el
+  `.lp`, ni siquiera con nombre corrupto -- confirmado que el arco
+  `(V90, V100)` existe en los datos crudos (`data_E.dat`,
+  `distances.dat`), así que debería haber generado una variable.
+
+Esto excede lo que se puede diagnosticar sin entrar a las entrañas del
+compilador de ZIMPL (no es un bug de este repositorio ni de
+`stage1_routing.zpl` en un sentido que se pueda arreglar en Python).
+Parece un problema de generación/truncamiento de nombres de ZIMPL
+específico de instancias con muchos lotes y grafos grandes. 
+Puede requerir ayuda de alguien con más experiencia en ZIMPL
+o revisar su documentación/changelog sobre límites de nombres de
+variable.
 
 Con esto, `opp_v5` en estrés queda confirmado como **no competitivo a
 esta escala** (0% contra el 12.5% de `opp_v4`, que además solo pierde
 por timeout, no por soluciones mal formadas) -- se mantiene excluido de
 las comparaciones de escalabilidad en `docs/results_outline.md`, ahora
 con el dato completo (no parcial) respaldando esa decisión.
+
+### Fix del bug de cadena de frío (2026-09-01)
+
+Se corrigió el bug documentado arriba (`B_sin_picker_elegible` crashea en
+vez de dar `infeasible` limpio): se agregó
+`models/opp_v5/utils/cold_chain_validation.py::batches_without_eligible_picker`,
+una réplica en Python de `PB_elig`/`t_exec_pb` (mismo patrón que
+`models/utils/input_validation.py` usa para `opp_v4`), y se la conectó en
+`OPPTestCaseV5.run_pipeline` para cortocircuitar a `status="infeasible"`
+**antes** de invocar ZIMPL para la Etapa 2, en vez de dejar que el error
+de compilación se propague como excepción sin manejar. El test que
+documentaba el bug (`test_opp_v5_model_31.py`) se actualizó para verificar
+el comportamiento corregido (antes esperaba la excepción con
+`assertRaises`; ahora espera `status == "infeasible"` limpio).
+
+Este fix vive en el harness de tests (`OPPTestCaseV5`), no en
+`stage2_scheduling.zpl` en sí, porque `opp_v5` todavía no tiene un punto
+de entrada de "producción" fuera de los tests -- si en algún momento lo
+tiene, este mismo chequeo debería moverse ahí (o agregarse directamente
+al `.zpl`, si ZIMPL ofrece una forma limpia de expresar "sum vacía ==
+infeasible declarado" en vez de dejarlo fallar en compilación).
 
 ## 2. Correr el pipeline
 

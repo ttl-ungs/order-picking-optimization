@@ -5,6 +5,7 @@ import unittest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from models.utils.dat_files_builder import build_dat_files, write_indexed_dat, write_scalar_dat
+from models.opp_v5.utils.cold_chain_validation import batches_without_eligible_picker
 from tests.opp_v5.config import DAT_DIR, STAGE1_ZPL_PATH, STAGE2_ZPL_PATH
 from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
 
@@ -25,6 +26,20 @@ class OPPTestCaseV5(unittest.TestCase):
 
         if not solve_stage2:
             return stage1_values, route_times, None, None
+
+        # Fix (2026-09-01, code audit): a batch with zero eligible pickers
+        # under the cold-chain limit makes stage2_scheduling.zpl's
+        # assign_exactly_one_picker sum over an empty PB_elig slice for
+        # that batch, which ZIMPL rejects at COMPILE time (RuntimeError).
+        # Short-circuit here instead of letting that crash surface
+        # (same pattern as opp_v4's input_validation.py pre-checks in solve_zpl).
+        stuck_batches = batches_without_eligible_picker(
+            scenario["P"], scenario["B"], scenario["N"], scenario["C_n"],
+            scenario["Bn"], scenario["B_setup"], scenario["B_picking"],
+            route_times, scenario["V_p"], scenario["T_frio_max"],
+        )
+        if stuck_batches:
+            return stage1_values, route_times, "infeasible", {}
 
         stage2_status, stage2_values = solve_zpl(STAGE2_ZPL_PATH, dat_dir=DAT_DIR)
         return stage1_values, route_times, stage2_status, stage2_values
