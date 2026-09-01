@@ -367,6 +367,15 @@ que la descomposición en dos etapas no pierde optimalidad frente a la
 formulación monolítica, en el régimen evaluado hasta ahora. Se agregaron tests que validan específicamente sus dos
 capacidades nuevas.
 
+Su batería de estrés, ahora completa (8 instancias), da 0\% de éxito
+(7 timeouts y 1 falla real). Por lo tanto, no es competitivo a esa escala frente al
+12.5\% de \type{opp\_v4}, así que se mantiene fuera de las comparaciones
+de escalabilidad. La falla real (no por timeout) reveló un segundo punto
+a revisar: en al menos una instancia grande,
+la Etapa 1 reporta una ruta óptima con muchos más arcos activos de los
+necesarios y ninguno llega al nodo final, pese a que el propio solver la
+marca como óptima.
+
 \stopsubsection
 
 \stopsection
