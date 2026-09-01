@@ -519,10 +519,44 @@ pickers, cadena de frío):
     `models/opp_v5/stage2_scheduling.zpl` (el chequeo `eligible_pairs()`
     del lado Python es, hoy, lo único que evita este crash).
 
-Verificado con la suite normal completa: 53 tests, 51 ok, 1 timeout
+Verificado con la suite normal completa: 53 tests, 52 ok, 1 timeout
 (`model_27`, el mismo caso patológico de capacidades fraccionarias/cero que
 ya se conocía de `opp_v4` -- coherente, no es nuevo), 0 errores tras el fix
 del test de infeasibilidad.
+
+### Estrés de `opp_v5` (2026-08-31): batería completa -- 0% de éxito, y un
+   hallazgo nuevo a investigar
+
+Con las 8 baterías de estrés corridas de punta a punta (incluido el
+`model_08` que se agregó en la ronda anterior), `opp_v5` da **0/8 (0%)**:
+7 timeouts (a los 25 min) y **1 falla real, no por timeout**
+(`model_05`, `test_10_orders_per_batch`, instancia de 10 lotes/100
+órdenes/grilla 10x10).
+
+Investigado el caso que falla: **la Etapa 1 (ruteo) reporta
+`status=optimal`, pero ningún lote termina con exactamente un arco de
+llegada al nodo final** (`assert_routes_cover_requirements` falla en
+`n_final=0` para los 10 lotes, no en uno solo). Lo llamativo no es que
+falle -- es *cómo*: cada lote tiene entre 9 y 33 arcos activos para
+solo ~10 ubicaciones requeridas (una ruta simple debería necesitar
+bastantes menos), con exactamente 1 arco de salida del depósito pero
+**cero** arcos de llegada al final, pese a que el nodo final es
+alcanzable en el grafo (verificado: hay arcos válidos hacia él). Esto
+sugiere que, a esta escala (100 nodos, lotes con muchas ubicaciones
+requeridas), la eliminación de subtours vía flujo Gavish-Graves de la
+Etapa 1 podría estar dejando pasar arcos "de sobra" (ciclos u otras
+estructuras desconectadas del camino depósito-final) sin que la
+función objetivo los penalice lo suficiente como para descartarlos --
+sería la contraparte, del lado exacto/`opp_v5`, del mismo tipo de
+problema de construcción de rutas que ya se investigó y corrigió del
+lado heurístico. **No se investigó más a fondo por presupuesto de
+tiempo**.
+
+Con esto, `opp_v5` en estrés queda confirmado como **no competitivo a
+esta escala** (0% contra el 12.5% de `opp_v4`, que además solo pierde
+por timeout, no por soluciones mal formadas) -- se mantiene excluido de
+las comparaciones de escalabilidad en `docs/results_outline.md`, ahora
+con el dato completo (no parcial) respaldando esa decisión.
 
 ## 2. Correr el pipeline
 
