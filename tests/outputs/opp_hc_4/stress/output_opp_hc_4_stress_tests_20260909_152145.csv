@@ -1,0 +1,9 @@
+test,status,total_time,model_time,obj_val,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,V_p,T_frio_max,N,B,P,V,Max_it,Max_imp
+test_opp_hc_4_model_01.TestOPPModel.test_100_locations,ok,0.053296804428100586,0.04262804985046387,5859.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,{},inf,12,6,3,100,500,30
+test_opp_hc_4_model_02.TestOPPModel.test_400_locations,ok,0.26399993896484375,0.19649004936218262,9423.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,{},inf,12,6,3,400,500,30
+test_opp_hc_4_model_03.TestOPPModel.test_625_locations,ok,0.46839404106140137,0.3385460376739502,11403.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,{},inf,12,6,3,625,500,30
+test_opp_hc_4_model_04.TestOPPModel.test_4_orders_per_batch,ok,1.3434422016143799,1.3168580532073975,396217.0,9.0,1.0,1.0,1.0,40.0,0.5,1.0,1.0,1000.0,{},inf,100,25,1,100,500,30
+test_opp_hc_4_model_05.TestOPPModel.test_10_orders_per_batch,ok,1.1023578643798828,1.087660789489746,174593.0,9.0,1.0,1.0,1.0,250.0,0.5,1.0,1.0,1000.0,{},inf,100,10,1,100,500,30
+test_opp_hc_4_model_06.TestOPPModel.test_empty_batches,ok,0.13579702377319336,0.08831620216369629,152000.0,9.0,1.0,1.0,1.0,10.0,0.5,1.0,1.0,1000.0,{},inf,25,50,1,100,500,30
+test_opp_hc_4_model_09.TestOPPModel.test_infeasible_capacity,ok,0.011244058609008789,2.2649765014648438e-05,,9.0,1.0,1.0,1.0,40.0,0.5,1.0,1.0,1000.0,{},inf,10,2,,16,500,30
+test_opp_hc_4_model_10.TestOPPModel.test_disconnected_graph,ok,0.37931013107299805,0.36979198455810547,,1.0,10.0,1.0,5.0,20.0,0.5,1.0,1.0,1000.0,{},inf,6,12,,34,500,30
