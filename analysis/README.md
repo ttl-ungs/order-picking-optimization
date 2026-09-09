@@ -10,6 +10,7 @@ Generaliza `specs/model_analysis.md` (escrito originalmente para
 | `opp_aco_2` | ACO, pickers en paralelo, **sin** congestión                   |
 | `opp_hc_3`  | Hill Climbing, congestion-aware                                |
 | `opp_aco_3` | ACO, congestion-aware, multi-pheromone (m-ACO4)                |
+| `opp_hc_4`  | Hill Climbing, velocidad de picker + cadena de frío (como `opp_v5`), **sin** congestión |
 
 ## 1. Generar los datos
 

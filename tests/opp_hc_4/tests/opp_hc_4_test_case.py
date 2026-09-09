@@ -35,6 +35,21 @@ class OPPTestCaseHC4(OPPTestCase):
                 picker, P, f"Batch {batch} assigned to unknown picker {picker}"
             )
 
+    def assert_workload_balance(self, solution_info, P, max_difference=1):
+        """Batches should be spread across pickers, not piled on one."""
+        picker_assignments = solution_info.get("picker_assignments", {})
+        workload = {p: 0 for p in P}
+        for _, picker in picker_assignments.items():
+            workload[picker] = workload.get(picker, 0) + 1
+
+        workloads = list(workload.values())
+        if workloads:
+            self.assertLessEqual(
+                max(workloads) - min(workloads),
+                max_difference,
+                f"Picker workload imbalance: {workload}",
+            )
+
     def assert_no_time_overlap(self, solution_info, P):
         """Mirrors opp_hc_2/ZPL constraints (19)/(20): no overlap on the same picker."""
         picker_assignments = solution_info.get("picker_assignments", {})

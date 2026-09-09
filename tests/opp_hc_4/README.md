@@ -38,20 +38,41 @@ congestion-free, see `analysis/config.py`).
 tests/opp_hc_4/
 ├── execute_tests.py            # Main test runner (normal suite)
 ├── execute_stress_tests.py     # Stress suite runner
+├── scenarios/normal/            # Fixtures that need a SolveHC4ModelDTO (single_order_params)
 └── tests/
-    ├── opp_hc_4_test_case.py           # Base assertions (picker assignment, no-overlap, cold chain)
+    ├── opp_hc_4_test_case.py           # Base assertions (picker assignment, workload, no-overlap, cold chain)
     ├── normal/
-    │   ├── test_opp_hc_4_model_01_equivalence.py
-    │   ├── test_opp_hc_4_model_02_picker_speed.py
-    │   ├── test_opp_hc_4_model_03_cold_chain_infeasible.py
-    │   └── test_opp_hc_4_model_04_cold_chain_eligibility.py
+    │   ├── test_opp_hc_4_model_01_equivalence.py    # dedicated: no-op equivalence with hc_2
+    │   ├── test_opp_hc_4_model_02_picker_speed.py   # dedicated: faster picker preferred
+    │   ├── test_opp_hc_4_model_03_cold_chain_infeasible.py  # dedicated: unreachable deadline -> infeasible
+    │   ├── test_opp_hc_4_model_04_cold_chain_eligibility.py # dedicated: forced onto the eligible picker
+    │   ├── test_opp_hc_4_model_05_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
+    │   └── test_opp_hc_4_model_{02,03,...,30}.py            # ported 1:1 from opp_hc_2 (V_p unset, T_frio_max=+inf)
     └── stress/
+        ├── test_opp_hc_4_model_{01,02,03,04,05,06,09,10,11,12,34}.py  # ported 1:1 from opp_hc_2
+        ├── test_opp_hc_4_model_11_picker_speed.py   # dedicated: heterogeneous speeds at scale
+        └── test_opp_hc_4_model_12_cold_chain.py      # dedicated: binding T_frio_max at scale
 ```
+
+The ported files (both normal and stress) are literal copies of their
+`opp_hc_2` counterpart -- same scenario builder, same numeric parameters --
+with `V_p` unset and `T_frio_max` left at its default (`+inf`), so they are
+pure equivalence checks AND, more importantly, give `analysis/`'s
+`quality_gap_table`/cross-model comparisons the same-named, same-shaped
+instances it needs to join `opp_hc_4` against `opp_hc_2`/`opp_hc_3`/`opp_v4`
+(same pattern `opp_v5` uses via `tests/opp_v5/tests/v4_compat.py`). The
+stress ports were chosen to match `opp_hc_3`'s curated 11-instance stress
+subset (see `analysis/README.md`), so `opp_hc_4` lines up with both
+`opp_hc_2` (full instance) and `opp_hc_3` (curated subset) at once.
+
+`opp_hc_4` is registered in `analysis/config.py`'s `MODEL_DIRS` (and
+deliberately left OUT of `CONGESTION_AWARE_MODELS`).
 
 ## Running Tests
 
 ```bash
 python tests/opp_hc_4/execute_tests.py
-python tests/opp_hc_4/execute_stress_tests.py
+WRITE_RESULTS_CSV=1 python tests/opp_hc_4/execute_tests.py          # to feed analysis/
+WRITE_RESULTS_CSV=1 python tests/opp_hc_4/execute_stress_tests.py
 python -m unittest tests.opp_hc_4.tests.normal.test_opp_hc_4_model_02_picker_speed
 ```
