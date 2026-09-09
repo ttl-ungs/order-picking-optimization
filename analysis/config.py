@@ -29,6 +29,19 @@ opp_v3 / opp_hc / opp_aco) to the current model lineup:
               actually exercise heterogeneous speeds and a binding
               cold-chain deadline (see tests/opp_hc_4/README.md). Kept OUT
               of CONGESTION_AWARE_MODELS.
+- opp_aco_4 : ACO counterpart of opp_hc_4 - same two extra features
+              (heterogeneous picker speed, cold-chain deadline) plugged
+              into opp_aco_2's probabilistic construction instead of Hill
+              Climbing's neighbor search. No congestion (orthogonal to
+              this model's addition, see models/opp_aco_4/opp_aco_4.py
+              header) -- opp_aco_3's incremental congestion reservation
+              and multi-pheromone (m-ACO4) architecture are NOT adopted
+              here. Same test strategy as opp_hc_4: most normal/stress
+              tests are ports of opp_aco_2's (V_p unset / T_frio_max
+              default +inf -> pure equivalence), plus a handful of its own
+              exercising heterogeneous speeds and a binding cold-chain
+              deadline (see tests/opp_aco_4/README.md). Kept OUT of
+              CONGESTION_AWARE_MODELS.
 
 Each entry maps a short label -> the directory name under tests/outputs/.
 Add/remove entries here as models evolve; nothing else in the pipeline
@@ -50,6 +63,7 @@ MODEL_DIRS = {
     "opp_aco_3": "opp_aco_3",
     "opp_v5": "opp_v5",
     "opp_hc_4": "opp_hc_4",
+    "opp_aco_4": "opp_aco_4",
 }
 
 SCENARIOS = ["normal", "stress"]
