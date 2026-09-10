@@ -29,24 +29,34 @@ stage2_scheduling.zpl additions over opp_v4):
   BEFORE picking its picker (same order as opp_aco_2's _build_ant_solution
   loop), eligibility for _select_picker is computed EXACTLY against that
   ant's own just-built route, not an approximation. If that particular
-  route leaves zero pickers eligible (rare -- ACO's routes are stochastic,
-  unlike opp_hc_4's deterministic nearest-neighbor construction), _select_
-  picker falls back to the full unrestricted roulette: the resulting
-  solution will fail ConstraintsValidator's cold-chain check and simply be
-  discarded like any other infeasible ant, so pheromones are never
-  reinforced towards an invalid assignment.
-  A batch left with NO eligible picker regardless of route (globally
-  infeasible) makes the instance infeasible outright -- short-circuited
-  up front via models/opp_v5/utils/cold_chain_validation.py::
-  batches_without_eligible_picker (reused directly), fed a per-batch
-  greedy nearest-neighbor route-time ESTIMATE built from _sp_dist (the
-  same all-pairs shortest-path table opp_aco_2 already precomputes for
-  route-construction visibility) rather than an actual constructed route,
-  since ACO has no single deterministic "the" route per batch the way
-  opp_hc_4's Dijkstra-based initial construction does. This estimate can
-  differ slightly from what an ant later actually builds, but it is the
-  same class of approximation opp_hc_4's own nearest-neighbor construction
-  already accepts -- not a new source of error introduced here.
+  route leaves zero pickers eligible, _select_picker falls back to the
+  full unrestricted roulette -- see below for what happens to that ant's
+  solution.
+
+Cold chain is enforced as a HARD constraint on the reported final answer,
+but a SOFT one (a large objective penalty) during the search itself -- see
+models/opp_aco_4/utils/constraints_validator.py's module docstring for the
+2026-09-09 audit finding this fixes (a single cold-chain-tight batch used
+to make ConstraintsValidator.validate_solution() reject an ant's WHOLE
+solution, starving pheromone updates for every batch, not just the tight
+one) and _deposit_solution's docstring for why pheromone deposit is
+filtered per-batch (compliant_batches), not per-solution.
+
+Infeasibility detection is now HONEST: there is no upfront estimate-based
+pre-check that can produce a false "infeasible" before the search ever
+gets to try (a 2026-09-10 audit finding -- an earlier version of this file
+pre-checked a greedy nearest-neighbor route-time ESTIMATE, which could be
+worse than what an ant might actually construct, incorrectly declaring a
+genuinely feasible instance infeasible). The ONLY upfront short-circuit
+left is mathematically exact, not an estimate: batches_without_eligible_
+picker is fed a route_time of EXACTLY 0.0 for every batch (the best
+physically possible case -- real route_time is always >= 0), so a batch
+flagged there is impossible under ANY route/picker whatsoever, not just
+the one this run happened to try. Every other batch gets a genuine full
+run of the ACO loop; best_global_solution is only ever set from a fully
+cold-chain-compliant ant (see solve()), so if the loop finishes without
+ever finding one, "infeasible" reflects an honest, exhausted search --
+not a shortcut that gave up before trying.
 
 Deliberately WITHOUT congestion between concurrent pickers (unlike
 opp_aco_3): congestion and picker-speed/cold-chain are orthogonal
@@ -128,25 +138,29 @@ class OPPAntColonyOptimization(Model):
         evaporation_rate = getattr(params, "_E", 0.15)
         q_factor = getattr(params, "_Q", 100.0)
 
-        # Cold-chain pre-check (mirrors opp_v5's PB_elig/B_sin_picker_elegible
-        # short-circuit, and opp_hc_4's own pre-check): a batch with zero
-        # eligible picker under ANY achievable route can never be assigned,
-        # so bail out before running the ACO loop on it. Since ACO has no
-        # single deterministic route per batch, this uses a greedy nearest-
-        # neighbor route-time ESTIMATE (see header) instead of an actual one.
-        route_time_estimate = {
-            batch: self._estimate_batch_route_time(batch, batch_assignments.get(batch, set()), params)
-            for batch in self.B
-        }
-        stuck_batches = batches_without_eligible_picker(
+        # Exact (not estimated) impossibility pre-check: fixed_time(b)
+        # alone (setup + picking, independent of route/picker) already
+        # tells us the BEST possible t_exec_pb for any picker, since
+        # route_time is always >= 0 -- feeding batches_without_eligible_
+        # picker a route_time of exactly 0.0 for every batch asks it "is
+        # there a picker fast enough even for a zero-distance route?".
+        # A batch flagged here is impossible under ANY route or picker,
+        # not just one this run happened to try -- unlike the estimate-
+        # based pre-check this replaces (2026-09-10 audit finding: a
+        # greedy-nearest-neighbor ESTIMATE could be worse than what an ant
+        # might actually construct, incorrectly declaring a genuinely
+        # feasible instance infeasible before a single ant ever ran). See
+        # header for the full rationale.
+        best_case_route_time = {batch: 0.0 for batch in self.B}
+        impossible_batches = batches_without_eligible_picker(
             self.P, self.B, self.N, params.C_n, params.Bn,
-            params.B_setup, params.B_picking, route_time_estimate,
+            params.B_setup, params.B_picking, best_case_route_time,
             self._picker_speeds(params), params.T_frio_max,
         )
-        if stuck_batches:
+        if impossible_batches:
             print(
                 "ERROR: No picker satisfies the cold-chain deadline for "
-                f"batches {sorted(stuck_batches)}"
+                f"batches {sorted(impossible_batches)}, even with a zero-distance route"
             )
             self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
@@ -368,106 +382,13 @@ class OPPAntColonyOptimization(Model):
             if self._t_exec_pb(batch, route, p, batch_assignments, params) <= params.T_frio_max + 1e-9
         ]
 
-    def _estimate_batch_route_time(
-        self, batch: str, orders: Set[str], params: SolveAco4ModelDTO
-    ) -> float:
-        """
-        Route-time ESTIMATE for the cold-chain pre-check (see header): uses
-        the all-pairs shortest-path table opp_aco_2 already precomputes for
-        route-construction visibility (_sp_dist) instead of an actual
-        ant-built route, since ACO has no single deterministic "the" route
-        per batch the way opp_hc_4's Dijkstra-based construction does.
-
-        A raw greedy nearest-neighbor visiting order is a heuristic, NOT
-        the shortest Hamiltonian path over the required locations --
-        batches_without_eligible_picker assumes it's given something close
-        to optimal (that's how opp_v5 feeds it: Stage 1's exact result). A
-        T_frio_max between the greedy order's t_exec_pb and the true
-        optimum's would make this pre-check declare "infeasible" an
-        instance that actually has a feasible assignment -- see 2026-09-09
-        audit finding. Tightening the visiting order with 2-opt (over the
-        _sp_dist metric, not a graph route -- see _two_opt_tighten_order)
-        before computing the estimate closes most of that gap at
-        negligible extra cost. Doesn't make the pre-check exact (2-opt's
-        local optimum isn't guaranteed to be the global optimum, and no
-        estimate here can guarantee what a probabilistic ant will actually
-        construct -- see the header's note on _select_picker's fallback).
-
-        Service time is approximated as the sum over REQUIRED locations
-        only (ignores any pass-through nodes a real route might add) -- a
-        reasonable approximation for a short-circuit check, not the final
-        reported t_exec_pb.
-        """
-        if not orders:
-            return 0.0
-
-        required_locations = self._find_required_locations(batch, orders, params.A)
-        if not required_locations:
-            return 0.0
-
-        depot = self.location_graph.get_depot()
-        final = self.location_graph.get_final()
-
-        order = self._nearest_neighbor_order(required_locations, depot)
-        order = self._two_opt_tighten_order(order, depot, final)
-        distance = self._tour_distance(order, depot, final)
-
-        service_time = sum(params.S.get(loc, 0) for loc in required_locations) if isinstance(params.S, dict) else 0
-        return params.B_time * distance + service_time
-
-    def _nearest_neighbor_order(self, required_locations: Set[str], depot: str) -> List[str]:
-        """Greedy nearest-neighbor visiting order over `required_locations`, by _sp_dist from `depot`."""
-        order: List[str] = []
-        current = depot
-        remaining = set(required_locations)
-        while remaining:
-            nearest = min(remaining, key=lambda loc: self._sp_dist.get((current, loc), float("inf")))
-            order.append(nearest)
-            current = nearest
-            remaining.discard(nearest)
-        return order
-
-    def _tour_distance(self, order: List[str], depot: str, final: str) -> float:
-        """Total _sp_dist distance of depot -> order... -> final."""
-        if not order:
-            return self._sp_dist.get((depot, final), 0.0)
-        distance = self._sp_dist.get((depot, order[0]), 0.0)
-        for i in range(len(order) - 1):
-            distance += self._sp_dist.get((order[i], order[i + 1]), 0.0)
-        distance += self._sp_dist.get((order[-1], final), 0.0)
-        return distance
-
-    def _two_opt_tighten_order(self, order: List[str], depot: str, final: str) -> List[str]:
-        """
-        2-opt local search over the VISITING ORDER of required locations
-        (not a graph route): reverses segments of `order` to shrink the
-        total depot->order...->final distance under the _sp_dist metric.
-        No topology check is needed here (_sp_dist is defined for every
-        reachable pair by construction) -- unlike opp_hc_4's twin method
-        (_two_opt_tighten_route), which reorders an actual graph route and
-        must keep every consecutive edge valid.
-        """
-        if len(order) <= 1:
-            return order
-
-        current = order
-        for _ in range(len(order)):
-            best_order = None
-            best_distance = self._tour_distance(current, depot, final)
-
-            for i in range(len(current) - 1):
-                for j in range(i + 1, len(current)):
-                    candidate = current[:i] + current[i:j + 1][::-1] + current[j + 1:]
-                    candidate_distance = self._tour_distance(candidate, depot, final)
-                    if candidate_distance < best_distance - 1e-9:
-                        best_distance = candidate_distance
-                        best_order = candidate
-
-            if best_order is None:
-                break
-            current = best_order
-
-        return current
+    # NOTE: this model used to have a route-time ESTIMATE (greedy nearest-
+    # neighbor over _sp_dist, 2-opt-tightened) here, feeding a pre-check
+    # that could declare a genuinely feasible instance "infeasible" before
+    # a single ant ever ran (2026-09-09/10 audit findings -- see header).
+    # Removed: the only pre-check left is the exact, estimate-free one in
+    # solve() (route_time = 0.0 for every batch), and every batch that
+    # survives it gets a real, full run of the ACO loop instead.
 
     def _precompute_shortest_paths(self) -> Dict[Tuple[str, str], float]:
         """Dijkstra from every node to get shortest-path distances."""

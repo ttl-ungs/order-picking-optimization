@@ -17,19 +17,24 @@ from tests.opp_aco_4.tests.opp_aco_4_test_case import OPPTestCaseACO4
 
 class TestOPPAntColonyOptimization4Model6PreCheckUsesTightenedRoute(OPPTestCaseACO4):
     """
-    Test ACO4-6: Regression for the 2026-09-09 audit finding -- the
-    cold-chain pre-check's greedy nearest-neighbor route-time ESTIMATE
-    (_estimate_batch_route_time) used to skip the 2-opt tightening step,
-    so it could be a lot worse than the shortest achievable route. Same
-    engineered graph as opp_hc_4's twin regression test:
+    Test ACO4-6: Regression for the 2026-09-09/10 audit findings -- the
+    cold-chain pre-check used to run a greedy nearest-neighbor route-time
+    ESTIMATE, which could be worse than the shortest achievable route (and
+    briefly, worse than what a 2-opt-tightened estimate found -- both
+    approaches were eventually removed in favor of an honest full search,
+    2026-09-10). Same engineered graph as opp_hc_4's twin regression test:
 
         D--1-->R1--3-->R2--5-->F   (nearest-neighbor order): distance 9
         D--3-->R2--3-->R1--1-->F   (optimal order):          distance 7
 
-    T_frio_max = 8 sits strictly between these two: the estimate must use
-    the tightened (optimal, here) order -- not the raw nearest-neighbor
-    one -- or the pre-check declares this genuinely feasible instance
-    "infeasible" before a single ant is ever built.
+    T_frio_max = 8 sits strictly between these two: only the shorter order
+    is cold-chain-compliant. There is no longer any route-time-ESTIMATE
+    pre-check to fool -- the only pre-check left (batches_without_eligible_
+    picker fed route_time=0.0, i.e. "is there a picker fast enough even
+    for a zero-distance route?") passes trivially here, so this instance
+    must be solved by the ACO loop actually finding the distance-7 order
+    among its ~6%-likely constructions within the iteration budget, not by
+    any upfront estimate.
     """
 
     def _build_graph(self):

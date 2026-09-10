@@ -18,13 +18,33 @@ counterpart of opp_v5's stage2_scheduling.zpl additions over opp_v4:
   depend on speed and route_time (travel + service) does. Faster pickers
   finish the same route sooner.
 - Cold chain (T_frio_max): a (picker, batch) pair is only eligible if
-  t_exec_pb[p, b] <= T_frio_max. This restricts WHICH picker a batch can be
-  assigned to (X_pb's domain), exactly like stage2_scheduling.zpl restricts
-  X_pb to PB_elig, rather than adding it as a separate penalized cost. A
-  batch left with zero eligible pickers makes the instance infeasible,
-  short-circuited up front the same way opp_v5's solve pipeline does (see
-  models/opp_v5/utils/cold_chain_validation.py::batches_without_eligible_picker,
-  reused here directly instead of re-implementing the same check).
+  t_exec_pb[p, b] <= T_frio_max.
+
+Cold chain is enforced as a HARD constraint on the reported final answer,
+but a SOFT one (a large cost penalty, _search_cost/_route_local_search_
+cost) during the search itself -- see models/opp_hc_4/utils/
+constraints_validator.py's module docstring for the 2026-09-10 audit
+finding this fixes (a cold-chain-ineligible batch used to make the
+initial solution get discarded outright, right after construction,
+before Hill Climbing ever got a chance to fix it via 2-opt/reassignment).
+
+Infeasibility detection is now HONEST: there is no upfront estimate-based
+pre-check that can produce a false "infeasible" before the search ever
+gets to try (a 2026-09-09 audit finding -- an earlier version of this
+file pre-checked batches_without_eligible_picker against the initial
+(heuristic, even after 2-opt-tightening) route, which could still be
+worse than what further search would achieve, incorrectly declaring a
+genuinely feasible instance infeasible). The ONLY upfront short-circuit
+left is mathematically exact, not an estimate: batches_without_eligible_
+picker is fed a route_time of EXACTLY 0.0 for every batch (the best
+physically possible case -- real route_time is always >= 0), so a batch
+flagged there is impossible under ANY route/picker whatsoever, not just
+the one this run happened to construct. Every other batch gets a genuine
+full run of the Hill Climbing loop; the reported answer (best_feasible_
+solution) is only ever set when every batch is fully cold-chain-compliant
+(see solve()), so if the loop finishes without ever reaching that,
+"infeasible" reflects an honest, exhausted search budget -- not a
+shortcut that gave up before trying.
 
 Deliberately WITHOUT congestion between concurrent pickers (unlike
 opp_hc_3): congestion and picker-speed/cold-chain are orthogonal additions
@@ -58,6 +78,18 @@ from models.opp_v5.utils.cold_chain_validation import batches_without_eligible_p
 class OPPHillClimbing(Model):
     """Hill Climbing solver for OPP v4 - picker speed + cold chain, no congestion."""
 
+    # Multiplier applied to a cold-chain overrun (a time-unit amount)
+    # before adding it to a search cost -- see constraints_validator.py's
+    # module docstring for why cold chain is a SOFT constraint during
+    # search now (2026-09-10 audit fix). Large enough to dominate the
+    # search away from violations (typical marginal objective contribution
+    # per unit of recollection time is W_full, usually single-to-low-
+    # double digits) without using an arbitrarily huge Big-M-style
+    # constant -- this is a plain Python cost comparison, not a MIP
+    # constraint, so there's no SCIP-presolve-numerics failure mode to
+    # worry about the way there was with opp_v5's M_seq.
+    _COLD_CHAIN_PENALTY_WEIGHT = 1000.0
+
     def __init__(self, dto: ModelDTO):
         super().__init__()
         self.N = sorted(dto.N)
@@ -85,6 +117,30 @@ class OPPHillClimbing(Model):
             return "infeasible", None
 
         batch_assignments = params.extract_batch_assignments()
+
+        # Exact (not estimated) impossibility pre-check: fixed_time(b)
+        # alone (setup + picking, independent of route/picker) already
+        # tells us the BEST possible t_exec_pb for any picker, since
+        # route_time is always >= 0 -- feeding batches_without_eligible_
+        # picker a route_time of exactly 0.0 for every batch asks it "is
+        # there a picker fast enough even for a zero-distance route?". A
+        # batch flagged here is impossible under ANY route or picker, not
+        # just one this run happened to construct -- unlike the estimate-
+        # based pre-check this replaces (2026-09-09 audit finding). See
+        # header for the full rationale.
+        best_case_route_time = {batch: 0.0 for batch in self.B}
+        impossible_batches = batches_without_eligible_picker(
+            self.P, self.B, self.N, params.C_n, params.Bn,
+            params.B_setup, params.B_picking, best_case_route_time,
+            self._picker_speeds(params), params.T_frio_max,
+        )
+        if impossible_batches:
+            print(
+                "ERROR: No picker satisfies the cold-chain deadline for "
+                f"batches {sorted(impossible_batches)}, even with a zero-distance route"
+            )
+            self._register_infeasible(params, time.time() - wall_clock_start)
+            return "infeasible", None
 
         validator = ConstraintsValidator(
             N=self.N,
@@ -128,24 +184,29 @@ class OPPHillClimbing(Model):
         max_iterations = params.Max_it
         max_no_improvement = params.Max_imp
 
-        current_solution, stuck_batches = self._generate_initial_feasible_solution(
+        current_solution = self._generate_initial_feasible_solution(
             batch_assignments, validator, params
         )
-
-        if stuck_batches:
-            print(
-                "ERROR: No picker satisfies the cold-chain deadline for "
-                f"batches {sorted(stuck_batches)}"
-            )
-            self._register_infeasible(params, time.time() - wall_clock_start)
-            return "infeasible", None
 
         if current_solution is None:
             print("ERROR: Could not generate initial feasible solution")
             self._register_infeasible(params, time.time() - wall_clock_start)
             return "infeasible", None
 
-        current_cost = evaluator.evaluate(current_solution)
+        # current_cost drives ACCEPT/REJECT decisions during the search
+        # (objective + cold-chain penalty, see _search_cost) -- it is NOT
+        # the reported obj_val. best_feasible_solution/best_feasible_cost
+        # (tracked separately, using the real objective with zero penalty)
+        # are what actually get reported: the search is free to wander
+        # through cold-chain-violating states along the way, but only ever
+        # reports one that's fully compliant.
+        current_cost = self._search_cost(current_solution, evaluator, validator)
+
+        best_feasible_solution = None
+        best_feasible_cost = float("inf")
+        if validator.cold_chain_violation(current_solution) == 0.0:
+            best_feasible_solution = current_solution.copy()
+            best_feasible_cost = evaluator.evaluate(current_solution)
 
         max_time = params.Max_time if getattr(params, "Max_time", None) else 30.0
 
@@ -161,31 +222,48 @@ class OPPHillClimbing(Model):
             iteration += 1
 
             neighbor_solution = self._generate_feasible_neighbor(
-                current_solution, batch_assignments, validator, params
+                current_solution, batch_assignments, params
             )
 
             if neighbor_solution is None:
                 no_improvement_count += 1
                 continue
 
-            neighbor_cost = evaluator.evaluate(neighbor_solution)
+            neighbor_cost = self._search_cost(neighbor_solution, evaluator, validator)
 
             if neighbor_cost < current_cost:
                 current_solution = neighbor_solution
                 current_cost = neighbor_cost
                 no_improvement_count = 0
+
+                violation = validator.cold_chain_violation(current_solution)
+                if violation == 0.0:
+                    true_cost = evaluator.evaluate(current_solution)
+                    if true_cost < best_feasible_cost:
+                        best_feasible_solution = current_solution.copy()
+                        best_feasible_cost = true_cost
             else:
                 no_improvement_count += 1
 
         elapsed = time.time() - wall_clock_start
 
         print(f"\nHill Climbing execution time: {elapsed:.4f}s")
-        print(f"Final objective value: {current_cost:.4f}")
         print(f"Iterations: {iteration}" + (" (stopped: time budget exceeded)" if timed_out else ""))
 
-        output = self._build_solution_output(current_solution)
+        if best_feasible_solution is None:
+            # The search ran its full budget (iterations, stagnation, or
+            # time) and never reached a cold-chain-compliant solution --
+            # an honest "infeasible", not a shortcut that gave up before
+            # trying (see header/constraints_validator.py docstrings).
+            print("ERROR: Hill Climbing never found a cold-chain-compliant solution within its search budget")
+            self._register_infeasible(params, elapsed)
+            return "infeasible", None
 
-        solution_info = self._build_solution_info(current_solution, current_cost, params)
+        print(f"Final objective value: {best_feasible_cost:.4f}")
+
+        output = self._build_solution_output(best_feasible_solution)
+
+        solution_info = self._build_solution_info(best_feasible_solution, best_feasible_cost, params)
         super().notify(solution_info=solution_info)
 
         solve_result = SolveResult(
@@ -193,7 +271,7 @@ class OPPHillClimbing(Model):
             output=output,
             elapsed=elapsed,
             params={
-                "obj_val": current_cost,
+                "obj_val": best_feasible_cost,
                 "W_full": params.W_full,
                 "W_ea_ta": params.W_ea_ta,
                 "W_ea": params.W_ea,
@@ -292,14 +370,17 @@ class OPPHillClimbing(Model):
         batch_assignments: Dict[str, Set[str]],
         validator: "ConstraintsValidator",
         params: SolveHC4ModelDTO,
-    ) -> Tuple[Optional[RouteSolution], Optional[Set[str]]]:
+    ) -> Optional[RouteSolution]:
         """
-        Generate initial FEASIBLE solution respecting ALL constraints,
-        picker speed and cold chain.
-        Returns (None, None) if any batch with required locations cannot be
-        routed at all, or (None, stuck_batches) if every batch got a route
-        but at least one has zero picker eligible under the cold-chain
-        deadline (mirrors opp_v5's PB_elig/B_sin_picker_elegible short-circuit).
+        Generate an initial solution respecting topology/capacity/one-
+        picker-per-batch. Returns None only if some batch's required
+        locations genuinely can't be routed at all (disconnected graph,
+        etc.) -- NOT if a batch comes out cold-chain-ineligible under its
+        (heuristic) route: that no longer aborts construction, since the
+        exact impossibility pre-check in solve() already ruled out the
+        only case where no route could ever fix it, and Hill Climbing gets
+        a full search budget to try for every other batch (see header /
+        constraints_validator.py's module docstring).
         """
         solution = RouteSolution(self.B, self.location_graph, batch_assignments, self.P)
         route_time: Dict[str, float] = {}
@@ -321,46 +402,23 @@ class OPPHillClimbing(Model):
 
             if route is None:
                 print(f"WARNING: Could not generate feasible route for batch {batch}")
-                return None, None
+                return None
 
             # Tighten with a standalone (picker/cold-chain-agnostic) 2-opt
-            # pass before using this route for anything else. Without this,
-            # the cold-chain pre-check below (and the Hill Climbing search's
-            # own starting point) would be judged against the raw nearest-
-            # neighbor/BFS construction, which is a heuristic, NOT the
-            # shortest route -- batches_without_eligible_picker assumes it's
-            # given something close to optimal (that's how opp_v5 feeds it:
-            # Stage 1's exact result). A T_frio_max between the raw
-            # construction's t_exec_pb and the true optimum's would make
-            # this pre-check declare "infeasible" an instance that actually
-            # has a feasible assignment 2-opt would later have found -- see
-            # 2026-09-09 audit finding. This doesn't make the pre-check
-            # exact (2-opt's local optimum for a TSP path isn't guaranteed
-            # to be the global optimum), but it closes most of the gap at
-            # negligible extra cost (one more O(n^2) pass, done once here
-            # instead of implicitly relied upon to happen later).
+            # pass -- gives Hill Climbing a better starting point than the
+            # raw nearest-neighbor/BFS construction, regardless of cold
+            # chain (cheap: one more O(n^2) pass, done once here).
             route = self._two_opt_tighten_route(route)
 
             solution.set_batch_route(batch, route)
             route_time[batch] = self._route_time(route, params)
 
-        # Cold-chain pre-check: a batch with zero eligible picker can never
-        # be assigned, so bail out before running Hill Climbing on it (same
-        # short-circuit opp_v5's solve pipeline applies before invoking ZIMPL).
-        stuck_batches = batches_without_eligible_picker(
-            self.P, self.B, self.N, params.C_n, params.Bn,
-            params.B_setup, params.B_picking, route_time,
-            self._picker_speeds(params), params.T_frio_max,
-        )
-        if stuck_batches:
-            return None, stuck_batches
-
         self._assign_batches_to_pickers(solution, batch_assignments, route_time, params)
 
         if not validator.validate_solution(solution):
-            return None, None
+            return None
 
-        return solution, None
+        return solution
 
     def _assign_batches_to_pickers(
         self,
@@ -370,19 +428,25 @@ class OPPHillClimbing(Model):
         params: SolveHC4ModelDTO,
     ) -> None:
         """
-        Distribute batches with orders across their COLD-CHAIN-ELIGIBLE
-        pickers, greedily balancing load (assign each batch to whichever of
-        its eligible pickers currently has the fewest batches).
+        Distribute batches with orders across pickers, greedily balancing
+        load among each batch's COLD-CHAIN-ELIGIBLE pickers when it has
+        any. A batch with NO eligible picker under its current route
+        (possible now that construction no longer aborts on this -- see
+        _generate_initial_feasible_solution) gets a best-effort pick: the
+        picker that minimizes t_exec_pb, i.e. gets it closest to
+        compliant, for Hill Climbing to try to finish the job on.
         """
         load = {p: 0 for p in self.P}
         batches_to_assign = [b for b in self.B if batch_assignments[b]]
         for batch in batches_to_assign:
-            eligible = self._eligible_pickers_for_batch(
-                batch, solution.get_batch_route(batch), batch_assignments, params
-            )
-            # Guaranteed non-empty: batches_without_eligible_picker already
-            # ruled out any batch with an empty eligible set before this runs.
-            picker = min(eligible, key=lambda p: (load[p], self.P.index(p)))
+            route = solution.get_batch_route(batch)
+            eligible = self._eligible_pickers_for_batch(batch, route, batch_assignments, params)
+            if eligible:
+                picker = min(eligible, key=lambda p: (load[p], self.P.index(p)))
+            else:
+                picker = min(
+                    self.P, key=lambda p: self._t_exec_pb(batch, route, p, batch_assignments, params)
+                )
             solution.assign_batch_to_picker(batch, picker)
             load[picker] += 1
 
@@ -590,17 +654,46 @@ class OPPHillClimbing(Model):
 
         return None
 
+    def _search_cost(self, solution: RouteSolution, evaluator: "RouteEvaluator", validator: "ConstraintsValidator") -> float:
+        """
+        Objective + a large penalty for any cold-chain overrun -- drives
+        ALL accept/reject decisions during the search (initial cost,
+        neighbor acceptance). NOT the reported obj_val: see solve()'s
+        best_feasible_solution/best_feasible_cost, tracked separately with
+        the real (unpenalized) objective, only from fully compliant states.
+        """
+        return evaluator.evaluate(solution) + self._COLD_CHAIN_PENALTY_WEIGHT * validator.cold_chain_violation(solution)
+
+    def _route_local_search_cost(
+        self, batch: str, route: List, picker: str,
+        batch_assignments: Dict[str, Set[str]], params: SolveHC4ModelDTO,
+    ) -> float:
+        """
+        Cheap per-route proxy used ONLY to pick the best 2-opt candidate
+        inside _generate_route_neighbor (distance + cold-chain-overrun
+        penalty for THIS batch alone) -- avoids recomputing the whole
+        solution's objective (earliness/tardiness across every order) for
+        every one of the O(n^2) candidates a 2-opt sweep considers. The
+        OUTER accept/reject decision in solve() still uses the real,
+        whole-solution _search_cost to decide whether to keep the result.
+        """
+        distance = self._calculate_route_distance(route)
+        violation = max(0.0, self._t_exec_pb(batch, route, picker, batch_assignments, params) - params.T_frio_max)
+        return params.B_time * distance + self._COLD_CHAIN_PENALTY_WEIGHT * violation
+
     def _generate_feasible_neighbor(
         self,
         solution: RouteSolution,
         batch_assignments: Dict[str, Set[str]],
-        validator: "ConstraintsValidator",
         params: SolveHC4ModelDTO,
     ) -> Optional[RouteSolution]:
         """
-        Generate a neighbor via one of three feasibility-preserving moves:
-        - 2-opt on a batch's route (must keep the assigned picker cold-chain-eligible)
-        - Reassign a batch to a different (cold-chain-eligible) picker
+        Generate a neighbor via one of three moves:
+        - 2-opt on a batch's route (topology-feasible only -- cold chain
+          is judged by the OUTER accept/reject step in solve(), via
+          _search_cost, not filtered out here)
+        - Reassign a batch to a different picker (any picker -- same
+          reasoning: the outer step judges whether it actually helps)
         - Swap the processing order of two batches on the same picker
         """
         batches_with_orders = [b for b in self.B if batch_assignments[b]]
@@ -621,10 +714,15 @@ class OPPHillClimbing(Model):
         params: SolveHC4ModelDTO,
     ) -> Optional[RouteSolution]:
         """
-        Full 2-opt on a randomly selected batch's route: only reversals that
-        stay topologically feasible AND keep the batch's current picker
-        cold-chain-eligible are considered; keeps the single best
-        (steepest-descent) improving one.
+        Full 2-opt on a randomly selected batch's route: every
+        topologically feasible reversal is scored by
+        _route_local_search_cost (distance + this batch's own cold-chain
+        overrun penalty), and the single best (steepest-descent)
+        improving one is kept -- deliberately NOT required to already be
+        fully cold-chain-compliant (see _generate_feasible_neighbor's
+        docstring): a move that reduces the overrun without eliminating
+        it is still progress, and the outer solve() loop decides whether
+        the resulting whole solution is actually better.
         """
         batches_with_routes = [b for b in self.B if solution.get_batch_route(b)]
         if not batches_with_routes:
@@ -638,7 +736,7 @@ class OPPHillClimbing(Model):
             return None
 
         best_route = None
-        best_distance = self._calculate_route_distance(route)
+        best_local_cost = self._route_local_search_cost(batch, route, picker, batch_assignments, params)
 
         for i in range(len(route) - 1):
             for j in range(i + 1, len(route)):
@@ -647,14 +745,9 @@ class OPPHillClimbing(Model):
                 if not self._is_route_feasible(new_route, batch, batch_assignments, params.A):
                     continue
 
-                if picker is not None and self._t_exec_pb(
-                    batch, new_route, picker, batch_assignments, params
-                ) > params.T_frio_max + 1e-9:
-                    continue
-
-                new_distance = self._calculate_route_distance(new_route)
-                if new_distance < best_distance - 1e-9:
-                    best_distance = new_distance
+                local_cost = self._route_local_search_cost(batch, new_route, picker, batch_assignments, params)
+                if local_cost < best_local_cost - 1e-9:
+                    best_local_cost = local_cost
                     best_route = new_route
 
         if best_route is None:
@@ -684,16 +777,22 @@ class OPPHillClimbing(Model):
         batch_assignments: Dict[str, Set[str]],
         params: SolveHC4ModelDTO,
     ) -> Optional[RouteSolution]:
-        """Move a random batch to a different COLD-CHAIN-ELIGIBLE picker, route untouched."""
+        """
+        Move a random batch to a different picker (any picker, route
+        untouched) -- NOT restricted to cold-chain-eligible ones anymore
+        (see _generate_feasible_neighbor's docstring): the outer solve()
+        loop's _search_cost penalizes a resulting overrun and rejects the
+        move if it doesn't help, so this can freely explore reassigning a
+        currently-ineligible batch towards a picker that gets it closer to
+        (or all the way to) compliance.
+        """
         batches_with_orders = [b for b in self.B if batch_assignments[b]]
         if not batches_with_orders:
             return None
 
         batch = random.choice(batches_with_orders)
         current_picker = solution.get_batch_picker(batch)
-        route = solution.get_batch_route(batch)
-        eligible = self._eligible_pickers_for_batch(batch, route, batch_assignments, params)
-        other_pickers = [p for p in eligible if p != current_picker]
+        other_pickers = [p for p in self.P if p != current_picker]
         if not other_pickers:
             return None
 

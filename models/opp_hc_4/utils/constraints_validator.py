@@ -2,12 +2,31 @@
 Constraints validator for opp_hc_4.
 
 Extends opp_hc_2's validator (all topology/capacity/assignment constraints,
-unchanged) with a cold-chain eligibility check: a batch's route may only be
-paired with a picker whose speed keeps t_exec_pb[p, b] within T_frio_max.
-This mirrors how stage2_scheduling.zpl restricts X_pb's domain to PB_elig
-instead of adding a separate constraint (see models/opp_v5/utils/
-cold_chain_validation.py) - here it is enforced as a hard feasibility check
-on the assignment, the same way every other opp_hc_2 constraint is.
+unchanged and still enforced as HARD constraints via validate_solution())
+with cold-chain eligibility. Unlike those, cold chain is deliberately NOT
+folded into validate_solution() -- see the 2026-09-10 audit finding this
+addresses:
+
+Cold chain used to be an extra hard check inside validate_solution(),
+called once right after the initial construction (opp_hc_4.py's
+_generate_initial_feasible_solution) and never again. That meant a batch
+that came out cold-chain-ineligible under its initial (heuristic) route
+made the WHOLE initial solution get thrown away immediately -- the Hill
+Climbing loop never got a chance to run 2-opt/reassignment moves that
+might have fixed just that one batch, because there was no solution left
+to run them on.
+
+Fix: cold chain is now a SOFT constraint during search (see
+cold_chain_violation(), consumed as a large cost penalty by
+opp_hc_4.py's _search_cost/_route_local_search_cost) and a HARD
+constraint only on what gets reported as the final answer (see
+validate_cold_chain_strict(), used by opp_hc_4.py's solve() to decide
+what may become best_feasible_solution). validate_solution() itself now
+checks ONLY opp_hc_2's original hard constraints (topology/capacity/
+one-picker-per-batch) -- an initial solution with a cold-chain-ineligible
+batch is no longer discarded outright; Hill Climbing gets a real,
+full-budget chance to fix it via 2-opt/reassignment, guided by the
+penalty naturally biasing accept/reject decisions towards compliance.
 
 No congestion here (unlike opp_hc_3): this model's only addition over
 opp_hc_2 is picker speed + cold chain, kept orthogonal to congestion.
@@ -49,12 +68,23 @@ class ConstraintsValidator(BaseConstraintsValidator):
         self.T_frio_max = T_frio_max
 
     def validate_solution(self, solution) -> bool:
-        """All opp_hc_2 constraints, plus cold-chain eligibility per batch."""
-        if not super().validate_solution(solution):
-            return False
-        return self._validate_cold_chain(solution)
+        """
+        opp_hc_2's ORIGINAL hard constraints only (topology, capacity,
+        exactly-one-picker-per-batch) -- cold chain is intentionally NOT
+        checked here anymore (see module docstring). An initial solution
+        with a cold-chain-ineligible batch is still accepted here, so Hill
+        Climbing gets a chance to fix it.
+        """
+        return super().validate_solution(solution)
 
-    def _validate_cold_chain(self, solution) -> bool:
+    def validate_cold_chain_strict(self, solution) -> bool:
+        """
+        HARD cold-chain check: every batch with orders must be assigned to
+        a picker whose t_exec_pb is within T_frio_max. Used to decide
+        whether a solution may become the reported best_feasible_solution
+        -- NOT used to gate the search itself (see cold_chain_violation()
+        for that; module docstring explains why).
+        """
         for batch in self.B:
             orders = self.batch_assignments.get(batch)
             if not orders:
@@ -69,6 +99,33 @@ class ConstraintsValidator(BaseConstraintsValidator):
                 return False
 
         return True
+
+    def cold_chain_violation(self, solution) -> float:
+        """
+        Total cold-chain overrun across every batch with orders: sum of
+        max(0, t_exec_pb[assigned_picker, b] - T_frio_max). Zero exactly
+        when validate_cold_chain_strict() would return True. Consumed by
+        opp_hc_4.py as a large search-cost penalty, so Hill Climbing is
+        biased toward (and, once it reaches zero, satisfies) cold chain
+        without needing to hard-reject a solution that hasn't gotten there
+        yet.
+        """
+        total = 0.0
+        for batch in self.B:
+            orders = self.batch_assignments.get(batch)
+            if not orders:
+                continue
+
+            picker = solution.get_batch_picker(batch)
+            if picker is None or picker not in self.P:
+                continue
+
+            route = solution.get_batch_route(batch)
+            overrun = self.t_exec_pb(batch, route, picker) - self.T_frio_max
+            if overrun > 0:
+                total += overrun
+
+        return total
 
     def t_exec_pb(self, batch: str, route: list, picker: str) -> float:
         """Same formula as stage2_scheduling.zpl's t_exec_pb: fixed setup/
