@@ -323,6 +323,24 @@ class OPPHillClimbing(Model):
                 print(f"WARNING: Could not generate feasible route for batch {batch}")
                 return None, None
 
+            # Tighten with a standalone (picker/cold-chain-agnostic) 2-opt
+            # pass before using this route for anything else. Without this,
+            # the cold-chain pre-check below (and the Hill Climbing search's
+            # own starting point) would be judged against the raw nearest-
+            # neighbor/BFS construction, which is a heuristic, NOT the
+            # shortest route -- batches_without_eligible_picker assumes it's
+            # given something close to optimal (that's how opp_v5 feeds it:
+            # Stage 1's exact result). A T_frio_max between the raw
+            # construction's t_exec_pb and the true optimum's would make
+            # this pre-check declare "infeasible" an instance that actually
+            # has a feasible assignment 2-opt would later have found -- see
+            # 2026-09-09 audit finding. This doesn't make the pre-check
+            # exact (2-opt's local optimum for a TSP path isn't guaranteed
+            # to be the global optimum), but it closes most of the gap at
+            # negligible extra cost (one more O(n^2) pass, done once here
+            # instead of implicitly relied upon to happen later).
+            route = self._two_opt_tighten_route(route)
+
             solution.set_batch_route(batch, route)
             route_time[batch] = self._route_time(route, params)
 
@@ -456,6 +474,69 @@ class OPPHillClimbing(Model):
         route.extend(path_to_final)
 
         return route
+
+    def _route_topology_feasible(self, route: List) -> bool:
+        """
+        Topology-only feasibility (depot/final edges + every consecutive
+        edge exists) for a route that is a PERMUTATION of an already-valid
+        route's nodes -- unlike _is_route_feasible, doesn't need to re-check
+        "no repeated nodes" or "covers all required locations", both
+        automatically preserved by any reordering of the same node set.
+        Used by _two_opt_tighten_route, which only ever reorders segments
+        of a route it was handed (never adds/removes nodes).
+        """
+        if not route:
+            return True
+
+        depot = self.location_graph.get_depot()
+        final = self.location_graph.get_final()
+
+        if not self.location_graph.has_edge(depot, route[0]):
+            return False
+
+        for i in range(len(route) - 1):
+            if not self.location_graph.has_edge(route[i], route[i + 1]):
+                return False
+
+        if not self.location_graph.has_edge(route[-1], final):
+            return False
+
+        return True
+
+    def _two_opt_tighten_route(self, route: List) -> List:
+        """
+        Standalone distance-minimizing 2-opt local search over `route`
+        (topology only -- no picker, no cold chain): repeatedly applies the
+        best improving reversal until none is left. Used to tighten the
+        nearest-neighbor/BFS construction's route BEFORE it's used for the
+        cold-chain eligibility pre-check or as the Hill Climbing search's
+        starting point (see _generate_initial_feasible_solution's call
+        site for why this matters). Bounded to len(route) sweeps as a
+        safety valve -- in practice 2-opt converges in far fewer.
+        """
+        if len(route) <= 1:
+            return route
+
+        current = route
+        for _ in range(len(route)):
+            best_route = None
+            best_distance = self._calculate_route_distance(current)
+
+            for i in range(len(current) - 1):
+                for j in range(i + 1, len(current)):
+                    candidate = current[:i] + current[i:j + 1][::-1] + current[j + 1:]
+                    if not self._route_topology_feasible(candidate):
+                        continue
+                    candidate_distance = self._calculate_route_distance(candidate)
+                    if candidate_distance < best_distance - 1e-9:
+                        best_distance = candidate_distance
+                        best_route = candidate
+
+            if best_route is None:
+                break
+            current = best_route
+
+        return current
 
     _MAX_BFF_EXPANSIONS = 200_000
 

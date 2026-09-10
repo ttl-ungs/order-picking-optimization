@@ -1,0 +1,105 @@
+import unittest
+import sys
+import os
+
+from dtos.aco.solve_aco_4_model_dto import SolveAco4ModelDTO
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
+)
+
+from models.opp_aco_4 import OPPAntColonyOptimization
+from models.base.opp_location_graph import OPPLocationGraph
+from dtos.opp.model_dto import ModelDTO
+
+from tests.opp_aco_4.tests.opp_aco_4_test_case import OPPTestCaseACO4
+
+
+class TestOPPAntColonyOptimization4Model6PreCheckUsesTightenedRoute(OPPTestCaseACO4):
+    """
+    Test ACO4-6: Regression for the 2026-09-09 audit finding -- the
+    cold-chain pre-check's greedy nearest-neighbor route-time ESTIMATE
+    (_estimate_batch_route_time) used to skip the 2-opt tightening step,
+    so it could be a lot worse than the shortest achievable route. Same
+    engineered graph as opp_hc_4's twin regression test:
+
+        D--1-->R1--3-->R2--5-->F   (nearest-neighbor order): distance 9
+        D--3-->R2--3-->R1--1-->F   (optimal order):          distance 7
+
+    T_frio_max = 8 sits strictly between these two: the estimate must use
+    the tightened (optimal, here) order -- not the raw nearest-neighbor
+    one -- or the pre-check declares this genuinely feasible instance
+    "infeasible" before a single ant is ever built.
+    """
+
+    def _build_graph(self):
+        graph = OPPLocationGraph(depot_node="D", final_node="F")
+        graph.add_vertex("R1", "picking")
+        graph.add_vertex("R2", "picking")
+
+        graph.add_edge("D", "R1", 1)
+        graph.add_edge("D", "R2", 3)
+        graph.add_edge("R1", "R2", 3)
+        graph.add_edge("R2", "R1", 3)
+        graph.add_edge("R1", "F", 1)
+        graph.add_edge("R2", "F", 5)
+
+        return graph
+
+    def test_nearest_neighbor_trap_is_not_reported_infeasible(self):
+        location_graph = self._build_graph()
+        V = location_graph.get_vertices()
+        N = {"O1"}
+        B = {"B1"}
+
+        a = {(n, v): 0 for n in N for v in V}
+        a[("O1", "R1")] = 1
+        a[("O1", "R2")] = 1
+
+        y = {("O1", "B1"): 1}
+        cap_n = {"O1": 1.0}
+
+        params = SolveAco4ModelDTO()
+        params.W_full = 1.0
+        params.W_ea_ta = 0.0
+        params.W_ea = 0.0
+        params.W_ta = 0.0
+        params.C_n = cap_n
+        params.C_v = 10.0
+        params.A = a
+        params.B_time = 1.0  # so route_time == raw distance, for a clean bound
+        params.B_setup = 0.0
+        params.B_picking = 0.0
+        params.Dd = {"O1": 1000.0}
+        params.M = 1000.0
+        params.Bn = y
+        params.V_p = {"P1": 1.0}
+        # Between the tightened (optimal here) route's distance (7) and the
+        # raw nearest-neighbor construction's distance (9).
+        params.T_frio_max = 8.0
+        params.Seed = 1
+
+        model_dto = ModelDTO()
+        model_dto.N = N
+        model_dto.location_graph = location_graph
+        model_dto.B = B
+        model_dto.P = {"P1"}
+        model_dto.start_time = self.start_time
+        model = OPPAntColonyOptimization(model_dto)
+
+        try:
+            result, output_graph, solution_info = self.solve_and_capture(model, params)
+        except Exception as e:
+            self.fail(f"Model execution failed: {e}")
+
+        self.assertIn(
+            result, ("optimal", "feasible"),
+            "The greedy nearest-neighbor ESTIMATE must not make the cold-chain "
+            "pre-check declare this feasible instance infeasible.",
+        )
+        self.assert_cold_chain_respected(solution_info, params.T_frio_max)
+        self.assertAlmostEqual(solution_info["batch_times"]["B1"], 7.0, places=4)
+
+
+if __name__ == "__main__":
+    unittest.main()

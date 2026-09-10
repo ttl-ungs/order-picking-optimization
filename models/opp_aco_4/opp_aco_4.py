@@ -80,6 +80,18 @@ class OPPAntColonyOptimization(Model):
 
     _MAX_ROUTE_ATTEMPTS_PER_BATCH = 100
 
+    # Multiplier applied to ConstraintsValidator.cold_chain_violation() (a
+    # time-unit overrun) before adding it to an ant solution's cost -- see
+    # constraints_validator.py's module docstring for why cold chain is a
+    # SOFT constraint during search now (2026-09-09 audit fix). Large
+    # enough to dominate the search away from violations (typical marginal
+    # objective contribution per unit of recollection time is W_full,
+    # usually single-to-low-double digits) without using an arbitrarily
+    # huge Big-M-style constant -- this is a continuous heuristic penalty,
+    # not a MIP constraint, so there's no SCIP-presolve-numerics failure
+    # mode to worry about the way there was with opp_v5's M_seq.
+    _COLD_CHAIN_PENALTY_WEIGHT = 1000.0
+
     def __init__(self, dto: ModelDTO):
         super().__init__()
         self.N = sorted(dto.N)
@@ -188,23 +200,50 @@ class OPPAntColonyOptimization(Model):
         while iteration < max_it:
             iteration += 1
             ant_solutions = []
+            feasible_ant_solutions = []
 
             for ant in range(num_ants):
                 ant_solution = self._build_ant_solution(
                     batch_assignments, pheromones, picker_pheromones, params, alpha, beta
                 )
 
-                if ant_solution is not None and validator.validate_solution(ant_solution):
-                    cost = evaluator.evaluate(ant_solution)
-                    ant_solutions.append((ant_solution, cost))
+                # validate_solution() now checks ONLY opp_aco_2's original
+                # hard constraints (topology/capacity/one-picker-per-batch)
+                # -- cold chain is a soft penalty below, not a hard reject
+                # here, so a single cold-chain-tight batch can no longer
+                # starve pheromone updates for every OTHER batch in the
+                # same ant (see constraints_validator.py's module docstring).
+                if ant_solution is None or not validator.validate_solution(ant_solution):
+                    continue
+
+                base_cost = evaluator.evaluate(ant_solution)
+                violation = validator.cold_chain_violation(ant_solution)
+                cost = base_cost + self._COLD_CHAIN_PENALTY_WEIGHT * violation
+                # Per-batch compliance set: which batches' route/picker
+                # pheromone this ant is allowed to reinforce (see
+                # _deposit_solution's docstring for why this must be
+                # per-batch, not all-or-nothing for the whole solution).
+                compliant_batches = validator.compliant_batches(ant_solution)
+                ant_solutions.append((ant_solution, cost, compliant_batches))
+
+                if violation == 0.0:
+                    feasible_ant_solutions.append((ant_solution, base_cost))
 
             if not ant_solutions:
                 continue
 
-            iter_best_solution, iter_best_cost = min(ant_solutions, key=lambda x: x[1])
-            if iter_best_cost < best_global_cost:
-                best_global_solution = iter_best_solution.copy()
-                best_global_cost = iter_best_cost
+            # best_global_solution is tracked ONLY among cold-chain-COMPLIANT
+            # ants (base_cost, unpenalized -- violation is 0 for these
+            # anyway) so the reported final answer always satisfies
+            # T_frio_max exactly, even though the search itself tolerates
+            # temporary violations to keep learning.
+            if feasible_ant_solutions:
+                iter_best_feasible_solution, iter_best_feasible_cost = min(
+                    feasible_ant_solutions, key=lambda x: x[1]
+                )
+                if iter_best_feasible_cost < best_global_cost:
+                    best_global_solution = iter_best_feasible_solution.copy()
+                    best_global_cost = iter_best_feasible_cost
 
             self._update_pheromones(
                 pheromones,
@@ -333,15 +372,31 @@ class OPPAntColonyOptimization(Model):
         self, batch: str, orders: Set[str], params: SolveAco4ModelDTO
     ) -> float:
         """
-        Greedy nearest-neighbor route-time ESTIMATE for the cold-chain
-        pre-check (see header): uses the all-pairs shortest-path table
-        opp_aco_2 already precomputes for route-construction visibility
-        (_sp_dist) instead of an actual ant-built route, since ACO has no
-        single deterministic "the" route per batch the way opp_hc_4's
-        Dijkstra-based construction does. Service time is approximated as
-        the sum over REQUIRED locations only (ignores any pass-through
-        nodes a real route might add) -- a reasonable approximation for a
-        short-circuit check, not the final reported t_exec_pb.
+        Route-time ESTIMATE for the cold-chain pre-check (see header): uses
+        the all-pairs shortest-path table opp_aco_2 already precomputes for
+        route-construction visibility (_sp_dist) instead of an actual
+        ant-built route, since ACO has no single deterministic "the" route
+        per batch the way opp_hc_4's Dijkstra-based construction does.
+
+        A raw greedy nearest-neighbor visiting order is a heuristic, NOT
+        the shortest Hamiltonian path over the required locations --
+        batches_without_eligible_picker assumes it's given something close
+        to optimal (that's how opp_v5 feeds it: Stage 1's exact result). A
+        T_frio_max between the greedy order's t_exec_pb and the true
+        optimum's would make this pre-check declare "infeasible" an
+        instance that actually has a feasible assignment -- see 2026-09-09
+        audit finding. Tightening the visiting order with 2-opt (over the
+        _sp_dist metric, not a graph route -- see _two_opt_tighten_order)
+        before computing the estimate closes most of that gap at
+        negligible extra cost. Doesn't make the pre-check exact (2-opt's
+        local optimum isn't guaranteed to be the global optimum, and no
+        estimate here can guarantee what a probabilistic ant will actually
+        construct -- see the header's note on _select_picker's fallback).
+
+        Service time is approximated as the sum over REQUIRED locations
+        only (ignores any pass-through nodes a real route might add) -- a
+        reasonable approximation for a short-circuit check, not the final
+        reported t_exec_pb.
         """
         if not orders:
             return 0.0
@@ -353,18 +408,66 @@ class OPPAntColonyOptimization(Model):
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
 
-        distance = 0.0
+        order = self._nearest_neighbor_order(required_locations, depot)
+        order = self._two_opt_tighten_order(order, depot, final)
+        distance = self._tour_distance(order, depot, final)
+
+        service_time = sum(params.S.get(loc, 0) for loc in required_locations) if isinstance(params.S, dict) else 0
+        return params.B_time * distance + service_time
+
+    def _nearest_neighbor_order(self, required_locations: Set[str], depot: str) -> List[str]:
+        """Greedy nearest-neighbor visiting order over `required_locations`, by _sp_dist from `depot`."""
+        order: List[str] = []
         current = depot
         remaining = set(required_locations)
         while remaining:
             nearest = min(remaining, key=lambda loc: self._sp_dist.get((current, loc), float("inf")))
-            distance += self._sp_dist.get((current, nearest), 0.0)
+            order.append(nearest)
             current = nearest
             remaining.discard(nearest)
-        distance += self._sp_dist.get((current, final), 0.0)
+        return order
 
-        service_time = sum(params.S.get(loc, 0) for loc in required_locations) if isinstance(params.S, dict) else 0
-        return params.B_time * distance + service_time
+    def _tour_distance(self, order: List[str], depot: str, final: str) -> float:
+        """Total _sp_dist distance of depot -> order... -> final."""
+        if not order:
+            return self._sp_dist.get((depot, final), 0.0)
+        distance = self._sp_dist.get((depot, order[0]), 0.0)
+        for i in range(len(order) - 1):
+            distance += self._sp_dist.get((order[i], order[i + 1]), 0.0)
+        distance += self._sp_dist.get((order[-1], final), 0.0)
+        return distance
+
+    def _two_opt_tighten_order(self, order: List[str], depot: str, final: str) -> List[str]:
+        """
+        2-opt local search over the VISITING ORDER of required locations
+        (not a graph route): reverses segments of `order` to shrink the
+        total depot->order...->final distance under the _sp_dist metric.
+        No topology check is needed here (_sp_dist is defined for every
+        reachable pair by construction) -- unlike opp_hc_4's twin method
+        (_two_opt_tighten_route), which reorders an actual graph route and
+        must keep every consecutive edge valid.
+        """
+        if len(order) <= 1:
+            return order
+
+        current = order
+        for _ in range(len(order)):
+            best_order = None
+            best_distance = self._tour_distance(current, depot, final)
+
+            for i in range(len(current) - 1):
+                for j in range(i + 1, len(current)):
+                    candidate = current[:i] + current[i:j + 1][::-1] + current[j + 1:]
+                    candidate_distance = self._tour_distance(candidate, depot, final)
+                    if candidate_distance < best_distance - 1e-9:
+                        best_distance = candidate_distance
+                        best_order = candidate
+
+            if best_order is None:
+                break
+            current = best_order
+
+        return current
 
     def _precompute_shortest_paths(self) -> Dict[Tuple[str, str], float]:
         """Dijkstra from every node to get shortest-path distances."""
@@ -635,13 +738,19 @@ class OPPAntColonyOptimization(Model):
         self,
         pheromones: Dict[Tuple[str, str], float],
         picker_pheromones: Dict[Tuple[str, str], float],
-        ant_solutions: List[Tuple[RouteSolution, float]],
+        ant_solutions: List[Tuple[RouteSolution, float, Optional[Set[str]]]],
         evaporation_rate: float,
         q_factor: float,
         best_global_solution: Optional[RouteSolution] = None,
         best_global_cost: float = float('inf')
     ) -> None:
-        """Evaporation + deposit on both the edge and (batch, picker) pheromone tables."""
+        """
+        Evaporation + deposit on both the edge and (batch, picker)
+        pheromone tables. Each entry in `ant_solutions` is now a
+        (solution, cost, compliant_batches) triple -- see
+        _deposit_solution's docstring for why deposit is filtered to
+        `compliant_batches` instead of depositing for the whole solution.
+        """
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
 
@@ -653,14 +762,20 @@ class OPPAntColonyOptimization(Model):
             picker_pheromones[key] *= (1.0 - evaporation_rate)
             picker_pheromones[key] = max(picker_pheromones[key], 0.01)
 
-        for solution, cost in ant_solutions:
+        for solution, cost, compliant_batches in ant_solutions:
             if cost <= 0:
                 continue
             deposit_amount = q_factor / cost
-            self._deposit_solution(solution, pheromones, picker_pheromones, deposit_amount, depot, final)
+            self._deposit_solution(
+                solution, pheromones, picker_pheromones, deposit_amount, depot, final,
+                batches=compliant_batches,
+            )
 
         if best_global_solution and best_global_cost < float('inf') and best_global_cost > 0:
             elitist_deposit = (q_factor / best_global_cost) * 2.0
+            # best_global_solution is only ever set from a cold-chain-
+            # compliant ant (see solve()'s feasible_ant_solutions), so every
+            # one of its batches is compliant -- deposit for all of them.
             self._deposit_solution(best_global_solution, pheromones, picker_pheromones, elitist_deposit, depot, final)
 
     def _deposit_solution(
@@ -671,9 +786,39 @@ class OPPAntColonyOptimization(Model):
         amount: float,
         depot: str,
         final: str,
+        batches: Optional[Set[str]] = None,
     ) -> None:
-        """Deposit pheromone on the edges and (batch, picker) pair used by a solution."""
-        for batch in self.B:
+        """
+        Deposit pheromone on the edges and (batch, picker) pair used by a
+        solution, restricted to `batches` (None means every batch in
+        self.B -- used for the elitist best_global_solution deposit, always
+        fully cold-chain-compliant by construction).
+
+        Restricting to cold-chain-COMPLIANT batches only (rather than
+        depositing for the whole ant solution whenever its overall
+        cold-chain PENALTY happens to still let it through, which is what
+        the very first version of this soft-constraint fix did) matters a
+        lot in practice: depositing for a batch's route/picker pheromone
+        even when THAT batch violates T_frio_max reinforces exactly the
+        edges/assignment that caused the violation. Verified empirically
+        (2026-09-09) on an adversarial two-node instance where the
+        violating construction was ~94% likely per ant vs. ~6% for the
+        compliant one: depositing indiscriminately made the violating
+        edges' pheromone grow while the compliant edges' decayed to the
+        floor within ~10 iterations, and the compliant route was NEVER
+        found again after that (pheromone-reinforced premature convergence
+        onto the wrong pattern) -- worse than not touching cold chain
+        during search at all. Skipping deposit for individually-violating
+        batches (while still depositing for every OTHER, compliant batch
+        in the same ant solution) avoids that: a batch's own edges only
+        ever get reinforced when it happens to be built compliant, exactly
+        like a hard per-solution reject would behave for a single-batch
+        instance, while still letting sibling batches in a multi-batch
+        instance learn normally even while one stays cold-chain-tight --
+        the actual goal of making cold chain soft in the first place.
+        """
+        target_batches = batches if batches is not None else self.B
+        for batch in target_batches:
             route = solution.get_batch_route(batch)
             if route:
                 full_route = [depot] + route + [final]
