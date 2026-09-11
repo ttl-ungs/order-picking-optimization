@@ -142,6 +142,10 @@ class OPPHillClimbing(Model):
         iteration = 0
         no_improvement_count = 0
         timed_out = False
+        # See opp_hc_2's identical comment: current_solution/current_cost
+        # only change on strict improvement, so this just remembers WHEN
+        # the last one happened (the "iteration of convergence" metric).
+        best_found_at_iteration = 0
 
         while iteration < max_iterations and no_improvement_count < max_no_improvement:
             if time.time() - wall_clock_start > max_time:
@@ -164,6 +168,7 @@ class OPPHillClimbing(Model):
                 current_solution = neighbor_solution
                 current_cost = neighbor_cost
                 no_improvement_count = 0
+                best_found_at_iteration = iteration
             else:
                 no_improvement_count += 1
 
@@ -205,6 +210,8 @@ class OPPHillClimbing(Model):
                 "Max_it": params.Max_it,
                 "Max_imp": params.Max_imp,
                 "Min_dwell": min_dwell,
+                "iterations_run": iteration,
+                "best_found_at_iteration": best_found_at_iteration,
             },
         )
         solve_registry.register(solve_result)

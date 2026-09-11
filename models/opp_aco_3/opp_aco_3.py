@@ -166,6 +166,11 @@ class OPPAntColonyOptimization(Model):
         iterations_since_improvement = 0
         cataclysms_used = 0
         iteration = 0
+        # "Iteration of convergence": which iteration last improved
+        # best_global_solution -- absolute iteration number, unlike
+        # iterations_since_improvement (a relative countdown used for the
+        # cataclysm trigger, reset by design whenever this happens too).
+        best_found_at_iteration = 0
 
         while iteration < max_it:
             iteration += 1
@@ -205,6 +210,7 @@ class OPPAntColonyOptimization(Model):
                 best_global_cost = iter_best_cost
                 best_global_congestion_cost = iter_best_congestion_of_best
                 iterations_since_improvement = 0
+                best_found_at_iteration = iteration
             else:
                 iterations_since_improvement += 1
 
@@ -285,6 +291,8 @@ class OPPAntColonyOptimization(Model):
                 "Min_dwell": min_dwell,
                 "Cataclysms_used": cataclysms_used,
                 "Max_route_attempts_per_batch": self._MAX_ROUTE_ATTEMPTS_PER_BATCH,
+                "iterations_run": iteration,
+                "best_found_at_iteration": best_found_at_iteration,
             },
         )
         solve_registry.register(solve_result)

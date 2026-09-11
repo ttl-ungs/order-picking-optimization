@@ -218,6 +218,11 @@ class OPPHillClimbing(Model):
 
         best_feasible_solution = None
         best_feasible_cost = float("inf")
+        # "Iteration of convergence": WHEN best_feasible_solution was last
+        # improved (not current_cost/search_cost, which can wander through
+        # cold-chain-violating states -- see comment above). 0 means the
+        # initial construction was already the best feasible answer found.
+        best_found_at_iteration = 0
         if validator.cold_chain_violation(current_solution) == 0.0:
             best_feasible_solution = current_solution.copy()
             best_feasible_cost = evaluator.evaluate(current_solution)
@@ -256,6 +261,7 @@ class OPPHillClimbing(Model):
                     if true_cost < best_feasible_cost:
                         best_feasible_solution = current_solution.copy()
                         best_feasible_cost = true_cost
+                        best_found_at_iteration = iteration
             else:
                 no_improvement_count += 1
 
@@ -304,6 +310,8 @@ class OPPHillClimbing(Model):
                 "V": len(self.location_graph.get_vertices()),
                 "Max_it": params.Max_it,
                 "Max_imp": params.Max_imp,
+                "iterations_run": iteration,
+                "best_found_at_iteration": best_found_at_iteration,
             },
         )
         solve_registry.register(solve_result)

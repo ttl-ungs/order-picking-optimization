@@ -131,6 +131,14 @@ class OPPHillClimbing(Model):
         iteration = 0
         no_improvement_count = 0
         timed_out = False
+        # current_solution/current_cost only ever change when strictly
+        # better (accept-if-better), so they're already "the best found so
+        # far" -- this just remembers WHEN the last such improvement
+        # happened, for the "iteration of convergence" metric (how many
+        # iterations were actually useful vs. wasted after the search had
+        # already found its answer, distinct from Max_it, the configured
+        # LIMIT already reported below).
+        best_found_at_iteration = 0
 
         # Hill climbing main loop, capped by iterations, stagnation, AND a
         # wall-clock budget so a single solve() call can't run indefinitely.
@@ -157,6 +165,7 @@ class OPPHillClimbing(Model):
                 current_solution = neighbor_solution
                 current_cost = neighbor_cost
                 no_improvement_count = 0
+                best_found_at_iteration = iteration
             else:
                 no_improvement_count += 1
 
@@ -195,6 +204,8 @@ class OPPHillClimbing(Model):
                 "V": len(self.location_graph.get_vertices()),
                 "Max_it": params.Max_it,
                 "Max_imp": params.Max_imp,
+                "iterations_run": iteration,
+                "best_found_at_iteration": best_found_at_iteration,
             },
         )
         solve_registry.register(solve_result)

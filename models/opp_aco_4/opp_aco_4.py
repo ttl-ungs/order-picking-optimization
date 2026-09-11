@@ -224,6 +224,11 @@ class OPPAntColonyOptimization(Model):
         best_global_solution = None
         best_global_cost = float("inf")
         iteration = 0
+        # "Iteration of convergence": which iteration last improved
+        # best_global_solution (always cold-chain-compliant, see below) --
+        # distinct from `iteration`/`max_it` (iterations actually run vs.
+        # the configured LIMIT).
+        best_found_at_iteration = 0
 
         while iteration < max_it:
             iteration += 1
@@ -272,6 +277,7 @@ class OPPAntColonyOptimization(Model):
                 if iter_best_feasible_cost < best_global_cost:
                     best_global_solution = iter_best_feasible_solution.copy()
                     best_global_cost = iter_best_feasible_cost
+                    best_found_at_iteration = iteration
 
             self._update_pheromones(
                 pheromones,
@@ -327,6 +333,8 @@ class OPPAntColonyOptimization(Model):
                 "Alpha": alpha,
                 "Beta": beta,
                 "Max_route_attempts_per_batch": self._MAX_ROUTE_ATTEMPTS_PER_BATCH,
+                "iterations_run": iteration,
+                "best_found_at_iteration": best_found_at_iteration,
             },
         )
         solve_registry.register(solve_result)
