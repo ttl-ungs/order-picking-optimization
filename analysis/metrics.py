@@ -89,6 +89,52 @@ def time_stats_table(df: pd.DataFrame) -> pd.DataFrame:
     return out.reset_index()
 
 
+def memory_table(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Mean / std / max peak_rss_mb (peak resident set size, MB) per model x
+    scenario, OK cases only. Measures the whole test child process (see
+    tests/test_runner.py::_peak_rss_mb), so for exact models this is
+    dominated by SCIP's native branch-and-bound memory, not Python
+    objects.
+
+    peak_rss_mb was added 2026-09-11 -- a CSV from before that (still the
+    "latest" one for some model/scenario until it's re-run) simply won't
+    have the column at all, not just empty values, so this returns an
+    (empty but correctly-shaped) table for that combination instead of
+    raising, same as profiling_table's empty-`sub` guard above.
+    """
+    ok = _ok(df)
+    empty = pd.DataFrame(columns=["model", "scenario", "mean_rss_mb", "std_rss_mb", "max_rss_mb", "n"])
+    if "peak_rss_mb" not in ok.columns:
+        return empty
+    ok = ok.dropna(subset=["peak_rss_mb"])
+    if ok.empty:
+        return empty
+    g = ok.groupby(["model", "scenario"])["peak_rss_mb"]
+    out = g.agg(mean_rss_mb="mean", std_rss_mb="std", max_rss_mb="max", n="count")
+    return out.reset_index()
+
+
+def sla_table(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Mean / min sla_on_time_pct (% of orders with tardiness <= 0) per model
+    x scenario, OK cases with a recorded SLA value only.
+
+    sla_on_time_pct was added 2026-09-11 -- see memory_table's docstring
+    for why a missing column (not just missing values) needs its own guard.
+    """
+    ok = _ok(df)
+    empty = pd.DataFrame(columns=["model", "scenario", "mean_sla_pct", "min_sla_pct", "n"])
+    if "sla_on_time_pct" not in ok.columns:
+        return empty
+    ok = ok.dropna(subset=["sla_on_time_pct"])
+    if ok.empty:
+        return empty
+    g = ok.groupby(["model", "scenario"])["sla_on_time_pct"]
+    out = g.agg(mean_sla_pct="mean", min_sla_pct="min", n="count")
+    return out.reset_index()
+
+
 def profiling_table(df: pd.DataFrame, exact_model: str = EXACT_MODEL) -> pd.DataFrame:
     """
     For the exact model only: what share of total_time is spent inside the

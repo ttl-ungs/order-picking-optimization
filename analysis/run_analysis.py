@@ -24,8 +24,10 @@ from analysis.metrics import (
     congestion_reduction_table,
     congestion_table,
     correlation_table,
+    memory_table,
     profiling_table,
     quality_gap_table,
+    sla_table,
     success_rate_table,
     time_stats_table,
 )
@@ -63,6 +65,8 @@ def main():
 
     success = success_rate_table(df)
     times = time_stats_table(df)
+    memory = memory_table(df)
+    sla = sla_table(df)
     profiling = profiling_table(df, exact_model=EXACT_MODEL)
     quality_gap = quality_gap_table(df, exact_model=EXACT_MODEL)
     congestion = congestion_table(df)
@@ -95,6 +99,12 @@ def main():
 
         f.write("\n## 2. Tiempo de ejecución (solo casos OK)\n\n")
         f.write(_md_table(times))
+
+        f.write("\n## 2.1 Memoria pico (RAM, MB, solo casos OK)\n\n")
+        f.write(_md_table(memory))
+
+        f.write("\n## 2.2 Nivel de servicio (% de órdenes sin tardanza, solo casos con dato)\n\n")
+        f.write(_md_table(sla))
 
         f.write("\n## 3. Profiling del modelo exacto (opp_v4)\n\n")
         f.write(_md_table(profiling))
