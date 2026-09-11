@@ -6,6 +6,7 @@ from importlib import import_module
 
 from models.utils.dat_files_builder import write_indexed_dat, write_scalar_dat
 from tests.opp_v5.config import DAT_DIR, STAGE1_ZPL_PATH, STAGE2_ZPL_PATH
+from tests.opp_v5.tests.stage1_decomposition import solve_stage1_decomposed
 from tests.utils.zpl_utils import solve_zpl
 
 
@@ -33,7 +34,14 @@ def solve_v5_from_v4_data(_zpl_path, dat_dir=None, params=None):
     v5 routing solve followed by the v5 scheduling solve.
     """
     dat_dir = dat_dir or DAT_DIR
-    stage1_status, stage1_values = solve_zpl(STAGE1_ZPL_PATH, dat_dir=dat_dir, params=params)
+    # Decomposed into one solve per batch instead of one joint solve for
+    # every batch (see stage1_decomposition.py's module docstring for the
+    # measured speedup) -- STAGE1_ZPL_PATH itself is unchanged. `params`
+    # (capacity/duplicate-assignment pre-checks, CSV metadata) isn't
+    # threaded into the per-batch solves; it's still applied at the Stage
+    # 2 call below with the untouched full scenario, so a genuinely
+    # invalid input is still caught -- just there instead of here.
+    stage1_status, stage1_values = solve_stage1_decomposed(dat_dir)
     if stage1_status not in ("optimal", "feasible"):
         return stage1_status, stage1_values
 

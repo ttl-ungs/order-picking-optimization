@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from models.utils.dat_files_builder import build_dat_files, write_indexed_dat, write_scalar_dat
 from models.opp_v5.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
 from tests.opp_v5.config import DAT_DIR, STAGE1_ZPL_PATH, STAGE2_ZPL_PATH
+from tests.opp_v5.tests.stage1_decomposition import solve_stage1_decomposed
 from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
 
 
@@ -15,7 +16,10 @@ class OPPTestCaseV5(unittest.TestCase):
 
     def run_pipeline(self, scenario, solve_stage2=True):
         build_dat_files(DAT_DIR, scenario)
-        stage1_status, stage1_values = solve_zpl(STAGE1_ZPL_PATH, dat_dir=DAT_DIR)
+        # Decomposed into one solve per batch instead of one joint solve
+        # for every batch (see stage1_decomposition.py's module docstring
+        # for the measured speedup) -- STAGE1_ZPL_PATH itself is unchanged.
+        stage1_status, stage1_values = solve_stage1_decomposed(DAT_DIR)
         self.assertIn(stage1_status, ("optimal", "feasible"), "Stage 1 did not solve")
 
         route_times = self.extract_route_times(stage1_values, scenario["B"])
