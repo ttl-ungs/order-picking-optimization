@@ -46,6 +46,7 @@ from dtos.opp.model_dto import ModelDTO
 from models.opp_hc_3.utils.route_solution import RouteSolution
 from models.opp_hc_3.utils.route_evaluator import RouteEvaluator
 from models.opp_hc_3.utils.constraints_validator import ConstraintsValidator
+from models.utils.sla import sla_on_time_pct
 
 
 class OPPHillClimbing(Model):
@@ -187,6 +188,7 @@ class OPPHillClimbing(Model):
             params={
                 "obj_val": current_cost,
                 "obj_val_congestion": congestion_cost,
+                "sla_on_time_pct": sla_on_time_pct(solution_info["tardiness"]),
                 "W_full": params.W_full,
                 "W_ea_ta": params.W_ea_ta,
                 "W_ea": params.W_ea,

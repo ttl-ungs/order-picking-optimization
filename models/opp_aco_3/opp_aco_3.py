@@ -58,6 +58,7 @@ import models.utils.solve_registry as solve_registry
 from models.opp_aco_3.utils.route_solution import RouteSolution
 from models.opp_aco_3.utils.route_evaluator import RouteEvaluator
 from models.opp_aco_3.utils.constraints_validator import ConstraintsValidator
+from models.utils.sla import sla_on_time_pct
 
 
 class OPPAntColonyOptimization(Model):
@@ -262,6 +263,7 @@ class OPPAntColonyOptimization(Model):
             params={
                 "obj_val": best_global_cost,
                 "obj_val_congestion": best_global_congestion_cost,
+                "sla_on_time_pct": sla_on_time_pct(solution_info["tardiness"]),
                 "W_full": params.W_full,
                 "W_ea_ta": params.W_ea_ta,
                 "W_ea": params.W_ea,

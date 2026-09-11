@@ -104,6 +104,14 @@ def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
 
     params["debug_output"] = debug_string
 
+    # SLA (nivel de servicio): % de ordenes que llegaron a tiempo o antes
+    # (tardiness <= 0). Derivado de las variables ta_n$<orden> ya resueltas
+    # arriba -- ninguna de las etapas/modelos que no tienen esa variable aporta
+    # ta_values, asi que sla_on_time_pct queda ausente para esos, no en 0.
+    ta_values = [val for name, val in var_values.items() if name.lower().startswith("ta_n$")]
+    if ta_values:
+        params["sla_on_time_pct"] = sum(1 for t in ta_values if t <= 1e-6) / len(ta_values) * 100
+
     obj_val = model.getObjVal() if status in ("optimal", "feasible") else None
 
     solve_result = SolveResult(

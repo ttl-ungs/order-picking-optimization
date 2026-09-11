@@ -73,6 +73,7 @@ from models.opp_hc_2.utils.route_solution import RouteSolution
 from models.opp_hc_4.utils.route_evaluator import RouteEvaluator
 from models.opp_hc_4.utils.constraints_validator import ConstraintsValidator
 from models.opp_v5.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
+from models.utils.sla import sla_on_time_pct
 
 
 class OPPHillClimbing(Model):
@@ -285,6 +286,7 @@ class OPPHillClimbing(Model):
             elapsed=elapsed,
             params={
                 "obj_val": best_feasible_cost,
+                "sla_on_time_pct": sla_on_time_pct(solution_info["tardiness"]),
                 "W_full": params.W_full,
                 "W_ea_ta": params.W_ea_ta,
                 "W_ea": params.W_ea,
