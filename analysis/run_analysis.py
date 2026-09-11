@@ -23,6 +23,7 @@ from analysis.load import load_all
 from analysis.metrics import (
     congestion_reduction_table,
     congestion_table,
+    convergence_table,
     correlation_table,
     memory_table,
     profiling_table,
@@ -67,6 +68,7 @@ def main():
     times = time_stats_table(df)
     memory = memory_table(df)
     sla = sla_table(df)
+    convergence = convergence_table(df)
     profiling = profiling_table(df, exact_model=EXACT_MODEL)
     quality_gap = quality_gap_table(df, exact_model=EXACT_MODEL)
     congestion = congestion_table(df)
@@ -105,6 +107,9 @@ def main():
 
         f.write("\n## 2.2 Nivel de servicio (% de órdenes sin tardanza, solo casos con dato)\n\n")
         f.write(_md_table(sla))
+
+        f.write("\n## 2.3 Iteración de convergencia (solo Hill Climbing / ACO)\n\n")
+        f.write(_md_table(convergence))
 
         f.write("\n## 3. Profiling del modelo exacto (opp_v4)\n\n")
         f.write(_md_table(profiling))

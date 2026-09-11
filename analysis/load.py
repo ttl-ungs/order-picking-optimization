@@ -34,6 +34,8 @@ NUMERIC_COLUMNS = [
     "obj_val_congestion",
     "peak_rss_mb",
     "sla_on_time_pct",
+    "iterations_run",
+    "best_found_at_iteration",
     "N",
     "V",
     "B",

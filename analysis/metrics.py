@@ -135,6 +135,51 @@ def sla_table(df: pd.DataFrame) -> pd.DataFrame:
     return out.reset_index()
 
 
+def convergence_table(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Only meaningful for the 6 Hill Climbing/ACO models (hc_2/3/4,
+    aco_2/3/4) -- exact models don't iterate, so their rows simply won't
+    have best_found_at_iteration/iterations_run and are absent here, not
+    zero. mean_convergence_pct is best_found_at_iteration / iterations_run
+    (0% = the initial construction was already the final answer, 100% =
+    kept improving until the very last iteration it ran, i.e. likely
+    would've kept improving with a bigger budget) -- how much of the
+    search was actually useful vs. wasted after convergence, complementing
+    the raw iteration counts with a scale-independent number comparable
+    across instances with different Max_it.
+    """
+    ok = _ok(df)
+    empty = pd.DataFrame(columns=[
+        "model", "scenario", "mean_iterations_run", "mean_best_found_at_iteration",
+        "mean_convergence_pct", "n",
+    ])
+    needed = {"iterations_run", "best_found_at_iteration"}
+    if not needed.issubset(ok.columns):
+        return empty
+    ok = ok.dropna(subset=list(needed))
+    if ok.empty:
+        return empty
+
+    ok = ok.copy()
+    # iterations_run == 0 only for a solve that never entered its main
+    # loop (e.g. failed before iterating) -- shouldn't reach an "ok" row,
+    # but guard the division anyway rather than propagate a divide-by-zero.
+    ok["convergence_pct"] = np.where(
+        ok["iterations_run"] > 0,
+        ok["best_found_at_iteration"] / ok["iterations_run"] * 100,
+        np.nan,
+    )
+
+    g = ok.groupby(["model", "scenario"])
+    out = pd.DataFrame({
+        "mean_iterations_run": g["iterations_run"].mean(),
+        "mean_best_found_at_iteration": g["best_found_at_iteration"].mean(),
+        "mean_convergence_pct": g["convergence_pct"].mean(),
+        "n": g["iterations_run"].count(),
+    })
+    return out.reset_index()
+
+
 def profiling_table(df: pd.DataFrame, exact_model: str = EXACT_MODEL) -> pd.DataFrame:
     """
     For the exact model only: what share of total_time is spent inside the
