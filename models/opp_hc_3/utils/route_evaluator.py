@@ -107,6 +107,16 @@ class RouteEvaluator:
         """Total wait time incurred by the current solution (diagnostic-only, not used to accept/reject moves)."""
         return solution.total_congestion_wait()
 
+    def evaluate_congestion_collisions(self, solution) -> int:
+        """
+        How many times a node/edge reservation had to wait for another
+        picker in the current solution (a FREQUENCY metric -- how OFTEN
+        two pickers actually collided -- distinct from evaluate_congestion,
+        which is the accumulated TIME lost). Diagnostic-only, same as
+        evaluate_congestion.
+        """
+        return solution.get_total_collisions()
+
     def compute_batch_completions(self, solution) -> Dict[str, float]:
         """
         Compute v_b[b]: the completion time of each batch, given the picker
@@ -161,6 +171,7 @@ class RouteEvaluator:
                 batch_times[batch] = picker_cumulative[picker]
                 solution.set_batch_congestion_wait(batch, congestion_wait)
 
+        solution.set_total_collisions(tracker.total_collisions())
         return batch_times
 
     def _calculate_batch_execution_time(self, batch: str, route: list, orders: Set[str]) -> float:

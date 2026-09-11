@@ -46,6 +46,12 @@ class RouteSolution:
         # already occupied by another picker's batch (see CongestionTracker).
         self.congestion_wait: Dict[str, float] = {batch: 0.0 for batch in batches}
 
+        # How many times a reservation had to wait for a busy node/edge
+        # while this ant's routes were being built incrementally
+        # (CongestionTracker.total_collisions()) -- a FREQUENCY metric,
+        # distinct from congestion_wait (accumulated TIME lost).
+        self.total_collisions: int = 0
+
     def set_batch_route(self, batch: str, route: List):
         """Set the route for a batch."""
         self.routes[batch] = route.copy()
@@ -65,6 +71,14 @@ class RouteSolution:
     def total_congestion_wait(self) -> float:
         """Sum of congestion wait time across every batch in the solution."""
         return sum(self.congestion_wait.values())
+
+    def set_total_collisions(self, count: int):
+        """Record how many node/edge reservations had to wait while this ant's routes were built."""
+        self.total_collisions = count
+
+    def get_total_collisions(self) -> int:
+        """How many node/edge reservations had to wait while this ant's routes were built."""
+        return self.total_collisions
 
     def assign_batch_to_picker(self, batch: str, picker: str, position: Optional[int] = None):
         """Assign a batch to a picker, appending it to (or inserting it into) the picker's sequence."""
@@ -103,6 +117,7 @@ class RouteSolution:
         new_solution.picker_of = deepcopy(self.picker_of)
         new_solution.sequence = deepcopy(self.sequence)
         new_solution.congestion_wait = deepcopy(self.congestion_wait)
+        new_solution.total_collisions = self.total_collisions
         return new_solution
 
     def to_z_dict(self) -> Dict[tuple, int]:

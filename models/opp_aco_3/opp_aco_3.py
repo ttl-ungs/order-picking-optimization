@@ -269,6 +269,7 @@ class OPPAntColonyOptimization(Model):
             params={
                 "obj_val": best_global_cost,
                 "obj_val_congestion": best_global_congestion_cost,
+                "congestion_collisions": best_global_solution.get_total_collisions(),
                 "sla_on_time_pct": sla_on_time_pct(solution_info["tardiness"]),
                 "W_full": params.W_full,
                 "W_ea_ta": params.W_ea_ta,
@@ -464,6 +465,7 @@ class OPPAntColonyOptimization(Model):
                 ) + congestion_wait
                 picker_current_time[picker] += exec_time
 
+        solution.set_total_collisions(tracker.total_collisions())
         return solution
 
     def _sort_picker_queues_by_due_date(

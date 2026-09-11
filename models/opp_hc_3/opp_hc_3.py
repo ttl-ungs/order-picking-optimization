@@ -175,6 +175,7 @@ class OPPHillClimbing(Model):
         elapsed = time.time() - wall_clock_start
 
         congestion_cost = evaluator.evaluate_congestion(current_solution)
+        congestion_collisions = evaluator.evaluate_congestion_collisions(current_solution)
 
         print(f"\nHill Climbing v3 execution time: {elapsed:.4f}s")
         print(f"Final objective value: {current_cost:.4f}")
@@ -193,6 +194,7 @@ class OPPHillClimbing(Model):
             params={
                 "obj_val": current_cost,
                 "obj_val_congestion": congestion_cost,
+                "congestion_collisions": congestion_collisions,
                 "sla_on_time_pct": sla_on_time_pct(solution_info["tardiness"]),
                 "W_full": params.W_full,
                 "W_ea_ta": params.W_ea_ta,

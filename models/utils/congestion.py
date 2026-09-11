@@ -50,6 +50,16 @@ class CongestionTracker:
         self.min_dwell = min_dwell
         # resource_key -> sorted list of (start, end, owner)
         self._busy: Dict[Hashable, List[Tuple[float, float, str]]] = {}
+        # Count of reserve() calls that had to wait for a busy resource
+        # (actual_start > requested_start): "how many times did two
+        # pickers actually collide over a shared node/edge", distinct from
+        # the accumulated WAIT TIME reserve() already returns (that's what
+        # ends up as obj_val_congestion) -- a frequency metric, not a
+        # duration one. Rolled back together with reservations via
+        # snapshot()/restore(), so a discarded speculative route
+        # (opp_aco_3's ants try-then-maybe-discard a construction) never
+        # leaves a phantom collision counted in.
+        self.collision_count = 0
 
     @staticmethod
     def node_key(node: str) -> Hashable:
@@ -91,6 +101,8 @@ class CongestionTracker:
                 if start < e and s < start + duration:
                     start = e
                     changed = True
+        if start > requested_start:
+            self.collision_count += 1
         busy.append((start, start + duration, owner))
         busy.sort()
         return start, start - requested_start
@@ -99,18 +111,28 @@ class CongestionTracker:
         """Node occupancy duration: max of the real service time and the min_dwell floor."""
         return max(self.min_dwell, service_time)
 
-    def snapshot(self) -> Dict[Hashable, List[Tuple[float, float, str]]]:
+    def snapshot(self) -> Dict:
         """
-        Cheap point-in-time copy of all reservations -- lets a
-        caller try a reservation sequence and roll it back with `restore()`
-        if it turns out to be wasted work, instead of committing every
-        `reserve()` call unconditionally.
+        Cheap point-in-time copy of all reservations (and the collision
+        counter, so it rolls back consistently too) -- lets a caller try a
+        reservation sequence and roll it back with `restore()` if it turns
+        out to be wasted work, instead of committing every `reserve()`
+        call unconditionally. Opaque to callers: pass the return value
+        straight to `restore()`, don't inspect its shape.
         """
-        return {resource: list(intervals) for resource, intervals in self._busy.items()}
+        return {
+            "busy": {resource: list(intervals) for resource, intervals in self._busy.items()},
+            "collision_count": self.collision_count,
+        }
 
-    def restore(self, snapshot: Dict[Hashable, List[Tuple[float, float, str]]]) -> None:
-        """Roll back to a previous `snapshot()`, discarding any reservations made since."""
-        self._busy = {resource: list(intervals) for resource, intervals in snapshot.items()}
+    def restore(self, snapshot: Dict) -> None:
+        """Roll back to a previous `snapshot()`, discarding any reservations (and collisions) made since."""
+        self._busy = {resource: list(intervals) for resource, intervals in snapshot["busy"].items()}
+        self.collision_count = snapshot["collision_count"]
+
+    def total_collisions(self) -> int:
+        """How many reserve() calls so far had to wait for a busy resource (see __init__)."""
+        return self.collision_count
 
 
 def simulate_route_congestion(
