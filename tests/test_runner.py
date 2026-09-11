@@ -1,12 +1,32 @@
 import csv
 import multiprocessing
 import os
+import resource
 import sys
 import time
 import unittest
 from datetime import datetime  # NUEVO IMPORT
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+
+def _peak_rss_mb() -> float:
+    """
+    Peak resident set size (RAM actually used, all of it -- Python objects
+    AND native allocations like PySCIPOpt's C-level SCIP state) of the
+    CURRENT process since it started, in MB. Read from the OS
+    (getrusage), not tracemalloc: tracemalloc only sees Python-level
+    allocations, which would badly UNDERSTATE memory for exact-model
+    tests (opp_v2/v3/v4/v5), whose actual RAM cost is dominated by SCIP's
+    native branch-and-bound state, not Python objects.
+
+    ru_maxrss's unit is platform-dependent: bytes on macOS/BSD, KB on
+    Linux. Normalized to MB here so the CSV column means the same thing
+    regardless of which machine ran the test.
+    """
+    raw = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    divisor = (1024 * 1024) if sys.platform == "darwin" else 1024
+    return raw / divisor
 
 
 def _run_test_child(test_name, q):
@@ -16,6 +36,7 @@ def _run_test_child(test_name, q):
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     duration = time.time() - start
+    peak_rss_mb = _peak_rss_mb()
 
     solve_data = None
     try:
@@ -33,6 +54,7 @@ def _run_test_child(test_name, q):
         "failures": [t[0].id() for t in result.failures],
         "errors": [t[0].id() for t in result.errors],
         "duration": duration,
+        "peak_rss_mb": peak_rss_mb,
         "solve_data": solve_data,
     }
     try:
@@ -43,7 +65,7 @@ def _run_test_child(test_name, q):
 
 class TestRunner:
     TIMEOUT_MSG = "Ejecución detenida por timeout"
-    _FIXED_FIELDNAMES = ["test", "status", "total_time", "model_time", "obj_val"]
+    _FIXED_FIELDNAMES = ["test", "status", "total_time", "model_time", "obj_val", "peak_rss_mb"]
 
     def __init__(
         self, timeout_minutes: int, write_csv: bool, model_name: str, test_type: str
@@ -184,6 +206,9 @@ class TestRunner:
                     ),
                     "obj_val": (
                         self.TIMEOUT_MSG if is_timeout else solve_data.get("obj_val")
+                    ),
+                    "peak_rss_mb": (
+                        self.TIMEOUT_MSG if is_timeout else r.get("peak_rss_mb")
                     ),
                     **{k: solve_data.get(k) for k in param_keys},
                 }
