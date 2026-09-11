@@ -72,7 +72,7 @@ from dtos.opp.model_dto import ModelDTO
 from models.opp_hc_2.utils.route_solution import RouteSolution
 from models.opp_hc_4.utils.route_evaluator import RouteEvaluator
 from models.opp_hc_4.utils.constraints_validator import ConstraintsValidator
-from models.opp_v5.utils.cold_chain_validation import batches_without_eligible_picker
+from models.opp_v5.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
 
 
 class OPPHillClimbing(Model):
@@ -117,6 +117,19 @@ class OPPHillClimbing(Model):
             return "infeasible", None
 
         batch_assignments = params.extract_batch_assignments()
+
+        # V_p[p] is a divisor in _t_exec_pb (fixed_time(b) + route_time(b)
+        # / V_p[p]): a speed of exactly 0 is a ZeroDivisionError waiting
+        # to happen the first time any batch/picker pair gets evaluated
+        # (the eligibility pre-check below, if nothing else); a negative
+        # one silently produces a negative t_exec_pb that would look
+        # "eligible" for any T_frio_max. Reject up front instead of
+        # crashing or accepting nonsensical input (2026-09-10 audit finding).
+        bad_speeds = invalid_speeds(self._picker_speeds(params))
+        if bad_speeds:
+            print(f"ERROR: V_p must be strictly positive for every picker; got non-positive speed for {sorted(bad_speeds)}")
+            self._register_infeasible(params, time.time() - wall_clock_start)
+            return "infeasible", None
 
         # Exact (not estimated) impossibility pre-check: fixed_time(b)
         # alone (setup + picking, independent of route/picker) already
@@ -331,18 +344,21 @@ class OPPHillClimbing(Model):
         picking_capacity = sum(params.C_n.get(o, 0) for o in orders) if isinstance(params.C_n, dict) else 0
         return params.B_setup + params.B_picking * picking_capacity
 
-    def _route_time(self, route: List, params: SolveHC4ModelDTO) -> float:
-        """Travel time (B_time * distance) + service time -- opp_v5's R_b_time, the part scaled by V_p."""
+    def _route_time(self, route: List, params: SolveHC4ModelDTO, distance: Optional[float] = None) -> float:
+        """
+        Travel time (B_time * distance) + service time -- opp_v5's
+        R_b_time, the part scaled by V_p. Pass `distance` when the caller
+        already computed it (e.g. a 2-opt candidate's distance) to avoid
+        recomputing it a second time via _calculate_route_distance
+        (2026-09-10 audit finding: this and _t_exec_pb used to each
+        recompute the route's distance independently, doubling the work
+        of every 2-opt candidate evaluation in _generate_route_neighbor).
+        """
         if not route:
             return 0.0
 
-        depot = self.location_graph.get_depot()
-        final = self.location_graph.get_final()
-
-        distance = self.location_graph.get_distance(depot, route[0])
-        for i in range(len(route) - 1):
-            distance += self.location_graph.get_distance(route[i], route[i + 1])
-        distance += self.location_graph.get_distance(route[-1], final)
+        if distance is None:
+            distance = self._calculate_route_distance(route)
 
         service_time = sum(params.S.get(loc, 0) for loc in route) if isinstance(params.S, dict) else 0
 
@@ -351,18 +367,24 @@ class OPPHillClimbing(Model):
     def _t_exec_pb(
         self, batch: str, route: List, picker: str,
         batch_assignments: Dict[str, Set[str]], params: SolveHC4ModelDTO,
+        distance: Optional[float] = None,
     ) -> float:
+        """See _route_time's docstring for why `distance` can be passed in precomputed."""
         fixed_time = self._fixed_time(batch, batch_assignments, params)
         speed = self._picker_speed(picker, params)
-        return fixed_time + self._route_time(route, params) / speed
+        return fixed_time + self._route_time(route, params, distance=distance) / speed
 
     def _eligible_pickers_for_batch(
         self, batch: str, route: List, batch_assignments: Dict[str, Set[str]], params: SolveHC4ModelDTO,
     ) -> List[str]:
         """Pickers p for which t_exec_pb[p, batch] <= T_frio_max, given `route`."""
+        # Route distance doesn't depend on picker -- compute it once
+        # instead of once per picker (each _t_exec_pb call would otherwise
+        # recompute it independently; see _route_time's docstring).
+        distance = self._calculate_route_distance(route)
         return [
             p for p in self.P
-            if self._t_exec_pb(batch, route, p, batch_assignments, params) <= params.T_frio_max + 1e-9
+            if self._t_exec_pb(batch, route, p, batch_assignments, params, distance=distance) <= params.T_frio_max + 1e-9
         ]
 
     def _generate_initial_feasible_solution(
@@ -444,8 +466,10 @@ class OPPHillClimbing(Model):
             if eligible:
                 picker = min(eligible, key=lambda p: (load[p], self.P.index(p)))
             else:
+                distance = self._calculate_route_distance(route)
                 picker = min(
-                    self.P, key=lambda p: self._t_exec_pb(batch, route, p, batch_assignments, params)
+                    self.P,
+                    key=lambda p: self._t_exec_pb(batch, route, p, batch_assignments, params, distance=distance),
                 )
             solution.assign_batch_to_picker(batch, picker)
             load[picker] += 1
@@ -678,7 +702,8 @@ class OPPHillClimbing(Model):
         whole-solution _search_cost to decide whether to keep the result.
         """
         distance = self._calculate_route_distance(route)
-        violation = max(0.0, self._t_exec_pb(batch, route, picker, batch_assignments, params) - params.T_frio_max)
+        t_exec = self._t_exec_pb(batch, route, picker, batch_assignments, params, distance=distance)
+        violation = max(0.0, t_exec - params.T_frio_max)
         return params.B_time * distance + self._COLD_CHAIN_PENALTY_WEIGHT * violation
 
     def _generate_feasible_neighbor(

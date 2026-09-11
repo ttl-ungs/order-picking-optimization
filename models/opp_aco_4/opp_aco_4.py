@@ -82,7 +82,7 @@ import models.utils.solve_registry as solve_registry
 from models.opp_aco_2.utils.route_solution import RouteSolution
 from models.opp_aco_4.utils.route_evaluator import RouteEvaluator
 from models.opp_aco_4.utils.constraints_validator import ConstraintsValidator
-from models.opp_v5.utils.cold_chain_validation import batches_without_eligible_picker
+from models.opp_v5.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
 
 
 class OPPAntColonyOptimization(Model):
@@ -137,6 +137,19 @@ class OPPAntColonyOptimization(Model):
         beta = getattr(params, "_Beta", 2.5)
         evaporation_rate = getattr(params, "_E", 0.15)
         q_factor = getattr(params, "_Q", 100.0)
+
+        # V_p[p] is a divisor in _t_exec_pb (fixed_time(b) + route_time(b)
+        # / V_p[p]): a speed of exactly 0 is a ZeroDivisionError waiting
+        # to happen the first time any batch/picker pair gets evaluated
+        # (the eligibility pre-check below, if nothing else); a negative
+        # one silently produces a negative t_exec_pb that would look
+        # "eligible" for any T_frio_max. Reject up front instead of
+        # crashing or accepting nonsensical input (2026-09-10 audit finding).
+        bad_speeds = invalid_speeds(self._picker_speeds(params))
+        if bad_speeds:
+            print(f"ERROR: V_p must be strictly positive for every picker; got non-positive speed for {sorted(bad_speeds)}")
+            self._register_infeasible(params, time.time() - start_time)
+            return "infeasible", None
 
         # Exact (not estimated) impossibility pre-check: fixed_time(b)
         # alone (setup + picking, independent of route/picker) already
@@ -358,28 +371,44 @@ class OPPAntColonyOptimization(Model):
         picking_capacity = sum(params.C_n.get(o, 0) for o in orders) if isinstance(params.C_n, dict) else 0
         return params.B_setup + params.B_picking * picking_capacity
 
-    def _route_time(self, route: List[str], params: SolveAco4ModelDTO) -> float:
-        """Travel time (B_time * distance) + service time -- opp_v5's R_b_time, the part scaled by V_p."""
+    def _route_time(
+        self, route: List[str], params: SolveAco4ModelDTO, distance: Optional[float] = None
+    ) -> float:
+        """
+        Travel time (B_time * distance) + service time -- opp_v5's
+        R_b_time, the part scaled by V_p. Pass `distance` when the caller
+        already computed it, to avoid recomputing it again here (2026-09-10
+        audit finding: _eligible_pickers_for_batch used to call this once
+        per picker, recomputing the SAME route's distance every time, even
+        though distance doesn't depend on picker at all).
+        """
         if not route:
             return 0.0
+        if distance is None:
+            distance = self._calculate_route_distance(route)
         service_time = sum(params.S.get(loc, 0) for loc in route) if isinstance(params.S, dict) else 0
-        return params.B_time * self._calculate_route_distance(route) + service_time
+        return params.B_time * distance + service_time
 
     def _t_exec_pb(
         self, batch: str, route: List[str], picker: str,
         batch_assignments: Dict[str, Set[str]], params: SolveAco4ModelDTO,
+        distance: Optional[float] = None,
     ) -> float:
+        """See _route_time's docstring for why `distance` can be passed in precomputed."""
         fixed_time = self._fixed_time(batch, batch_assignments, params)
         speed = self._picker_speed(picker, params)
-        return fixed_time + self._route_time(route, params) / speed
+        return fixed_time + self._route_time(route, params, distance=distance) / speed
 
     def _eligible_pickers_for_batch(
         self, batch: str, route: List[str], batch_assignments: Dict[str, Set[str]], params: SolveAco4ModelDTO,
     ) -> List[str]:
         """Pickers p for which t_exec_pb[p, batch] <= T_frio_max, given `route`."""
+        # Route distance doesn't depend on picker -- compute it once
+        # instead of once per picker (see _route_time's docstring).
+        distance = self._calculate_route_distance(route)
         return [
             p for p in self.P
-            if self._t_exec_pb(batch, route, p, batch_assignments, params) <= params.T_frio_max + 1e-9
+            if self._t_exec_pb(batch, route, p, batch_assignments, params, distance=distance) <= params.T_frio_max + 1e-9
         ]
 
     # NOTE: this model used to have a route-time ESTIMATE (greedy nearest-

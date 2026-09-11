@@ -91,7 +91,15 @@ param t_exec_pb[<p,b> in P * B] :=
 #           etapa previa genero un lote inviable para congelados: hay que
 #           detectarlo ANTES de resolver (ver chequeo mas abajo), no dejar
 #           que el solver devuelva "infactible" sin mas explicacion.
-set PB_elig := { <p,b> in P * B with t_exec_pb[p,b] <= T_frio_max };
+#           Tolerancia +1e-9: misma que usan models/opp_hc_4 y
+#           models/opp_aco_4 para el mismo chequeo (y que ya usaba
+#           models/opp_v5/utils/cold_chain_validation.py, que replica este
+#           set en Python) -- antes esta linea comparaba con <= estricto,
+#           sin margen, mientras esos otros si lo tenian (hallazgo de
+#           auditoria 2026-09-10): un t_exec_pb == T_frio_max con error de
+#           redondeo de punto flotante podia quedar afuera de PB_elig aca
+#           pero adentro en los otros modulos, para el mismo dato.
+set PB_elig := { <p,b> in P * B with t_exec_pb[p,b] <= T_frio_max + 1e-9 };
 
 # Chequeo de factibilidad basica: lotes sin ningun picker elegible.
 # (si esta lista no esta vacia, el modelo va a dar infactible seguro)
