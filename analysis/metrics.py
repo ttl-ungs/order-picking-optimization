@@ -180,6 +180,49 @@ def convergence_table(df: pd.DataFrame) -> pd.DataFrame:
     return out.reset_index()
 
 
+def stability_table(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Aggregates analysis.load.load_stability()'s per-(model, instance, seed)
+    rows into mean/std/best/worst/gap_best_worst_pct per (model, instance) --
+    how much a single heuristic's OWN randomness moves obj_val across seeds
+    for the exact same instance, distinct from quality_gap_table (accuracy
+    vs. the exact model). success_rate_pct uses ALL rows (not just "optimal"/
+    "feasible" ones) as the denominator, same reasoning as
+    success_rate_table: a seed that comes back infeasible must count against
+    the model, not be silently dropped before the mean/std are computed.
+
+    gap_best_worst_pct is (worst - best) / best * 100 -- 0% means every seed
+    landed on the exact same obj_val (perfectly repeatable for this
+    instance); this is undefined (NaN) when there isn't at least one row
+    with a numeric obj_val (e.g. every seed came back infeasible).
+    """
+    empty = pd.DataFrame(columns=[
+        "model", "instance", "n_seeds", "n_ok", "success_rate_pct",
+        "mean_obj_val", "std_obj_val", "best_obj_val", "worst_obj_val",
+        "gap_best_worst_pct",
+    ])
+    if df.empty:
+        return empty
+
+    g = df.groupby(["model", "instance"])
+    out = g["seed"].count().rename("n_seeds").to_frame()
+    out["n_ok"] = g["obj_val"].apply(lambda s: s.notna().sum())
+    out["success_rate_pct"] = (out["n_ok"] / out["n_seeds"] * 100).round(1)
+
+    ok_obj = df.dropna(subset=["obj_val"]).groupby(["model", "instance"])["obj_val"]
+    out["mean_obj_val"] = ok_obj.mean().round(2)
+    out["std_obj_val"] = ok_obj.std().round(2)
+    out["best_obj_val"] = ok_obj.min()
+    out["worst_obj_val"] = ok_obj.max()
+    out["gap_best_worst_pct"] = np.where(
+        out["best_obj_val"] > 0,
+        (out["worst_obj_val"] - out["best_obj_val"]) / out["best_obj_val"] * 100,
+        np.nan,
+    )
+    out["gap_best_worst_pct"] = out["gap_best_worst_pct"].round(2)
+    return out.reset_index()
+
+
 def profiling_table(df: pd.DataFrame, exact_model: str = EXACT_MODEL) -> pd.DataFrame:
     """
     For the exact model only: what share of total_time is spent inside the

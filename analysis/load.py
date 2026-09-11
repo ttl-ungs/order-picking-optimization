@@ -22,7 +22,13 @@ import re
 
 import pandas as pd
 
-from analysis.config import LATEST_FILE_OVERRIDES, MODEL_DIRS, OUTPUTS_ROOT, SCENARIOS
+from analysis.config import (
+    LATEST_FILE_OVERRIDES,
+    MODEL_DIRS,
+    OUTPUTS_ROOT,
+    SCENARIOS,
+    STABILITY_MODELS,
+)
 
 _RUN_TIMESTAMP_RE = re.compile(r"(\d{8}_\d{6})")
 
@@ -132,6 +138,55 @@ def load_all(verbose: bool = True) -> pd.DataFrame:
     df_master = pd.concat(frames, ignore_index=True, sort=False)
 
     for col in NUMERIC_COLUMNS:
+        if col in df_master.columns:
+            df_master[col] = pd.to_numeric(df_master[col], errors="coerce")
+
+    return df_master
+
+
+def load_stability(verbose: bool = True) -> pd.DataFrame:
+    """
+    Loads the latest seed-stability CSV (analysis/run_stability_study.py) per
+    heuristic model in STABILITY_MODELS, from tests/outputs/<model>/stability/.
+
+    Separate from load_all() because the schema is different: one row per
+    (instance, seed) solve of a SHARED instance (tests/shared_scenarios/
+    instances.py), not one row per unittest test method -- there's no
+    "scenario" (normal/stress) dimension, and "instance" here means one of
+    the 3 shared instances, not a test method name.
+    """
+    frames = []
+    missing = []
+    dropped_report = []
+
+    for label in STABILITY_MODELS:
+        model_dir = MODEL_DIRS[label]
+        path, dropped = _pick_csv(model_dir, "stability")
+        if path is None:
+            missing.append(label)
+            continue
+        if dropped:
+            dropped_report.append((label, path, dropped))
+
+        df = pd.read_csv(path)
+        df["model"] = label
+        df["source_file"] = os.path.basename(path)
+        frames.append(df)
+
+    if verbose:
+        for label in missing:
+            print(f"[load_stability] No stability CSV found for model={label} -- "
+                  f"run analysis/run_stability_study.py first. Skipping.")
+        for label, chosen, dropped in dropped_report:
+            print(f"[load_stability] model={label}: using {os.path.basename(chosen)}, "
+                  f"ignoring {len(dropped)} older run(s): "
+                  f"{[os.path.basename(d) for d in dropped]}")
+
+    if not frames:
+        return pd.DataFrame()
+
+    df_master = pd.concat(frames, ignore_index=True, sort=False)
+    for col in ("seed", "obj_val", "elapsed"):
         if col in df_master.columns:
             df_master[col] = pd.to_numeric(df_master[col], errors="coerce")
 

@@ -83,6 +83,13 @@ PARAM_COLUMNS = ["N", "V", "B", "P", "C_v", "W_full", "W_ea_ta", "W_ea", "W_ta"]
 # Independent variables for the sensitivity / correlation analysis.
 CORRELATION_INDEPENDENTS = ["N", "V", "B", "C_v", "W_full", "W_ea_ta"]
 
+# Models covered by the seed-stability study (analysis/run_stability_study.py)
+# -- the 6 heuristics only, since it measures how much a model's OWN
+# randomness moves obj_val for the exact same instance, which is meaningless
+# for a deterministic exact model (opp_v4/opp_v5 always return the same
+# answer for the same instance).
+STABILITY_MODELS = ["opp_hc_2", "opp_hc_3", "opp_hc_4", "opp_aco_2", "opp_aco_3", "opp_aco_4"]
+
 # Hard-coded "latest file" overrides, mirroring the exceptions called out in
 # specs/model_analysis.md (e.g. a consolidated file that must win over any
 # later partial run, or a specific high-density stress run). Keyed by

@@ -19,7 +19,7 @@ import os
 import pandas as pd
 
 from analysis.config import ANALYSIS_OUTPUT_DIR, EXACT_MODEL
-from analysis.load import load_all
+from analysis.load import load_all, load_stability
 from analysis.metrics import (
     congestion_reduction_table,
     congestion_table,
@@ -29,6 +29,7 @@ from analysis.metrics import (
     profiling_table,
     quality_gap_table,
     sla_table,
+    stability_table,
     success_rate_table,
     time_stats_table,
 )
@@ -75,6 +76,9 @@ def main():
     congestion_overhead = congestion_reduction_table(df)
     corr_global = correlation_table(df, level="global")
     corr_scenario = correlation_table(df, level="scenario")
+
+    stability_df = load_stability()
+    stability = stability_table(stability_df)
 
     charts = []
     for scenario in ("normal", "stress"):
@@ -128,6 +132,10 @@ def main():
         f.write(_md_table(corr_global))
         f.write("\n### 6.2 Nivel escenario\n\n")
         f.write(_md_table(corr_scenario))
+
+        f.write("\n## 7. Estabilidad frente a la semilla (30 corridas por instancia, "
+                "solo heurísticos)\n\n")
+        f.write(_md_table(stability))
 
         f.write("\n## Gráficos generados\n\n")
         for c in charts:
