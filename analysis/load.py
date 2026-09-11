@@ -32,6 +32,7 @@ NUMERIC_COLUMNS = [
     "solver_time",
     "obj_val",
     "obj_val_congestion",
+    "congestion_collisions",
     "peak_rss_mb",
     "sla_on_time_pct",
     "iterations_run",

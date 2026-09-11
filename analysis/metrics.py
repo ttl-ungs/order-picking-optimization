@@ -279,18 +279,30 @@ def quality_gap_table(df: pd.DataFrame, exact_model: str = EXACT_MODEL) -> pd.Da
 
 def congestion_table(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Mean congestion wait (obj_val_congestion) per model x scenario, OK cases
-    only. Models outside CONGESTION_AWARE_MODELS (opp_hc_2 / opp_aco_2) never
-    measured this at all -- they show up with n=0 / NaN, and that absence is
-    itself the point: it's the metric their v3 counterparts add.
+    Mean congestion wait (obj_val_congestion, a DURATION) and mean/max
+    collision count (congestion_collisions, a FREQUENCY -- how often two
+    pickers actually contended for the same node/edge, see
+    models/utils/congestion.py::CongestionTracker.total_collisions) per
+    model x scenario, OK cases only. Models outside CONGESTION_AWARE_MODELS
+    (opp_hc_2 / opp_aco_2) never measured either at all -- they show up
+    with n=0 / NaN, and that absence is itself the point: these are the
+    metrics their v3 counterparts add.
     """
     ok = _ok(df)
     if "obj_val_congestion" not in ok.columns:
         ok["obj_val_congestion"] = np.nan
+    if "congestion_collisions" not in ok.columns:
+        ok["congestion_collisions"] = np.nan
 
-    g = ok.groupby(["model", "scenario"])["obj_val_congestion"]
-    out = g.agg(mean_congestion_wait="mean", std_congestion_wait="std",
-                max_congestion_wait="max", n="count")
+    g = ok.groupby(["model", "scenario"])
+    out = pd.DataFrame({
+        "mean_congestion_wait": g["obj_val_congestion"].mean(),
+        "std_congestion_wait": g["obj_val_congestion"].std(),
+        "max_congestion_wait": g["obj_val_congestion"].max(),
+        "mean_collisions": g["congestion_collisions"].mean(),
+        "max_collisions": g["congestion_collisions"].max(),
+        "n": g["obj_val_congestion"].count(),
+    })
     out = out.reset_index()
     out["congestion_modeled"] = out["model"].isin(CONGESTION_AWARE_MODELS)
     return out
