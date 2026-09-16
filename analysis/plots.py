@@ -70,7 +70,9 @@ def plot_profiling_stacked(profiling_df) -> "str | None":
     return _save(fig, "profiling_exact_model.png")
 
 
-def plot_quality_gap(quality_gap_df) -> "str | None":
+def plot_quality_gap(
+    quality_gap_df, exact_model: str = "opp_v4", file_name: str = "quality_gap.png",
+) -> "str | None":
     """
     Grouped bar: mean AND median optimality gap (%) per model (normal
     scenario only so far -- see metrics.quality_gap_table). Showing mean
@@ -78,9 +80,13 @@ def plot_quality_gap(quality_gap_df) -> "str | None":
     outlier instances while the median sits at 0% (more than half the
     matched instances hit the exact optimum). A mean-only chart would
     contradict the mean/median split already called out in the report text.
+
+    exact_model / file_name let this be reused for a different ground-truth
+    model (e.g. opp_v5 for the opp_hc_4/opp_aco_4 comparison) without
+    clobbering the opp_v4 chart.
     """
     if quality_gap_df.empty:
-        print("[plots] no quality-gap data yet (need matching opp_v4 + heuristic OK "
+        print(f"[plots] no quality-gap data yet (need matching {exact_model} + heuristic OK "
               "runs on the same instances), skipping chart.")
         return None
 
@@ -96,12 +102,12 @@ def plot_quality_gap(quality_gap_df) -> "str | None":
         [f"{m}\n({s})" for m, s in zip(quality_gap_df["model"], quality_gap_df["scenario"])],
         rotation=0,
     )
-    ax.set_ylabel("Gap vs. opp_v4 (%)")
-    ax.set_title("Gap de optimalidad vs. el modelo exacto (media vs. mediana)")
+    ax.set_ylabel(f"Gap vs. {exact_model} (%)")
+    ax.set_title(f"Gap de optimalidad vs. {exact_model} (media vs. mediana)")
     ax.axhline(0, color="black", linewidth=0.8)
     ax.legend()
     fig.tight_layout()
-    return _save(fig, "quality_gap.png")
+    return _save(fig, file_name)
 
 
 def plot_congestion_wait(congestion_df) -> "str | None":

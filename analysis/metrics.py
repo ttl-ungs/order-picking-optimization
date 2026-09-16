@@ -261,7 +261,9 @@ def profiling_table(df: pd.DataFrame, exact_model: str = EXACT_MODEL) -> pd.Data
 SHAPE_COLUMNS = ["N", "V", "B", "P", "C_v"]
 
 
-def quality_gap_table(df: pd.DataFrame, exact_model: str = EXACT_MODEL) -> pd.DataFrame:
+def quality_gap_table(
+    df: pd.DataFrame, exact_model: str = EXACT_MODEL, heuristic_models=None,
+) -> pd.DataFrame:
     """
     Optimality gap of every heuristic model vs the exact model, computed only
     on instances (scenario, instance) where BOTH the exact model and the
@@ -269,6 +271,14 @@ def quality_gap_table(df: pd.DataFrame, exact_model: str = EXACT_MODEL) -> pd.Da
     (SHAPE_COLUMNS) -- same test method name is not sufficient, see above.
     Rows excluded for either reason are counted and reported, never dropped
     silently.
+
+    heuristic_models: optional iterable restricting which non-exact models are
+    compared (default: every model in df other than exact_model). Used e.g.
+    to compare opp_hc_4/opp_aco_4 against opp_v5 specifically -- they're the
+    only heuristics sharing opp_v5's extra features (picker speed, cold
+    chain), so comparing the rest (opp_hc_2/3, opp_aco_2/3) against opp_v5
+    would silently mix in instances that were never solved under the same
+    problem definition.
     """
     ok = _ok(df)
     shape_cols_present = [c for c in SHAPE_COLUMNS if c in ok.columns]
@@ -282,6 +292,8 @@ def quality_gap_table(df: pd.DataFrame, exact_model: str = EXACT_MODEL) -> pd.Da
                                    **{c: f"{c}_exact" for c in shape_cols_present}})
 
     heuristics = ok[ok["model"] != exact_model]
+    if heuristic_models is not None:
+        heuristics = heuristics[heuristics["model"].isin(heuristic_models)]
     heuristics = _dedupe_or_flag_collisions(
         heuristics, key_cols=["model", "scenario", "instance"],
         compare_cols=["obj_val"] + shape_cols_present, label="quality_gap_table:heuristics",
