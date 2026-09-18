@@ -43,9 +43,6 @@ reservation or its multi-pheromone (m-ACO4) architecture, matching how
 
 ```
 tests/opp_aco_4/
-├── execute_tests.py            # Main test runner (normal suite)
-├── execute_stress_tests.py     # Stress suite runner
-├── scenarios/normal/            # Fixtures that need a SolveAco4ModelDTO (single_order_params)
 └── tests/
     ├── opp_aco_4_test_case.py           # Base assertions (picker assignment, workload, no-overlap, cold chain)
     ├── normal/
@@ -73,6 +70,10 @@ all 20 were ported for full parity (`opp_aco_3` also has all 20).
 `opp_aco_4` is registered in `analysis/config.py`'s `MODEL_DIRS` (and
 deliberately left OUT of `CONGESTION_AWARE_MODELS`).
 
+Its `single_order_params` fixture (needs a `SolveAco4ModelDTO`) lives in
+`tests/shared_scenarios/normal/single_order_params_aco4.py` -- this model
+has no `scenarios/` of its own.
+
 **Note on `test_opp_aco_4_model_17`** (ported as-is from `opp_aco_2`):
 like its `opp_aco_2` counterpart, it sets no `Seed`, so it is inherently
 stochastic -- an unlucky ACO run can occasionally construct a different
@@ -84,8 +85,8 @@ test repeatedly).
 ## Running Tests
 
 ```bash
-python tests/opp_aco_4/execute_tests.py
-WRITE_RESULTS_CSV=1 python tests/opp_aco_4/execute_tests.py          # to feed analysis/
-WRITE_RESULTS_CSV=1 python tests/opp_aco_4/execute_stress_tests.py
+python -m tests.run_suite opp_aco_4 normal
+WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_aco_4 normal          # to feed analysis/
+WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_aco_4 stress
 python -m unittest tests.opp_aco_4.tests.normal.test_opp_aco_4_model_02_picker_speed
 ```

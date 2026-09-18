@@ -126,7 +126,7 @@ def load_all(verbose: bool = True) -> pd.DataFrame:
     if verbose:
         for label, scenario in missing:
             print(f"[load_all] No CSV found for model={label} scenario={scenario} "
-                  f"-- run its execute_tests.py first. Skipping.")
+                  f"-- run `python -m tests.run_suite {label} {scenario}` first. Skipping.")
         for label, scenario, chosen, dropped in dropped_report:
             print(f"[load_all] model={label} scenario={scenario}: using "
                   f"{os.path.basename(chosen)}, ignoring {len(dropped)} older run(s): "

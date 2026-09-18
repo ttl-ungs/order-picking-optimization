@@ -36,9 +36,6 @@ congestion-free, see `analysis/config.py`).
 
 ```
 tests/opp_hc_4/
-├── execute_tests.py            # Main test runner (normal suite)
-├── execute_stress_tests.py     # Stress suite runner
-├── scenarios/normal/            # Fixtures that need a SolveHC4ModelDTO (single_order_params)
 └── tests/
     ├── opp_hc_4_test_case.py           # Base assertions (picker assignment, workload, no-overlap, cold chain)
     ├── normal/
@@ -68,11 +65,16 @@ subset (see `analysis/README.md`), so `opp_hc_4` lines up with both
 `opp_hc_4` is registered in `analysis/config.py`'s `MODEL_DIRS` (and
 deliberately left OUT of `CONGESTION_AWARE_MODELS`).
 
+Its `single_order_params` fixture (needs a `SolveHC4ModelDTO`) lives in
+`tests/shared_scenarios/normal/single_order_params_hc4.py`, alongside the
+other models' DTO-specific variants -- this model has no `scenarios/` of
+its own.
+
 ## Running Tests
 
 ```bash
-python tests/opp_hc_4/execute_tests.py
-WRITE_RESULTS_CSV=1 python tests/opp_hc_4/execute_tests.py          # to feed analysis/
-WRITE_RESULTS_CSV=1 python tests/opp_hc_4/execute_stress_tests.py
+python -m tests.run_suite opp_hc_4 normal
+WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_hc_4 normal          # to feed analysis/
+WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_hc_4 stress
 python -m unittest tests.opp_hc_4.tests.normal.test_opp_hc_4_model_02_picker_speed
 ```

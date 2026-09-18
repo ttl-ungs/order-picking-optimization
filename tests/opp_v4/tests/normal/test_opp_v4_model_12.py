@@ -14,7 +14,7 @@ from tests.opp_v4.tests.opp_test_case_v4 import OPPTestCaseV4
 from tests.opp_v4.config import DAT_DIR, ZPL_PATH
 from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
 
-from tests.opp_v4.scenarios.normal.one_mission_one_picker_grid_graph import (
+from tests.shared_scenarios.normal.one_mission_one_picker_grid_graph_v4 import (
     scenario_one_mission_one_picker_grid_graph,
 )
 

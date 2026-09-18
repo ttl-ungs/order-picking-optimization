@@ -7,7 +7,7 @@ sys.path.insert(
 )
 
 from tests.opp_v4.tests.opp_test_case_v4 import OPPTestCaseV4
-from tests.opp_v4.scenarios.normal.scenario_13 import (
+from tests.shared_scenarios.normal.scenario_13_v4 import (
     bridge_graph_disconnected,
     bridge_graph_two_pickers_four_batches,
 )

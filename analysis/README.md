@@ -21,20 +21,25 @@ El pipeline **no ejecuta los tests**, solo lee lo que ya está en
 ```bash
 export WRITE_RESULTS_CSV=1
 
-python tests/opp_v4/execute_tests.py            # opp_v4 normal
-python tests/opp_v4/execute_stress_tests.py     # opp_v4 stress
-python tests/opp_hc_2/execute_tests.py          # opp_hc_2 normal
-python tests/opp_hc_2/execute_stress_tests.py   # opp_hc_2 stress
-python tests/opp_aco_2/execute_tests.py         # opp_aco_2 normal
-python tests/opp_aco_2/execute_stress_tests.py  # opp_aco_2 stress
-python tests/opp_hc_3/execute_tests.py          # opp_hc_3 normal
-python tests/opp_hc_3/execute_stress_tests.py   # opp_hc_3 stress
-python tests/opp_aco_3/execute_tests.py         # opp_aco_3 normal
-python tests/opp_aco_3/execute_stress_tests.py  # opp_aco_3 stress
+python -m tests.run_suite opp_v4 normal
+python -m tests.run_suite opp_v4 stress
+python -m tests.run_suite opp_hc_2 normal
+python -m tests.run_suite opp_hc_2 stress
+python -m tests.run_suite opp_aco_2 normal
+python -m tests.run_suite opp_aco_2 stress
+python -m tests.run_suite opp_hc_3 normal
+python -m tests.run_suite opp_hc_3 stress
+python -m tests.run_suite opp_aco_3 normal
+python -m tests.run_suite opp_aco_3 stress
 ```
 
-Cada `execute_stress_tests.py` acepta un id de dos dígitos como único
-argumento para correr un solo test (p. ej. `python tests/opp_hc_3/execute_stress_tests.py 04`).
+(One shared entry point, `tests/run_suite.py`, replaced the ~24 near-identical
+per-model `execute_tests.py`/`execute_stress_tests.py` scripts -- see its
+module docstring. `opp`/`opp_v2` predate it and keep their own scripts, since
+they don't use `TestRunner`/write CSVs at all.)
+
+`--id` runs a single test instead of the full stress suite (p. ej.
+`python -m tests.run_suite opp_hc_3 stress --id 04`).
 
 ### Alcance de los stress tests que se agregaron
 

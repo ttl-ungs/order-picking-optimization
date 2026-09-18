@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
 
-from tests.opp_v5.scenarios.normal.two_stage_scenarios import two_batches_two_routes
+from tests.shared_scenarios.normal.two_stage_scenarios_v5 import two_batches_two_routes
 from tests.opp_v5.tests.opp_test_case_v5 import OPPTestCaseV5
 
 

@@ -130,19 +130,23 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
   - Se eliminaron de `analysis/config.py::LATEST_FILE_OVERRIDES` las entradas huérfanas (`opp_v3`, `opp_aco` en stress) que ya no correspondían a ningún modelo en `MODEL_DIRS`.
   - Se completó el resumen ejecutivo y el contexto activo de este archivo (antes tenía placeholders de plantilla sin llenar).
   - Se centralizó el trío de escenarios realmente duplicado (`opp_v3`/`opp_aco`/`opp_hc_2`, byte-idénticos salvo la clase de DTO en `single_order_params.py`) en `tests/shared_scenarios/{common,normal,stress}/`. Se repuntaron 438 archivos de test en 9 paquetes (`opp_v3`, `opp_aco`, `opp_hc`, `opp_hc_2/3/4`, `opp_aco_2/3/4`, más las stress de `opp_v4`) — incluido `opp_hc` (legacy sin numerar), que dependía de `opp_v3/scenarios` sin estar documentado previamente. Se borraron las 39 copias duplicadas que quedaron redundantes. `single_order_params.py` no se colapsó en un solo archivo: quedó una variante por familia de DTO (`single_order_params_{opp,hc,hc4,aco,aco4}.py`) para no mezclar formas incompatibles.
+  - Se movieron los escenarios propios de `opp_v4` (normal + la copia de `scenario_custom_setup` que `opp_v5` necesita) y `opp_v5` a `tests/shared_scenarios/`, con sufijo `_v4`/`_v5` en el nombre de archivo para no mezclarse con el trío compartido ni entre sí (ej. `scenario_01_v4.py`, `two_stage_scenarios_v5.py`). Ya ningún modelo tiene su propia carpeta `scenarios/`.
+  - Se creó `tests/run_suite.py`, un único script parametrizado (`python -m tests.run_suite <modelo> <normal|stress> [--id NN]`) que reemplaza los ~24 `execute_tests.py`/`execute_stress_tests.py` casi idénticos, uno por modelo. Se actualizaron todas las referencias en docs (`analysis/README.md`, `analysis/run_analysis.py`, `analysis/load.py`, READMEs de `opp_hc`, `opp_hc_2`, `opp_hc_4`, `opp_aco_4`). Los legacy `opp`/`opp_v2` quedan con sus propios scripts (no usan `TestRunner`, estructura distinta).
 - Pendiente (plan completo, todavía no ejecutado):
-  - Mover los escenarios propios de `opp_v4` (normal) y `opp_v5` a `tests/shared_scenarios/` también, con sufijo de modelo en el nombre (ej. `scenario_01_v4.py`) — no son duplicados de nadie, pero se centralizan igual para que no quede ningún modelo con su propia carpeta `scenarios/`.
   - Deduplicar tests de las familias HC/ACO con una factory tipo `migrated_case()`.
-  - Renombrar carpetas/archivos de test (`normal`→`functional`, sin nombre de modelo en el archivo, renumeración continua) y centralizar los `execute_*.py` por modelo en un único script parametrizado.
+  - Renombrar carpetas/archivos de test (`normal`→`functional`, sin nombre de modelo en el archivo, renumeración continua).
 - Impacto:
   - Una sola fuente de verdad para qué modelos cubre el estudio de estabilidad de semilla; menos riesgo de que ese registro y `analysis/config.py` se desincronicen a futuro.
-  - Ningún modelo vigente depende ya de una carpeta `scenarios/` legacy para sus propios tests (salvo `opp_v4`/`opp_v5`, pendiente de la fase siguiente).
+  - Ningún modelo (legacy ni vigente) depende ya de una carpeta `scenarios/` de otro modelo para sus propios tests — todo vive en `tests/shared_scenarios/`.
+  - Un solo lugar (`tests/run_suite.py`) para correr cualquier suite, en vez de 24 scripts casi idénticos.
 - Riesgo / atención:
-  - El resto del plan (tests, renombres) es un cambio grande que toca cientos de archivos — se ejecuta por fases verificables, no de una sola vez.
-  - `opp_v4`, con la extensión de picker/asignación (`P`/`x`) en sus propios escenarios, NO es un duplicado del trío — se dejó fuera de esta centralización a propósito, se mueve aparte en la fase siguiente sin fusionar contenido.
+  - El resto del plan (dedup de tests, renombres) es un cambio grande que toca cientos de archivos — se ejecuta por fases verificables, no de una sola vez.
+  - `opp_v4`, con la extensión de picker/asignación (`P`/`x`) en sus propios escenarios, NO es un duplicado del trío — se movió a `shared_scenarios/` con sufijo `_v4` sin fusionar contenido con nada.
 - Validación:
   - `python -m analysis.run_analysis` corrido antes y después: mismo conjunto de CSVs leídos, mismas filas/columnas en `analysis/output/report.md` (diferencias solo en el último dígito de punto flotante, sin relación con este cambio).
-  - Suite normal de los 9 paquetes afectados corrida antes/después del movimiento de escenarios (vía `git stash`/`stash pop` para tener una base real): mismos conteos de test exactamente (`opp_v3` 48 con la misma 1 falla preexistente no relacionada — `test_bridge_earliness_order_size`, precisión numérica; el resto, 46-59 tests cada uno, todos OK sin cambios). Doble-verificado de forma independiente corriendo `opp_hc_2`, `opp_hc_4` y `opp_aco_3` manualmente después.
+  - Suite normal de los 9 paquetes afectados por la centralización del trío corrida antes/después (vía `git stash`/`stash pop` para tener una base real): mismos conteos de test exactamente (`opp_v3` 48 con la misma 1 falla preexistente no relacionada — `test_bridge_earliness_order_size`, precisión numérica; el resto, 46-59 tests cada uno, todos OK sin cambios). Doble-verificado de forma independiente corriendo `opp_hc_2`, `opp_hc_4` y `opp_aco_3` manualmente después.
+  - `opp_v4`/`opp_v5` normal y stress verificados antes/después del movimiento de sus escenarios propios: mismos conteos (`opp_v4` normal 46, `opp_v5` normal 53, `opp_v5` stress 8) — coincide con los números ya conocidos de `analysis/output/report.md`.
+  - `tests/run_suite.py` verificado comparando la lógica de discovery (`start_dir`/`pattern`) contra la de los scripts originales para varios modelos y el modo `--id`: mismos test IDs encontrados en todos los casos.
 
 ---
 

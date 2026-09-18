@@ -10,8 +10,8 @@ the charts under analysis/output/, and writes a consolidated
 analysis/output/report.md.
 
 This does NOT run the test suites itself -- generate the CSVs first with
-each model's execute_tests.py (see each tests/<model>/execute_tests.py),
-then run this script.
+WRITE_RESULTS_CSV=1 python -m tests.run_suite <model> normal|stress
+(see tests/run_suite.py), then run this script.
 """
 
 import os
@@ -60,9 +60,9 @@ def _md_table(df: pd.DataFrame) -> str:
 def main():
     df = load_all()
     if df.empty:
-        print("No se encontró ningún CSV en tests/outputs/. Corré primero los "
-              "execute_tests.py de cada modelo (opp_v4, opp_hc_2, opp_aco_2, "
-              "opp_hc_3, opp_aco_3).")
+        print("No se encontró ningún CSV en tests/outputs/. Corré primero "
+              "WRITE_RESULTS_CSV=1 python -m tests.run_suite <model> normal|stress "
+              "para cada modelo (opp_v4, opp_hc_2, opp_aco_2, opp_hc_3, opp_aco_3).")
         return
 
     success = success_rate_table(df)

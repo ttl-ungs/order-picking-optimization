@@ -5,8 +5,7 @@ Test suite for the Hill Climbing heuristic solver for OPP V3.
 ## Structure
 
 ```
-tests/opp_hill_climbing/
-├── execute_tests.py           # Main test runner
+tests/opp_hc/
 ├── tests/
 │   └── normal/
 │       ├── test_opp_hc_v3_model_1.py   # HC Test 1: Basic 2 orders, 2 batches
@@ -14,9 +13,12 @@ tests/opp_hill_climbing/
 │       ├── test_opp_hc_v3_model_3.py   # HC Test 3: Single picking point per order
 │       ├── test_opp_hc_v3_model_4.py   # HC Test 4: Same aisle, different batches
 │       └── test_opp_hc_v3_model_5.py   # HC Test 5: Different weights variant
-└── scenarios/
-    └── normal/                          # (Reuses opp_v3 scenarios)
 ```
+
+Note: this doc predates later renames elsewhere in `tests/opp_hc/` (actual
+filenames/counts may no longer match the list above exactly) -- left as-is,
+out of scope for this pass, which only touched the scenario/runner
+references below.
 
 ## Tests Overview
 
@@ -34,7 +36,7 @@ Each test is equivalent to a corresponding OPP V3 test but uses `OPPHillClimbing
 
 ### Run all tests:
 ```bash
-python tests/opp_hill_climbing/execute_tests.py
+python -m tests.run_suite opp_hc normal
 ```
 
 ### Run individual test:
@@ -62,8 +64,9 @@ Each test:
 
 ## Reused Scenarios
 
-Tests reuse scenario definitions from `tests/opp_v3/scenarios/normal/`:
-- `scenario_1`: Basic 2-order setup
-- `scenario_2`: 2-aisle warehouse setup
+Tests reuse scenario definitions from `tests/shared_scenarios/normal/`
+(centralized 2026-09-17; previously `tests/opp_v3/scenarios/normal/`):
+- `scenario_01`: Basic 2-order setup
+- `scenario_02`: 2-aisle warehouse setup
 
 This ensures test inputs are identical between exact and heuristic solvers.

@@ -9,27 +9,31 @@ different pickers (X_pb) so work is parallelized.
 
 ```
 tests/opp_hc_2/
-├── execute_tests.py            # Main test runner (normal suite)
-├── execute_stress_tests.py     # Stress suite runner
 ├── tests/
 │   ├── normal/
 │   │   └── test_opp_hc_2_model_NN.py   # One file per test case
 │   └── stress/
 │       └── test_opp_hc_2_model_NN.py
-└── scenarios/                  # (Mostly reuses opp_v3/opp_hc scenario fixtures)
 ```
+
+Scenario fixtures live in `tests/shared_scenarios/` (shared across models, see
+its module docstrings), not under `tests/opp_hc_2/` -- this model has no
+scenario files of its own.
 
 ## Running Tests
 
+Run via the shared entry point, `tests/run_suite.py` (replaces every model's
+own `execute_tests.py`/`execute_stress_tests.py`):
+
 ### Run all normal tests:
 ```bash
-python tests/opp_hc_2/execute_tests.py
+python -m tests.run_suite opp_hc_2 normal
 ```
 
 ### Run all stress tests (or a single numbered one):
 ```bash
-python tests/opp_hc_2/execute_stress_tests.py
-python tests/opp_hc_2/execute_stress_tests.py 05   # only test_opp_hc_2_model_05.py
+python -m tests.run_suite opp_hc_2 stress
+python -m tests.run_suite opp_hc_2 stress --id 05   # only test_opp_hc_2_model_05.py
 ```
 
 ### Run individual test:

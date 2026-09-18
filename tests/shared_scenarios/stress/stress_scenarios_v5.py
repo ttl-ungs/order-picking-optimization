@@ -1,6 +1,6 @@
 """OPP v5 data builders preserving the sizes of the OPP v4 stress suite."""
 
-from tests.opp_v4.scenarios.stress.scenario_custom_setup import scenario_custom_setup
+from tests.shared_scenarios.stress.scenario_custom_setup_v4 import scenario_custom_setup
 
 
 def migrated_stress_scenario(batches, pickers, orders, rows, cols):
