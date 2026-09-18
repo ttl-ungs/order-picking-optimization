@@ -1,75 +1,14 @@
-import unittest
-import sys
-import os
-
-from dtos.aco.solve_aco_3_model_dto import SolveAco3ModelDTO
-
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))
-)
-
-from dtos import ModelDTO
+from tests.family_case import family_case
 from models.opp_aco_3 import OPPAntColonyOptimization
+from dtos.aco.solve_aco_3_model_dto import SolveAco3ModelDTO
 from models.opp_aco_3.utils.output_handler import OutputHandler
-from tests.opp.tests.opp_test_case import OPPTestCase
 
-from tests.shared_scenarios.normal.one_mission_one_picker_grid_graph import (
-    scenario_one_mission_one_picker_grid_graph,
+
+TestSingleOrderExceedsVehicle = family_case(
+    'tests.opp_aco_2.tests.normal.test_opp_aco_2_model_28',
+    {
+        'OPPAntColonyOptimization': OPPAntColonyOptimization,
+        'SolveAcoModelDTO': SolveAco3ModelDTO,
+        'OutputHandler': OutputHandler,
+    },
 )
-
-
-class TestSingleOrderExceedsVehicle(OPPTestCase):
-    """Medium: single order whose capacity exceeds vehicle capacity => infeasible"""
-
-    opp_location_graph, V, B = scenario_one_mission_one_picker_grid_graph(6, 6)
-
-    def test_single_order_exceeds_vehicle(self):
-        N = {"O1"}
-        a = {(n, v): 0 for n in N for v in self.V}
-        # require visiting two distant locations to force travel
-        a[("O1", "V2")] = 1
-        a[("O1", "V18")] = 1
-
-        y = {(n, b): 0 for n in N for b in self.B}
-        # assign order to first batch
-        first_b = sorted(self.B)[0]
-        y[("O1", first_b)] = 1
-
-        # set order capacity larger than vehicle
-        cap_vehicle = 10.0
-        cap_n = {"O1": 25.0}
-
-        due_date = {"O1": 100.0}
-
-        params = SolveAco3ModelDTO()
-        params.W_full = 1.0
-        params.W_ea_ta = 1.0
-        params.W_ea = 1.0
-        params.W_ta = 1.0
-        params.C_n = cap_n
-        params.C_v = cap_vehicle
-        params.A = a
-        params.B_time = 0.5
-        params.B_setup = 1.0
-        params.B_picking = 1.0
-        params.Dd = due_date
-        params.M = 1000.0
-        params.Bn = y
-
-        model_dto = ModelDTO()
-        model_dto.N = N
-        model_dto.location_graph = self.opp_location_graph
-        model_dto.B = self.B
-        model_dto.start_time = self.start_time
-        model = OPPAntColonyOptimization(model_dto)
-        output_handler = OutputHandler()
-        model.attach(output_handler)
-        model.attach(OutputHandler())
-
-        result, _ = model.solve(params)
-
-        self.assertEqual(result, "infeasible")
-
-
-if __name__ == "__main__":
-    unittest.main()
