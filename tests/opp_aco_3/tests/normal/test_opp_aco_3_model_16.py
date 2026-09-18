@@ -11,7 +11,7 @@ from dtos.aco.solve_aco_3_model_dto import SolveAco3ModelDTO
 from models.opp_aco_3 import OPPAntColonyOptimization
 from tests.opp_aco_3.tests.opp_aco_3_test_case import OPPTestCaseACO3
 
-from tests.opp_aco.scenarios.normal.three_missions_two_pickers_grid_graph import (
+from tests.shared_scenarios.normal.three_missions_two_pickers_grid_graph import (
     scenario_three_missions_two_pickers_two_periods_grid_graph,
 )
 

@@ -12,7 +12,7 @@ from models.opp_hc_4.opp_hc_4 import OPPHillClimbing
 from models.opp_hc_4.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
 
-from tests.opp_hc_2.scenarios.stress.scenario_custom_setup import scenario_custom_setup
+from tests.shared_scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
 
 # Ported from opp_hc_2's test_opp_hc_2_model_34.py for opp_hc_4/analysis parity (V_p unset, T_frio_max default +inf -> pure equivalence).

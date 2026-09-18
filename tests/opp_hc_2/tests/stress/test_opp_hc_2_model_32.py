@@ -12,7 +12,7 @@ from models.opp_hc_2.opp_hc_2 import OPPHillClimbing
 from models.opp_hc_2.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
 
-from tests.opp_hc_2.scenarios.stress.scenario_custom_setup import scenario_custom_setup
+from tests.shared_scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
 
 class TestOPPModel(OPPTestCase):

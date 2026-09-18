@@ -11,7 +11,7 @@ from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
 from models.opp_aco.opp_aco import OPPAntColonyOptimization
 from models.opp_aco.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
-from tests.opp_aco.scenarios.normal.scenario_18 import detour_single_mission_route
+from tests.shared_scenarios.normal.scenario_18 import detour_single_mission_route
 from tests.opp_v2.tests.route_assertions import (
     assert_correct_path,
     assert_route_covers_orders,

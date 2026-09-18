@@ -11,7 +11,7 @@ from dtos.aco.solve_aco_4_model_dto import SolveAco4ModelDTO
 from models.opp_aco_4 import OPPAntColonyOptimization
 from models.opp_aco_4.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
-from tests.opp_hc_2.scenarios.stress.scenario_custom_setup import scenario_custom_setup
+from tests.shared_scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
 
 # Ported from opp_aco_2's test_opp_aco_2_model_04.py for opp_aco_4/analysis parity (V_p unset, T_frio_max default +inf -> pure equivalence).

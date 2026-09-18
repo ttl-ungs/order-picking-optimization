@@ -11,9 +11,9 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - Proyecto: Linear Picking Routing
 - Tipo: Optimización / routing de picking en almacén
 - Stack principal: Python, PySCIPOpt, modelos exactos y heurísticos
-- Estado actual: [En desarrollo / estable / bloqueado / en revisión]
-- Última actualización: [YYYY-MM-DD]
-- Responsable actual: [Nombre / equipo]
+- Estado actual: En desarrollo (limpieza y reorganización de repo en curso)
+- Última actualización: 2026-09-17
+- Responsable actual: Ebertz, Ximena; Soria, Lucía
 
 ### Objetivo del repositorio
 
@@ -27,18 +27,19 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 
 ### Estado general
 
-- [ ] Repositorio funcional en entorno local
-- [ ] Pruebas principales ejecutándose
-- [ ] Modelos comparables alineados
-- [ ] Documentación clave actualizada
-- [ ] Riesgos conocidos documentados
+- [x] Repositorio funcional en entorno local
+- [x] Pruebas principales ejecutándose
+- [x] Modelos comparables alineados (auditoría de código cerrada 2026-08-30/09-01, ver `analysis/README.md`)
+- [ ] Documentación clave actualizada (en progreso, ver limpieza en curso más abajo)
+- [x] Riesgos conocidos documentados (`analysis/README.md`, `docs/results_outline.md`)
 
 ### Contexto activo
 
-- Modelo base / referencia: [ej. opp_v3]
-- Modelos alternativos: [opp_aco, opp_hc, opp_aco_3, opp_hc_3, etc.]
-- Aspecto prioritario actual: [ej. validación de heurística, reproducción de resultados, estabilización de lectura de datos, etc.]
-- Bloqueador actual: [si aplica]
+- Modelo base / referencia: `opp_v4` (exacto, ZIMPL+SCIP), comparado también contra `opp_v5` (exacto, descomposición en 2 etapas).
+- Modelos alternativos vigentes: `opp_hc_2/3/4` (Hill Climbing), `opp_aco_2/3/4` (ACO).
+- Alcance de la tesina confirmado (2026-09-17): solo `opp_v4` en adelante, incluyendo sus heurísticas. `opp`, `opp_v2`, `opp_v3`, `opp_hc`, `opp_aco` (sin numerar) son legacy — se mantienen en el repo por historial pero quedan fuera del alcance de la tesina.
+- Aspecto prioritario actual: limpieza y reorganización del repo (deduplicación de tests entre familias HC/ACO, centralización de escenarios hoy dispersos entre carpetas legacy y vigentes, renombres de archivos/carpetas) antes de separar en un repo aparte lo que sí entra en la tesina (tarea futura, todavía no iniciada).
+- Bloqueador actual: ninguno.
 
 ---
 
@@ -112,6 +113,36 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - Validación:
   - Evidencia del estado actual: `git status --short` muestra cambios en [meta.md](meta.md) y [tests/opp_v4/tests/normal/test_opp_v4_model_19.py](tests/opp_v4/tests/normal/test_opp_v4_model_19.py), además de nuevos archivos bajo [tests/opp_v4/tests/stress/](tests/opp_v4/tests/stress/) y [tests/opp_v4/scenarios/stress/](tests/opp_v4/scenarios/stress/).
   - No se afirmaron resultados de tests completos ni ejecución exitosa de la suite, porque esa verificación no se ejecutó en esta revisión.
+
+---
+
+### Cambio 2026-09-17 - Limpieza y reorganización del repo (en curso)
+- Autor: IA / Ximena Ebertz
+- Alcance: documentación / infraestructura de análisis / tests (en curso)
+- Archivos principales:
+  - [analysis/config.py](analysis/config.py)
+  - [analysis/run_stability_study.py](analysis/run_stability_study.py)
+  - [meta.md](meta.md)
+- Qué se hizo (fase 1 de varias, ver plan completo más abajo):
+  - Se confirmó y documentó el alcance de la tesina: solo `opp_v4` en adelante, incluyendo sus heurísticas (`opp_hc_2/3/4`, `opp_aco_2/3/4`, `opp_v5`). Legacy (`opp`, `opp_v2`, `opp_v3`, `opp_hc`, `opp_aco`) se mantiene en el repo por historial pero queda fuera de ese alcance.
+  - Se descartó usar Postgres/NoSQL para escenarios/grafos/resultados (`postgres-connection-pool` era para una fuente de datos real de empresa ya abandonada, no aplica a los escenarios generados proceduralmente que hay hoy).
+  - Se unificó `analysis/run_stability_study.py::MODEL_REGISTRY`/`OUTPUTS_ROOT` para importar de `analysis/config.py` en vez de duplicar el registro, y se agregó una aserción para que ambos no se desincronicen.
+  - Se eliminaron de `analysis/config.py::LATEST_FILE_OVERRIDES` las entradas huérfanas (`opp_v3`, `opp_aco` en stress) que ya no correspondían a ningún modelo en `MODEL_DIRS`.
+  - Se completó el resumen ejecutivo y el contexto activo de este archivo (antes tenía placeholders de plantilla sin llenar).
+  - Se centralizó el trío de escenarios realmente duplicado (`opp_v3`/`opp_aco`/`opp_hc_2`, byte-idénticos salvo la clase de DTO en `single_order_params.py`) en `tests/shared_scenarios/{common,normal,stress}/`. Se repuntaron 438 archivos de test en 9 paquetes (`opp_v3`, `opp_aco`, `opp_hc`, `opp_hc_2/3/4`, `opp_aco_2/3/4`, más las stress de `opp_v4`) — incluido `opp_hc` (legacy sin numerar), que dependía de `opp_v3/scenarios` sin estar documentado previamente. Se borraron las 39 copias duplicadas que quedaron redundantes. `single_order_params.py` no se colapsó en un solo archivo: quedó una variante por familia de DTO (`single_order_params_{opp,hc,hc4,aco,aco4}.py`) para no mezclar formas incompatibles.
+- Pendiente (plan completo, todavía no ejecutado):
+  - Mover los escenarios propios de `opp_v4` (normal) y `opp_v5` a `tests/shared_scenarios/` también, con sufijo de modelo en el nombre (ej. `scenario_01_v4.py`) — no son duplicados de nadie, pero se centralizan igual para que no quede ningún modelo con su propia carpeta `scenarios/`.
+  - Deduplicar tests de las familias HC/ACO con una factory tipo `migrated_case()`.
+  - Renombrar carpetas/archivos de test (`normal`→`functional`, sin nombre de modelo en el archivo, renumeración continua) y centralizar los `execute_*.py` por modelo en un único script parametrizado.
+- Impacto:
+  - Una sola fuente de verdad para qué modelos cubre el estudio de estabilidad de semilla; menos riesgo de que ese registro y `analysis/config.py` se desincronicen a futuro.
+  - Ningún modelo vigente depende ya de una carpeta `scenarios/` legacy para sus propios tests (salvo `opp_v4`/`opp_v5`, pendiente de la fase siguiente).
+- Riesgo / atención:
+  - El resto del plan (tests, renombres) es un cambio grande que toca cientos de archivos — se ejecuta por fases verificables, no de una sola vez.
+  - `opp_v4`, con la extensión de picker/asignación (`P`/`x`) en sus propios escenarios, NO es un duplicado del trío — se dejó fuera de esta centralización a propósito, se mueve aparte en la fase siguiente sin fusionar contenido.
+- Validación:
+  - `python -m analysis.run_analysis` corrido antes y después: mismo conjunto de CSVs leídos, mismas filas/columnas en `analysis/output/report.md` (diferencias solo en el último dígito de punto flotante, sin relación con este cambio).
+  - Suite normal de los 9 paquetes afectados corrida antes/después del movimiento de escenarios (vía `git stash`/`stash pop` para tener una base real): mismos conteos de test exactamente (`opp_v3` 48 con la misma 1 falla preexistente no relacionada — `test_bridge_earliness_order_size`, precisión numérica; el resto, 46-59 tests cada uno, todos OK sin cambios). Doble-verificado de forma independiente corriendo `opp_hc_2`, `opp_hc_4` y `opp_aco_3` manualmente después.
 
 ---
 

@@ -13,7 +13,7 @@ from tests.opp.tests.opp_test_case import OPPTestCase
 from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.model_dto import ModelDTO
 
-from tests.opp_v3.scenarios.normal.scenario_02 import two_orders_two_aisles
+from tests.shared_scenarios.normal.scenario_02 import two_orders_two_aisles
 
 
 # Ported from opp_hc_2's test_opp_hc_2_model_02.py for opp_hc_4/analysis parity (V_p unset, T_frio_max default +inf -> pure equivalence).

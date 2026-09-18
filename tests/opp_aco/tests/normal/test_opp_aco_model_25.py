@@ -12,7 +12,7 @@ from models.opp_aco.opp_aco import OPPAntColonyOptimization
 from models.opp_aco.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
 
-from tests.opp_aco.scenarios.normal.three_missions_two_pickers_grid_graph import (
+from tests.shared_scenarios.normal.three_missions_two_pickers_grid_graph import (
     scenario_three_missions_two_pickers_two_periods_grid_graph,
 )
 

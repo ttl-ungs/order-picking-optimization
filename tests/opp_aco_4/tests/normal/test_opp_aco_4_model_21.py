@@ -12,7 +12,7 @@ from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.aco.solve_aco_4_model_dto import SolveAco4ModelDTO
 from models.opp_aco_4 import OPPAntColonyOptimization
 from tests.opp.tests.opp_test_case import OPPTestCase
-from tests.opp_v3.scenarios.normal.scenario_13 import (
+from tests.shared_scenarios.normal.scenario_13 import (
     bridge_graph_disconnected,
     bridge_graph_two_pickers_four_batches,
 )

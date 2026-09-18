@@ -54,7 +54,7 @@ from models.utils.dat_files_builder import build_dat_files
 from tests.opp_v4.tests.opp_test_case_v4 import OPPTestCaseV4
 from tests.opp_v4.config import DAT_DIR, ZPL_PATH
 from tests.utils.zpl_utils import solve_zpl
-from tests.opp_hc_2.scenarios.stress.scenario_custom_setup import scenario_custom_setup
+from tests.shared_scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
 # How long to let SCIP search before giving up. 30 min by default -- raise
 # this (e.g. to 3600 or more) and rerun if the result comes back "timelimit"

@@ -11,7 +11,7 @@ from dtos.aco.solve_aco_4_model_dto import SolveAco4ModelDTO
 from models.opp_aco_4 import OPPAntColonyOptimization
 from models.opp_aco_4.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
-from tests.opp_hc_2.scenarios.stress.scenario_double_grid import (
+from tests.shared_scenarios.stress.scenario_double_grid import (
     scenario_two_grids_custom_setup,
 )
 

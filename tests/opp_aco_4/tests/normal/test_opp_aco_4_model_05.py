@@ -13,7 +13,7 @@ from dtos.aco.solve_aco_4_model_dto import SolveAco4ModelDTO
 from dtos.opp.model_dto import ModelDTO
 from models.opp_aco_4.utils.output_handler import OutputHandler
 
-from tests.opp_aco.scenarios.normal.scenario_05 import bidirectional_edges
+from tests.shared_scenarios.normal.scenario_05 import bidirectional_edges
 
 
 # Ported from opp_aco_2's test_opp_aco_2_model_05.py for opp_aco_4/analysis parity (V_p unset, T_frio_max default +inf -> pure equivalence).

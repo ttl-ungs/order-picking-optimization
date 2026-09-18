@@ -12,7 +12,7 @@ from models.opp_hc_4 import OPPHillClimbing
 from dtos.opp.model_dto import ModelDTO
 
 from tests.opp_hc_4.tests.opp_hc_4_test_case import OPPTestCaseHC4
-from tests.opp_v3.scenarios.normal.scenario_01 import basic_two_orders_capacity_limit
+from tests.shared_scenarios.normal.scenario_01 import basic_two_orders_capacity_limit
 
 
 class TestOPPHillClimbing4Model2PickerSpeed(OPPTestCaseHC4):

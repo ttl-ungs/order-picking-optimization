@@ -13,7 +13,7 @@ from dtos.opp.model_dto import ModelDTO
 from models.opp_hc_2.utils.output_handler import OutputHandler
 from models.opp_hc_2 import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
-from tests.opp_v3.scenarios.normal.scenario_17 import branched_single_mission_route
+from tests.shared_scenarios.normal.scenario_17 import branched_single_mission_route
 from tests.opp_v2.tests.route_assertions import (
     assert_correct_path,
     assert_route_covers_orders,

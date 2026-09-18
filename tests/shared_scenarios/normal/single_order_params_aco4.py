@@ -5,7 +5,7 @@ from graphs.graphs_factory import GraphsFactory
 
 def single_order_params(due_date_value, start_time, cap_vehicle=100.0):
     """
-    Same fixture as opp_aco_2's tests.opp_aco_2.scenarios.normal.single_order_params,
+    Same fixture as tests.shared_scenarios.normal.single_order_params_aco,
     ported to return a SolveAco4ModelDTO (V_p unset / T_frio_max default +inf,
     so it behaves identically to the aco_2 version) since opp_aco_4's solve()
     reads params.V_p / params.T_frio_max, which a plain SolveAcoModelDTO

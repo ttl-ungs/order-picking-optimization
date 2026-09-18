@@ -6,7 +6,7 @@ from tests.opp.tests.opp_test_case import OPPTestCase
 import sys
 import os
 
-from tests.opp_hc_4.scenarios.normal.single_order_params import single_order_params
+from tests.shared_scenarios.normal.single_order_params_hc4 import single_order_params
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", "..")))
 

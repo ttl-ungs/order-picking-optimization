@@ -14,7 +14,7 @@ from tests.opp.tests.opp_test_case import OPPTestCase
 from dtos.opp.model_dto import ModelDTO
 from models.opp_aco_3.utils.output_handler import OutputHandler
 
-from tests.opp_v3.scenarios.normal.scenario_01 import basic_two_orders_capacity_limit
+from tests.shared_scenarios.normal.scenario_01 import basic_two_orders_capacity_limit
 
 
 class TestServiceTimeVariations(OPPTestCase):

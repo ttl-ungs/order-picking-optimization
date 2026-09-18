@@ -7,7 +7,7 @@ from models.utils.dat_files_builder import build_dat_files
 from tests.opp_v4.tests.opp_test_case_v4 import OPPTestCaseV4
 from tests.opp_v4.config import DAT_DIR, ZPL_PATH
 from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
-from tests.opp_hc_2.scenarios.common.six_missions_three_pickers_grid_graph import (
+from tests.shared_scenarios.common.six_missions_three_pickers_grid_graph import (
     scenario_six_missions_two_periods_grid_graph,
 )
 

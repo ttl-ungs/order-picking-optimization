@@ -13,7 +13,7 @@ from models.opp_hc_4 import OPPHillClimbing
 from models.opp_hc_4.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
 
-from tests.opp_v3.scenarios.normal.scenario_02 import two_orders_two_aisles
+from tests.shared_scenarios.normal.scenario_02 import two_orders_two_aisles
 
 
 # Ported from opp_hc_2's test_opp_hc_2_model_27.py for opp_hc_4/analysis parity (V_p unset, T_frio_max default +inf -> pure equivalence).

@@ -14,7 +14,7 @@ from tests.opp.tests.opp_test_case import OPPTestCase
 from dtos.opp.model_dto import ModelDTO
 from models.opp_aco_4.utils.output_handler import OutputHandler
 
-from tests.opp_v3.scenarios.normal.scenario_01 import basic_two_orders_capacity_limit
+from tests.shared_scenarios.normal.scenario_01 import basic_two_orders_capacity_limit
 
 
 # Ported from opp_aco_2's test_opp_aco_2_model_29.py for opp_aco_4/analysis parity (V_p unset, T_frio_max default +inf -> pure equivalence).

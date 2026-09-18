@@ -13,7 +13,7 @@ from models.opp_aco_4 import OPPAntColonyOptimization
 from models.opp_aco_4.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
 
-from tests.opp_v3.scenarios.normal.scenario_03 import two_possible_routes_batches
+from tests.shared_scenarios.normal.scenario_03 import two_possible_routes_batches
 
 
 # Ported from opp_aco_2's test_opp_aco_2_model_24.py for opp_aco_4/analysis parity (V_p unset, T_frio_max default +inf -> pure equivalence).

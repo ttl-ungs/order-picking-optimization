@@ -33,6 +33,7 @@ import os
 import time
 from datetime import datetime
 
+from analysis.config import OUTPUTS_ROOT, STABILITY_MODELS
 from dtos.aco.solve_aco_3_model_dto import SolveAco3ModelDTO
 from dtos.aco.solve_aco_4_model_dto import SolveAco4ModelDTO
 from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
@@ -66,7 +67,11 @@ MODEL_REGISTRY = {
     "opp_aco_4": (OPPAntColonyOptimization4, SolveAco4ModelDTO, {}),
 }
 
-OUTPUTS_ROOT = os.path.join(os.path.dirname(__file__), "..", "tests", "outputs")
+assert set(MODEL_REGISTRY) == set(STABILITY_MODELS), (
+    "MODEL_REGISTRY (needs actual classes, defined here) and "
+    "analysis.config.STABILITY_MODELS (the single source of truth for which "
+    "models the stability study covers) drifted apart -- update both."
+)
 
 
 def _solve_once(model_cls, dto_cls, extra_fields, instance, seed):

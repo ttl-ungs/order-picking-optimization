@@ -11,7 +11,7 @@ from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
 from models.opp_aco.opp_aco import OPPAntColonyOptimization
 from models.opp_aco.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
-from tests.opp_aco.scenarios.stress.scenario_custom_setup import scenario_custom_setup
+from tests.shared_scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
 
 class TestOPPModel(OPPTestCase):

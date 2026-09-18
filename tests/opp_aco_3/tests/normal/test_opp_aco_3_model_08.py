@@ -13,7 +13,7 @@ from dtos.aco.solve_aco_3_model_dto import SolveAco3ModelDTO
 from dtos.opp.model_dto import ModelDTO
 from models.opp_aco_3.utils.output_handler import OutputHandler
 
-from tests.opp_aco.scenarios.normal.scenario_08 import (
+from tests.shared_scenarios.normal.scenario_08 import (
     test_four_orders_two_locations_two_missions,
 )
 

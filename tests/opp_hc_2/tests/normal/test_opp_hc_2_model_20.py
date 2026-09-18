@@ -12,7 +12,7 @@ from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
 from models.opp_hc_2 import OPPHillClimbing
 from tests.opp.tests.opp_test_case import OPPTestCase
-from tests.opp_v3.scenarios.normal.scenario_12 import grid_5x3_two_pickers_four_batches
+from tests.shared_scenarios.normal.scenario_12 import grid_5x3_two_pickers_four_batches
 from tests.opp_v2.tests.route_assertions import assert_batch_routes_cover_locations
 
 

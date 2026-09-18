@@ -11,11 +11,11 @@ inventing a new one.
 
 from typing import Dict, List
 
-from tests.opp_v3.scenarios.normal.scenario_01 import basic_two_orders_capacity_limit
-from tests.opp_v3.scenarios.normal.three_missions_two_pickers_grid_graph import (
+from tests.shared_scenarios.normal.scenario_01 import basic_two_orders_capacity_limit
+from tests.shared_scenarios.normal.three_missions_two_pickers_grid_graph import (
     scenario_three_missions_two_pickers_two_periods_grid_graph,
 )
-from tests.opp_hc_2.scenarios.common.six_missions_three_pickers_grid_graph import (
+from tests.shared_scenarios.common.six_missions_three_pickers_grid_graph import (
     scenario_six_missions_two_periods_grid_graph,
 )
 

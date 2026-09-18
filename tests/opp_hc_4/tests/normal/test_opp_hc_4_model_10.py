@@ -12,7 +12,7 @@ from dtos import ModelDTO
 from models.opp_hc_4 import OPPHillClimbing
 from tests.opp_hc_4.tests.opp_hc_4_test_case import OPPTestCaseHC4
 
-from tests.opp_v3.scenarios.common.six_missions_three_pickers_grid_graph import (
+from tests.shared_scenarios.common.six_missions_three_pickers_grid_graph import (
     scenario_six_missions_two_periods_grid_graph,
 )
 

@@ -94,9 +94,11 @@ STABILITY_MODELS = ["opp_hc_2", "opp_hc_3", "opp_hc_4", "opp_aco_2", "opp_aco_3"
 # specs/model_analysis.md (e.g. a consolidated file that must win over any
 # later partial run, or a specific high-density stress run). Keyed by
 # (model_label, scenario) -> exact filename (relative to its output dir).
+# Only labels present in MODEL_DIRS are ever looked up here (see
+# analysis/load.py) -- legacy labels (opp_v3, opp_aco) were removed
+# 2026-09-17 as dead/unreachable entries once those models dropped out of
+# MODEL_DIRS.
 LATEST_FILE_OVERRIDES = {
-    ("opp_v3", "stress"): "complete_output_v3_stress_tests.csv",
-    ("opp_aco", "stress"): "output_opp_aco_stress_tests_20260617_123001.csv",
     # 2026-08-28: opp_v4's stress test files were renumbered/reshuffled at
     # some point (the "Rename tests" commit) without a matching full stress
     # re-run under the new numbering. The chronologically NEWER CSV

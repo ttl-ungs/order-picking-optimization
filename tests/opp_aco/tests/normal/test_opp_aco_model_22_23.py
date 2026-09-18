@@ -9,7 +9,7 @@ sys.path.insert(
 from models.opp_aco.opp_aco import OPPAntColonyOptimization
 from models.opp_aco.utils.output_handler import OutputHandler
 from tests.opp.tests.opp_test_case import OPPTestCase
-from tests.opp_aco.scenarios.normal.single_order_params import single_order_params
+from tests.shared_scenarios.normal.single_order_params_aco import single_order_params
 
 
 class TestOPPModel(OPPTestCase):

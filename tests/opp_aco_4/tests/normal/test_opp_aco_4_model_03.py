@@ -13,7 +13,7 @@ from dtos.aco.solve_aco_4_model_dto import SolveAco4ModelDTO
 from dtos.opp.model_dto import ModelDTO
 from models.opp_aco_4.utils.output_handler import OutputHandler
 
-from tests.opp_aco.scenarios.normal.scenario_03 import two_possible_routes_batches
+from tests.shared_scenarios.normal.scenario_03 import two_possible_routes_batches
 
 
 # Ported from opp_aco_2's test_opp_aco_2_model_03.py for opp_aco_4/analysis parity (V_p unset, T_frio_max default +inf -> pure equivalence).
