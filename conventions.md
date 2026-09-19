@@ -57,9 +57,10 @@ raiz-del-proyecto/
 │   ├── shared_scenarios/        # Todos los escenarios (grafos y parámetros); los propios de un modelo llevan sufijo _vN
 │   │   ├── common/  functional/  stress/
 │   └── opp_hc_2/                # Un directorio por modelo
-│       ├── doc/                 # Documentación técnica de los casos de prueba (si existe)
 │       ├── functional/          # Pruebas funcionales regulares: test_case_01.py, test_case_02.py, ...
 │       └── stress/              # Pruebas de estrés
+├── examples/                    # Scripts de uso de los modelos heurísticos
+├── docs/                        # Documentación: thesis/ (tex, pdf, results_outline), guides/, specs/, tests/<modelo>/ (índice en docs/README.md)
 └── results/                     # CSV de resultados (datos generados): results/<modelo>/<functional|stress|stability>/
 ```
 
@@ -125,7 +126,7 @@ Los métodos de prueba dentro de los archivos de test no deben documentar la mec
 * *Formato Incorrecto:* `"""Prueba que da falso con dto y weights."""`
 
 #### 5.3. Estructura de Documentos de Escenarios (`test_cases.md`)
-Cada modelo debe incluir en su carpeta `doc/` archivos markdown que documenten detalladamente cada escenario de prueba utilizando la siguiente estructura fija:
+Cada modelo debe incluir en `docs/tests/<modelo>/` archivos markdown que documenten detalladamente cada escenario de prueba utilizando la siguiente estructura fija:
 * **ID de Escenario:** Coincidente con el número de archivo (ej. Escenario 1).
 * **Descripción del Grafo:** Layout de depósito, pasillos, nodos finales y distancias.
 * **Configuración de Órdenes:** Lista de órdenes, locaciones requeridas, volúmenes (`cap_n`) y ventanas de tiempo (`due_date`).
