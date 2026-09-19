@@ -1,32 +1,64 @@
 import csv
 import multiprocessing
 import os
-import resource
 import sys
 import time
 import unittest
 from datetime import datetime  # NUEVO IMPORT
 
+try:
+    import resource  # Unix only
+except ImportError:
+    resource = None
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 
-def _peak_rss_mb() -> float:
+def _peak_rss_mb():
     """
     Peak resident set size (RAM actually used, all of it -- Python objects
     AND native allocations like PySCIPOpt's C-level SCIP state) of the
-    CURRENT process since it started, in MB. Read from the OS
-    (getrusage), not tracemalloc: tracemalloc only sees Python-level
-    allocations, which would badly UNDERSTATE memory for exact-model
-    tests (opp_v2/v3/v4/v5), whose actual RAM cost is dominated by SCIP's
-    native branch-and-bound state, not Python objects.
+    CURRENT process since it started, in MB. Read from the OS, not
+    tracemalloc: tracemalloc only sees Python-level allocations, which would
+    badly UNDERSTATE memory for exact-model tests (opp_v2/v3/v4/v5), whose
+    actual RAM cost is dominated by SCIP's native branch-and-bound state.
 
-    ru_maxrss's unit is platform-dependent: bytes on macOS/BSD, KB on
-    Linux. Normalized to MB here so the CSV column means the same thing
-    regardless of which machine ran the test.
+    Unix: getrusage's ru_maxrss (bytes on macOS/BSD, KB on Linux), normalized
+    to MB. Windows has no `resource` module: uses the process's
+    PeakWorkingSetSize instead. Returns None if neither is available.
     """
-    raw = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    divisor = (1024 * 1024) if sys.platform == "darwin" else 1024
-    return raw / divisor
+    if resource is not None:
+        raw = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        divisor = (1024 * 1024) if sys.platform == "darwin" else 1024
+        return raw / divisor
+    if sys.platform == "win32":
+        import ctypes
+        from ctypes import wintypes
+
+        class _ProcessMemoryCounters(ctypes.Structure):
+            _fields_ = [
+                ("cb", wintypes.DWORD),
+                ("PageFaultCount", wintypes.DWORD),
+                ("PeakWorkingSetSize", ctypes.c_size_t),
+                ("WorkingSetSize", ctypes.c_size_t),
+                ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                ("PagefileUsage", ctypes.c_size_t),
+                ("PeakPagefileUsage", ctypes.c_size_t),
+            ]
+
+        counters = _ProcessMemoryCounters()
+        counters.cb = ctypes.sizeof(counters)
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        psapi = ctypes.WinDLL("psapi", use_last_error=True)
+        kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+        psapi.GetProcessMemoryInfo.argtypes = [wintypes.HANDLE, ctypes.POINTER(_ProcessMemoryCounters), wintypes.DWORD]
+        psapi.GetProcessMemoryInfo.restype = wintypes.BOOL
+        if psapi.GetProcessMemoryInfo(kernel32.GetCurrentProcess(), ctypes.byref(counters), counters.cb):
+            return counters.PeakWorkingSetSize / (1024 * 1024)
+    return None
 
 
 def _run_test_child(test_name, q):
