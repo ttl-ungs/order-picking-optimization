@@ -70,7 +70,7 @@ models/opp_hill_climbing/
   │   ├── route_solution.py        # Route representation
   │   ├── route_evaluator.py       # Objective function (identical formula)
   │   └── constraints_validator.py # Validates ALL constraints
-  ├── example_usage.py
+  ├── (usage example: examples/opp_hc_2_usage.py)
   └── README.md (this file)
 ```
 

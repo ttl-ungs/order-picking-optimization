@@ -88,7 +88,7 @@ models/opp_hc_3/
   │   ├── route_evaluator.py        # Objective, with round-robin congestion simulation
   │   ├── constraints_validator.py  # Validates ALL constraints (congestion is a cost, not a hard constraint)
   │   └── output_handler.py
-  ├── example_usage.py               # Same two-picker bottleneck example as opp_aco_3, for direct comparison
+  ├── (usage example: examples/opp_hc_3_usage.py)               # Same two-picker bottleneck example as opp_aco_3, for direct comparison
   └── README.md (this file)
 
 dtos/hc/solve_hc_3_model_dto.py     # SolveHC3ModelDTO: adds Min_dwell on top of SolveHCModelDTO
