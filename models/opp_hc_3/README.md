@@ -131,6 +131,6 @@ always consistent with the objective value actually being optimized.
   for the shared `simulate_route_congestion` helper.
 
 Only a minimal representative test set was written for this first version;
-opp_hc_2's full normal/stress test battery (~30+ files) can be ported the
+opp_hc_2's full functional/stress test battery (~30+ files) can be ported the
 same way as `test_case_01.py` if broader regression coverage is
 desired.

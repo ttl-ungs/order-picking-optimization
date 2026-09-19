@@ -12,7 +12,7 @@ from models.opp_aco_4 import OPPAntColonyOptimization
 from dtos.opp.model_dto import ModelDTO
 
 from tests.opp_aco_4.opp_aco_4_test_case import OPPTestCaseACO4
-from tests.shared_scenarios.normal.scenario_01 import basic_two_orders_capacity_limit
+from tests.shared_scenarios.functional.scenario_01 import basic_two_orders_capacity_limit
 
 
 class TestOPPAntColonyOptimization4Model4ColdChainEligibility(OPPTestCaseACO4):

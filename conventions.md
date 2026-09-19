@@ -17,8 +17,9 @@ Este documento sirve como guía estricta y vinculante para cualquier agente aut�
     * *Ejemplos:* `current_route`, `is_feasible`, `active_arcs`.
 * **Constantes:** Siempre en `UPPER_SNAKE_CASE`.
     * *Ejemplos:* `MAX_ITERATIONS`, `BIG_M`, `DEFAULT_TIMEOUT`.
-* **Archivos de Test:** Deben llevar siempre el prefijo `test_` seguido del nombre del modelo en `snake_case` y un identificador numérico o descriptivo.
-    * *Ejemplos:* `test_opp_hc_1_model_1.py`, `test_opp_v3_model_stress_10.py`.
+* **Archivos de Test:** Llevan siempre el prefijo `test_case_` seguido de un número de dos dígitos o de un identificador descriptivo en `snake_case`. No repiten el nombre del modelo ni el del tier: ya los da el directorio (`tests/<modelo>/<tier>/`).
+    * *Numerados* (continuos, sin huecos, dentro de cada modelo y tier): `tests/opp_hc_2/functional/test_case_02.py`, `tests/opp_hc_2/stress/test_case_11.py`.
+    * *Descriptivos* (tests propios de una familia, sin equivalente en su base): `tests/opp_hc_3/functional/test_case_congestion.py`.
 * **Data Transfer Objects (DTOs):** Siempre deben finalizar con el sufijo `DTO`.
     * *Ejemplos:* `ModelDTO`, `SolveModelDTO`, `SolveHCModelDTO`.
 
@@ -33,34 +34,34 @@ El repositorio sigue un patrón modular estricto por modelo. No se deben mezclar
 ```text
 raiz-del-proyecto/
 ├── dtos/                        # DTOs globales compartidos por los modelos
-│   ├── opp/                     # DTOs específicos del modelo original (v1, v2, v3)
-│   └── hc/                      # DTOs específicos de la heurística Hill Climbing
+│   ├── opp/                     # DTOs del problema OPP (compartidos por todos los modelos)
+│   ├── hc/                      # DTOs de la heurística Hill Climbing
+│   └── aco/                     # DTOs de Ant Colony Optimization
 ├── models/                      # Todos los resolvedores (exactos e heurísticos)
 │   ├── base/                    # Clases base abstractas compartidas
 │   │   ├── model.py             # Clase abstracta Model (base del patrón Observer)
 │   │   └── opp_location_graph.py# Grafo base de locaciones
-│   ├── opp_v3/                  # Modelo exacto de referencia
-│   │   ├── opp_model_v3.py      # Solver principal utilizando PySCIPOpt
-│   │   └── utils/               # Utilidades exclusivas del modelo exacto
-│   └── opp_hc_1/                  # Modelo heurístico (ejemplo Hill Climbing)
-│       ├── opp_hc_1.py            # Solver heurístico principal
-│       └── utils/               # Lógica interna aislada (validators, evaluators)
+│   ├── opp_v1 ... opp_v5/       # Modelos exactos (v1-v3 PySCIPOpt, v4-v5 ZIMPL+SCIP)
+│   ├── opp_hc_1 ... opp_hc_4/   # Heurísticas Hill Climbing
+│   └── opp_aco_1 ... opp_aco_4/ # Metaheurísticas ACO
 ├── observer/                    # Infraestructura del patrón de diseño Observer
 │   └── observer.py              # Clase abstracta Observer
-└── tests/                       # Suite de testing organizada por modelo
-    ├── opp_v3/                  # Tests replicables del modelo exacto v3
-    │   ├── doc/                 # Documentación técnica de los escenarios de prueba
-    │   ├── scenarios/           # Escenarios (grafos y parámetros) compartidos
-    │   │   ├── normal/          # Casos base para happy path
-    │   │   └── stress/          # Casos complejos o stress-tests
-    │   └── tests/               # Casos de prueba (scripts unitarios ejecutables)
-    │       ├── normal/          # Pruebas funcionales regulares
-    │       └── stress/          # Pruebas funcionales de estrés
-    └── opp_hc_1/                  # Tests clonados y adaptados para la heurística
-        ├── doc/
-        ├── scenarios/
-        └── tests/
+├── tests/                       # Suite de testing organizada por modelo
+│   ├── opp_test_case.py         # TestCase base compartida (OPPTestCase)
+│   ├── family_case.py           # Fábrica que adapta los tests de opp_hc_2/opp_aco_2 a sus familias
+│   ├── run_suite.py             # Punto de entrada único: python -m tests.run_suite <modelo> functional|stress
+│   ├── test_runner.py           # Ejecuta cada test aislado, con timeout, y escribe el CSV en results/
+│   ├── shared_scenarios/        # Todos los escenarios (grafos y parámetros); los propios de un modelo llevan sufijo _vN
+│   │   ├── common/  functional/  stress/
+│   └── opp_hc_2/                # Un directorio por modelo
+│       ├── doc/                 # Documentación técnica de los casos de prueba (si existe)
+│       ├── functional/          # Pruebas funcionales regulares: test_case_01.py, test_case_02.py, ...
+│       └── stress/              # Pruebas de estrés
+└── results/                     # CSV de resultados (datos generados): results/<modelo>/<functional|stress|stability>/
 ```
+
+Los escenarios ya no viven dentro de cada modelo: están todos en `tests/shared_scenarios/`. Un escenario compartido por varios modelos no lleva sufijo; uno propio de un modelo lleva su sufijo (`scenario_01_v4.py`, `single_order_params_hc4.py`).
+
 
 ### 3. Resolución Dinámica de Rutas (sys.path.insert)
 Para asegurar que cualquier test o script sea ejecutable de forma directa desde la terminal o el IDE sin fallas de importación (ModuleNotFoundError), se utiliza un hack estricto de resolución dinámica del path de ejecución.

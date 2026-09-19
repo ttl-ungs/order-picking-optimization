@@ -7,7 +7,7 @@ sys.path.insert(
 )
 
 from tests.opp_v4.opp_test_case_v4 import OPPTestCaseV4
-from tests.shared_scenarios.normal.scenario_12_v4 import grid_5x3_two_pickers_four_batches
+from tests.shared_scenarios.functional.scenario_12_v4 import grid_5x3_two_pickers_four_batches
 from models.utils.dat_files_builder import build_dat_files
 from tests.opp_v4.config import DAT_DIR, ZPL_PATH
 from tests.utils.zpl_utils import extract_active_arcs, solve_zpl

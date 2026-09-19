@@ -12,7 +12,7 @@ from models.opp_v3.opp_model_v3 import OPPModelV3
 from models.opp_v3.utils.output_handler import OutputHandler
 from tests.opp_test_case import OPPTestCase
 
-from tests.shared_scenarios.normal.one_mission_one_picker_grid_graph import (
+from tests.shared_scenarios.functional.one_mission_one_picker_grid_graph import (
     scenario_one_mission_one_picker_grid_graph,
 )
 

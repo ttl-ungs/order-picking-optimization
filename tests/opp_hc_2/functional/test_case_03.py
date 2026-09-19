@@ -13,7 +13,7 @@ from tests.opp_test_case import OPPTestCase
 from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.model_dto import ModelDTO
 
-from tests.shared_scenarios.normal.scenario_02 import two_orders_two_aisles
+from tests.shared_scenarios.functional.scenario_02 import two_orders_two_aisles
 
 
 class TestOPPHillClimbing2Model3(OPPTestCase):

@@ -13,7 +13,7 @@ from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
 from dtos.opp.model_dto import ModelDTO
 from models.opp_aco_1.utils.output_handler import OutputHandler
 
-from tests.shared_scenarios.normal.scenario_06 import test_two_orders_two_locations
+from tests.shared_scenarios.functional.scenario_06 import test_two_orders_two_locations
 
 
 class TestOPPModel(OPPTestCase):

@@ -9,7 +9,7 @@ sys.path.insert(
 )
 
 from tests.opp_v4.opp_test_case_v4 import OPPTestCaseV4
-from tests.shared_scenarios.normal.single_order_params_v4 import single_order_params
+from tests.shared_scenarios.functional.single_order_params_v4 import single_order_params
 from models.utils.dat_files_builder import build_dat_files
 from tests.opp_v4.config import DAT_DIR, ZPL_PATH
 from tests.utils.zpl_utils import solve_zpl

@@ -16,7 +16,7 @@ from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
 from dtos.opp.model_dto import ModelDTO
 from models.opp_aco_1.utils.output_handler import OutputHandler
 
-from tests.shared_scenarios.normal.scenario_01 import basic_two_orders_capacity_limit
+from tests.shared_scenarios.functional.scenario_01 import basic_two_orders_capacity_limit
 
 
 class TestOPPModel(OPPTestCase):

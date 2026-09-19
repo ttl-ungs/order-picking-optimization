@@ -11,7 +11,7 @@ from tests.opp_v4.opp_test_case_v4 import OPPTestCaseV4
 from tests.opp_v4.config import DAT_DIR, ZPL_PATH
 from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
 
-from tests.shared_scenarios.normal.scenario_19_v4 import longer_single_mission_route
+from tests.shared_scenarios.functional.scenario_19_v4 import longer_single_mission_route
 from tests.opp_v4.route_assertions import assert_route_covers_orders
 
 class TestOPPModelZIMPL(OPPTestCaseV4):

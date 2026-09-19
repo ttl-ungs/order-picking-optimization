@@ -11,7 +11,7 @@ from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
 from models.opp_hc_2.opp_hc_2 import OPPHillClimbing
 from models.opp_hc_2.utils.output_handler import OutputHandler
 from tests.opp_test_case import OPPTestCase
-from tests.shared_scenarios.normal.multigrid_graph import (
+from tests.shared_scenarios.functional.multigrid_graph import (
     multigrid_5x5_3x3_five_pickers_twelve_batches,
 )
 

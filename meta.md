@@ -12,7 +12,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - Tipo: Optimización / routing de picking en almacén
 - Stack principal: Python, PySCIPOpt, modelos exactos y heurísticos
 - Estado actual: En desarrollo (limpieza y reorganización de repo en curso)
-- Última actualización: 2026-09-17
+- Última actualización: 2026-09-19
 - Responsable actual: Ebertz, Ximena; Soria, Lucía
 
 ### Objetivo del repositorio
@@ -38,7 +38,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - Modelo base / referencia: `opp_v4` (exacto, ZIMPL+SCIP), comparado también contra `opp_v5` (exacto, descomposición en 2 etapas).
 - Modelos alternativos vigentes: `opp_hc_2/3/4` (Hill Climbing), `opp_aco_2/3/4` (ACO).
 - Alcance de la tesina confirmado (2026-09-17): solo `opp_v4` en adelante, incluyendo sus heurísticas. `opp`, `opp_v2`, `opp_v3`, `opp_hc`, `opp_aco` (sin numerar) son legacy — se mantienen en el repo por historial pero quedan fuera del alcance de la tesina.
-- Aspecto prioritario actual: limpieza y reorganización del repo (deduplicación de tests entre familias HC/ACO, centralización de escenarios hoy dispersos entre carpetas legacy y vigentes, renombres de archivos/carpetas) antes de separar en un repo aparte lo que sí entra en la tesina (tarea futura, todavía no iniciada).
+- Aspecto prioritario actual: la limpieza y reorganización del repo quedó hecha (ver el bloque del 2026-09-17/19); falta la verificación a fondo de todas las suites y luego separar en un repo aparte lo que entra en la tesina (tarea futura, todavía no iniciada).
 - Bloqueador actual: ninguno.
 
 ---
@@ -116,7 +116,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 
 ---
 
-### Cambio 2026-09-17 - Limpieza y reorganización del repo (en curso)
+### Cambio 2026-09-17/19 - Limpieza y reorganización del repo
 - Autor: IA / Ximena Ebertz
 - Alcance: documentación / infraestructura de análisis / tests (en curso)
 - Archivos principales:
@@ -131,19 +131,28 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
   - Se completó el resumen ejecutivo y el contexto activo de este archivo (antes tenía placeholders de plantilla sin llenar).
   - Se centralizó el trío de escenarios realmente duplicado (`opp_v3`/`opp_aco`/`opp_hc_2`, byte-idénticos salvo la clase de DTO en `single_order_params.py`) en `tests/shared_scenarios/{common,normal,stress}/`. Se repuntaron 438 archivos de test en 9 paquetes (`opp_v3`, `opp_aco`, `opp_hc`, `opp_hc_2/3/4`, `opp_aco_2/3/4`, más las stress de `opp_v4`) — incluido `opp_hc` (legacy sin numerar), que dependía de `opp_v3/scenarios` sin estar documentado previamente. Se borraron las 39 copias duplicadas que quedaron redundantes. `single_order_params.py` no se colapsó en un solo archivo: quedó una variante por familia de DTO (`single_order_params_{opp,hc,hc4,aco,aco4}.py`) para no mezclar formas incompatibles.
   - Se movieron los escenarios propios de `opp_v4` (normal + la copia de `scenario_custom_setup` que `opp_v5` necesita) y `opp_v5` a `tests/shared_scenarios/`, con sufijo `_v4`/`_v5` en el nombre de archivo para no mezclarse con el trío compartido ni entre sí (ej. `scenario_01_v4.py`, `two_stage_scenarios_v5.py`). Ya ningún modelo tiene su propia carpeta `scenarios/`.
-  - Se creó `tests/run_suite.py`, un único script parametrizado (`python -m tests.run_suite <modelo> <normal|stress> [--id NN]`) que reemplaza los ~24 `execute_tests.py`/`execute_stress_tests.py` casi idénticos, uno por modelo. Se actualizaron todas las referencias en docs (`analysis/README.md`, `analysis/run_analysis.py`, `analysis/load.py`, READMEs de `opp_hc`, `opp_hc_2`, `opp_hc_4`, `opp_aco_4`). Los legacy `opp`/`opp_v2` quedan con sus propios scripts (no usan `TestRunner`, estructura distinta).
+  - Se creó `tests/run_suite.py`, un único script parametrizado (`python -m tests.run_suite <modelo> <functional|stress> [--id NN]`) que reemplaza los ~24 `execute_tests.py`/`execute_stress_tests.py` casi idénticos, uno por modelo. Se actualizaron todas las referencias en docs (`analysis/README.md`, `analysis/run_analysis.py`, `analysis/load.py`, READMEs de `opp_hc`, `opp_hc_2`, `opp_hc_4`, `opp_aco_4`). Los legacy `opp`/`opp_v2` quedan con sus propios scripts (no usan `TestRunner`, estructura distinta).
   - Se creó `tests/family_case.py::family_case()` (mismo mecanismo que `tests/opp_v5/v4_compat.py::migrated_case()`, generalizado): parchea a nivel de módulo, solo durante `setUp`/`tearDown` de cada test, los nombres de clase (modelo/DTO/output_handler) que un archivo de test de `opp_hc_2`/`opp_aco_2` resuelve en tiempo de llamada — permite que `opp_hc_3`/`opp_hc_4` y `opp_aco_3`/`opp_aco_4` reutilicen el mismo archivo base sin tocar una sola aserción. El parcheo es *scoped* a la duración de cada test (no permanente) para que dos familias que comparten el mismo módulo base no se pisen si corren juntas en el mismo proceso — verificado explícitamente corriendo las 4 familias juntas (215 tests, 0 errores).
   - Con esa factory, se convirtieron **140 archivos** de duplicado literal a una sola línea de factory, en las 4 familias (`hc_3`: 24 normal; `hc_4`: 23 normal + 9 estrés; `aco_3`: 24 normal + 17 estrés; `aco_4`: 23 normal + 20 estrés). Se dejaron sin tocar los archivos con contenido propio de cada familia (congestión, cadena de frío, tests con aserciones reescritas) y los que no tienen equivalente en la base.
-  - En el camino se encontró y corrigió un bug real: `test_case_17.py`/`test_case_17.py` se habían clasificado mal como duplicados literales (su diff con la base solo mostraba líneas de import, pero importan un helper de escenario con DTO distinto que la factory no puede alcanzar) — se detectó porque las suites pasaron de 0 a 2 errores tras convertirlos, se revirtieron ambos archivos a su contenido original y quedaron excluidos de la conversión.
-- Pendiente (plan completo, todavía no ejecutado):
-  - Renombrar carpetas/archivos de test (`normal`→`functional`, sin nombre de modelo en el archivo, renumeración continua).
+  - En el camino se encontró y corrigió un bug real: los tests `22_23` de `opp_hc_4` y `opp_aco_4` se habían clasificado mal como duplicados literales (su diff con la base solo mostraba líneas de import, pero importan un helper de escenario con DTO distinto que la factory no puede alcanzar) — se detectó porque las suites pasaron de 0 a 2 errores tras convertirlos, se revirtieron ambos archivos a su contenido original y quedaron excluidos de la conversión.
+  - **2026-09-19** — `tests/outputs/` pasó a `results/` de primer nivel (son datos generados, no tests): `TestRunner` escribe en `results/<modelo>/<tier>/` y `analysis/config.py::OUTPUTS_ROOT` lee de ahí. Estructura plana, sin `archive/` (decisión de estructura pendiente, ver más abajo). `analysis/output/` (reporte y gráficos) no se movió.
+  - **2026-09-19** — Los modelos sin sufijo de versión pasaron a llamarse como sus hermanos: `opp`→`opp_v1`, `opp_hc`→`opp_hc_1`, `opp_aco`→`opp_aco_1` (en `models/`, `tests/` y `results/`; también el módulo principal de cada paquete). `dtos/opp/` no es un modelo (DTOs del problema OPP) y conserva su nombre. La `OPPTestCase` base, que usaban ~349 tests de todos los modelos y vivía dentro del paquete legacy, ahora está en `tests/opp_test_case.py`.
+  - **2026-09-19** — Los escenarios propios de `opp_v1`, `opp_v2` y `opp_v2_zpl` también se movieron a `tests/shared_scenarios/` con sufijo (`_v1`, `_v2`, `_v2_zpl`). Los 20 archivos de escenarios de `opp_hc_1` eran idénticos byte a byte al trío compartido (el relevamiento inicial no los había contado) y se eliminaron. Ningún modelo tiene ya carpeta `scenarios/`.
+  - **2026-09-19** — Se aplanó la estructura de tests: `tests/<modelo>/tests/{normal,stress}/` → `tests/<modelo>/{functional,stress}/`, con los helpers propios de cada modelo (`opp_hc_2_test_case.py`, `route_assertions.py`, `v4_compat.py`, ...) directamente en `tests/<modelo>/`. `normal` pasó a llamarse `functional` en todos lados: tests, `shared_scenarios/functional/`, `results/<modelo>/functional/` (66 CSV renombrados, contenido intacto) y `analysis/` (`SCENARIOS`, `run_analysis.py`, `load.py`). La ruta `sys.path` de los archivos movidos se acortó un nivel para que sigan resolviendo la raíz al correrse directo.
+  - **2026-09-19** — Los archivos de test pasaron a `test_case_<numero>.py` (continuo, sin huecos, por modelo y tier) o `test_case_<slug>.py` (tests propios de una familia). Sin nombre de modelo ni la palabra "model". 608 archivos renombrados; se reescribieron todas las referencias (cadenas de las factories, imports, docs `test_cases_functional.md` de cada modelo).
+- Pendiente:
+  - **Verificación a fondo**: durante esta limpieza se verificó con chequeos puntuales (los 847 módulos importan, algunos tests por familia pasan, el análisis reproduce el mismo reporte). Falta correr las suites completas de cada modelo y comparar contra los conteos conocidos.
+  - **Estructura de `results/`**: decidir si se archivan las corridas superadas (hoy `opp_v4/functional` tiene 44 CSV, el análisis usa 1) y cómo.
+  - Regenerar `analysis/output/` (el reporte pasa a decir `functional` en vez de `normal` y los gráficos a `mean_time_functional.png`); no se tocó a propósito.
+  - Los `test_case_NN` de una familia derivada ya no coinciden en número con los de su base (numeración continua por modelo). El análisis une por nombre de método e instancia, no por número de archivo, así que no le afecta.
+  - Separar en un repo aparte lo que entra en la tesina (tarea futura, no iniciada).
 - Impacto:
   - Una sola fuente de verdad para qué modelos cubre el estudio de estabilidad de semilla; menos riesgo de que ese registro y `analysis/config.py` se desincronicen a futuro.
   - Ningún modelo (legacy ni vigente) depende ya de una carpeta `scenarios/` de otro modelo para sus propios tests — todo vive en `tests/shared_scenarios/`.
   - Un solo lugar (`tests/run_suite.py`) para correr cualquier suite, en vez de 24 scripts casi idénticos.
   - 140 archivos de test menos que mantener a mano en cada cambio futuro al comportamiento base de `opp_hc_2`/`opp_aco_2` — un fix ahí se refleja automáticamente en `hc_3`/`hc_4`/`aco_3`/`aco_4` sin tener que re-portar nada.
 - Riesgo / atención:
-  - El resto del plan (renombres) es un cambio grande que toca cientos de archivos — se ejecuta por fases verificables, no de una sola vez.
+  - Fueron cambios grandes (cientos de archivos por fase). Cada fase quedó en su propio commit y se puede revertir de forma independiente.
   - `opp_v4`, con la extensión de picker/asignación (`P`/`x`) en sus propios escenarios, NO es un duplicado del trío — se movió a `shared_scenarios/` con sufijo `_v4` sin fusionar contenido con nada.
   - Estrés de `opp_hc_3`: de los 20 archivos, solo 04/05/06 eran copias literales de `opp_hc_2` (convertidos a factory, pasan). Los otros 17 son escenarios genuinamente distintos que reusan el número de test — ej. `opp_hc_3` 12-19 son las instancias intermedias agregadas después, mientras `opp_hc_2` usa esos números para grillas gigantes; esa es la inconsistencia de numeración entre familias que resuelve la fase 3.
 - Validación:
@@ -205,12 +214,16 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 ### Testing
 - [tests/](tests/)
 
-### Modelos relevantes
-- [models/opp_v1/](models/opp_v1/)
-- [models/opp_aco_1/](models/opp_aco_1/)
-- [models/opp_hc_1/](models/opp_hc_1/)
-- [models/opp_aco_3/](models/opp_aco_3/)
-- [models/opp_hc_3/](models/opp_hc_3/)
+### Modelos vigentes para la tesina
+- Exactos: [models/opp_v4/](models/opp_v4/), [models/opp_v5/](models/opp_v5/)
+- Hill Climbing: [models/opp_hc_2/](models/opp_hc_2/), [models/opp_hc_3/](models/opp_hc_3/), [models/opp_hc_4/](models/opp_hc_4/)
+- ACO: [models/opp_aco_2/](models/opp_aco_2/), [models/opp_aco_3/](models/opp_aco_3/), [models/opp_aco_4/](models/opp_aco_4/)
+- Legacy (fuera de la tesina, se conservan): `opp_v1`, `opp_v2`, `opp_v3`, `opp_hc_1`, `opp_aco_1`
+
+### Datos y resultados
+- [tests/shared_scenarios/](tests/shared_scenarios/) — todos los escenarios de prueba
+- [results/](results/) — CSV de resultados por modelo y tier
+- [analysis/](analysis/) — pipeline de comparación (lee `results/`)
 
 ### Notas
 
@@ -251,15 +264,15 @@ python -m unittest discover -s tests
 ## 7. Riesgos, deuda y pendientes
 
 ### Riesgos conocidos
-- [Riesgo 1: inconsistencia de imports entre modelos]
-- [Riesgo 2: diferencias de resultados entre heurísticas y modelo exacto]
-- [Riesgo 3: validación parcial de escenarios]
+- `opp_v5` en estrés: 0/8, con un fallo por nombres de variables truncados/corruptos en el `.lp` que genera ZIMPL para instancias grandes (ver `analysis/README.md`).
+- Las heurísticas HC no tienen retroceso en la construcción de rutas y no resuelven instancias con ~25 ubicaciones requeridas por lote, aunque SCIP las resuelva en segundos (limitación documentada en `docs/results_outline.md`).
+- La comparación heurístico vs. exacto sólo es válida si la instancia es la misma: se une por nombre de método y forma de la instancia, no por número de archivo.
 
 ### Pendientes
-- [ ] Revisión de modelos no consolidados
-- [ ] Alinear nombres y documentación por modelo
-- [ ] Completar pruebas faltantes
-- [ ] Revisar performance / estabilidad de heurísticas
+- [ ] Verificación a fondo de todas las suites tras la reorganización
+- [ ] Estructura definitiva de `results/` (archivar corridas superadas)
+- [ ] Regenerar `analysis/output/`
+- [ ] Separar en un repo aparte lo que entra en la tesina
 
 ---
 

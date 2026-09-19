@@ -13,7 +13,7 @@ from models.opp_hc_1 import OPPHillClimbing
 from models.opp_hc_1.utils.output_handler import OutputHandler
 from tests.opp_test_case import OPPTestCase
 
-from tests.shared_scenarios.normal.scenario_03 import two_possible_routes_batches
+from tests.shared_scenarios.functional.scenario_03 import two_possible_routes_batches
 
 
 class TestDueDatesExtreme(OPPTestCase):

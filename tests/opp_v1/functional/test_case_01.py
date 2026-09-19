@@ -11,7 +11,7 @@ from models.opp_v1.opp_model_v1 import OPPModel
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
 
-from tests.shared_scenarios.normal.scenario_01_v1 import basic_two_orders_capacity_limit
+from tests.shared_scenarios.functional.scenario_01_v1 import basic_two_orders_capacity_limit
 
 
 class TestOPPModel(OPPTestCase):

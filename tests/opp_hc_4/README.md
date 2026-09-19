@@ -36,19 +36,18 @@ congestion-free, see `analysis/config.py`).
 
 ```
 tests/opp_hc_4/
-└── tests/
-    ├── opp_hc_4_test_case.py           # Base assertions (picker assignment, workload, no-overlap, cold chain)
-    ├── normal/
-    │   ├── test_case_equivalence.py    # dedicated: no-op equivalence with hc_2
-    │   ├── test_case_picker_speed.py   # dedicated: faster picker preferred
-    │   ├── test_case_cold_chain_infeasible.py  # dedicated: unreachable deadline -> infeasible
-    │   ├── test_case_cold_chain_eligibility.py # dedicated: forced onto the eligible picker
-    │   ├── test_case_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
-    │   └── test_opp_hc_4_model_{02,03,...,30}.py            # ported 1:1 from opp_hc_2 (V_p unset, T_frio_max=+inf)
-    └── stress/
-        ├── test_opp_hc_4_model_{01,02,03,04,05,06,09,10,11,12,34}.py  # ported 1:1 from opp_hc_2
-        ├── test_case_picker_speed.py   # dedicated: heterogeneous speeds at scale
-        └── test_case_cold_chain.py      # dedicated: binding T_frio_max at scale
+├── opp_hc_4_test_case.py           # Base assertions (picker assignment, workload, no-overlap, cold chain)
+├── functional/
+│   ├── test_case_equivalence.py    # dedicated: no-op equivalence with hc_2
+│   ├── test_case_picker_speed.py   # dedicated: faster picker preferred
+│   ├── test_case_cold_chain_infeasible.py  # dedicated: unreachable deadline -> infeasible
+│   ├── test_case_cold_chain_eligibility.py # dedicated: forced onto the eligible picker
+│   ├── test_case_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
+│   └── test_case_NN.py                     # ported 1:1 from opp_hc_2 (V_p unset, T_frio_max=+inf)
+└── stress/
+    ├── test_case_{01..11}.py  # ported 1:1 from opp_hc_2
+    ├── test_case_picker_speed.py   # dedicated: heterogeneous speeds at scale
+    └── test_case_cold_chain.py      # dedicated: binding T_frio_max at scale
 ```
 
 The ported files (both normal and stress) are literal copies of their
@@ -66,15 +65,15 @@ subset (see `analysis/README.md`), so `opp_hc_4` lines up with both
 deliberately left OUT of `CONGESTION_AWARE_MODELS`).
 
 Its `single_order_params` fixture (needs a `SolveHC4ModelDTO`) lives in
-`tests/shared_scenarios/normal/single_order_params_hc4.py`, alongside the
+`tests/shared_scenarios/functional/single_order_params_hc4.py`, alongside the
 other models' DTO-specific variants -- this model has no `scenarios/` of
 its own.
 
 ## Running Tests
 
 ```bash
-python -m tests.run_suite opp_hc_4 normal
-WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_hc_4 normal          # to feed analysis/
+python -m tests.run_suite opp_hc_4 functional
+WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_hc_4 functional          # to feed analysis/
 WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_hc_4 stress
 python -m unittest tests.opp_hc_4.functional.test_case_picker_speed
 ```

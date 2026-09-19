@@ -9,11 +9,11 @@ different pickers (X_pb) so work is parallelized.
 
 ```
 tests/opp_hc_2/
-├── tests/
-│   ├── normal/
-│   │   └── test_opp_hc_2_model_NN.py   # One file per test case
-│   └── stress/
-│       └── test_opp_hc_2_model_NN.py
+├── functional/
+│   └── test_case_NN.py      # One file per test case
+├── stress/
+│   └── test_case_NN.py
+└── opp_hc_2_test_case.py    # Base assertions for this model
 ```
 
 Scenario fixtures live in `tests/shared_scenarios/` (shared across models, see
@@ -27,7 +27,7 @@ own `execute_tests.py`/`execute_stress_tests.py`):
 
 ### Run all normal tests:
 ```bash
-python -m tests.run_suite opp_hc_2 normal
+python -m tests.run_suite opp_hc_2 functional
 ```
 
 ### Run all stress tests (or a single numbered one):
@@ -57,8 +57,6 @@ exact), but graph topology, constraint satisfaction, and solution status
 
 ## Reused Scenarios
 
-Most tests reuse scenario fixtures from `tests/opp_v3/scenarios/`, which are
-shared across the `opp_v1`, `opp_v2`, `opp_v3`, `opp_hc_1` and `opp_hc_2` suites so
-inputs stay comparable across solvers. A few multi-picker scenario fixtures
-(e.g. `six_missions_three_pickers_grid_graph`, `three_missions_two_pickers_grid_graph`)
-live under `tests/opp_hc_2/scenarios/` and are used by the picker-aware tests.
+All scenario fixtures live in `tests/shared_scenarios/` and are shared across the `opp_v3`,
+`opp_hc_1`, `opp_hc_2`, `opp_aco_*` suites so inputs stay comparable across solvers
+(fixtures with a `_vN` suffix belong to one specific model).

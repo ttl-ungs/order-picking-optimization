@@ -16,20 +16,20 @@ Generaliza `specs/model_analysis.md` (escrito originalmente para
 ## 1. Generar los datos
 
 El pipeline **no ejecuta los tests**, solo lee lo que ya está en
-`results/<modelo>/<normal|stress>/*.csv`. Para generarlos:
+`results/<modelo>/<functional|stress>/*.csv`. Para generarlos:
 
 ```bash
 export WRITE_RESULTS_CSV=1
 
-python -m tests.run_suite opp_v4 normal
+python -m tests.run_suite opp_v4 functional
 python -m tests.run_suite opp_v4 stress
-python -m tests.run_suite opp_hc_2 normal
+python -m tests.run_suite opp_hc_2 functional
 python -m tests.run_suite opp_hc_2 stress
-python -m tests.run_suite opp_aco_2 normal
+python -m tests.run_suite opp_aco_2 functional
 python -m tests.run_suite opp_aco_2 stress
-python -m tests.run_suite opp_hc_3 normal
+python -m tests.run_suite opp_hc_3 functional
 python -m tests.run_suite opp_hc_3 stress
-python -m tests.run_suite opp_aco_3 normal
+python -m tests.run_suite opp_aco_3 functional
 python -m tests.run_suite opp_aco_3 stress
 ```
 
@@ -142,7 +142,7 @@ heurístico ni cuestión de tuneo:
    correctamente — esa restricción sí es compartida con el modelo exacto).
    El diseño original exigía que **todos** los lotes de una hormiga salieran
    sin loop *a la vez*; con una tasa de éxito por lote de 5-68%, la
-   probabilidad de los 25 lotes de `test_04` a la vez era ~1e-21 —
+   probabilidad de los 25 lotes de `test_case_04` a la vez era ~1e-21 —
    imposible sin importar el presupuesto de hormigas/iteraciones.
 
 El fix real: cada lote se reintenta individualmente hasta salir limpio, en
@@ -154,7 +154,7 @@ tope de reintentos (`_MAX_ROUTE_ATTEMPTS_PER_BATCH`, subido de 40 a 100 el
 sin costo extra en los que ya andaban bien -- pero **no** en instancias con
 ~25+ ubicaciones requeridas por lote, ver más abajo) queda registrado como
 columna en el CSV (`Max_route_attempts_per_batch`) para que quede trazable
-con qué presupuesto se corrió cada fila. Con este fix, `test_04` (25 lotes)
+con qué presupuesto se corrió cada fila. Con este fix, `test_case_04` (25 lotes)
 resuelve `optimal` en ~13 minutos con los hiperparámetros **default**
 (15×60) -- sin necesidad de tocar `A_ants`/`Max_it`. Al portarlo, la Fase 2
 tenía además una sutileza: hay que intentar primero la ruta *limpia*
@@ -177,12 +177,12 @@ costo de simular congestión; el switch probabilístico τ1/τ2 de ACO3 no.
 
 **Instancias que quedan fuera de alcance de cualquier tuneo -- y por qué NO
 es infeasibilidad por construcción (hipótesis refutada, 2026-08-27)**:
-`test_09`/`10`/`11` (750 órdenes, ~25 ubicaciones requeridas por lote) le
+`test_case_09`/`10`/`11` (750 órdenes, ~25 ubicaciones requeridas por lote) le
 dan timeout incluso a `opp_hc_2` en la corrida real, y hasta el método
 rápido de `opp_hc_2` (`_generate_feasible_route`, Dijkstra determinístico)
 devuelve `None` para esos lotes. Con 2000 órdenes de visita distintos (al
 azar) sobre ese mismo Dijkstra, ninguno encontró una ruta simple para el
-lote B1 de `test_09` -- lo que en su momento se documentó acá como fuerte
+lote B1 de `test_case_09` -- lo que en su momento se documentó acá como fuerte
 evidencia de que **la instancia sería infeasible por construcción** bajo la
 restricción "sin loops" (17), compartida por los 5 modelos.
 
@@ -229,7 +229,7 @@ grilla). En una instancia de estrés de 100 nodos, `has_edge` sola explicaba
 ordenada -- mismo orden que `get_vertices()`, así que no cambia qué ruta
 determinística eligen `opp_hc_2`/`opp_hc_3` cuando hay varias igual de
 cortas) y se reemplazó el patrón en los 4 lugares. Resultado, mismo
-resultado, más rápido nada más: `test_02` (400 nodos) 566s→3.7s (~153x);
+resultado, más rápido nada más: `test_case_02` (400 nodos) 566s→3.7s (~153x);
 perfil completo de un caso 149.8s→2.6s (~57x); el caso que sigue sin
 converger (densidad 25) también corre ~16x más rápido aunque el resultado
 final (`infeasible`) no cambia -- confirma que ese límite es matemático, no
@@ -277,7 +277,7 @@ buscando bugs y mejoras (no solo performance). Encontró y corrigió:
    *dentro* del mismo camino) y agregando un presupuesto explícito de
    expansiones (`_MAX_BFF_EXPANSIONS = 200_000`) para acotar el costo, ya que
    sin ninguna poda esto es exponencial en el peor caso. **Verificado que
-   esto NO cambia el resultado de `test_09`/`10`/`11`** (25 ubicaciones
+   esto NO cambia el resultado de `test_case_09`/`10`/`11`** (25 ubicaciones
    requeridas agota el presupuesto en ~1s, sigue devolviendo `None`) -- el
    bug solo afectaba instancias chicas/medianas, no las gigantes de estrés.
 2. **HC -- `opp_hc_2._calculate_batch_execution_time` (solo usado para el
@@ -311,7 +311,7 @@ regeneró el 2026-08-27 (post-fix de performance) queda desactualizada de
 nuevo y hay que volver a correrla** antes de cerrar la sección de
 resultados. Los fixes #1/#2 no cambiaron ningún resultado ya observado
 (#2 no toca el objetivo optimizado; #1 se verificó explícitamente que no
-cambia `test_09/10/11`) pero, para ser prolijos, conviene re-correr también
+cambia `test_case_09/10/11`) pero, para ser prolijos, conviene re-correr también
 `opp_hc_2`/`opp_hc_3` en estrés antes de dar los números por definitivos.
 
 ### Auditoría de código, parte 2 (2026-08-28): secuenciación en ACO

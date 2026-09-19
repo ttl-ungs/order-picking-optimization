@@ -12,7 +12,7 @@ from models.opp_aco_1.opp_aco_1 import OPPAntColonyOptimization
 from models.opp_aco_1.utils.output_handler import OutputHandler
 from tests.opp_test_case import OPPTestCase
 
-from tests.shared_scenarios.normal.multigrid_graph import (
+from tests.shared_scenarios.functional.multigrid_graph import (
     multigrid_5x5_3x3_five_pickers_twelve_batches,
 )
 

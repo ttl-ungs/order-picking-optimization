@@ -10,7 +10,7 @@ from models.utils.dat_files_builder import build_dat_files
 from models.base.opp_location_graph import OPPLocationGraph
 from tests.opp_v4.opp_test_case_v4 import OPPTestCaseV4
 from tests.opp_v4.config import PROJECT_ROOT, DAT_DIR, ZPL_PATH
-from tests.shared_scenarios.normal.scenario_01_v4 import basic_two_orders_capacity_limit
+from tests.shared_scenarios.functional.scenario_01_v4 import basic_two_orders_capacity_limit
 from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
 
 

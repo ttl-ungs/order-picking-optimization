@@ -6,19 +6,16 @@ Test suite for the Hill Climbing heuristic solver for OPP V3.
 
 ```
 tests/opp_hc_1/
-├── tests/
-│   └── normal/
-│       ├── test_opp_hc_v3_model_1.py   # HC Test 1: Basic 2 orders, 2 batches
-│       ├── test_opp_hc_v3_model_2.py   # HC Test 2: Medium 2 orders, 2 aisles
-│       ├── test_opp_hc_v3_model_3.py   # HC Test 3: Single picking point per order
-│       ├── test_opp_hc_v3_model_4.py   # HC Test 4: Same aisle, different batches
-│       └── test_opp_hc_v3_model_5.py   # HC Test 5: Different weights variant
+├── functional/
+│   ├── test_case_01.py   # HC Test 1: Basic 2 orders, 2 batches
+│   ├── test_case_02.py   # HC Test 2: Medium 2 orders, 2 aisles
+│   ├── test_case_03.py   # HC Test 3: Single picking point per order
+│   ├── test_case_04.py   # HC Test 4: Same aisle, different batches
+│   └── test_case_05.py   # HC Test 5: Different weights variant
+└── stress/
 ```
 
-Note: this doc predates later renames elsewhere in `tests/opp_hc_1/` (actual
-filenames/counts may no longer match the list above exactly) -- left as-is,
-out of scope for this pass, which only touched the scenario/runner
-references below.
+Only the first five cases are listed; the suite has more (see `functional/`).
 
 ## Tests Overview
 
@@ -36,17 +33,17 @@ Each test is equivalent to a corresponding OPP V3 test but uses `OPPHillClimbing
 
 ### Run all tests:
 ```bash
-python -m tests.run_suite opp_hc_1 normal
+python -m tests.run_suite opp_hc_1 functional
 ```
 
 ### Run individual test:
 ```bash
-python -m unittest tests.opp_hill_climbing.functional.test_opp_hc_v3_model_1
+python -m unittest tests.opp_hc_1.functional.test_case_01
 ```
 
 ### Run specific test method:
 ```bash
-python -m unittest tests.opp_hill_climbing.functional.test_opp_hc_v3_model_1.TestOPPHillClimbingV3Model1.test_basic_two_orders_capacity_limit
+python -m unittest tests.opp_hc_1.functional.test_case_01.TestOPPHillClimbingModel1.test_basic_two_orders_capacity_limit
 ```
 
 ## Test Expectations
@@ -64,7 +61,7 @@ Each test:
 
 ## Reused Scenarios
 
-Tests reuse scenario definitions from `tests/shared_scenarios/normal/`
+Tests reuse scenario definitions from `tests/shared_scenarios/functional/`
 (centralized 2026-09-17; previously `tests/opp_v3/scenarios/normal/`):
 - `scenario_01`: Basic 2-order setup
 - `scenario_02`: 2-aisle warehouse setup

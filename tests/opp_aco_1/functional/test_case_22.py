@@ -12,7 +12,7 @@ from models.opp_aco_1.opp_aco_1 import OPPAntColonyOptimization
 from models.opp_aco_1.utils.output_handler import OutputHandler
 from tests.opp_test_case import OPPTestCase
 
-from tests.shared_scenarios.normal.scenario_02 import two_orders_two_aisles
+from tests.shared_scenarios.functional.scenario_02 import two_orders_two_aisles
 
 
 class TestOrderAssignedMultipleBatches(OPPTestCase):

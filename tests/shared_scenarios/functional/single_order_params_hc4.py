@@ -5,7 +5,7 @@ from graphs.graphs_factory import GraphsFactory
 
 def single_order_params(due_date_value, start_time, cap_vehicle=100.0):
     """
-    Same fixture as tests.shared_scenarios.normal.single_order_params_hc,
+    Same fixture as tests.shared_scenarios.functional.single_order_params_hc,
     ported to return a SolveHC4ModelDTO (V_p unset / T_frio_max default +inf,
     so it behaves identically to the hc_2 version) since opp_hc_4's solve()
     reads params.V_p / params.T_frio_max, which a plain SolveHCModelDTO

@@ -40,9 +40,10 @@ The project is implemented in Python and uses `PySCIPOpt` as the optimization en
 ### Current Repository Structure
 
 - `models/base/model.py` contains the abstract base model shared by all optimization approaches.
-- `models/opp_v1/` contains the concrete OPP implementation and its related classes.
-- `tests/opp_v1/` contains the tests for the OPP implementation.
-- `tests/opp_v1/scenarios/` contains the reusable scenarios used by the OPP tests.
+- `models/opp_v1/` contains the original OPP implementation and its related classes; later exact models are `opp_v2`..`opp_v5`, and the heuristics are `opp_hc_1`..`opp_hc_4` (Hill Climbing) and `opp_aco_1`..`opp_aco_4` (Ant Colony Optimization).
+- `tests/<model>/functional/` and `tests/<model>/stress/` contain each model's tests (`test_case_NN.py`).
+- `tests/shared_scenarios/` contains every reusable warehouse scenario used by the tests.
+- `results/<model>/<functional|stress|stability>/` holds the CSV results produced by the test runs, read by `analysis/`.
 
 Main components:
 
@@ -51,8 +52,8 @@ Main components:
 - `models/opp_v1/opp_location_graph.py` defines a lightweight directed graph structure used to represent warehouse locations, depot and final nodes, and distances between locations.
 - `models/opp_v1/opp_output_builder.py` reconstructs the selected arcs from the solved model and converts them into an output graph.
 - `utils/output_handler.py` acts as an observer that prints the optimization results in a readable way, including objective value, mission times, tardiness/earliness, and selected routes.
-- `tests/opp_v1/scenarios/` contains reusable warehouse layouts and parameter sets used by the tests.
-- `tests/opp_v1/` contains unit tests that validate different routing and assignment situations for the OPP implementation.
+- `tests/shared_scenarios/` contains reusable warehouse layouts and parameter sets used by the tests.
+- `tests/<model>/` contains the tests that validate different routing and assignment situations for each implementation.
 
 ### How the Observer Pattern Is Used
 
@@ -147,7 +148,14 @@ The test suite is implemented with Python's built-in `unittest` framework.
 From the project root:
 
 ```bash
-python -m unittest discover -s tests/opp_v1 -p "test_opp_model_*.py"
+python -m unittest discover -s tests/opp_v1/functional -p "test_case_*.py"
+```
+
+To run any model's suite (functional or stress) with the timeout/CSV runner:
+
+```bash
+python -m tests.run_suite opp_hc_2 functional
+python -m tests.run_suite opp_hc_3 stress --id 04
 ```
 
 ### Run a single test file
@@ -155,7 +163,7 @@ python -m unittest discover -s tests/opp_v1 -p "test_opp_model_*.py"
 For example:
 
 ```bash
-python tests/opp_v1/test_case_08.py
+python tests/opp_v1/functional/test_case_08.py
 ```
 
 ### What the tests cover

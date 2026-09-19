@@ -8,7 +8,7 @@ from tests.opp_v4.opp_test_case_v4 import OPPTestCaseV4
 from tests.opp_v4.config import DAT_DIR, ZPL_PATH
 from tests.utils.zpl_utils import solve_zpl
 
-from tests.shared_scenarios.normal.multigrid_graph_v4 import (
+from tests.shared_scenarios.functional.multigrid_graph_v4 import (
     multigrid_5x5_3x3_five_pickers_twelve_batches,
 )
 

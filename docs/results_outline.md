@@ -243,14 +243,14 @@ real, no un artefacto:
    es que la construcción greedy de HC no tiene vuelta atrás (confirmado
    contra SCIP, 2026-08-27)
 
-Las instancias de ~25+ ubicaciones requeridas por lote (`test_09/10/11`)
+Las instancias de ~25+ ubicaciones requeridas por lote (`test_case_09/10/11`)
 siguen sin converger en `opp_hc_2`/`opp_hc_3` -- la hipótesis inicial era
 que esas instancias fueran infeasibles por construcción. **Se confirmó
 directamente contra SCIP que la hipótesis es incorrecta**:
 
 - Con 2000 órdenes de visita distintos (al azar) sobre el Dijkstra
   determinístico de `opp_hc_2`, **ninguno** encontró una ruta simple para el
-  lote de 25 ubicaciones de `test_09` (verificado que el método no tiene un
+  lote de 25 ubicaciones de `test_case_09` (verificado que el método no tiene un
   bug genérico: en un lote fácil de 4 ubicaciones sí encuentra rutas en
   17/200) -- esto en su momento parecía fuerte evidencia de infeasibilidad.
 - **Se corrió `tests/opp_v4/diagnostics/test_case_single_batch_infeasibility_check.py`

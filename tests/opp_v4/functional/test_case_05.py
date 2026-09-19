@@ -10,7 +10,7 @@ from models.utils.dat_files_builder import build_dat_files
 from models.base.opp_location_graph import OPPLocationGraph
 from tests.opp_v4.opp_test_case_v4 import OPPTestCaseV4
 from tests.opp_v4.config import DAT_DIR, ZPL_PATH
-from tests.shared_scenarios.normal.scenario_02_v4 import two_orders_two_aisles
+from tests.shared_scenarios.functional.scenario_02_v4 import two_orders_two_aisles
 from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
 
 

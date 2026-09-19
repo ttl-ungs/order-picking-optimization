@@ -1,3 +1,5 @@
+NOTA (2026-09-19): documento histórico de la etapa opp_v3/opp_hc/opp_aco (hoy opp_v3/opp_hc_1/opp_aco_1). La estructura vigente de resultados (`results/<modelo>/<functional|stress>/`) y del pipeline está en `analysis/README.md`.
+
 Especificación de Diseño de Software (SDD)
 
 Pipeline de Análisis de Resultados - LPRP (Linear Picking Routing Problem)
