@@ -1,0 +1,42 @@
+{
+ "_source": "Tests discovered on main before the 2026-09 reorganization (git worktree of main, unittest discovery per suite), with the old model names mapped to the current ones (opp->opp_v1, opp_hc->opp_hc_1, opp_aco->opp_aco_1) and tier normal->functional. Regenerate with `python -m scripts.run_all --update-baseline` only when tests are added or removed on purpose.",
+ "counts": {
+  "functional": {
+   "opp_v1": 18,
+   "opp_aco_1": 48,
+   "opp_aco_2": 48,
+   "opp_aco_3": 59,
+   "opp_aco_4": 54,
+   "opp_hc_1": 46,
+   "opp_hc_2": 46,
+   "opp_hc_3": 51,
+   "opp_hc_4": 51,
+   "opp_v2": 33,
+   "opp_v2_zpl": 1,
+   "opp_v3": 48,
+   "opp_v4": 46,
+   "opp_v5": 53
+  },
+  "stress": {
+   "opp_aco_1": 34,
+   "opp_aco_2": 20,
+   "opp_aco_3": 20,
+   "opp_aco_4": 22,
+   "opp_hc_1": 34,
+   "opp_hc_2": 43,
+   "opp_hc_3": 20,
+   "opp_hc_4": 13,
+   "opp_v2": 7,
+   "opp_v3": 34,
+   "opp_v4": 8,
+   "opp_v5": 8
+  }
+ },
+ "known_failures": {
+  "functional/opp_v3": {
+   "failures": 1,
+   "errors": 0,
+   "note": "test_bridge_earliness_order_size: numeric-precision assertion, fails identically on main"
+  }
+ }
+}
