@@ -12,7 +12,7 @@ from models.opp_hc_1.opp_hc_1 import OPPHillClimbing
 from models.opp_hc_1.utils.output_handler import OutputHandler
 from tests.opp_test_case import OPPTestCase
 
-from tests.opp_hc_1.scenarios.stress.scenario_custom_setup import scenario_custom_setup
+from tests.shared_scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))

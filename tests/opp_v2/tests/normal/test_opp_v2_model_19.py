@@ -11,7 +11,7 @@ from dtos.opp.solve_model_dto import SolveModelDTO
 from models.opp_v2.opp_model_v2 import OPPModelV2
 from models.opp_v2.utils.output_handler import OutputHandler
 from tests.opp_test_case import OPPTestCase
-from tests.opp_v2.scenarios.normal.scenario_19 import longer_single_mission_route
+from tests.shared_scenarios.normal.scenario_19_v2 import longer_single_mission_route
 from tests.opp_v2.tests.route_assertions import assert_route_covers_orders
 
 

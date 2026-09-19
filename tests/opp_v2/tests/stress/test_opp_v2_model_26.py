@@ -11,7 +11,7 @@ from models.opp_v2.opp_model_v2 import OPPModelV2
 from models.opp_v2.utils.output_handler import OutputHandler
 from tests.opp_test_case import OPPTestCase
 
-from tests.opp_v2.scenarios.stress.scenario_custom_setup import scenario_custom_setup
+from tests.shared_scenarios.stress.scenario_custom_setup_v2 import scenario_custom_setup
 
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..", ".."))

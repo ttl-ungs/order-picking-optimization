@@ -13,7 +13,7 @@ from tests.opp_test_case import OPPTestCase
 import sys
 import os
 
-from tests.opp_v2.scenarios.stress.scenario_custom_setup import scenario_custom_setup
+from tests.shared_scenarios.stress.scenario_custom_setup_v2 import scenario_custom_setup
 
 
 class TestOPPModel(OPPTestCase):

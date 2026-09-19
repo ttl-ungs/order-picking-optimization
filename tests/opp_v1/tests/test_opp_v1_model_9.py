@@ -9,7 +9,7 @@ from models.opp_v1.utils.output_handler import OutputHandler
 from models.opp_v1.opp_model_v1 import OPPModel
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
-from tests.opp_v1.scenarios.six_missions_three_pickers_grid_graph import scenario_six_missions_three_pickers_two_periods_grid_graph
+from tests.shared_scenarios.common.six_missions_three_pickers_grid_graph_v1 import scenario_six_missions_three_pickers_two_periods_grid_graph
 
 
 class TestOPPModel(OPPTestCase):

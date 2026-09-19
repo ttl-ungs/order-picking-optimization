@@ -5,7 +5,7 @@ from models.utils.dat_files_builder import build_dat_files
 from models.base.opp_location_graph import OPPLocationGraph
 from tests.opp_test_case import OPPTestCase
 from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
-from tests.opp_v2_zpl.scenarios.normal.scenario_01 import basic_two_orders_capacity_limit
+from tests.shared_scenarios.normal.scenario_01_v2_zpl import basic_two_orders_capacity_limit
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
 DAT_DIR = os.path.join(PROJECT_ROOT, "models", "dat_files")

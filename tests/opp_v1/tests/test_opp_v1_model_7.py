@@ -11,7 +11,7 @@ from models.opp_v1.opp_model_v1 import OPPModel
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
 
-from tests.opp_v1.scenarios.scenario_07 import test_two_orders_two_locations_two_missions
+from tests.shared_scenarios.normal.scenario_07_v1 import test_two_orders_two_locations_two_missions
 
 
 class TestOPPModel(OPPTestCase):

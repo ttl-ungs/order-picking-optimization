@@ -11,7 +11,7 @@ from models.opp_v1.opp_model_v1 import OPPModel
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO
 
-from tests.opp_v1.scenarios.scenario_03 import test_two_possible_routes
+from tests.shared_scenarios.normal.scenario_03_v1 import test_two_possible_routes
 
 
 class TestOPPModel(OPPTestCase):
