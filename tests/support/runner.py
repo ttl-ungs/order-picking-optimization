@@ -246,5 +246,8 @@ class TestRunner:
                 }
                 writer.writerow(row)
 
-    def succeeded(self, results: list) -> bool:
-        return all(r.get("status") == "ok" for r in results)
+    def succeeded(self, results: list, allow_timeout: bool = False) -> bool:
+        """True if every test passed; with allow_timeout, timeouts are tolerated
+        (they are still reported by print_summary) but failures/errors are not."""
+        accepted = {"ok", "timeout"} if allow_timeout else {"ok"}
+        return all(r.get("status") in accepted for r in results)
