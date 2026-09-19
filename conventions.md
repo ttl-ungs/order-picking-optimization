@@ -48,12 +48,11 @@ raiz-del-proyecto/
 │   └── observer.py              # Clase abstracta Observer
 ├── tests/                       # Suite de testing organizada por modelo
 │   ├── run_suite.py             # Punto de entrada único: python -m tests.run_suite <modelo> functional|stress
-│   ├── support/                 # Infraestructura de tests (no son tests)
-│   │   ├── runner.py  config.py           # Ejecuta cada test aislado, con timeout, y escribe el CSV en results/
-│   │   ├── opp_test_case.py               # TestCase base compartida (OPPTestCase)
-│   │   ├── family_case.py  migrated_case.py   # Fábricas que reutilizan tests de otro modelo
-│   │   ├── route_assertions.py            # Aserciones de rutas
-│   │   └── zpl_utils.py  dat_files_builder.py  graphs_factory.py   # Soporte de los tests ZIMPL
+│   ├── infra/                   # Infraestructura de tests (no son tests)
+│   │   ├── execution/           # runner.py, config.py: ejecuta cada test aislado, con timeout, y escribe el CSV en results/
+│   │   ├── cases/               # opp_test_case.py (TestCase base, OPPTestCase), route_assertions.py
+│   │   ├── factories/           # family_case.py, migrated_case.py (reutilizan tests de otro modelo), graphs_factory.py
+│   │   └── zimpl/               # zpl_utils.py, dat_files_builder.py: soporte de los tests ZIMPL (opp_v2_zpl, opp_v4, opp_v5)
 │   ├── shared_scenarios/        # Todos los escenarios (grafos y parámetros); los propios de un modelo llevan sufijo _vN
 │   │   ├── common/  functional/  stress/
 │   └── opp_hc_2/                # Un directorio por modelo

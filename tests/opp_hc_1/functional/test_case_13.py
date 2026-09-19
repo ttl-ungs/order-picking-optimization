@@ -12,9 +12,9 @@ from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.model_dto import ModelDTO
 from models.opp_hc_1.utils.output_handler import OutputHandler
 from models.opp_hc_1 import OPPHillClimbing
-from tests.support.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 from tests.shared_scenarios.functional.scenario_17 import branched_single_mission_route
-from tests.support.route_assertions import (
+from tests.infra.cases.route_assertions import (
     assert_correct_path,
     assert_route_covers_orders,
 )

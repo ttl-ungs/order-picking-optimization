@@ -1,7 +1,7 @@
 """Scaffold the test files of a new model family from an existing one.
 
 Every test of a derived family (opp_hc_3, opp_hc_4, opp_aco_3, ...) that is a literal clone of
-its base family's test is a one-line tests.support.family_case.family_case() call. This writes
+its base family's test is a one-line tests.infra.factories.family_case.family_case() call. This writes
 those files, so adding e.g. opp_hc_5 on top of opp_hc_2 is one command:
 
     python -m scripts.new_family_tests --base opp_hc_2 --new opp_hc_5 --tier functional \\
@@ -26,7 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-HEADER = "from tests.support.family_case import family_case\n"
+HEADER = "from tests.infra.factories.family_case import family_case\n"
 
 
 def parse_import(spec, flag):

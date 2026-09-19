@@ -3,10 +3,10 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
-from tests.support.dat_files_builder import build_dat_files
+from tests.infra.zimpl.dat_files_builder import build_dat_files
 from tests.opp_v4.opp_test_case_v4 import OPPTestCaseV4
 from tests.opp_v4.config import DAT_DIR, ZPL_PATH
-from tests.support.zpl_utils import solve_zpl
+from tests.infra.zimpl.zpl_utils import solve_zpl
 
 from tests.shared_scenarios.functional.multigrid_graph_v4 import (
     multigrid_5x5_3x3_five_pickers_twelve_batches,

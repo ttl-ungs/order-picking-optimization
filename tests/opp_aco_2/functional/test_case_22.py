@@ -11,7 +11,7 @@ sys.path.insert(
 from dtos import ModelDTO
 from models.opp_aco_2 import OPPAntColonyOptimization
 from models.opp_aco_2.utils.output_handler import OutputHandler
-from tests.support.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 
 from tests.shared_scenarios.functional.scenario_02 import two_orders_two_aisles
 

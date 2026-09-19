@@ -1,5 +1,5 @@
 import unittest
-from tests.support.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 import sys
 import os
 

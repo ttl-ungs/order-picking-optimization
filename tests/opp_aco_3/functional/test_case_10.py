@@ -1,4 +1,4 @@
-from tests.support.family_case import family_case
+from tests.infra.factories.family_case import family_case
 from models.opp_aco_3 import OPPAntColonyOptimization
 from dtos.aco.solve_aco_3_model_dto import SolveAco3ModelDTO
 

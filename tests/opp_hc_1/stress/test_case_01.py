@@ -10,7 +10,7 @@ from dtos.opp.model_dto import ModelDTO
 from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
 from models.opp_hc_1.opp_hc_1 import OPPHillClimbing
 from models.opp_hc_1.utils.output_handler import OutputHandler
-from tests.support.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 from tests.shared_scenarios.common.six_missions_three_pickers_grid_graph import (
     scenario_six_missions_two_periods_grid_graph,
 )

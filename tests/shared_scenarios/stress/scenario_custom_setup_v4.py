@@ -1,4 +1,4 @@
-from tests.support.graphs_factory import GraphsFactory
+from tests.infra.factories.graphs_factory import GraphsFactory
 
 
 def scenario_custom_setup(
