@@ -11,7 +11,7 @@ from models.opp_aco_2.utils.output_handler import OutputHandler
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
 from models.opp_aco_2 import OPPAntColonyOptimization
-from tests.opp.tests.opp_test_case import OPPTestCase
+from tests.opp_test_case import OPPTestCase
 from tests.shared_scenarios.normal.scenario_13 import (
     bridge_graph_disconnected,
     bridge_graph_two_pickers_four_batches,

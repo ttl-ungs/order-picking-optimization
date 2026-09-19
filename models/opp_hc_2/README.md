@@ -4,7 +4,7 @@
 
 This directory contains a **Hill Climbing** heuristic solver that solves the **exact same problem as `opp_model_v4.zpl`**, with the **same constraints**, but using a heuristic approach instead of exact integer linear programming.
 
-The key feature added on top of `opp_hc` (v3): orders are grouped into batches
+The key feature added on top of `opp_hc_1` (v3): orders are grouped into batches
 and **batches are assigned to different pickers (X_pb)** so that the work can
 be **parallelized** — batches on different pickers execute at the same time,
 while batches on the same picker are sequenced one after another.

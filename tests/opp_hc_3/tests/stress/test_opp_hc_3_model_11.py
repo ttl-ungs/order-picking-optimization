@@ -10,7 +10,7 @@ from dtos.opp.model_dto import ModelDTO
 from dtos.hc.solve_hc_3_model_dto import SolveHC3ModelDTO
 from models.opp_hc_3 import OPPHillClimbing
 from models.opp_hc_3.utils.output_handler import OutputHandler
-from tests.opp.tests.opp_test_case import OPPTestCase
+from tests.opp_test_case import OPPTestCase
 from tests.shared_scenarios.stress.scenario_double_grid import (
     scenario_two_grids_custom_setup,
 )

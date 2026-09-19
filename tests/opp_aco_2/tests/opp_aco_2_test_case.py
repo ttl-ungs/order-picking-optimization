@@ -1,5 +1,5 @@
 from observer.observer import Observer
-from tests.opp.tests.opp_test_case import OPPTestCase
+from tests.opp_test_case import OPPTestCase
 
 
 class SolutionInfoCapture(Observer):
@@ -15,7 +15,7 @@ class SolutionInfoCapture(Observer):
 class OPPTestCaseACO2(OPPTestCase):
     """
     Base test case for opp_aco_2, adding assertions specific to the picker
-    parallelization introduced vs. opp_aco (v3): batches distributed across
+    parallelization introduced vs. opp_aco_1 (v3): batches distributed across
     pickers (X_pb) and no time overlap between batches on the same picker.
     """
 

@@ -18,7 +18,7 @@ Este documento sirve como guía estricta y vinculante para cualquier agente aut�
 * **Constantes:** Siempre en `UPPER_SNAKE_CASE`.
     * *Ejemplos:* `MAX_ITERATIONS`, `BIG_M`, `DEFAULT_TIMEOUT`.
 * **Archivos de Test:** Deben llevar siempre el prefijo `test_` seguido del nombre del modelo en `snake_case` y un identificador numérico o descriptivo.
-    * *Ejemplos:* `test_opp_hc_model_1.py`, `test_opp_v3_model_stress_10.py`.
+    * *Ejemplos:* `test_opp_hc_1_model_1.py`, `test_opp_v3_model_stress_10.py`.
 * **Data Transfer Objects (DTOs):** Siempre deben finalizar con el sufijo `DTO`.
     * *Ejemplos:* `ModelDTO`, `SolveModelDTO`, `SolveHCModelDTO`.
 
@@ -42,8 +42,8 @@ raiz-del-proyecto/
 │   ├── opp_v3/                  # Modelo exacto de referencia
 │   │   ├── opp_model_v3.py      # Solver principal utilizando PySCIPOpt
 │   │   └── utils/               # Utilidades exclusivas del modelo exacto
-│   └── opp_hc/                  # Modelo heurístico (ejemplo Hill Climbing)
-│       ├── opp_hc.py            # Solver heurístico principal
+│   └── opp_hc_1/                  # Modelo heurístico (ejemplo Hill Climbing)
+│       ├── opp_hc_1.py            # Solver heurístico principal
 │       └── utils/               # Lógica interna aislada (validators, evaluators)
 ├── observer/                    # Infraestructura del patrón de diseño Observer
 │   └── observer.py              # Clase abstracta Observer
@@ -56,7 +56,7 @@ raiz-del-proyecto/
     │   └── tests/               # Casos de prueba (scripts unitarios ejecutables)
     │       ├── normal/          # Pruebas funcionales regulares
     │       └── stress/          # Pruebas funcionales de estrés
-    └── opp_hc/                  # Tests clonados y adaptados para la heurística
+    └── opp_hc_1/                  # Tests clonados y adaptados para la heurística
         ├── doc/
         ├── scenarios/
         └── tests/

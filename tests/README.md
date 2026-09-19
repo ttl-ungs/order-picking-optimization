@@ -13,7 +13,7 @@ This document describes a workflow to design and maintain OPP (v1 and v2) tests 
 
 - tests/opp_v2/scenarios: definition of graphs and base assignments.
 - tests/opp_v2/tests: test cases per graph (happy path, penalties, etc).
-- tests/opp/tests: shared helpers.
+- tests/opp_v1/tests: shared helpers.
 - tests/opp_v2/tests/route_assertions.py: utilities to validate routes and batches.
 
 ## Workflow per graph (recommended)

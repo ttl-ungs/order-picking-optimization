@@ -2,7 +2,7 @@
 Configuration for the model-comparison analysis pipeline.
 
 Generalizes specs/model_analysis.md (originally written for
-opp_v3 / opp_hc / opp_aco) to the current model lineup:
+opp_v3 / opp_hc_1 / opp_aco_1) to the current model lineup:
 
 - opp_v4    : exact model (ZIMPL + SCIP)               -> ground truth for quality gap
 - opp_hc_2  : Hill Climbing, parallel pickers, no congestion
@@ -95,7 +95,7 @@ STABILITY_MODELS = ["opp_hc_2", "opp_hc_3", "opp_hc_4", "opp_aco_2", "opp_aco_3"
 # later partial run, or a specific high-density stress run). Keyed by
 # (model_label, scenario) -> exact filename (relative to its output dir).
 # Only labels present in MODEL_DIRS are ever looked up here (see
-# analysis/load.py) -- legacy labels (opp_v3, opp_aco) were removed
+# analysis/load.py) -- legacy labels (opp_v3, opp_aco_1) were removed
 # 2026-09-17 as dead/unreachable entries once those models dropped out of
 # MODEL_DIRS.
 LATEST_FILE_OVERRIDES = {

@@ -199,7 +199,7 @@ fields on top of opp_aco_2's shape:
 
 Only a minimal representative test set was written for this first version;
 `opp_aco_2`'s full normal-test battery (~18 files, reused scenarios under
-`tests/opp_aco/scenarios/`) can be ported over the same way as
+`tests/opp_aco_1/scenarios/`) can be ported over the same way as
 `test_opp_aco_3_model_01.py` if broader regression coverage is desired.
 
 ## Known simplifications / honest limitations (for the thesis write-up)

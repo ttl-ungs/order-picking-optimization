@@ -81,7 +81,7 @@ class TestRunner:
         # Ej: output_opp_hc_stress_tests_20231024_153000.csv
         csv_filename = f"output_{model_name}_{test_type}_tests_{timestamp}.csv"
 
-        # Ej: results/opp_hc/stress/output_opp_hc_stress_tests_20231024_153000.csv
+        # Ej: results/opp_hc_1/stress/output_opp_hc_stress_tests_20231024_153000.csv
         self.csv_path = os.path.join(
             project_root, "results", model_name, test_type, csv_filename
         )

@@ -11,7 +11,7 @@ from dtos.opp.model_dto import ModelDTO
 from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
 from models.opp_hc_2.opp_hc_2 import OPPHillClimbing
 from models.opp_hc_2.utils.output_handler import OutputHandler
-from tests.opp.tests.opp_test_case import OPPTestCase
+from tests.opp_test_case import OPPTestCase
 
 
 class TestOPPModel(OPPTestCase):

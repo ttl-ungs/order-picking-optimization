@@ -9,7 +9,7 @@ sys.path.insert(
 from dtos import SolveModelDTO, ModelDTO
 from models.opp_v2.opp_model_v2 import OPPModelV2
 from models.opp_v2.utils.output_handler import OutputHandler
-from tests.opp.tests.opp_test_case import OPPTestCase
+from tests.opp_test_case import OPPTestCase
 import sys
 import os
 

@@ -2,7 +2,7 @@
 
 Test suite for the Hill Climbing heuristic solver `models.opp_hc_2` - the
 picker-parallelization equivalent of `opp_model_v4.zpl`. Batches are still
-routed the same way as in `opp_hc` (v3), but batches can now be assigned to
+routed the same way as in `opp_hc_1` (v3), but batches can now be assigned to
 different pickers (X_pb) so work is parallelized.
 
 ## Structure
@@ -58,7 +58,7 @@ exact), but graph topology, constraint satisfaction, and solution status
 ## Reused Scenarios
 
 Most tests reuse scenario fixtures from `tests/opp_v3/scenarios/`, which are
-shared across the `opp`, `opp_v2`, `opp_v3`, `opp_hc` and `opp_hc_2` suites so
+shared across the `opp_v1`, `opp_v2`, `opp_v3`, `opp_hc_1` and `opp_hc_2` suites so
 inputs stay comparable across solvers. A few multi-picker scenario fixtures
 (e.g. `six_missions_three_pickers_grid_graph`, `three_missions_two_pickers_grid_graph`)
 live under `tests/opp_hc_2/scenarios/` and are used by the picker-aware tests.

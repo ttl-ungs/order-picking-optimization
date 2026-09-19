@@ -13,9 +13,9 @@ Los datos de entrada son archivos en formato .csv ubicados en el árbol de direc
 
 Exacto (OPP_v3): results/opp_v3/
 
-Heurística (HC): results/opp_hc/
+Heurística (HC): results/opp_hc_1/
 
-Metaheurística (ACO): results/opp_aco/
+Metaheurística (ACO): results/opp_aco_1/
 
 1.2. Mapeo de Escenarios y Archivos Específicos
 
@@ -127,10 +127,10 @@ import os
 paths = {
     'opp_v3_normal': 'results/opp_v3/normal/*.csv',
     'opp_v3_stress': 'results/opp_v3/stress/complete_output_v3_stress_tests.csv',
-    'hc_normal': 'results/opp_hc/normal/*.csv',
-    'hc_stress': 'results/opp_hc/stress/*.csv',
-    'aco_normal': 'results/opp_aco/normal/*.csv',
-    'aco_stress': 'results/opp_aco/stress/*20260617_123001.csv',
+    'hc_normal': 'results/opp_hc_1/normal/*.csv',
+    'hc_stress': 'results/opp_hc_1/stress/*.csv',
+    'aco_normal': 'results/opp_aco_1/normal/*.csv',
+    'aco_stress': 'results/opp_aco_1/stress/*20260617_123001.csv',
 }
 
 # 2. Función de Recuperación Latest

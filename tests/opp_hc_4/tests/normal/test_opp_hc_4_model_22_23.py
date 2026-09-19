@@ -2,7 +2,7 @@ import unittest
 from models.opp_hc_4.opp_hc_4 import OPPHillClimbing
 from models.opp_hc_4.utils.output_handler import OutputHandler
 from observer.observer import Observer
-from tests.opp.tests.opp_test_case import OPPTestCase
+from tests.opp_test_case import OPPTestCase
 import sys
 import os
 

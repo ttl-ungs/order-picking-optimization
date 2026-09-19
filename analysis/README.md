@@ -1,7 +1,7 @@
 # Pipeline de análisis de resultados
 
 Generaliza `specs/model_analysis.md` (escrito originalmente para
-`opp_v3`/`opp_hc`/`opp_aco`) a los modelos actuales:
+`opp_v3`/`opp_hc_1`/`opp_aco_1`) a los modelos actuales:
 
 | Label       | Rol                                                          |
 |-------------|---------------------------------------------------------------|
@@ -44,7 +44,7 @@ they don't use `TestRunner`/write CSVs at all.)
 ### Alcance de los stress tests que se agregaron
 
 `opp_hc_2` ya tenía su batería completa de 34 escenarios de estrés (heredada
-de `opp_v3`/`opp_hc`/`opp_aco`). Para `opp_v4`, `opp_aco_2`, `opp_hc_3` y
+de `opp_v3`/`opp_hc_1`/`opp_aco_1`). Para `opp_v4`, `opp_aco_2`, `opp_hc_3` y
 `opp_aco_3` **no** se portaron los 34 — se eligió un subconjunto curado de
 11 escenarios (mismo *builder* de escenario y mismos parámetros numéricos que
 sus equivalentes en `opp_hc_2`, para que el join por instancia en `analysis/`

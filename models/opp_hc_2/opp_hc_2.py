@@ -715,7 +715,7 @@ class OPPHillClimbing(Model):
     def _build_solution_info(self, solution: RouteSolution, objective_value: float, params: SolveModelDTO) -> dict:
         """
         Build solution information dictionary for OutputHandler.
-        Compatible with the format expected by opp_hc OutputHandler.
+        Compatible with the format expected by opp_hc_1 OutputHandler.
         """
         solution_info = {
             "status": "optimal",

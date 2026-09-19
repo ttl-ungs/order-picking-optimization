@@ -206,9 +206,9 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - [tests/](tests/)
 
 ### Modelos relevantes
-- [models/opp/](models/opp/)
-- [models/opp_aco/](models/opp_aco/)
-- [models/opp_hc/](models/opp_hc/)
+- [models/opp_v1/](models/opp_v1/)
+- [models/opp_aco_1/](models/opp_aco_1/)
+- [models/opp_hc_1/](models/opp_hc_1/)
 - [models/opp_aco_3/](models/opp_aco_3/)
 - [models/opp_hc_3/](models/opp_hc_3/)
 

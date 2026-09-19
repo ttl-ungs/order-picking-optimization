@@ -10,11 +10,11 @@ Same problem as opp_model_v4.zpl:
   sequenced without overlap
 - Output: compatible with build_output
 
-Each ant constructs a complete solution: a route per batch (as in opp_aco)
+Each ant constructs a complete solution: a route per batch (as in opp_aco_1)
 plus a picker assignment for every batch that has orders, guided by a second
 pheromone table over (batch, picker) pairs. This extends the classic ACO
 construction step to also decide "which machine runs this job", the ACO
-analogue of the neighbor moves opp_hc_2 adds on top of opp_hc.
+analogue of the neighbor moves opp_hc_2 adds on top of opp_hc_1.
 """
 
 import time

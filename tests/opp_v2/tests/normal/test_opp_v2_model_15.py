@@ -10,7 +10,7 @@ from dtos import SolveModelDTO, ModelDTO
 from models.base.opp_location_graph import OPPLocationGraph
 from models.opp_v2.opp_model_v2 import OPPModelV2
 from models.opp_v2.utils.output_handler import OutputHandler
-from tests.opp.tests.opp_test_case import OPPTestCase
+from tests.opp_test_case import OPPTestCase
 
 from tests.opp_v2.scenarios.normal.one_mission_one_picker_grid_graph import (
     scenario_one_mission_one_picker_grid_graph,

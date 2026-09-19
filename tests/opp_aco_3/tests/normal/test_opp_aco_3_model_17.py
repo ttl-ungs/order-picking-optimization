@@ -12,7 +12,7 @@ from models.opp_aco_3 import OPPAntColonyOptimization
 from models.opp_aco_3.utils.output_handler import OutputHandler
 from models.opp_aco_3.utils.route_evaluator import RouteEvaluator
 from models.opp_aco_3.utils.route_solution import RouteSolution
-from tests.opp.tests.opp_test_case import OPPTestCase
+from tests.opp_test_case import OPPTestCase
 from tests.shared_scenarios.normal.scenario_17 import branched_single_mission_route
 from tests.opp_v2.tests.route_assertions import assert_route_covers_orders
 
