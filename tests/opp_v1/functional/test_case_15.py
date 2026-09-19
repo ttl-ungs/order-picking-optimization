@@ -1,6 +1,6 @@
 import unittest
 from models.base.opp_location_graph import OPPLocationGraph
-from tests.opp_test_case import OPPTestCase
+from tests.support.opp_test_case import OPPTestCase
 import sys
 import os
 

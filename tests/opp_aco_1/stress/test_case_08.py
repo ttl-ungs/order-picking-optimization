@@ -6,12 +6,12 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
 )
 
-from graphs.graphs_factory import GraphsFactory
+from tests.support.graphs_factory import GraphsFactory
 from dtos.opp.model_dto import ModelDTO
 from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
 from models.opp_aco_1.opp_aco_1 import OPPAntColonyOptimization
 from models.opp_aco_1.utils.output_handler import OutputHandler
-from tests.opp_test_case import OPPTestCase
+from tests.support.opp_test_case import OPPTestCase
 
 
 class TestOPPModel(OPPTestCase):

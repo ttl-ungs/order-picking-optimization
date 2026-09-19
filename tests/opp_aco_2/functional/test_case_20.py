@@ -11,7 +11,7 @@ sys.path.insert(
 from dtos import ModelDTO
 from models.opp_aco_2 import OPPAntColonyOptimization
 from models.opp_aco_2.utils.output_handler import OutputHandler
-from tests.opp_test_case import OPPTestCase
+from tests.support.opp_test_case import OPPTestCase
 
 from tests.shared_scenarios.functional.three_missions_two_pickers_grid_graph import (
     scenario_three_missions_two_pickers_two_periods_grid_graph,

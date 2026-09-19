@@ -1,4 +1,4 @@
-from graphs.graphs_factory import GraphsFactory
+from tests.support.graphs_factory import GraphsFactory
 
 
 def grid_5x3_two_pickers_four_batches():

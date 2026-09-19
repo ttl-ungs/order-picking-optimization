@@ -47,10 +47,13 @@ raiz-del-proyecto/
 ├── observer/                    # Infraestructura del patrón de diseño Observer
 │   └── observer.py              # Clase abstracta Observer
 ├── tests/                       # Suite de testing organizada por modelo
-│   ├── opp_test_case.py         # TestCase base compartida (OPPTestCase)
-│   ├── family_case.py           # Fábrica que adapta los tests de opp_hc_2/opp_aco_2 a sus familias
 │   ├── run_suite.py             # Punto de entrada único: python -m tests.run_suite <modelo> functional|stress
-│   ├── test_runner.py           # Ejecuta cada test aislado, con timeout, y escribe el CSV en results/
+│   ├── support/                 # Infraestructura de tests (no son tests)
+│   │   ├── runner.py  config.py           # Ejecuta cada test aislado, con timeout, y escribe el CSV en results/
+│   │   ├── opp_test_case.py               # TestCase base compartida (OPPTestCase)
+│   │   ├── family_case.py  migrated_case.py   # Fábricas que reutilizan tests de otro modelo
+│   │   ├── route_assertions.py            # Aserciones de rutas
+│   │   └── zpl_utils.py  dat_files_builder.py  graphs_factory.py   # Soporte de los tests ZIMPL
 │   ├── shared_scenarios/        # Todos los escenarios (grafos y parámetros); los propios de un modelo llevan sufijo _vN
 │   │   ├── common/  functional/  stress/
 │   └── opp_hc_2/                # Un directorio por modelo

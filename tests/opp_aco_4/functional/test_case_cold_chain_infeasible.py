@@ -9,7 +9,7 @@ sys.path.insert(
 )
 
 from models.opp_aco_4 import OPPAntColonyOptimization
-from tests.opp_test_case import OPPTestCase
+from tests.support.opp_test_case import OPPTestCase
 from dtos.opp.model_dto import ModelDTO
 
 from tests.shared_scenarios.functional.scenario_01 import basic_two_orders_capacity_limit

@@ -13,8 +13,7 @@ This document describes a workflow to design and maintain OPP (v1 and v2) tests 
 
 - tests/shared_scenarios: definition of graphs and base assignments (shared by every model; model-specific ones carry a `_vN` suffix).
 - tests/<model>/functional and tests/<model>/stress: test cases per model (`test_case_NN.py`).
-- tests/opp_test_case.py: shared `OPPTestCase` base class and helpers.
-- tests/opp_v2/route_assertions.py, tests/opp_v4/route_assertions.py: utilities to validate routes and batches.
+- tests/support/: shared test infrastructure (runner, config, `OPPTestCase`, `family_case`, `migrated_case`, `route_assertions`, ZPL helpers).
 - tests/run_suite.py: single entry point to run a model's suite.
 
 ## Workflow per graph (recommended)
