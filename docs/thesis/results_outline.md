@@ -214,7 +214,7 @@ efectivamente se pueda correr a la escala que la tesina necesita.
   paso no es solo "moverse en el grafo" sino también el switch
   probabilístico τ1/τ2 y el chequeo de congestión, que escalan más con N.
 - En normal es al revés en `hc_2`: `N` pesa más que `V` (r=0.57 vs. 0.33).
-- Confirma la hipótesis original de `specs/model_analysis.md` sec. 5
+- Confirma la hipótesis original de `docs/specs/model_analysis.md` sec. 5
   ("asintotismo exponencial vs. V") para `hc_2`/`aco_2` -- pero solo se
   manifiesta a escala de estrés, no en instancias chicas, y no es universal
   entre los 4 heurísticos (`hc_3` y `aco_3` son ahora ambos la excepción,
@@ -324,5 +324,5 @@ con datos completos (`opp_v4`, `opp_hc_2`, `opp_hc_3`, `opp_aco_2`,
 sigue con el dataset de 2026-08-18 (8 tests, no se re-corrió porque tomaría
 horas y los fixes de esta auditoría no tocan `opp_v4`, que es exacto vía
 SCIP, no heurístico); `opp_v5` sigue fuera del alcance mientras está en
-construcción. Con esto, `docs/results_outline.md` está listo para pasar de
+construcción. Con esto, `docs/thesis/results_outline.md` está listo para pasar de
 bosquejo a texto real de la sección de resultados.

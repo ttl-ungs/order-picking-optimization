@@ -1,5 +1,5 @@
 **Overview**
-This document contains only stress tests. The graph catalog is maintained in test_cases_normal.md.
+This document contains only stress tests. The graph catalog is maintained in test_cases_functional.md.
 
 **Test Cases**
 | ID | Name | Key | Description | Orders | Locations | Lots | Pickers | LotsFeasible | Expected | Obtained | Status | Time | Notes | Graph |

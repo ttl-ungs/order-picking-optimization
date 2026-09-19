@@ -16,7 +16,7 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
 
     Purpose: stress the exact model's scalability (mirrors opp_v3's own
     stress suite / opp_hc_2's picker-aware stress test #04, see
-    specs/model_analysis.md sec. 5 for the "exponential blow-up vs. V"
+    docs/specs/model_analysis.md sec. 5 for the "exponential blow-up vs. V"
     hypothesis this is meant to check). Reuses opp_hc_2's scenario builder
     (pure graph/order construction, no model coupling) instead of duplicating it.
     """

@@ -31,7 +31,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - [x] Pruebas principales ejecutándose
 - [x] Modelos comparables alineados (auditoría de código cerrada 2026-08-30/09-01, ver `analysis/README.md`)
 - [ ] Documentación clave actualizada (en progreso, ver limpieza en curso más abajo)
-- [x] Riesgos conocidos documentados (`analysis/README.md`, `docs/results_outline.md`)
+- [x] Riesgos conocidos documentados (`analysis/README.md`, `docs/thesis/results_outline.md`)
 
 ### Contexto activo
 
@@ -219,6 +219,10 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - ACO: [models/opp_aco_2/](models/opp_aco_2/), [models/opp_aco_3/](models/opp_aco_3/), [models/opp_aco_4/](models/opp_aco_4/)
 - Legacy (fuera de la tesina, se conservan): `opp_v1`, `opp_v2`, `opp_v3`, `opp_hc_1`, `opp_aco_1`
 
+### Documentación y ejemplos
+- [docs/](docs/) — índice en [docs/README.md](docs/README.md): `thesis/`, `guides/`, `specs/`, `tests/<modelo>/`
+- [examples/](examples/) — scripts de uso de los modelos heurísticos
+
 ### Datos y resultados
 - [tests/shared_scenarios/](tests/shared_scenarios/) — todos los escenarios de prueba
 - [results/](results/) — CSV de resultados por modelo y tier
@@ -264,7 +268,7 @@ python -m unittest discover -s tests
 
 ### Riesgos conocidos
 - `opp_v5` en estrés: 0/8, con un fallo por nombres de variables truncados/corruptos en el `.lp` que genera ZIMPL para instancias grandes (ver `analysis/README.md`).
-- Las heurísticas HC no tienen retroceso en la construcción de rutas y no resuelven instancias con ~25 ubicaciones requeridas por lote, aunque SCIP las resuelva en segundos (limitación documentada en `docs/results_outline.md`).
+- Las heurísticas HC no tienen retroceso en la construcción de rutas y no resuelven instancias con ~25 ubicaciones requeridas por lote, aunque SCIP las resuelva en segundos (limitación documentada en `docs/thesis/results_outline.md`).
 - La comparación heurístico vs. exacto sólo es válida si la instancia es la misma: se une por nombre de método y forma de la instancia, no por número de archivo.
 
 ### Pendientes

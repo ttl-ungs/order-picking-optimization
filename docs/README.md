@@ -1,0 +1,24 @@
+# Documentation index
+
+| Where | What |
+| --- | --- |
+| `thesis/` | LaTeX/ConTeXt sources and PDFs of the thesis material (`models`, `opp_model_v4`, `opp_v5`, `opp_v4_vs_opp_v5_comparision`, `algorithm_advances_31_08_2026`, `algorithm_results`) and `results_outline.md`, the outline of the results section (every number and finding behind it). Figures are read from `analysis/output/`. |
+| `guides/` | `context_style_guide.md`: ConTeXt style rules for the thesis `.tex` files. |
+| `specs/` | Design specs: `model_analysis.md` (original analysis pipeline spec, historical) and `model_based_on_opp_v3_specs.md` (rules for building a heuristic that must match `opp_v3`). |
+| `tests/<model>/` | Test-case descriptions (`test_cases*.md`) for the legacy models `opp_v1`, `opp_v2`, `opp_v3`, `opp_hc_1`, `opp_aco_1`. |
+
+Other documentation lives next to the code it describes:
+
+| Model | Model docs | Test docs |
+| --- | --- | --- |
+| `opp_hc_1` | `models/opp_hc_1/README.md` | `tests/opp_hc_1/README.md`, `docs/tests/opp_hc_1/` |
+| `opp_hc_2` | `models/opp_hc_2/README.md` | `tests/opp_hc_2/README.md` |
+| `opp_hc_3` | `models/opp_hc_3/README.md`, `PSEUDOCODE.md` | |
+| `opp_hc_4` | | `tests/opp_hc_4/README.md` |
+| `opp_aco_2` | `models/opp_aco_2/README.md` | |
+| `opp_aco_3` | `models/opp_aco_3/README.md`, `PSEUDOCODE.md` | |
+| `opp_aco_4` | | `tests/opp_aco_4/README.md` |
+| `opp_v1`..`opp_v3`, `opp_aco_1` | | `docs/tests/<model>/` |
+| `opp_v4`, `opp_v5` | (ZIMPL models: see `docs/thesis/`) | |
+
+Repo-level: `../README.md` (overview), `../conventions.md` (binding conventions), `../meta.md` (live changelog and project state), `../analysis/README.md` (analysis pipeline and every audit finding), `../tests/README.md` (how tests are organized), `../examples/README.md`.
