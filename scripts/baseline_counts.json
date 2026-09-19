@@ -37,6 +37,11 @@
    "failures": 1,
    "errors": 0,
    "note": "test_bridge_earliness_order_size: numeric-precision assertion, fails identically on main"
+  },
+  "functional/opp_v2": {
+   "failures": 1,
+   "errors": 0,
+   "note": "test_bridge_earliness_order_size: same big-M precision assertion as opp_v3 (1.2e+21 not <= 1e-06); fails identically on main"
   }
  }
 }
