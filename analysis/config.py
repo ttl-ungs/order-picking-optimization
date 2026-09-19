@@ -12,7 +12,7 @@ opp_v3 / opp_hc_1 / opp_aco_1) to the current model lineup:
 - opp_v5    : exact model, 2-stage decomposition (routing then scheduling),
               no congestion -- migrated normal/stress tests neutralize its
               two extra features (heterogeneous picker speed, cold-chain
-              limit) via tests/support/migrated_case.py, so those rows
+              limit) via tests/infra/factories/migrated_case.py, so those rows
               solve the same problem as opp_v4/opp_hc_2/opp_aco_2. Kept
               OUT of CONGESTION_AWARE_MODELS and NOT set as EXACT_MODEL
               (still opp_v4) -- it's compared AGAINST opp_v4, not used to

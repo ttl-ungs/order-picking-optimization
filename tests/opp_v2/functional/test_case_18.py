@@ -10,12 +10,12 @@ from dtos.opp.model_dto import ModelDTO
 from dtos.opp.solve_model_dto import SolveModelDTO
 from models.opp_v2.opp_model_v2 import OPPModelV2
 from models.opp_v2.utils.output_handler import OutputHandler
-from tests.support.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 from tests.shared_scenarios.functional.scenario_13_v2 import (
     bridge_graph_disconnected,
     bridge_graph_two_pickers_four_batches,
 )
-from tests.support.route_assertions import assert_batch_routes_cover_locations
+from tests.infra.cases.route_assertions import assert_batch_routes_cover_locations
 
 
 class TestOPPModelBridge(OPPTestCase):

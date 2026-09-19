@@ -2,7 +2,7 @@
 (opp_hc_2 -> opp_hc_3/opp_hc_4, opp_aco_2 -> opp_aco_3/opp_aco_4) without
 touching a single assertion.
 
-Same idea as tests.support.migrated_case.migrated_case(): every test
+Same idea as tests.infra.factories.migrated_case.migrated_case(): every test
 method resolves its model/DTO/output-handler classes as plain module-level
 names at CALL time (e.g. `params = SolveHCModelDTO()`, `model =
 OPPHillClimbing(model_dto)`), so replacing what those names are bound to in
@@ -83,7 +83,7 @@ def family_case(base_module_path, overrides):
 
     # TestRunner/unittest address tests by dotted id (module.Class.method) --
     # give the dynamic subclass a stable public address in the CALLING
-    # module (the target family's test file), not tests.support.family_case where
+    # module (the target family's test file), not tests.infra.factories.family_case where
     # it's actually defined. Same trick as migrated_case.py's migrated_case().
     FamilyCase.__name__ = base_case.__name__
     FamilyCase.__qualname__ = base_case.__qualname__

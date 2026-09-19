@@ -4,11 +4,11 @@ import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from tests.support.dat_files_builder import build_dat_files, write_indexed_dat, write_scalar_dat
+from tests.infra.zimpl.dat_files_builder import build_dat_files, write_indexed_dat, write_scalar_dat
 from models.opp_v5.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
 from tests.opp_v5.config import DAT_DIR, STAGE1_ZPL_PATH, STAGE2_ZPL_PATH
 from tests.opp_v5.stage1_decomposition import solve_stage1_decomposed
-from tests.support.zpl_utils import extract_active_arcs, solve_zpl
+from tests.infra.zimpl.zpl_utils import extract_active_arcs, solve_zpl
 
 
 class OPPTestCaseV5(unittest.TestCase):

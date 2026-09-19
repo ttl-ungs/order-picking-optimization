@@ -1,10 +1,10 @@
 import os
 import unittest
 
-from tests.support.dat_files_builder import build_dat_files
+from tests.infra.zimpl.dat_files_builder import build_dat_files
 from models.base.opp_location_graph import OPPLocationGraph
-from tests.support.opp_test_case import OPPTestCase
-from tests.support.zpl_utils import extract_active_arcs, solve_zpl
+from tests.infra.cases.opp_test_case import OPPTestCase
+from tests.infra.zimpl.zpl_utils import extract_active_arcs, solve_zpl
 from tests.shared_scenarios.functional.scenario_01_v2_zpl import basic_two_orders_capacity_limit
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))

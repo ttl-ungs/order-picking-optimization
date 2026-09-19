@@ -1,4 +1,4 @@
-from tests.support.graphs_factory import GraphsFactory
+from tests.infra.factories.graphs_factory import GraphsFactory
 
 def scenario_six_missions_two_periods_grid_graph(rows=4, cols=4, v_weight=4, h_weight=4):
     B= {"B1", "B2", "B3", "B4", "B5", "B6"}

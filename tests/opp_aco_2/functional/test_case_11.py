@@ -11,12 +11,12 @@ from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
 from models.base.opp_location_graph import OPPLocationGraph
 from models.opp_aco_2 import OPPAntColonyOptimization
 from models.opp_aco_2.utils.output_handler import OutputHandler
-from tests.support.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 
 from tests.shared_scenarios.functional.one_mission_one_picker_grid_graph import (
     scenario_one_mission_one_picker_grid_graph,
 )
-from tests.support.route_assertions import assert_aco_routes_cover_locations
+from tests.infra.cases.route_assertions import assert_aco_routes_cover_locations
 
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))

@@ -1,6 +1,6 @@
 import os, sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-from tests.support.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 
 class OPPTestCaseV4(OPPTestCase):
     def assert_workload_balance(self, var_values, P, B, max_difference=1):

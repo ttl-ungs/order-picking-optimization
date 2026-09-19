@@ -10,9 +10,9 @@ from dtos.opp.model_dto import ModelDTO
 from dtos.opp.solve_model_dto import SolveModelDTO
 from models.opp_v3.opp_model_v3 import OPPModelV3
 from models.opp_v3.utils.output_handler import OutputHandler
-from tests.support.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 from tests.shared_scenarios.functional.scenario_19 import longer_single_mission_route
-from tests.support.route_assertions import assert_route_covers_orders
+from tests.infra.cases.route_assertions import assert_route_covers_orders
 
 
 class TestOPPModel(OPPTestCase):

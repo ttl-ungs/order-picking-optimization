@@ -11,7 +11,7 @@ sys.path.insert(
 from dtos import ModelDTO
 from models.opp_hc_2 import OPPHillClimbing
 from models.opp_hc_2.utils.output_handler import OutputHandler
-from tests.support.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 
 from tests.shared_scenarios.functional.scenario_03 import two_possible_routes_batches
 
