@@ -253,7 +253,7 @@ directamente contra SCIP que la hipótesis es incorrecta**:
   lote de 25 ubicaciones de `test_09` (verificado que el método no tiene un
   bug genérico: en un lote fácil de 4 ubicaciones sí encuentra rutas en
   17/200) -- esto en su momento parecía fuerte evidencia de infeasibilidad.
-- **Se corrió `tests/opp_v4/tests/diagnostics/test_single_batch_infeasibility_check.py`
+- **Se corrió `tests/opp_v4/diagnostics/test_single_batch_infeasibility_check.py`
   contra SCIP real** (límite de 1800s, `zimpl` vía conda env `optimizacion`):
   SCIP resuelve ese mismo lote en **1.8 segundos**, `status=optimal`,
   con una ruta simple de 56 nodos (55 arcos, sin loops) que visita las 25

@@ -2,7 +2,7 @@
 (opp_hc_2 -> opp_hc_3/opp_hc_4, opp_aco_2 -> opp_aco_3/opp_aco_4) without
 touching a single assertion.
 
-Same idea as tests.opp_v5.tests.v4_compat.migrated_case(): every test
+Same idea as tests.opp_v5.v4_compat.migrated_case(): every test
 method resolves its model/DTO/output-handler classes as plain module-level
 names at CALL time (e.g. `params = SolveHCModelDTO()`, `model =
 OPPHillClimbing(model_dto)`), so replacing what those names are bound to in
@@ -36,7 +36,7 @@ def family_case(base_module_path, overrides):
 
     Args:
         base_module_path (str): dotted path to the canonical test module,
-            e.g. 'tests.opp_hc_2.tests.normal.test_opp_hc_2_model_02'.
+            e.g. 'tests.opp_hc_2.functional.test_opp_hc_2_model_02'.
         overrides (dict): {name_as_referenced_in_base_module: replacement}.
             Keys must match the exact identifier the base module's test
             methods use (e.g. 'OPPHillClimbing', 'SolveHCModelDTO',

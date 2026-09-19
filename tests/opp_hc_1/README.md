@@ -41,12 +41,12 @@ python -m tests.run_suite opp_hc_1 normal
 
 ### Run individual test:
 ```bash
-python -m unittest tests.opp_hill_climbing.tests.normal.test_opp_hc_v3_model_1
+python -m unittest tests.opp_hill_climbing.functional.test_opp_hc_v3_model_1
 ```
 
 ### Run specific test method:
 ```bash
-python -m unittest tests.opp_hill_climbing.tests.normal.test_opp_hc_v3_model_1.TestOPPHillClimbingV3Model1.test_basic_two_orders_capacity_limit
+python -m unittest tests.opp_hill_climbing.functional.test_opp_hc_v3_model_1.TestOPPHillClimbingV3Model1.test_basic_two_orders_capacity_limit
 ```
 
 ## Test Expectations

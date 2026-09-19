@@ -12,7 +12,7 @@ opp_v3 / opp_hc_1 / opp_aco_1) to the current model lineup:
 - opp_v5    : exact model, 2-stage decomposition (routing then scheduling),
               no congestion -- migrated normal/stress tests neutralize its
               two extra features (heterogeneous picker speed, cold-chain
-              limit) via tests/opp_v5/tests/v4_compat.py, so those rows
+              limit) via tests/opp_v5/v4_compat.py, so those rows
               solve the same problem as opp_v4/opp_hc_2/opp_aco_2. Kept
               OUT of CONGESTION_AWARE_MODELS and NOT set as EXACT_MODEL
               (still opp_v4) -- it's compared AGAINST opp_v4, not used to
@@ -66,7 +66,7 @@ MODEL_DIRS = {
     "opp_aco_4": "opp_aco_4",
 }
 
-SCENARIOS = ["normal", "stress"]
+SCENARIOS = ["functional", "stress"]
 
 # The model treated as ground truth for the optimality-gap analysis.
 EXACT_MODEL = "opp_v4"
@@ -104,7 +104,7 @@ LATEST_FILE_OVERRIDES = {
     # re-run under the new numbering. The chronologically NEWER CSV
     # (20260825_194316, 3 rows) tests scenario names
     # (test_25_orders_per_batch_30_batches_25x25, etc.) that don't match ANY
-    # current tests/opp_v4/tests/stress/*.py file -- orphaned data from
+    # current tests/opp_v4/stress/*.py file -- orphaned data from
     # before the rename. This OLDER file's 8 test names match the current
     # suite exactly (test_100_locations, test_infeasible_capacity, ...,
     # test_10_orders_per_batch) -- pin to it explicitly rather than let

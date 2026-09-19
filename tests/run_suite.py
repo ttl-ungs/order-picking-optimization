@@ -9,7 +9,7 @@ execute_tests.py/execute_stress_tests.py unchanged -- they don't fit this
 runner's contract.
 
 Usage:
-    python -m tests.run_suite opp_hc_2 normal
+    python -m tests.run_suite opp_hc_2 functional
     python -m tests.run_suite opp_hc_3 stress
     python -m tests.run_suite opp_hc_3 stress --id 04
         (equivalent to the old `python tests/opp_hc_3/execute_stress_tests.py 04`
@@ -33,7 +33,7 @@ from tests.test_runner import TestRunner
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("model", help="Model directory name under tests/, e.g. opp_hc_2, opp_aco_3, opp_v4.")
-    parser.add_argument("tier", choices=["normal", "stress"])
+    parser.add_argument("tier", choices=["functional", "stress"])
     parser.add_argument(
         "--id",
         metavar="NN",
@@ -45,7 +45,7 @@ def main(argv=None):
         parser.error("--id is only supported for the stress tier")
 
     model_dir = os.path.join(os.path.dirname(__file__), args.model)
-    start_dir = os.path.join(model_dir, "tests", args.tier)
+    start_dir = os.path.join(model_dir, args.tier)
     if not os.path.isdir(start_dir):
         parser.error(f"No such directory: {start_dir}")
 

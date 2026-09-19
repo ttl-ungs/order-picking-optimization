@@ -1,0 +1,80 @@
+import unittest
+import sys
+import os
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
+)
+
+from dtos import SolveModelDTO, ModelDTO
+from models.opp_v2.opp_model_v2 import OPPModelV2
+from models.opp_v2.utils.output_handler import OutputHandler
+from tests.opp_test_case import OPPTestCase
+
+from tests.shared_scenarios.stress.scenario_custom_setup_v2 import scenario_custom_setup
+
+
+class TestOPPModel(OPPTestCase):
+    """
+    Test 24: 4 orders per batch. 1 batch per picker. Each order has a location.
+    """
+
+    def test_4_orders_per_batch(self):
+        opp_location_graph, V, B, P, N, x, y, a = scenario_custom_setup(
+            25, 25, 100, 10, 10
+        )
+
+        cap_n = {f"O{n}": 10 for n in range(1, len(N) + 1)}
+        due_date = {f"O{n}": 30 for n in range(1, len(N) + 1)}
+
+        cap_vehicle = 40
+        w1 = 9.0
+        w2 = 1.0
+        gamma = 1.0
+        delta = 1.0
+
+        beta_time = 0.5
+        beta_setup = 1.0
+        beta_picking = 1.0
+        M = 1000.0
+
+        params = SolveModelDTO()
+        params.W_full = w1
+        params.W_ea_ta = w2
+        params.W_ea = gamma
+        params.W_ta = delta
+        params.C_n = cap_n
+        params.C_v = cap_vehicle
+        params.A = a
+        params.B_time = beta_time
+        params.B_setup = beta_setup
+        params.B_picking = beta_picking
+        params.Dd = due_date
+        params.M = M
+        params.x = x
+        params.Bn = y
+
+        model_dto = ModelDTO()
+        model_dto.N = N
+        model_dto.location_graph = opp_location_graph
+        model_dto.P = P
+        model_dto.B = B
+        model_dto.start_time = self.start_time
+        model = OPPModelV2(model_dto)
+        output_handler = OutputHandler()
+        model.attach(output_handler)
+
+        try:
+            result, _ = model.solve(params)
+        except Exception as e:
+            self.fail(f"Model execution failed: {e}")
+
+        self.assertTrue(
+            result in ("optimal", "feasible"),
+            "The model did not find a feasible solution.",
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
+

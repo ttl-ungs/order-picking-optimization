@@ -3,7 +3,7 @@ Discovery and loading of the raw per-test CSVs into one tidy DataFrame.
 
 Each row in the output DataFrame is one test execution, tagged with:
 - model     : short label from config.MODEL_DIRS
-- scenario  : "normal" | "stress"
+- scenario  : "functional" | "stress"
 - instance  : the test *method* name (e.g. "test_basic_two_orders_capacity_limit"),
               used to join the same scenario across models -- unittest method
               names are shared across model variants because they exercise the
@@ -152,7 +152,7 @@ def load_stability(verbose: bool = True) -> pd.DataFrame:
     Separate from load_all() because the schema is different: one row per
     (instance, seed) solve of a SHARED instance (tests/shared_scenarios/
     instances.py), not one row per unittest test method -- there's no
-    "scenario" (normal/stress) dimension, and "instance" here means one of
+    "scenario" (functional/stress) dimension, and "instance" here means one of
     the 3 shared instances, not a test method name.
     """
     frames = []

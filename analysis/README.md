@@ -187,7 +187,7 @@ evidencia de que **la instancia sería infeasible por construcción** bajo la
 restricción "sin loops" (17), compartida por los 5 modelos.
 
 **Se corrió el chequeo directo contra SCIP
-(`tests/opp_v4/tests/diagnostics/test_single_batch_infeasibility_check.py`,
+(`tests/opp_v4/diagnostics/test_single_batch_infeasibility_check.py`,
 con límite de 1800s) y la hipótesis quedó refutada**: SCIP resuelve ese
 mismo lote B1 (25 ubicaciones requeridas, mismo grid 10x10) en **1.8
 segundos**, `status=optimal`, encontrando una ruta simple de 56 nodos que
@@ -490,7 +490,7 @@ Se completó la cobertura de tests normales de `opp_v5`
 comparan, las dos capacidades propias de `opp_v5` (velocidad heterogénea de
 pickers, cadena de frío):
 
-- **Cobertura**: `tests/opp_v5/tests/normal/test_opp_v5_model_{22,...,30}.py`
+- **Cobertura**: `tests/opp_v5/functional/test_opp_v5_model_{22,...,30}.py`
   -- una línea cada uno, usando el adaptador genérico `migrated_case()` que
   ya existía en `v4_compat.py` (creado para portar `model_01-19`, nunca
   extendido). `opp_v5` reusó los números 20/21 para sus propios tests de
@@ -499,9 +499,9 @@ pickers, cadena de frío):
   vencimientos extremos, lote vacío, capacidades fraccionarias/cero, orden
   en múltiples lotes, orden que excede el vehículo, tiempos de servicio) se
   agregaron como `model_22-30`. También se agregó el test de estrés #08 que
-  faltaba (`tests/opp_v5/tests/stress/test_opp_v5_model_08.py`, el único de
+  faltaba (`tests/opp_v5/stress/test_opp_v5_model_08.py`, el único de
   los 8 de `opp_v4` que `opp_v5` no tenía).
-- **Validación de funcionalidad** (`tests/opp_v5/tests/normal/test_opp_v5_model_31.py`,
+- **Validación de funcionalidad** (`tests/opp_v5/functional/test_opp_v5_model_31.py`,
   nuevo): más allá de los 4 tests básicos que ya existían (`model_20`/`21`,
   "¿qué picker lo hace?"), se agregaron 3 tests que verifican la fórmula y
   los casos límite exactos:

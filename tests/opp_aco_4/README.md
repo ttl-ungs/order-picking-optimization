@@ -88,5 +88,5 @@ test repeatedly).
 python -m tests.run_suite opp_aco_4 normal
 WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_aco_4 normal          # to feed analysis/
 WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_aco_4 stress
-python -m unittest tests.opp_aco_4.tests.normal.test_opp_aco_4_model_02_picker_speed
+python -m unittest tests.opp_aco_4.functional.test_opp_aco_4_model_02_picker_speed
 ```
