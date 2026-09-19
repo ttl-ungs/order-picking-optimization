@@ -1,35 +1,39 @@
 """
-Example usage of OPP Hill Climbing V3 heuristic.
+Example usage of the OPP Ant Colony Optimization V4 heuristic (picker-parallel).
 
-This script demonstrates how to use the Hill Climbing solver with the same input
-format as the exact solver (opp_model_v3). The key difference:
-- Input: Fixed batch assignments (Bn parameter)
-- Optimize: Routes within each batch
+This script demonstrates how to use the ACO solver with the same input
+format as the exact solver (opp_model_v4). The key differences vs. opp_aco_1 (v3):
+- Input: Fixed batch assignments (Bn parameter) + a set of pickers (P)
+- Optimize: Routes within each batch (probabilistic ACO construction) AND the
+  assignment/sequencing of batches to pickers (X_pb), so batches on different
+  pickers run in parallel
 """
 
 from pathlib import Path
 import sys
 
 if __package__ is None or __package__ == "":
-    sys.path.append(str(Path(__file__).resolve().parents[2]))
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from models.opp_hc_1 import OPPHillClimbing
+from models.opp_aco_2 import OPPAntColonyOptimization
+from models.opp_aco_2.utils.output_handler import OutputHandler
 from dtos.opp.model_dto import ModelDTO
-from dtos.opp.solve_model_dto import SolveModelDTO
+from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
 from models.base.opp_location_graph import OPPLocationGraph
 
 
 def example_small_instance():
     """
-    Example with fixed batch assignments.
+    Example with fixed batch assignments and two pickers working in parallel.
     """
 
     # Create model DTO
     model_dto = ModelDTO()
 
-    # Orders and batches
+    # Orders, batches and pickers
     model_dto.N = {"O1", "O2", "O3", "O4", "O5"}
     model_dto.B = {"B1", "B2"}
+    model_dto.P = {"P1", "P2"}
 
     # Create location graph
     location_graph = OPPLocationGraph(depot_node="D", final_node="F")
@@ -62,7 +66,7 @@ def example_small_instance():
     model_dto.start_time = 0.0
 
     # Create solve DTO
-    solve_dto = SolveModelDTO()
+    solve_dto = SolveAcoModelDTO()
 
     # Objective weights
     solve_dto.W_full = 1.0
@@ -98,26 +102,32 @@ def example_small_instance():
     solve_dto.M = 1000.0
 
     # FIXED batch assignments (Bn parameter)
-    # This is the key difference: routes are optimized WITHIN these fixed assignments
     solve_dto.Bn = {
         ("O1", "B1"): 1, ("O2", "B1"): 1, ("O3", "B1"): 0,
         ("O4", "B2"): 1, ("O5", "B2"): 1, ("O3", "B2"): 1,
         # All other combinations are 0 (implicit)
     }
 
+    # ACO metaheuristic hyperparameters
+    solve_dto.A_ants = 12
+    solve_dto.Max_it = 40
+    solve_dto.Alpha = 1.0
+    solve_dto.Beta = 2.0
+    solve_dto.E = 0.1
+    solve_dto.Q = 100.0
+
     # Solve
-    solver = OPPHillClimbing(model_dto)
-    status, output_graph = solver.solve(solve_dto)
+    solver = OPPAntColonyOptimization(model_dto)
+    solver.attach(OutputHandler())
+    solve_result = solver.solve(solve_dto)
 
-    print(f"\nSolution Status: {status}")
-    print(f"Output graph vertices: {output_graph.get_vertices()}")
-    print(f"Output graph edges: {[(i, j) for i in output_graph.get_vertices() for j in output_graph.get_vertices() if output_graph.has_edge(i, j)]}")
+    print(f"\nSolution Status: {solve_result.status}")
 
-    return output_graph
+    return solve_result
 
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("OPP Hill Climbing V3 Example")
+    print("OPP Ant Colony Optimization V4 Example")
     print("=" * 60)
     example_small_instance()
