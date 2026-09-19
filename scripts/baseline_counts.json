@@ -42,6 +42,11 @@
    "failures": 1,
    "errors": 0,
    "note": "test_bridge_earliness_order_size: same big-M precision assertion as opp_v3 (1.2e+21 not <= 1e-06); fails identically on main"
+  },
+  "functional/opp_v1": {
+   "failures": 1,
+   "errors": 0,
+   "note": "test_3_orders_1_mission_1_picker (test_case_15, was test_opp_model_15): the output graph differs from the expected one; fails identically on main. The whole opp_v1 suite takes ~8 min (real SCIP solves)."
   }
  }
 }
