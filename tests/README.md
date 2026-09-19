@@ -89,3 +89,5 @@ python -m unittest tests.opp_v2.functional.test_case_{number}
 Or run a whole suite with the timeout/CSV runner:
 
 python -m tests.run_suite opp_v2 functional
+
+Settings (per-test timeouts, whether to write result CSVs) come from a local `.env`; copy `.env.example` to `.env` to change them. `.env` itself is not versioned.
