@@ -32,7 +32,7 @@ class SolveAco4ModelDTO(SolveAcoModelDTO):
     def V_p(self) -> dict:
         """dict {picker: speed}. A picker missing from this dict defaults to
         speed 1.0 (see opp_aco_4's _picker_speed) - the same default opp_v5's
-        v4_compat.py uses to make the cold-chain/speed extensions a no-op
+        migrated_case.py uses to make the cold-chain/speed extensions a no-op
         for scenarios that don't care about them."""
         return self._V_p
 

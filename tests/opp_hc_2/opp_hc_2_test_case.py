@@ -1,5 +1,5 @@
 from observer.observer import Observer
-from tests.opp_test_case import OPPTestCase
+from tests.support.opp_test_case import OPPTestCase
 
 
 class SolutionInfoCapture(Observer):

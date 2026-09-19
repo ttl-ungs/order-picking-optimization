@@ -9,7 +9,7 @@ sys.path.insert(
 from dtos import SolveModelDTO, ModelDTO
 from models.opp_v2.opp_model_v2 import OPPModelV2
 from models.opp_v2.utils.output_handler import OutputHandler
-from tests.opp_test_case import OPPTestCase
+from tests.support.opp_test_case import OPPTestCase
 
 from tests.shared_scenarios.common.six_missions_three_pickers_grid_graph_v2 import (
     scenario_six_missions_three_pickers_one_period_grid_graph,

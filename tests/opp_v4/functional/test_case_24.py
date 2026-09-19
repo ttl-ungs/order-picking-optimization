@@ -11,9 +11,9 @@ from tests.shared_scenarios.functional.scenario_13_v4 import (
     bridge_graph_disconnected,
     bridge_graph_two_pickers_four_batches,
 )
-from models.utils.dat_files_builder import build_dat_files
+from tests.support.dat_files_builder import build_dat_files
 from tests.opp_v4.config import DAT_DIR, ZPL_PATH
-from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
+from tests.support.zpl_utils import extract_active_arcs, solve_zpl
 
 
 class TestOPPModelBridgeZIMPL(OPPTestCaseV4):

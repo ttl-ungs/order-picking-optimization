@@ -11,12 +11,12 @@ from models.opp_hc_1.utils.output_handler import OutputHandler
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
 from models.opp_hc_1 import OPPHillClimbing
-from tests.opp_test_case import OPPTestCase
+from tests.support.opp_test_case import OPPTestCase
 from tests.shared_scenarios.functional.scenario_13 import (
     bridge_graph_disconnected,
     bridge_graph_two_pickers_four_batches,
 )
-from tests.opp_v2.route_assertions import assert_batch_routes_cover_locations
+from tests.support.route_assertions import assert_batch_routes_cover_locations
 
 
 class TestOPPHillClimbingBridge(OPPTestCase):

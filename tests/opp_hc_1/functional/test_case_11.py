@@ -11,7 +11,7 @@ sys.path.insert(
 from dtos import ModelDTO
 from models.base.opp_location_graph import OPPLocationGraph
 from models.opp_hc_1 import OPPHillClimbing
-from tests.opp_test_case import OPPTestCase
+from tests.support.opp_test_case import OPPTestCase
 
 from tests.shared_scenarios.functional.one_mission_one_picker_grid_graph import (
     scenario_one_mission_one_picker_grid_graph,

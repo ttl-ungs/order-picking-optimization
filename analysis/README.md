@@ -492,7 +492,7 @@ pickers, cadena de frío):
 
 - **Cobertura**: `tests/opp_v5/functional/test_opp_v5_model_{22,...,30}.py`
   -- una línea cada uno, usando el adaptador genérico `migrated_case()` que
-  ya existía en `v4_compat.py` (creado para portar `model_01-19`, nunca
+  ya existía en `migrated_case.py` (creado para portar `model_01-19`, nunca
   extendido). `opp_v5` reusó los números 20/21 para sus propios tests de
   velocidad/frío, así que los 9 casos que faltaban de `opp_v4`
   (`model_20`=grilla, `model_21`=puente, `model_24-30`=pesos distintos,

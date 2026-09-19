@@ -11,9 +11,9 @@ sys.path.insert(
 from dtos.opp.model_dto import ModelDTO
 from models.opp_hc_1.utils.output_handler import OutputHandler
 from models.opp_hc_1 import OPPHillClimbing
-from tests.opp_test_case import OPPTestCase
+from tests.support.opp_test_case import OPPTestCase
 from tests.shared_scenarios.functional.scenario_18 import detour_single_mission_route
-from tests.opp_v2.route_assertions import (
+from tests.support.route_assertions import (
     assert_correct_path,
     assert_route_covers_orders,
 )

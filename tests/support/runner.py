@@ -7,7 +7,7 @@ import time
 import unittest
 from datetime import datetime  # NUEVO IMPORT
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 
 def _peak_rss_mb() -> float:
@@ -74,8 +74,7 @@ class TestRunner:
         self.TIMEOUT_MSG = f"{self.TIMEOUT_MSG} - {timeout_minutes}"
         self.write_csv = write_csv
 
-        tests_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(tests_dir)
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # Ej: 20231024_153000
 
         # Ej: output_opp_hc_stress_tests_20231024_153000.csv

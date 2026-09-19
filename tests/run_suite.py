@@ -26,8 +26,8 @@ if hasattr(sys.stdout, "reconfigure"):
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from tests.test_config import STRESS_TEST_TIMEOUT_MINUTES, TEST_TIMEOUT_MINUTES, WRITE_RESULTS_CSV
-from tests.test_runner import TestRunner
+from tests.support.config import STRESS_TEST_TIMEOUT_MINUTES, TEST_TIMEOUT_MINUTES, WRITE_RESULTS_CSV
+from tests.support.runner import TestRunner
 
 
 def main(argv=None):

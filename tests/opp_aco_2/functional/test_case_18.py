@@ -2,7 +2,7 @@ import unittest
 from models.opp_aco_2.opp_aco_2 import OPPAntColonyOptimization
 from models.opp_aco_2.utils.output_handler import OutputHandler
 from observer.observer import Observer
-from tests.opp_test_case import OPPTestCase
+from tests.support.opp_test_case import OPPTestCase
 import sys
 import os
 

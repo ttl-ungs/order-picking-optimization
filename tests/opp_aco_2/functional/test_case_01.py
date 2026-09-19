@@ -9,7 +9,7 @@ sys.path.insert(
 
 
 from models.opp_aco_2 import OPPAntColonyOptimization
-from tests.opp_test_case import OPPTestCase
+from tests.support.opp_test_case import OPPTestCase
 
 from models.base.opp_location_graph import OPPLocationGraph
 from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO

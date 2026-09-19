@@ -11,7 +11,7 @@ sys.path.insert(
 from dtos import ModelDTO
 from models.opp_hc_1 import OPPHillClimbing
 from models.opp_hc_1.utils.output_handler import OutputHandler
-from tests.opp_test_case import OPPTestCase
+from tests.support.opp_test_case import OPPTestCase
 
 from tests.shared_scenarios.functional.multigrid_graph import (
     multigrid_5x5_3x3_five_pickers_twelve_batches,
