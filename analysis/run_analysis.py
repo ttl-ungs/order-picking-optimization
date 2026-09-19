@@ -4,7 +4,7 @@ CLI entrypoint for the model-comparison analysis pipeline.
 Usage:
     python -m analysis.run_analysis
 
-Reads the latest CSVs under tests/outputs/<model>/<normal|stress>/ for every
+Reads the latest CSVs under results/<model>/<normal|stress>/ for every
 model in analysis.config.MODEL_DIRS, computes the six metric tables, saves
 the charts under analysis/output/, and writes a consolidated
 analysis/output/report.md.
@@ -60,7 +60,7 @@ def _md_table(df: pd.DataFrame) -> str:
 def main():
     df = load_all()
     if df.empty:
-        print("No se encontró ningún CSV en tests/outputs/. Corré primero "
+        print("No se encontró ningún CSV en results/. Corré primero "
               "WRITE_RESULTS_CSV=1 python -m tests.run_suite <model> normal|stress "
               "para cada modelo (opp_v4, opp_hc_2, opp_aco_2, opp_hc_3, opp_aco_3).")
         return

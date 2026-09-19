@@ -147,7 +147,7 @@ def load_all(verbose: bool = True) -> pd.DataFrame:
 def load_stability(verbose: bool = True) -> pd.DataFrame:
     """
     Loads the latest seed-stability CSV (analysis/run_stability_study.py) per
-    heuristic model in STABILITY_MODELS, from tests/outputs/<model>/stability/.
+    heuristic model in STABILITY_MODELS, from results/<model>/stability/.
 
     Separate from load_all() because the schema is different: one row per
     (instance, seed) solve of a SHARED instance (tests/shared_scenarios/

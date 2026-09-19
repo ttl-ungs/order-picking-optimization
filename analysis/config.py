@@ -43,7 +43,7 @@ opp_v3 / opp_hc / opp_aco) to the current model lineup:
               deadline (see tests/opp_aco_4/README.md). Kept OUT of
               CONGESTION_AWARE_MODELS.
 
-Each entry maps a short label -> the directory name under tests/outputs/.
+Each entry maps a short label -> the directory name under results/.
 Add/remove entries here as models evolve; nothing else in the pipeline
 should need to change.
 """
@@ -51,10 +51,10 @@ should need to change.
 import os
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-OUTPUTS_ROOT = os.path.join(PROJECT_ROOT, "tests", "outputs")
+OUTPUTS_ROOT = os.path.join(PROJECT_ROOT, "results")
 ANALYSIS_OUTPUT_DIR = os.path.join(PROJECT_ROOT, "analysis", "output")
 
-# label -> directory name under tests/outputs/
+# label -> directory name under results/
 MODEL_DIRS = {
     "opp_v4": "opp_v4",
     "opp_hc_2": "opp_hc_2",

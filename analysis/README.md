@@ -16,7 +16,7 @@ Generaliza `specs/model_analysis.md` (escrito originalmente para
 ## 1. Generar los datos
 
 El pipeline **no ejecuta los tests**, solo lee lo que ya está en
-`tests/outputs/<modelo>/<normal|stress>/*.csv`. Para generarlos:
+`results/<modelo>/<normal|stress>/*.csv`. Para generarlos:
 
 ```bash
 export WRITE_RESULTS_CSV=1
@@ -64,7 +64,7 @@ sea válido), pensado para cubrir el rango de `N` (cantidad de pedidos) y `V`
   5000 nodos) se excluyeron a propósito para el modelo exacto: el propio
   `opp_v3` (antecesor de `opp_v4`) ya demostró en su suite de estrés que a
   esa escala el solver exacto no converge en tiempo razonable (ver
-  `tests/outputs/opp_v3/stress/complete_output_v3_stress_tests.csv`, y la
+  `results/opp_v3/stress/complete_output_v3_stress_tests.csv`, y la
   hipótesis de "asintotismo exponencial" en `specs/model_analysis.md` sec. 5)
   — correrlos ahí solo quemaría CPU para un timeout garantizado. Confirmado
   empíricamente: de las 8 que sí tiene, solo 1 converge (la infeasible

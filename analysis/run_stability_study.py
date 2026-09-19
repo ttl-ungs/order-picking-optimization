@@ -23,7 +23,7 @@ solves of the SAME instance instead). Run directly:
 are near-instant; ACO's are a few seconds each, so budget several minutes
 total for a full run -- safe to run in the background.
 
-Writes tests/outputs/<model>/stability/output_<model>_stability_<timestamp>.csv,
+Writes results/<model>/stability/output_<model>_stability_<timestamp>.csv,
 one row per (instance, seed) run, for analysis.metrics.stability_table to
 aggregate (mean/std/best/worst/gap_best_worst_pct per model x instance).
 """
