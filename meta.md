@@ -137,7 +137,6 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
   - En el camino se encontró y corrigió un bug real: `test_opp_hc_4_model_22_23.py`/`test_opp_aco_4_model_22_23.py` se habían clasificado mal como duplicados literales (su diff con la base solo mostraba líneas de import, pero importan un helper de escenario con DTO distinto que la factory no puede alcanzar) — se detectó porque las suites pasaron de 0 a 2 errores tras convertirlos, se revirtieron ambos archivos a su contenido original y quedaron excluidos de la conversión.
 - Pendiente (plan completo, todavía no ejecutado):
   - Renombrar carpetas/archivos de test (`normal`→`functional`, sin nombre de modelo en el archivo, renumeración continua).
-  - Decisión pendiente (no bloqueante): 14 de los 20 archivos de estrés de `opp_hc_3` quedaron sin clasificar con certeza (ni confirmados como duplicado literal ni como contenido propio) — se dejaron todos sin tocar por precaución. Ver detalle en la validación.
 - Impacto:
   - Una sola fuente de verdad para qué modelos cubre el estudio de estabilidad de semilla; menos riesgo de que ese registro y `analysis/config.py` se desincronicen a futuro.
   - Ningún modelo (legacy ni vigente) depende ya de una carpeta `scenarios/` de otro modelo para sus propios tests — todo vive en `tests/shared_scenarios/`.
@@ -146,7 +145,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - Riesgo / atención:
   - El resto del plan (renombres) es un cambio grande que toca cientos de archivos — se ejecuta por fases verificables, no de una sola vez.
   - `opp_v4`, con la extensión de picker/asignación (`P`/`x`) en sus propios escenarios, NO es un duplicado del trío — se movió a `shared_scenarios/` con sufijo `_v4` sin fusionar contenido con nada.
-  - Los 14 archivos de estrés de `opp_hc_3` sin clasificar (arriba) representan un dedupe potencial no capturado, no un riesgo de corrección — quedaron con su contenido original intacto.
+  - Estrés de `opp_hc_3`: de los 20 archivos, solo 04/05/06 eran copias literales de `opp_hc_2` (convertidos a factory, pasan). Los otros 17 son escenarios genuinamente distintos que reusan el número de test — ej. `opp_hc_3` 12-19 son las instancias intermedias agregadas después, mientras `opp_hc_2` usa esos números para grillas gigantes; esa es la inconsistencia de numeración entre familias que resuelve la fase 3.
 - Validación:
   - `python -m analysis.run_analysis` corrido antes y después: mismo conjunto de CSVs leídos, mismas filas/columnas en `analysis/output/report.md` (diferencias solo en el último dígito de punto flotante, sin relación con este cambio).
   - Suite normal de los 9 paquetes afectados por la centralización del trío corrida antes/después (vía `git stash`/`stash pop` para tener una base real): mismos conteos de test exactamente (`opp_v3` 48 con la misma 1 falla preexistente no relacionada — `test_bridge_earliness_order_size`, precisión numérica; el resto, 46-59 tests cada uno, todos OK sin cambios). Doble-verificado de forma independiente corriendo `opp_hc_2`, `opp_hc_4` y `opp_aco_3` manualmente después.
