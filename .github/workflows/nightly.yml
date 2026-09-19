@@ -1,0 +1,70 @@
+name: Nightly
+
+# The slow suites that do not belong in a pull request: every stress test of the Hill Climbing /
+# ACO models with a per-test cap, and the legacy exact models (opp_v1..v3, SCIP only).
+# Can also be started by hand (Actions -> Nightly -> Run workflow).
+#
+# A stress test that reaches the cap is reported as a timeout and does NOT fail the job (many
+# stress instances are unsolvable by design); failures and errors do. opp_v4/opp_v5 are not run
+# here: they need the `zimpl` binary, which is not installed on the runner.
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      stress_timeout_minutes:
+        description: "Per-test cap for stress tests, in minutes"
+        default: "1"
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: "1"
+  WRITE_RESULTS_CSV: "0"
+
+jobs:
+  stress-heuristics:
+    name: All stress tests, HC and ACO models
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      - run: >
+          python -m scripts.run_all --tier stress --profile fast --jobs 2 --retries 1
+          --stress-timeout-minutes ${{ inputs.stress_timeout_minutes || '1' }}
+          --stress-suite-timeout 14000 --json stress-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stress-report
+          path: stress-report.json
+
+  legacy-exact:
+    name: Functional tests, exact models opp_v1..v3
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      # opp_v3 has one known failure (test_bridge_earliness_order_size), recorded in the baseline.
+      - run: >
+          python -m scripts.run_all --models opp_v1,opp_v2,opp_v3 --tier functional --jobs 3
+          --timeout 7200 --json legacy-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: legacy-report
+          path: legacy-report.json

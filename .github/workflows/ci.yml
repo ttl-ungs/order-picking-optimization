@@ -1,0 +1,79 @@
+name: CI
+
+# Fast checks on every pull request (minutes). The slow work -- every stress test with a cap,
+# and the SCIP-only legacy models -- runs in nightly.yml. opp_v4/opp_v5 need the `zimpl`
+# binary, which is not installed here, so their suites are only *collected* (test counts)
+# and never executed in CI.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: "1"
+  WRITE_RESULTS_CSV: "0"
+
+jobs:
+  checks:
+    name: Layout, imports and test counts (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      # Every module imports, factories point at existing modules, test files are named
+      # test_case_<NN|slug>.py with continuous numbering, no removed paths are referenced.
+      - run: python -m scripts.check_repo
+      # Nothing lost or duplicated: every suite (all 14 functional and 12 stress, all models) still
+      # has the number of tests it had on main before the reorganization. Nothing is executed.
+      - run: python -m scripts.run_all --collect-only --profile full --tier all --jobs 4
+
+  functional:
+    name: Functional tests (Hill Climbing and ACO models)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      # opp_hc_1..4 and opp_aco_1..4. ACO tests without a Seed are stochastic, so a failing
+      # suite is retried once; a suite that only passes on retry is reported as flaky.
+      - run: python -m scripts.run_all --profile fast --tier functional --jobs 2 --retries 1
+
+  stress-smoke:
+    name: Stress tests (the fast subset, 60 s cap per test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      # The stress tests listed in scripts/stress_smoke.json (they finished quickly in the recorded
+      # runs) really are executed; the slow and unsolvable ones are covered by nightly.yml.
+      - run: python -m scripts.run_all --tier stress --smoke --jobs 2 --retries 1 --stress-timeout-minutes 1
