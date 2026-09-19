@@ -9,7 +9,7 @@ sys.path.insert(
 
 
 from models.opp_v3.opp_model_v3 import OPPModelV3
-from tests.support.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 
 from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.solve_model_dto import SolveModelDTO

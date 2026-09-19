@@ -8,7 +8,7 @@ sys.path.insert(
 
 
 from models.opp_v3.opp_model_v3 import OPPModelV3
-from tests.support.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.opp.model_dto import ModelDTO

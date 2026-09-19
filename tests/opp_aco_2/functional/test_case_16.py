@@ -11,9 +11,9 @@ from models.opp_aco_2.utils.output_handler import OutputHandler
 from dtos.opp.solve_model_dto import SolveModelDTO
 from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
 from models.opp_aco_2 import OPPAntColonyOptimization
-from tests.support.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 from tests.shared_scenarios.functional.scenario_12 import grid_5x3_two_pickers_four_batches
-from tests.support.route_assertions import assert_batch_routes_cover_locations
+from tests.infra.cases.route_assertions import assert_batch_routes_cover_locations
 
 
 class TestOPPACO2Grid(OPPTestCase):

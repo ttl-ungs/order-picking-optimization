@@ -9,7 +9,7 @@ sys.path.insert(
 )
 
 from models.opp_hc_4 import OPPHillClimbing
-from tests.support.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 from dtos.opp.model_dto import ModelDTO
 
 from tests.shared_scenarios.functional.scenario_01 import basic_two_orders_capacity_limit

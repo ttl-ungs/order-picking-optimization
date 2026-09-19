@@ -56,7 +56,7 @@ with `V_p` unset and `T_frio_max` left at its default (`+inf`), so they are
 pure equivalence checks AND, more importantly, give `analysis/`'s
 `quality_gap_table`/cross-model comparisons the same-named, same-shaped
 instances it needs to join `opp_hc_4` against `opp_hc_2`/`opp_hc_3`/`opp_v4`
-(same pattern `opp_v5` uses via `tests/support/migrated_case.py`). The
+(same pattern `opp_v5` uses via `tests/infra/factories/migrated_case.py`). The
 stress ports were chosen to match `opp_hc_3`'s curated 11-instance stress
 subset (see `analysis/README.md`), so `opp_hc_4` lines up with both
 `opp_hc_2` (full instance) and `opp_hc_3` (curated subset) at once.
