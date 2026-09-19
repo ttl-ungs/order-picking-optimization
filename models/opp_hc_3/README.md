@@ -120,17 +120,17 @@ always consistent with the objective value actually being optimized.
 ## Testing
 
 `tests/opp_hc_3/`:
-- `test_opp_hc_3_model_01.py`: parity test (single implicit picker, no
+- `test_case_01.py`: parity test (single implicit picker, no
   shared resources ⇒ zero congestion) — same fixture as opp_hc_2's model_01.
-- `test_opp_hc_3_model_02_congestion.py`: two pickers forced through a
+- `test_case_congestion.py`: two pickers forced through a
   shared bottleneck node — same scenario as opp_aco_3's congestion test (on
   this instance both models converge to the identical objective value,
   68.8, and congestion wait, 3.0 — a useful cross-check between the two
   metaheuristics).
-- `test_opp_hc_3_simulate_route_congestion.py`: deterministic unit tests
+- `test_case_simulate_route_congestion.py`: deterministic unit tests
   for the shared `simulate_route_congestion` helper.
 
 Only a minimal representative test set was written for this first version;
 opp_hc_2's full normal/stress test battery (~30+ files) can be ported the
-same way as `test_opp_hc_3_model_01.py` if broader regression coverage is
+same way as `test_case_01.py` if broader regression coverage is
 desired.

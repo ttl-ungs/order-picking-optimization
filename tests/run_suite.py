@@ -3,7 +3,7 @@
 Replaces the ~24 near-identical per-model execute_tests.py /
 execute_stress_tests.py scripts (one pair per model, differing only in the
 model_name/test_type strings passed to TestRunner) with one script driven by
-CLI arguments. Two legacy models (opp, opp_v2) predate TestRunner entirely
+CLI arguments. Two legacy models (opp_v1, opp_v2) predate TestRunner entirely
 (plain unittest.TextTestRunner, no CSV output, no timeout) and keep their own
 execute_tests.py/execute_stress_tests.py unchanged -- they don't fit this
 runner's contract.
@@ -13,7 +13,7 @@ Usage:
     python -m tests.run_suite opp_hc_3 stress
     python -m tests.run_suite opp_hc_3 stress --id 04
         (equivalent to the old `python tests/opp_hc_3/execute_stress_tests.py 04`
-        -- runs only test_opp_hc_3_model_04.py instead of the full suite)
+        -- runs only test_case_04.py instead of the full suite)
 """
 
 import argparse
@@ -37,7 +37,7 @@ def main(argv=None):
     parser.add_argument(
         "--id",
         metavar="NN",
-        help="Run only test_<model>_model_<id>.py instead of the full suite (stress tier only).",
+        help="Run only test_case_<id>.py instead of the full suite (stress tier only).",
     )
     args = parser.parse_args(argv)
 
@@ -51,7 +51,7 @@ def main(argv=None):
 
     test_pattern = "test_*.py"
     if args.id:
-        test_pattern = f"test_{args.model}_model_{args.id}.py"
+        test_pattern = f"test_case_{args.id}.py"
         print(f"Modo individual: Buscando el test {test_pattern}")
 
     timeout_minutes = STRESS_TEST_TIMEOUT_MINUTES if args.tier == "stress" else TEST_TIMEOUT_MINUTES

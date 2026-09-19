@@ -25,7 +25,7 @@ route_time(b)   = B_time * travel_distance + service_time          # scaled by s
   `models/opp_v5/utils/cold_chain_validation.py::batches_without_eligible_picker`
   (reused directly, not re-implemented).
 - Default `T_frio_max = +inf` and unset `V_p` make `opp_hc_4` behave
-  exactly like `opp_hc_2` (see `test_opp_hc_4_model_01_equivalence.py`).
+  exactly like `opp_hc_2` (see `test_case_equivalence.py`).
 
 **Deliberately no congestion** (unlike `opp_hc_3`): congestion and
 picker-speed/cold-chain are orthogonal additions over `opp_hc_2`, and this
@@ -39,16 +39,16 @@ tests/opp_hc_4/
 └── tests/
     ├── opp_hc_4_test_case.py           # Base assertions (picker assignment, workload, no-overlap, cold chain)
     ├── normal/
-    │   ├── test_opp_hc_4_model_01_equivalence.py    # dedicated: no-op equivalence with hc_2
-    │   ├── test_opp_hc_4_model_02_picker_speed.py   # dedicated: faster picker preferred
-    │   ├── test_opp_hc_4_model_03_cold_chain_infeasible.py  # dedicated: unreachable deadline -> infeasible
-    │   ├── test_opp_hc_4_model_04_cold_chain_eligibility.py # dedicated: forced onto the eligible picker
-    │   ├── test_opp_hc_4_model_05_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
+    │   ├── test_case_equivalence.py    # dedicated: no-op equivalence with hc_2
+    │   ├── test_case_picker_speed.py   # dedicated: faster picker preferred
+    │   ├── test_case_cold_chain_infeasible.py  # dedicated: unreachable deadline -> infeasible
+    │   ├── test_case_cold_chain_eligibility.py # dedicated: forced onto the eligible picker
+    │   ├── test_case_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
     │   └── test_opp_hc_4_model_{02,03,...,30}.py            # ported 1:1 from opp_hc_2 (V_p unset, T_frio_max=+inf)
     └── stress/
         ├── test_opp_hc_4_model_{01,02,03,04,05,06,09,10,11,12,34}.py  # ported 1:1 from opp_hc_2
-        ├── test_opp_hc_4_model_11_picker_speed.py   # dedicated: heterogeneous speeds at scale
-        └── test_opp_hc_4_model_12_cold_chain.py      # dedicated: binding T_frio_max at scale
+        ├── test_case_picker_speed.py   # dedicated: heterogeneous speeds at scale
+        └── test_case_cold_chain.py      # dedicated: binding T_frio_max at scale
 ```
 
 The ported files (both normal and stress) are literal copies of their
@@ -76,5 +76,5 @@ its own.
 python -m tests.run_suite opp_hc_4 normal
 WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_hc_4 normal          # to feed analysis/
 WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_hc_4 stress
-python -m unittest tests.opp_hc_4.functional.test_opp_hc_4_model_02_picker_speed
+python -m unittest tests.opp_hc_4.functional.test_case_picker_speed
 ```

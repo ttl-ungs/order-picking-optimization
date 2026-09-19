@@ -91,7 +91,7 @@ def make_v5_compat_case(v4_module, v4_case):
             (duration always came out as 0, so "start" == "end" == v_pb, and
             the sorted-by-v_pb comparison could never fail regardless of
             whether batches actually overlapped). Found 2026-09-09 auditing
-            opp_v5 -- this let the migrated test_opp_v5_model_10/11 report
+            opp_v5 -- this let the migrated test_case_13/11 report
             "ok" without ever checking the very thing they're named for.
 
             Recomputes duration the same way OPPTestCaseV5.assert_no_overlap

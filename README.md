@@ -155,7 +155,7 @@ python -m unittest discover -s tests/opp_v1 -p "test_opp_model_*.py"
 For example:
 
 ```bash
-python tests/opp_v1/test_opp_v1_model_8.py
+python tests/opp_v1/test_case_08.py
 ```
 
 ### What the tests cover

@@ -36,7 +36,7 @@ def family_case(base_module_path, overrides):
 
     Args:
         base_module_path (str): dotted path to the canonical test module,
-            e.g. 'tests.opp_hc_2.functional.test_opp_hc_2_model_02'.
+            e.g. 'tests.opp_hc_2.functional.test_case_02'.
         overrides (dict): {name_as_referenced_in_base_module: replacement}.
             Keys must match the exact identifier the base module's test
             methods use (e.g. 'OPPHillClimbing', 'SolveHCModelDTO',

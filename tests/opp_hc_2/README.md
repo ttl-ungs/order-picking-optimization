@@ -33,12 +33,12 @@ python -m tests.run_suite opp_hc_2 normal
 ### Run all stress tests (or a single numbered one):
 ```bash
 python -m tests.run_suite opp_hc_2 stress
-python -m tests.run_suite opp_hc_2 stress --id 05   # only test_opp_hc_2_model_05.py
+python -m tests.run_suite opp_hc_2 stress --id 05   # only test_case_05.py
 ```
 
 ### Run individual test:
 ```bash
-python -m unittest tests.opp_hc_2.functional.test_opp_hc_2_model_01
+python -m unittest tests.opp_hc_2.functional.test_case_01
 ```
 
 ## Test Expectations

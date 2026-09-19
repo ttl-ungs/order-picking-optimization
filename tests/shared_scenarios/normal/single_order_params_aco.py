@@ -5,7 +5,7 @@ from graphs.graphs_factory import GraphsFactory
 
 def single_order_params(due_date_value, start_time, cap_vehicle=100.0):
     """ACO counterpart of opp_hc_2's single_order_params (same graph, same
-    single order/batch), used by test_opp_aco_2_model_22_23's earliness/
+    single order/batch), used by test_case_18's earliness/
     tardiness parity check."""
     B = {"B1"}
     factory = GraphsFactory()

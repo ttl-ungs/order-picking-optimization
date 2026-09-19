@@ -188,19 +188,19 @@ fields on top of opp_aco_2's shape:
 ## Testing
 
 `tests/opp_aco_3/`:
-- `test_opp_aco_3_model_01.py`: parity test (single implicit picker, no
+- `test_case_01.py`: parity test (single implicit picker, no
   shared resources ⇒ zero congestion) — same fixture and expected output as
   opp_aco_2's model_01, verifying the new mechanisms are additive.
-- `test_opp_aco_3_model_02_congestion.py`: two pickers forced through a
+- `test_case_congestion.py`: two pickers forced through a
   shared bottleneck node — verifies a positive congestion wait is actually
   detected and folded into the objective.
-- `test_opp_aco_3_congestion_tracker.py`: deterministic unit tests for
+- `test_case_congestion_tracker.py`: deterministic unit tests for
   `CongestionTracker`, independent of ACO's randomness.
 
 Only a minimal representative test set was written for this first version;
 `opp_aco_2`'s full normal-test battery (~18 files, reused scenarios under
 `tests/opp_aco_1/scenarios/`) can be ported over the same way as
-`test_opp_aco_3_model_01.py` if broader regression coverage is desired.
+`test_case_01.py` if broader regression coverage is desired.
 
 ## Known simplifications / honest limitations (for the thesis write-up)
 

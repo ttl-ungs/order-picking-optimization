@@ -187,7 +187,7 @@ evidencia de que **la instancia sería infeasible por construcción** bajo la
 restricción "sin loops" (17), compartida por los 5 modelos.
 
 **Se corrió el chequeo directo contra SCIP
-(`tests/opp_v4/diagnostics/test_single_batch_infeasibility_check.py`,
+(`tests/opp_v4/diagnostics/test_case_single_batch_infeasibility_check.py`,
 con límite de 1800s) y la hipótesis quedó refutada**: SCIP resuelve ese
 mismo lote B1 (25 ubicaciones requeridas, mismo grid 10x10) en **1.8
 segundos**, `status=optimal`, encontrando una ruta simple de 56 nodos que
@@ -388,7 +388,7 @@ compartían un mtime de checkout con solo 16 segundos de diferencia (un
 artefacto del orden de escritura del checkout, no de cuándo se generó cada
 uno realmente), y `_pick_csv` eligió la que casualmente cayó más tarde en
 esa ventana -- que resultó ser la más VIEJA en términos reales (de antes de
-que existieran `test_opp_v4_model_12/13/14`). El reporte publicado decía
+que existieran `test_case_15/13/14`). El reporte publicado decía
 `opp_v4` normal 97.7% (43/44) sobre esa base.
 
 **Arreglado**: `load.py` ahora usa la fecha embebida en el *nombre* del
@@ -499,9 +499,9 @@ pickers, cadena de frío):
   vencimientos extremos, lote vacío, capacidades fraccionarias/cero, orden
   en múltiples lotes, orden que excede el vehículo, tiempos de servicio) se
   agregaron como `model_22-30`. También se agregó el test de estrés #08 que
-  faltaba (`tests/opp_v5/stress/test_opp_v5_model_08.py`, el único de
+  faltaba (`tests/opp_v5/stress/test_case_08.py`, el único de
   los 8 de `opp_v4` que `opp_v5` no tenía).
-- **Validación de funcionalidad** (`tests/opp_v5/functional/test_opp_v5_model_31.py`,
+- **Validación de funcionalidad** (`tests/opp_v5/functional/test_case_34.py`,
   nuevo): más allá de los 4 tests básicos que ya existían (`model_20`/`21`,
   "¿qué picker lo hace?"), se agregaron 3 tests que verifican la fórmula y
   los casos límite exactos:
@@ -600,7 +600,7 @@ una réplica en Python de `PB_elig`/`t_exec_pb` (mismo patrón que
 `OPPTestCaseV5.run_pipeline` para cortocircuitar a `status="infeasible"`
 **antes** de invocar ZIMPL para la Etapa 2, en vez de dejar que el error
 de compilación se propague como excepción sin manejar. El test que
-documentaba el bug (`test_opp_v5_model_31.py`) se actualizó para verificar
+documentaba el bug (`test_case_34.py`) se actualizó para verificar
 el comportamiento corregido (antes esperaba la excepción con
 `assertRaises`; ahora espera `status == "infeasible"` limpio).
 

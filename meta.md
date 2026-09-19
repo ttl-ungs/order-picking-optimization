@@ -89,15 +89,15 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - Autor: [equipo / desarrollador actual]
 - Alcance: tests / validación / infraestructura de comparación del modelo V4
 - Archivos principales:
-  - [tests/opp_v4/functional/test_opp_v4_model_19.py](tests/opp_v4/functional/test_opp_v4_model_19.py)
+  - [tests/opp_v4/functional/test_case_22.py](tests/opp_v4/functional/test_case_22.py)
   - [tests/opp_v4/route_assertions.py](tests/opp_v4/route_assertions.py)
-  - [tests/opp_v4/stress/test_opp_v4_model_12.py](tests/opp_v4/stress/test_opp_v4_model_12.py)
-  - [tests/opp_v4/stress/test_opp_v4_model_13.py](tests/opp_v4/stress/test_opp_v4_model_13.py)
-  - [tests/opp_v4/stress/test_opp_v4_model_14.py](tests/opp_v4/stress/test_opp_v4_model_14.py)
-  - [tests/opp_v4/stress/test_opp_v4_model_24.py](tests/opp_v4/stress/test_opp_v4_model_24.py)
-  - [tests/opp_v4/stress/test_opp_v4_model_25.py](tests/opp_v4/stress/test_opp_v4_model_25.py)
-  - [tests/opp_v4/stress/test_opp_v4_model_26.py](tests/opp_v4/stress/test_opp_v4_model_26.py)
-  - [tests/opp_v4/stress/test_opp_v4_model_27.py](tests/opp_v4/stress/test_opp_v4_model_27.py)
+  - [tests/opp_v4/stress/test_case_15.py](tests/opp_v4/stress/test_case_15.py)
+  - [tests/opp_v4/stress/test_case_16.py](tests/opp_v4/stress/test_case_16.py)
+  - [tests/opp_v4/stress/test_case_17.py](tests/opp_v4/stress/test_case_17.py)
+  - [tests/opp_v4/stress/test_case_25.py](tests/opp_v4/stress/test_case_25.py)
+  - [tests/opp_v4/stress/test_case_26.py](tests/opp_v4/stress/test_case_26.py)
+  - [tests/opp_v4/stress/test_case_27.py](tests/opp_v4/stress/test_case_27.py)
+  - [tests/opp_v4/stress/test_case_28.py](tests/opp_v4/stress/test_case_28.py)
   - [tests/opp_v4/scenarios/stress/](tests/opp_v4/scenarios/stress/)
 - Qué se hizo:
   - Se actualizó el test de ruta larga de V4 para validar un recorrido único que cubra los pedidos requeridos, en lugar de fijar una ruta concreta.
@@ -111,7 +111,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
   - Algunos tests stress y escenarios aparecen como nuevos y pueden requerir inspección adicional para confirmar que están alineados con la convención del proyecto y con la lógica de escenarios de referencia.
   - La validación del comportamiento exacto sigue siendo sensible a la interpretación de penalizaciones por earliness/tardiness y a la estructura del grafo.
 - Validación:
-  - Evidencia del estado actual: `git status --short` muestra cambios en [meta.md](meta.md) y [tests/opp_v4/functional/test_opp_v4_model_19.py](tests/opp_v4/functional/test_opp_v4_model_19.py), además de nuevos archivos bajo [tests/opp_v4/stress/](tests/opp_v4/stress/) y [tests/opp_v4/scenarios/stress/](tests/opp_v4/scenarios/stress/).
+  - Evidencia del estado actual: `git status --short` muestra cambios en [meta.md](meta.md) y [tests/opp_v4/functional/test_case_22.py](tests/opp_v4/functional/test_case_22.py), además de nuevos archivos bajo [tests/opp_v4/stress/](tests/opp_v4/stress/) y [tests/opp_v4/scenarios/stress/](tests/opp_v4/scenarios/stress/).
   - No se afirmaron resultados de tests completos ni ejecución exitosa de la suite, porque esa verificación no se ejecutó en esta revisión.
 
 ---
@@ -134,7 +134,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
   - Se creó `tests/run_suite.py`, un único script parametrizado (`python -m tests.run_suite <modelo> <normal|stress> [--id NN]`) que reemplaza los ~24 `execute_tests.py`/`execute_stress_tests.py` casi idénticos, uno por modelo. Se actualizaron todas las referencias en docs (`analysis/README.md`, `analysis/run_analysis.py`, `analysis/load.py`, READMEs de `opp_hc`, `opp_hc_2`, `opp_hc_4`, `opp_aco_4`). Los legacy `opp`/`opp_v2` quedan con sus propios scripts (no usan `TestRunner`, estructura distinta).
   - Se creó `tests/family_case.py::family_case()` (mismo mecanismo que `tests/opp_v5/v4_compat.py::migrated_case()`, generalizado): parchea a nivel de módulo, solo durante `setUp`/`tearDown` de cada test, los nombres de clase (modelo/DTO/output_handler) que un archivo de test de `opp_hc_2`/`opp_aco_2` resuelve en tiempo de llamada — permite que `opp_hc_3`/`opp_hc_4` y `opp_aco_3`/`opp_aco_4` reutilicen el mismo archivo base sin tocar una sola aserción. El parcheo es *scoped* a la duración de cada test (no permanente) para que dos familias que comparten el mismo módulo base no se pisen si corren juntas en el mismo proceso — verificado explícitamente corriendo las 4 familias juntas (215 tests, 0 errores).
   - Con esa factory, se convirtieron **140 archivos** de duplicado literal a una sola línea de factory, en las 4 familias (`hc_3`: 24 normal; `hc_4`: 23 normal + 9 estrés; `aco_3`: 24 normal + 17 estrés; `aco_4`: 23 normal + 20 estrés). Se dejaron sin tocar los archivos con contenido propio de cada familia (congestión, cadena de frío, tests con aserciones reescritas) y los que no tienen equivalente en la base.
-  - En el camino se encontró y corrigió un bug real: `test_opp_hc_4_model_22_23.py`/`test_opp_aco_4_model_22_23.py` se habían clasificado mal como duplicados literales (su diff con la base solo mostraba líneas de import, pero importan un helper de escenario con DTO distinto que la factory no puede alcanzar) — se detectó porque las suites pasaron de 0 a 2 errores tras convertirlos, se revirtieron ambos archivos a su contenido original y quedaron excluidos de la conversión.
+  - En el camino se encontró y corrigió un bug real: `test_case_17.py`/`test_case_17.py` se habían clasificado mal como duplicados literales (su diff con la base solo mostraba líneas de import, pero importan un helper de escenario con DTO distinto que la factory no puede alcanzar) — se detectó porque las suites pasaron de 0 a 2 errores tras convertirlos, se revirtieron ambos archivos a su contenido original y quedaron excluidos de la conversión.
 - Pendiente (plan completo, todavía no ejecutado):
   - Renombrar carpetas/archivos de test (`normal`→`functional`, sin nombre de modelo en el archivo, renumeración continua).
 - Impacto:
