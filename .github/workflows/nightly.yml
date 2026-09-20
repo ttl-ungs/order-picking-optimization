@@ -5,8 +5,10 @@ name: Nightly
 # Can also be started by hand (Actions -> Nightly -> Run workflow).
 #
 # A stress test that reaches the cap is reported as a timeout and does NOT fail the job (many
-# stress instances are unsolvable by design); failures and errors do. opp_v4/opp_v5 are not run
-# here: they need the `zimpl` binary, which is not installed on the runner.
+# stress instances are unsolvable by design); failures and errors do. opp_v4/opp_v5's functional
+# suites run here too (exact-zimpl job, zimpl installed via conda-forge) -- their stress suites
+# are still skipped: analysis/README.md records most of their stress tests hitting the 25 min
+# per-test cap, which would push a single suite past this job's own budget.
 
 on:
   schedule:
@@ -68,3 +70,43 @@ jobs:
         with:
           name: legacy-report
           path: legacy-report.json
+
+  exact-zimpl:
+    name: Functional tests, exact models opp_v4/opp_v5 (needs zimpl)
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      # zimpl has no Ubuntu package (the old Debian one is gone); conda-forge maintains it as
+      # part of the scipoptsuite feedstock. Installed into its own conda env and added to PATH
+      # -- not activated -- so `python`/pip still resolve to setup-python's interpreter above
+      # (the one with pyscipopt etc. from requirements.txt); solve_zpl only shells out to the
+      # `zimpl` binary (tests/infra/zimpl/zpl_utils.py), it doesn't need a matching Python env.
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          channels: conda-forge
+          auto-update-conda: true
+          auto-activate-base: false
+      - name: Install zimpl (conda-forge)
+        shell: bash -l {0}
+        run: conda create -y -n zimpl-env zimpl
+      - name: Put zimpl on PATH
+        run: echo "$CONDA/envs/zimpl-env/bin" >> "$GITHUB_PATH"
+      - run: zimpl --version
+      # opp_v4 (46 tests): 45/46 converge, 1 hits the 25 min cap. opp_v5 (53 tests): 52/53
+      # converge, 1 hits the cap (same pathological case as opp_v4, see analysis/README.md).
+      # --timeout is a per-suite ceiling (all its tests summed), not per test.
+      - run: >
+          python -m scripts.run_all --models opp_v4,opp_v5 --tier functional --jobs 2
+          --timeout 3600 --json exact-zimpl-report.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: exact-zimpl-report
+          path: exact-zimpl-report.json
