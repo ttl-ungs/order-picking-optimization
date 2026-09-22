@@ -2,7 +2,7 @@ name: CI
 
 # Fast checks on every pull request (minutes). The slow work -- every stress test with a cap,
 # the SCIP-only legacy models, and the zimpl-dependent exact models -- runs in nightly.yml.
-# opp_v4/opp_v5 need the `zimpl` binary, which is not installed here, so their suites are only
+# opp_v4/opp_v5_2_split need the `zimpl` binary, which is not installed here, so their suites are only
 # *collected* (test counts) here; nightly.yml's exact-zimpl job runs them for real.
 
 on:

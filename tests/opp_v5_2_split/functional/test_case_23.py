@@ -4,10 +4,10 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from tests.shared_scenarios.functional.two_stage_scenarios_v5 import two_batches_two_routes
-from tests.opp_v5.opp_test_case_v5 import OPPTestCaseV5
+from tests.opp_v5_2_split.opp_test_case_v5_2_split import OPPTestCaseSplit
 
 
-class TestOPPV5RoutingAndScheduling(OPPTestCaseV5):
+class TestOPPSplitRoutingAndScheduling(OPPTestCaseSplit):
     """Regression of the normal v4 route tests through the v5 two-stage flow."""
 
     def test_routes_are_exported_and_used_by_scheduling(self):

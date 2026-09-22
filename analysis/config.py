@@ -9,7 +9,7 @@ opp_v3 / opp_hc_1 / opp_aco_1) to the current model lineup:
 - opp_aco_2 : ACO, parallel pickers, no congestion
 - opp_hc_3  : Hill Climbing, congestion-aware
 - opp_aco_3 : ACO, congestion-aware, multi-pheromone
-- opp_v5    : exact model, 2-stage decomposition (routing then scheduling),
+- opp_v5_2_split    : exact model, 2-stage decomposition (routing then scheduling),
               no congestion -- migrated normal/stress tests neutralize its
               two extra features (heterogeneous picker speed, cold-chain
               limit) via tests/infra/factories/migrated_case.py, so those rows
@@ -18,14 +18,14 @@ opp_v3 / opp_hc_1 / opp_aco_1) to the current model lineup:
               (still opp_v4) -- it's compared AGAINST opp_v4, not used to
               replace it, until the 2-stage decomposition's optimality is
               independently confirmed.
-- opp_hc_4  : Hill Climbing, parallel pickers, opp_v5's two extra features
+- opp_hc_4  : Hill Climbing, parallel pickers, opp_v5_2_split's two extra features
               (heterogeneous picker speed, cold-chain deadline) plugged
               into a Hill Climbing search instead of a 2-stage exact
               decomposition. No congestion (orthogonal to this model's
               addition, see models/opp_hc_4/opp_hc_4.py header). Most of
               its normal/stress tests are ports of opp_hc_2's (V_p unset /
               T_frio_max default +inf -> pure equivalence, same pattern as
-              opp_v5's migrated_case.py), plus a handful of its own that
+              opp_v5_2_split's migrated_case.py), plus a handful of its own that
               actually exercise heterogeneous speeds and a binding
               cold-chain deadline (see tests/opp_hc_4/README.md). Kept OUT
               of CONGESTION_AWARE_MODELS.
@@ -61,7 +61,7 @@ MODEL_DIRS = {
     "opp_aco_2": "opp_aco_2",
     "opp_hc_3": "opp_hc_3",
     "opp_aco_3": "opp_aco_3",
-    "opp_v5": "opp_v5",
+    "opp_v5_2_split": "opp_v5_2_split",
     "opp_hc_4": "opp_hc_4",
     "opp_aco_4": "opp_aco_4",
 }
@@ -86,7 +86,7 @@ CORRELATION_INDEPENDENTS = ["N", "V", "B", "C_v", "W_full", "W_ea_ta"]
 # Models covered by the seed-stability study (analysis/run_stability_study.py)
 # -- the 6 heuristics only, since it measures how much a model's OWN
 # randomness moves obj_val for the exact same instance, which is meaningless
-# for a deterministic exact model (opp_v4/opp_v5 always return the same
+# for a deterministic exact model (opp_v4/opp_v5_2_split always return the same
 # answer for the same instance).
 STABILITY_MODELS = ["opp_hc_2", "opp_hc_3", "opp_hc_4", "opp_aco_2", "opp_aco_3", "opp_aco_4"]
 

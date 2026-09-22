@@ -4,10 +4,10 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from tests.shared_scenarios.functional.two_stage_scenarios_v5 import one_cold_batch
-from tests.opp_v5.opp_test_case_v5 import OPPTestCaseV5
+from tests.opp_v5_2_split.opp_test_case_v5_2_split import OPPTestCaseSplit
 
 
-class TestOPPV5ColdChain(OPPTestCaseV5):
+class TestOPPSplitColdChain(OPPTestCaseSplit):
     def test_cold_chain_filters_out_the_slow_picker(self):
         scenario = one_cold_batch(cold_limit=10.0)
         _, route_times, status, values = self.run_pipeline(scenario)

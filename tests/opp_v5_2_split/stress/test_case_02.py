@@ -1,7 +1,7 @@
 from tests.shared_scenarios.stress.stress_scenarios_v5 import migrated_stress_scenario
-from tests.opp_v5.stress.stress_test_case import OPPV5StressTestCase
+from tests.opp_v5_2_split.stress.stress_test_case import OPPSplitStressTestCase
 
 
-class TestOPPV5Stress02(OPPV5StressTestCase):
+class TestOPPSplitStress02(OPPSplitStressTestCase):
     def test_25_orders_per_batch_30_batches_100x100(self):
         self.assert_stress_pipeline(migrated_stress_scenario(30, 30, 750, 100, 100))

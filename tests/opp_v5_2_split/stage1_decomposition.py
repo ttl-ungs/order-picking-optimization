@@ -1,5 +1,5 @@
 """
-Per-batch decomposition of opp_v5's Stage 1 (stage1_routing.zpl).
+Per-batch decomposition of opp_v5_2_split's Stage 1 (stage1_routing.zpl).
 
 stage1_routing.zpl's own header says batches never interact (every
 constraint is `forall <b> in B: ...`, and the objective is a plain sum of
@@ -35,7 +35,7 @@ sums, so narrowing B alone already captures the decomposition's benefit.
 import os
 
 from tests.infra.zimpl.dat_files_builder import write_set_dat, write_indexed_dat
-from tests.opp_v5.config import STAGE1_ZPL_PATH
+from tests.opp_v5_2_split.config import STAGE1_ZPL_PATH
 from tests.infra.zimpl.zpl_utils import solve_zpl
 
 

@@ -60,7 +60,7 @@ class RouteEvaluator:
 
     def picker_speed(self, picker: str) -> float:
         """Speed of `picker`; defaults to 1.0 when unset (no-op, matches
-        opp_v5's migrated-baseline default)."""
+        opp_v5_2_split's migrated-baseline default)."""
         return self.V_p.get(picker, 1.0)
 
     def evaluate(self, solution) -> float:

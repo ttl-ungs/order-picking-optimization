@@ -41,7 +41,7 @@ raiz-del-proyecto/
 │   ├── base/                    # Clases base abstractas compartidas
 │   │   ├── model.py             # Clase abstracta Model (base del patrón Observer)
 │   │   └── opp_location_graph.py# Grafo base de locaciones
-│   ├── opp_v1 ... opp_v5/       # Modelos exactos (v1-v3 PySCIPOpt, v4-v5 ZIMPL+SCIP)
+│   ├── opp_v1 ... opp_v4, opp_v5_1_mono, opp_v5_2_split/  # Modelos exactos (v1-v3 PySCIPOpt, v4 y v5.x ZIMPL+SCIP)
 │   ├── opp_hc_1 ... opp_hc_4/   # Heurísticas Hill Climbing
 │   └── opp_aco_1 ... opp_aco_4/ # Metaheurísticas ACO
 ├── observer/                    # Infraestructura del patrón de diseño Observer
@@ -52,7 +52,7 @@ raiz-del-proyecto/
 │   │   ├── execution/           # runner.py, config.py: ejecuta cada test aislado, con timeout, y escribe el CSV en results/
 │   │   ├── cases/               # opp_test_case.py (TestCase base, OPPTestCase), route_assertions.py
 │   │   ├── factories/           # family_case.py, migrated_case.py (reutilizan tests de otro modelo), graphs_factory.py
-│   │   └── zimpl/               # zpl_utils.py, dat_files_builder.py: soporte de los tests ZIMPL (opp_v2_zpl, opp_v4, opp_v5)
+│   │   └── zimpl/               # zpl_utils.py, dat_files_builder.py: soporte de los tests ZIMPL (opp_v2_zpl, opp_v4, opp_v5_1_mono, opp_v5_2_split)
 │   ├── shared_scenarios/        # Todos los escenarios (grafos y parámetros); los propios de un modelo llevan sufijo _vN
 │   │   ├── common/  functional/  stress/
 │   └── opp_hc_2/                # Un directorio por modelo

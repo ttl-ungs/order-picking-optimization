@@ -174,7 +174,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
 
     def _route_time(self, route: list) -> float:
         """Travel time (B_time * distance) + service time -- the part of
-        t_exec that scales with picker speed (opp_v5's R_b_time)."""
+        t_exec that scales with picker speed (opp_v5_2_split's R_b_time)."""
         if not route:
             return 0.0
 

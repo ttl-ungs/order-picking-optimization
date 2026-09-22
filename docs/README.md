@@ -19,7 +19,7 @@ Other documentation lives next to the code it describes:
 | `opp_aco_3` | `models/opp_aco_3/README.md`, `PSEUDOCODE.md` | |
 | `opp_aco_4` | | `tests/opp_aco_4/README.md` |
 | `opp_v1`..`opp_v3`, `opp_aco_1` | | `docs/tests/<model>/` |
-| `opp_v4`, `opp_v5` | (ZIMPL models: see `docs/thesis/`) | |
+| `opp_v4`, `opp_v5_1_mono`, `opp_v5_2_split` | (ZIMPL models: see `docs/thesis/`) | |
 
 CI and repo tooling: `../scripts/README.md`, `../.github/workflows/`.
 

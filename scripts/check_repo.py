@@ -44,6 +44,7 @@ STALE = [
     (r"models\.utils\.dat_files_builder\b", "moved to tests.infra.zimpl.dat_files_builder"),
     (r"\bgraphs\.graphs_factory\b", "moved to tests.infra.factories.graphs_factory"),
     (r"tests\.opp_v5\.v4_compat\b", "renamed to tests.infra.factories.migrated_case"),
+    (r"\b(models|tests)\.opp_v5\b|\b(models|tests|results)/opp_v5\b", "opp_v5 was renamed to opp_v5_2_split"),
     (r"tests\.opp_v[24]\.route_assertions\b", "moved to tests.infra.cases.route_assertions"),
     (r"tests\.opp_\w+\.tests\.(normal|stress|diagnostics)\b", "tests/<model>/tests/ was flattened"),
     (r"tests\.support\b|tests/support\b", "tests/support/ was regrouped into tests/infra/{execution,cases,factories,zimpl}"),

@@ -1,7 +1,7 @@
 # OPP Hill Climbing v4 Tests (opp_hc_4)
 
 Test suite for the Hill Climbing heuristic solver `models.opp_hc_4` - the
-picker-speed / cold-chain equivalent of `opp_v5` (two-stage ZIMPL model),
+picker-speed / cold-chain equivalent of `opp_v5_2_split` (two-stage ZIMPL model),
 built on top of `opp_hc_2` (multi-picker, no congestion).
 
 ## What's different vs. opp_hc_2
@@ -22,14 +22,14 @@ route_time(b)   = B_time * travel_distance + service_time          # scaled by s
   can be assigned to (X_pb's domain), mirroring
   `stage2_scheduling.zpl`'s `PB_elig`. A batch left with zero eligible
   pickers makes the instance `"infeasible"`, short-circuited up front via
-  `models/opp_v5/utils/cold_chain_validation.py::batches_without_eligible_picker`
+  `models/opp_v5_2_split/utils/cold_chain_validation.py::batches_without_eligible_picker`
   (reused directly, not re-implemented).
 - Default `T_frio_max = +inf` and unset `V_p` make `opp_hc_4` behave
   exactly like `opp_hc_2` (see `test_case_equivalence.py`).
 
 **Deliberately no congestion** (unlike `opp_hc_3`): congestion and
 picker-speed/cold-chain are orthogonal additions over `opp_hc_2`, and this
-model only combines the latter, matching `opp_v5` itself (also
+model only combines the latter, matching `opp_v5_2_split` itself (also
 congestion-free, see `analysis/config.py`).
 
 ## Structure
@@ -56,7 +56,7 @@ with `V_p` unset and `T_frio_max` left at its default (`+inf`), so they are
 pure equivalence checks AND, more importantly, give `analysis/`'s
 `quality_gap_table`/cross-model comparisons the same-named, same-shaped
 instances it needs to join `opp_hc_4` against `opp_hc_2`/`opp_hc_3`/`opp_v4`
-(same pattern `opp_v5` uses via `tests/infra/factories/migrated_case.py`). The
+(same pattern `opp_v5_2_split` uses via `tests/infra/factories/migrated_case.py`). The
 stress ports were chosen to match `opp_hc_3`'s curated 11-instance stress
 subset (see `analysis/README.md`), so `opp_hc_4` lines up with both
 `opp_hc_2` (full instance) and `opp_hc_3` (curated subset) at once.

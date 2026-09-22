@@ -15,7 +15,7 @@
    "opp_v2_zpl": 1,
    "opp_v3": 48,
    "opp_v4": 46,
-   "opp_v5": 53
+   "opp_v5_2_split": 53
   },
   "stress": {
    "opp_aco_1": 34,
@@ -29,7 +29,7 @@
    "opp_v2": 7,
    "opp_v3": 34,
    "opp_v4": 8,
-   "opp_v5": 8
+   "opp_v5_2_split": 8
   }
  },
  "known_failures": {

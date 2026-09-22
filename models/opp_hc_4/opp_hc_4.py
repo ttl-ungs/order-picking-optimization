@@ -10,7 +10,7 @@ Same problem as opp_hc_2 (multi-picker, all constraints validated):
 - Output: compatible with build_output
 
 Added on top of opp_hc_2 - picker speed and cold chain, the Hill Climbing
-counterpart of opp_v5's stage2_scheduling.zpl additions over opp_v4:
+counterpart of opp_v5_2_split's stage2_scheduling.zpl additions over opp_v4:
 
 - Picker speed (V_p): a batch's execution time is no longer a single
   t_exec_b fixed for every picker. Instead t_exec_pb[p, b] = fixed_time(b)
@@ -53,7 +53,7 @@ top would require re-pricing t_exec_pb's route/service time against other
 pickers' reservations (models/utils/congestion.py::CongestionTracker) every
 time a batch's route OR its assigned picker's speed changes - left out here
 to keep the search space (and what's being measured) focused on the
-speed/cold-chain trade-off, matching opp_v5 itself, which also has no
+speed/cold-chain trade-off, matching opp_v5_2_split itself, which also has no
 congestion (see analysis/config.py).
 """
 
@@ -72,7 +72,7 @@ from dtos.opp.model_dto import ModelDTO
 from models.opp_hc_2.utils.route_solution import RouteSolution
 from models.opp_hc_4.utils.route_evaluator import RouteEvaluator
 from models.opp_hc_4.utils.constraints_validator import ConstraintsValidator
-from models.opp_v5.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
+from models.opp_v5_2_split.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
 from models.utils.sla import sla_on_time_pct
 
 
@@ -88,7 +88,7 @@ class OPPHillClimbing(Model):
     # double digits) without using an arbitrarily huge Big-M-style
     # constant -- this is a plain Python cost comparison, not a MIP
     # constraint, so there's no SCIP-presolve-numerics failure mode to
-    # worry about the way there was with opp_v5's M_seq.
+    # worry about the way there was with opp_v5_2_split's M_seq.
     _COLD_CHAIN_PENALTY_WEIGHT = 1000.0
 
     def __init__(self, dto: ModelDTO):
@@ -356,7 +356,7 @@ class OPPHillClimbing(Model):
 
     def _route_time(self, route: List, params: SolveHC4ModelDTO, distance: Optional[float] = None) -> float:
         """
-        Travel time (B_time * distance) + service time -- opp_v5's
+        Travel time (B_time * distance) + service time -- opp_v5_2_split's
         R_b_time, the part scaled by V_p. Pass `distance` when the caller
         already computed it (e.g. a 2-opt candidate's distance) to avoid
         recomputing it a second time via _calculate_route_distance

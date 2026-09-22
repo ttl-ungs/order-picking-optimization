@@ -1,11 +1,11 @@
 """
-Pre-solve input validation for opp_v5's Etapa 2 (stage2_scheduling.zpl).
+Pre-solve input validation for opp_v5_2_split's Etapa 2 (stage2_scheduling.zpl).
 Bug: stage2_scheduling.zpl restricts X_pb's domain to PB_elig = {(p,b) : t_exec_pb[p,b] <= T_frio_max},
 so that`assign_exactly_one_picker` becomes a sum over an EMPTY set for that batch, and ZIMPL rejects that at
 COMPILE time.
 This mirrors models/utils/input_validation.py's role for opp_v4.
 
-Shared by opp_v5's own pre-solve pipeline, opp_hc_4 and opp_aco_4 (all
+Shared by opp_v5_2_split's own pre-solve pipeline, opp_hc_4 and opp_aco_4 (all
 three compute t_exec_pb = fixed_time(b) + route_time(b) / V_p[p]).
 """
 

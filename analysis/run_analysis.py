@@ -72,12 +72,12 @@ def main():
     convergence = convergence_table(df)
     profiling = profiling_table(df, exact_model=EXACT_MODEL)
     quality_gap = quality_gap_table(df, exact_model=EXACT_MODEL)
-    # opp_hc_4/opp_aco_4 vs. opp_v5: the only heuristics that share opp_v5's
+    # opp_hc_4/opp_aco_4 vs. opp_v5_2_split: the only heuristics that share opp_v5_2_split's
     # extra features (heterogeneous picker speed, cold-chain deadline), so
     # they're the only fair comparison against it -- see
     # metrics.quality_gap_table's heuristic_models docstring.
     quality_gap_v5 = quality_gap_table(
-        df, exact_model="opp_v5", heuristic_models=["opp_hc_4", "opp_aco_4"],
+        df, exact_model="opp_v5_2_split", heuristic_models=["opp_hc_4", "opp_aco_4"],
     )
     congestion = congestion_table(df)
     congestion_overhead = congestion_reduction_table(df)
@@ -93,7 +93,7 @@ def main():
     charts.append(plot_profiling_stacked(profiling))
     charts.append(plot_quality_gap(quality_gap))
     charts.append(plot_quality_gap(
-        quality_gap_v5, exact_model="opp_v5", file_name="quality_gap_v5.png",
+        quality_gap_v5, exact_model="opp_v5_2_split", file_name="quality_gap_v5.png",
     ))
     charts.append(plot_congestion_wait(congestion))
     # opp_v4 stress isn't included here: it only ever has 1 OK point (see
@@ -131,7 +131,7 @@ def main():
         f.write("\n## 4. Gap de optimalidad vs. opp_v4\n\n")
         f.write(_md_table(quality_gap))
 
-        f.write("\n## 4.1 Gap de optimalidad vs. opp_v5 (opp_hc_4 / opp_aco_4)\n\n")
+        f.write("\n## 4.1 Gap de optimalidad vs. opp_v5_2_split (opp_hc_4 / opp_aco_4)\n\n")
         f.write(_md_table(quality_gap_v5))
 
         f.write("\n## 5. Congestión (opp_hc_3 / opp_aco_3 vs. sus baselines v2)\n\n")

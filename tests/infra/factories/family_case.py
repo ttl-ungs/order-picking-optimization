@@ -12,7 +12,7 @@ one function (solve_zpl); this one generalizes it to N names, since the
 Python-model families reference their model/DTO/output-handler classes
 directly rather than through one solve() entry point.
 
-Unlike migrated_case.py (used only by opp_v5's own tests, one base module ever
+Unlike migrated_case.py (used only by opp_v5_2_split's own tests, one base module ever
 maps to one target), the SAME opp_hc_2/opp_aco_2 base module is reused by
 TWO targets each (hc_3 AND hc_4; aco_3 AND aco_4). Python caches imported
 modules by name, so if `unittest discover` ever loads hc_3's and hc_4's

@@ -82,7 +82,7 @@ def plot_quality_gap(
     contradict the mean/median split already called out in the report text.
 
     exact_model / file_name let this be reused for a different ground-truth
-    model (e.g. opp_v5 for the opp_hc_4/opp_aco_4 comparison) without
+    model (e.g. opp_v5_2_split for the opp_hc_4/opp_aco_4 comparison) without
     clobbering the opp_v4 chart.
     """
     if quality_gap_df.empty:

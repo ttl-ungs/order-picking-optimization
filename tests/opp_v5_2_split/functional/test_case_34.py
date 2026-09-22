@@ -8,12 +8,12 @@ from tests.shared_scenarios.functional.two_stage_scenarios_v5 import (
     cold_chain_infeasible_for_every_picker,
     heterogeneous_speed_precise,
 )
-from tests.opp_v5.opp_test_case_v5 import OPPTestCaseV5
+from tests.opp_v5_2_split.opp_test_case_v5_2_split import OPPTestCaseSplit
 
 
-class TestOPPV5SpeedFormula(OPPTestCaseV5):
+class TestOPPSplitSpeedFormula(OPPTestCaseSplit):
     """
-    Deeper validation of opp_v5's own capability (heterogeneous picker
+    Deeper validation of opp_v5_2_split's own capability (heterogeneous picker
     speed), beyond model_20's "which picker gets which batch" check:
     asserts the exact t_exec_pb = tiempo_fijo + R_b_time / V_p formula
     numerically, confirming ONLY the route-time component is divided by
@@ -47,9 +47,9 @@ class TestOPPV5SpeedFormula(OPPTestCaseV5):
         self.assert_no_overlap(values, scenario, route_times)
 
 
-class TestOPPV5ColdChainEdgeCases(OPPTestCaseV5):
+class TestOPPSplitColdChainEdgeCases(OPPTestCaseSplit):
     """
-    Deeper validation of opp_v5's other own capability (the cold-chain
+    Deeper validation of opp_v5_2_split's other own capability (the cold-chain
     limit), beyond model_21's basic filtering check: the exact `<=`
     boundary, and the genuine infeasible case solved all the way through
     SCIP (not just replicated in Python via eligible_pairs()).
@@ -77,7 +77,7 @@ class TestOPPV5ColdChainEdgeCases(OPPTestCaseV5):
         # the resulting empty-sum constraint at COMPILE time,  raising a bare
         # RuntimeError. This is a real scenario a batching stage could legitimately
         #  produce, not a test artifact.
-        # Fixed in OPPTestCaseV5.run_pipeline via models/opp_v5/utils/cold_chain_validation.py.
+        # Fixed in OPPTestCaseSplit.run_pipeline via models/opp_v5_2_split/utils/cold_chain_validation.py.
         # --> A Python-side pre-check that short-circuits to status="infeasible"
         # before invoking ZIMPL, mirroring opp_v4's input_validation.py pattern.
         scenario = cold_chain_infeasible_for_every_picker()

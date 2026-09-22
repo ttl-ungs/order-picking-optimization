@@ -1,12 +1,12 @@
-"""Adapter that re-runs every normal OPP v4 assertion against OPP v5."""
+"""Adapter that re-runs every normal OPP v4 assertion against OPP v5.2 (two-stage split)."""
 
 import os
 import inspect
 from importlib import import_module
 
 from tests.infra.zimpl.dat_files_builder import write_indexed_dat, write_scalar_dat
-from tests.opp_v5.config import DAT_DIR, STAGE1_ZPL_PATH, STAGE2_ZPL_PATH
-from tests.opp_v5.stage1_decomposition import solve_stage1_decomposed
+from tests.opp_v5_2_split.config import DAT_DIR, STAGE1_ZPL_PATH, STAGE2_ZPL_PATH
+from tests.opp_v5_2_split.stage1_decomposition import solve_stage1_decomposed
 from tests.infra.zimpl.zpl_utils import solve_zpl
 
 
@@ -18,20 +18,20 @@ def _route_times(values, batches):
     }
 
 
-# Populated by the most recent solve_v5_from_v4_data() call, read right back
-# by V5CompatibilityCase.assert_no_time_overlap() in the same test method
+# Populated by the most recent solve_split_from_v4_data() call, read right back
+# by SplitCompatibilityCase.assert_no_time_overlap() in the same test method
 # (each unittest test runs in its own subprocess -- see tests/test_runner.py
 # -- so this module-level cache never crosses between tests; same pattern as
 # models/utils/solve_registry.py's "last solve" cache).
 _last_call_context = {"route_times": {}, "params": {}}
 
 
-def solve_v5_from_v4_data(_zpl_path, dat_dir=None, params=None):
-    """Solve the v5 pipeline after a v4 fixture has written its .dat files.
+def solve_split_from_v4_data(_zpl_path, dat_dir=None, params=None):
+    """Solve the opp_v5_2_split pipeline after a v4 fixture has written its .dat files.
 
     The v4 normal tests retain their original scenario construction and
     assertions.  This adapter replaces only their single-model solve with the
-    v5 routing solve followed by the v5 scheduling solve.
+    opp_v5_2_split routing solve followed by the opp_v5_2_split scheduling solve.
     """
     dat_dir = dat_dir or DAT_DIR
     # Decomposed into one solve per batch instead of one joint solve for
@@ -57,7 +57,7 @@ def solve_v5_from_v4_data(_zpl_path, dat_dir=None, params=None):
     write_scalar_dat(os.path.join(dat_dir, "frio.dat"), 1_000_000_000.0)
 
     # Stash what assert_no_time_overlap needs to recompute each task's
-    # duration itself (see that method's docstring for why: v5 has no u_pb).
+    # duration itself (see that method's docstring for why: opp_v5_2_split has no u_pb).
     _last_call_context["route_times"] = route_times
     _last_call_context["params"] = params or {}
 
@@ -65,14 +65,14 @@ def solve_v5_from_v4_data(_zpl_path, dat_dir=None, params=None):
     return stage2_status, {**stage1_values, **stage2_values}
 
 
-def make_v5_compat_case(v4_module, v4_case):
-    """Create an isolated subclass whose inherited test methods exercise v5."""
+def make_split_compat_case(v4_module, v4_case):
+    """Create an isolated subclass whose inherited test methods exercise opp_v5_2_split."""
 
-    class V5CompatibilityCase(v4_case):
+    class SplitCompatibilityCase(v4_case):
         def setUp(self):
             super().setUp()
             self._original_solve = v4_module.solve_zpl
-            v4_module.solve_zpl = solve_v5_from_v4_data
+            v4_module.solve_zpl = solve_split_from_v4_data
 
         def tearDown(self):
             v4_module.solve_zpl = self._original_solve
@@ -84,21 +84,21 @@ def make_v5_compat_case(v4_module, v4_case):
             """
             Overrides opp_v4's OPPTestCaseV4.assert_no_time_overlap (which
             reconstructs a task's duration as v_pb - u_pb): stage2_scheduling.zpl
-            has no u_pb variable at all (v5 replaced it with the fixed
+            has no u_pb variable at all (opp_v5_2_split replaced it with the fixed
             parameter t_exec_pb, see that file's header) -- var_values never
             contains a "u_pb$..." key, so u_pb.get(...) always returned 0
             there, silently turning the whole overlap check into a tautology
             (duration always came out as 0, so "start" == "end" == v_pb, and
             the sorted-by-v_pb comparison could never fail regardless of
             whether batches actually overlapped). Found 2026-09-09 auditing
-            opp_v5 -- this let the migrated test_case_13/11 report
+            opp_v5_2_split -- this let the migrated test_case_13/11 report
             "ok" without ever checking the very thing they're named for.
 
-            Recomputes duration the same way OPPTestCaseV5.assert_no_overlap
-            already does correctly for v5's own (non-migrated) stress tests:
+            Recomputes duration the same way OPPTestCaseSplit.assert_no_overlap
+            already does correctly for opp_v5_2_split's own (non-migrated) stress tests:
             fixed_time(b) + route_time(b) / V_p[picker]. V_p is fixed to 1.0
             for every picker in this migrated baseline (see
-            solve_v5_from_v4_data), so this reduces to fixed_time(b) +
+            solve_split_from_v4_data), so this reduces to fixed_time(b) +
             route_time(b) -- the same t_exec_b formula opp_v4 itself uses,
             just computed independently instead of trusting a variable that
             no longer exists.
@@ -137,7 +137,7 @@ def make_v5_compat_case(v4_module, v4_case):
                         tasks[i + 1][0], tasks[i][1] - 1e-4, f"Solapamiento temporal en {p}"
                     )
 
-    return V5CompatibilityCase
+    return SplitCompatibilityCase
 
 
 def migrated_case(v4_module_path):
@@ -150,9 +150,9 @@ def migrated_case(v4_module_path):
     ]
     if len(candidates) != 1:
         raise RuntimeError(f"Expected one test case in {v4_module_path}, found {candidates}")
-    case = make_v5_compat_case(module, candidates[0])
+    case = make_split_compat_case(module, candidates[0])
     # TestRunner launches each unittest from its dotted id.  Give the dynamic
-    # subclass a stable public address in the calling v5 test module.
+    # subclass a stable public address in the calling opp_v5_2_split test module.
     case.__name__ = "TestMigrated"
     case.__qualname__ = "TestMigrated"
     case.__module__ = inspect.currentframe().f_back.f_globals["__name__"]
