@@ -25,7 +25,7 @@ route_time(b)   = B_time * travel_distance + service_time          # scaled by s
   `models/opp_v5/utils/cold_chain_validation.py::batches_without_eligible_picker`
   (reused directly, not re-implemented).
 - Default `T_frio_max = +inf` and unset `V_p` make `opp_hc_4` behave
-  exactly like `opp_hc_2` (see `test_opp_hc_4_model_01_equivalence.py`).
+  exactly like `opp_hc_2` (see `test_case_equivalence.py`).
 
 **Deliberately no congestion** (unlike `opp_hc_3`): congestion and
 picker-speed/cold-chain are orthogonal additions over `opp_hc_2`, and this
@@ -36,22 +36,18 @@ congestion-free, see `analysis/config.py`).
 
 ```
 tests/opp_hc_4/
-├── execute_tests.py            # Main test runner (normal suite)
-├── execute_stress_tests.py     # Stress suite runner
-├── scenarios/normal/            # Fixtures that need a SolveHC4ModelDTO (single_order_params)
-└── tests/
-    ├── opp_hc_4_test_case.py           # Base assertions (picker assignment, workload, no-overlap, cold chain)
-    ├── normal/
-    │   ├── test_opp_hc_4_model_01_equivalence.py    # dedicated: no-op equivalence with hc_2
-    │   ├── test_opp_hc_4_model_02_picker_speed.py   # dedicated: faster picker preferred
-    │   ├── test_opp_hc_4_model_03_cold_chain_infeasible.py  # dedicated: unreachable deadline -> infeasible
-    │   ├── test_opp_hc_4_model_04_cold_chain_eligibility.py # dedicated: forced onto the eligible picker
-    │   ├── test_opp_hc_4_model_05_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
-    │   └── test_opp_hc_4_model_{02,03,...,30}.py            # ported 1:1 from opp_hc_2 (V_p unset, T_frio_max=+inf)
-    └── stress/
-        ├── test_opp_hc_4_model_{01,02,03,04,05,06,09,10,11,12,34}.py  # ported 1:1 from opp_hc_2
-        ├── test_opp_hc_4_model_11_picker_speed.py   # dedicated: heterogeneous speeds at scale
-        └── test_opp_hc_4_model_12_cold_chain.py      # dedicated: binding T_frio_max at scale
+├── opp_hc_4_test_case.py           # Base assertions (picker assignment, workload, no-overlap, cold chain)
+├── functional/
+│   ├── test_case_equivalence.py    # dedicated: no-op equivalence with hc_2
+│   ├── test_case_picker_speed.py   # dedicated: faster picker preferred
+│   ├── test_case_cold_chain_infeasible.py  # dedicated: unreachable deadline -> infeasible
+│   ├── test_case_cold_chain_eligibility.py # dedicated: forced onto the eligible picker
+│   ├── test_case_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
+│   └── test_case_NN.py                     # ported 1:1 from opp_hc_2 (V_p unset, T_frio_max=+inf)
+└── stress/
+    ├── test_case_{01..11}.py  # ported 1:1 from opp_hc_2
+    ├── test_case_picker_speed.py   # dedicated: heterogeneous speeds at scale
+    └── test_case_cold_chain.py      # dedicated: binding T_frio_max at scale
 ```
 
 The ported files (both normal and stress) are literal copies of their
@@ -60,7 +56,7 @@ with `V_p` unset and `T_frio_max` left at its default (`+inf`), so they are
 pure equivalence checks AND, more importantly, give `analysis/`'s
 `quality_gap_table`/cross-model comparisons the same-named, same-shaped
 instances it needs to join `opp_hc_4` against `opp_hc_2`/`opp_hc_3`/`opp_v4`
-(same pattern `opp_v5` uses via `tests/opp_v5/tests/v4_compat.py`). The
+(same pattern `opp_v5` uses via `tests/opp_v5/v4_compat.py`). The
 stress ports were chosen to match `opp_hc_3`'s curated 11-instance stress
 subset (see `analysis/README.md`), so `opp_hc_4` lines up with both
 `opp_hc_2` (full instance) and `opp_hc_3` (curated subset) at once.
@@ -68,11 +64,16 @@ subset (see `analysis/README.md`), so `opp_hc_4` lines up with both
 `opp_hc_4` is registered in `analysis/config.py`'s `MODEL_DIRS` (and
 deliberately left OUT of `CONGESTION_AWARE_MODELS`).
 
+Its `single_order_params` fixture (needs a `SolveHC4ModelDTO`) lives in
+`tests/shared_scenarios/functional/single_order_params_hc4.py`, alongside the
+other models' DTO-specific variants -- this model has no `scenarios/` of
+its own.
+
 ## Running Tests
 
 ```bash
-python tests/opp_hc_4/execute_tests.py
-WRITE_RESULTS_CSV=1 python tests/opp_hc_4/execute_tests.py          # to feed analysis/
-WRITE_RESULTS_CSV=1 python tests/opp_hc_4/execute_stress_tests.py
-python -m unittest tests.opp_hc_4.tests.normal.test_opp_hc_4_model_02_picker_speed
+python -m tests.run_suite opp_hc_4 functional
+WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_hc_4 functional          # to feed analysis/
+WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_hc_4 stress
+python -m unittest tests.opp_hc_4.functional.test_case_picker_speed
 ```

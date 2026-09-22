@@ -11,11 +11,11 @@ inventing a new one.
 
 from typing import Dict, List
 
-from tests.opp_v3.scenarios.normal.scenario_01 import basic_two_orders_capacity_limit
-from tests.opp_v3.scenarios.normal.three_missions_two_pickers_grid_graph import (
+from tests.shared_scenarios.functional.scenario_01 import basic_two_orders_capacity_limit
+from tests.shared_scenarios.functional.three_missions_two_pickers_grid_graph import (
     scenario_three_missions_two_pickers_two_periods_grid_graph,
 )
-from tests.opp_hc_2.scenarios.common.six_missions_three_pickers_grid_graph import (
+from tests.shared_scenarios.common.six_missions_three_pickers_grid_graph import (
     scenario_six_missions_two_periods_grid_graph,
 )
 
@@ -23,8 +23,8 @@ from tests.opp_hc_2.scenarios.common.six_missions_three_pickers_grid_graph impor
 def instance_tiny_two_orders() -> Dict:
     """
     2 orders, 2 batches, 1 implicit picker, 4-node graph. Same instance as
-    test_opp_hc_2_model_01.py / test_opp_v3_model_1.py / test_opp_hc_4_
-    model_01_equivalence.py, etc. -- the smallest shared instance in the
+    opp_hc_2's test_case_01.py / opp_v3's test_case_01.py / opp_hc_4's
+    test_case_equivalence.py, etc. -- the smallest shared instance in the
     whole suite.
     """
     V, B, w1, w2, gamma, delta, location_graph, cap_vehicle = basic_two_orders_capacity_limit()
@@ -61,7 +61,7 @@ def instance_tiny_two_orders() -> Dict:
 def instance_small_multi_picker() -> Dict:
     """
     6 orders, 3 batches, 2 pickers, 4x4 grid with transversal aisles. Same
-    instance as test_opp_hc_2_model_16.py / test_opp_v3_model_16.py.
+    instance as opp_hc_2's test_case_12.py / opp_v3's test_case_12.py.
     """
     location_graph, V, B = scenario_three_missions_two_pickers_two_periods_grid_graph(4, 4)
 

@@ -1,0 +1,154 @@
+import os
+import sys
+import unittest
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
+)
+
+from dtos.opp.model_dto import ModelDTO
+from dtos.opp.solve_model_dto import SolveModelDTO
+from models.opp_v2.opp_model_v2 import OPPModelV2
+from models.opp_v2.utils.output_handler import OutputHandler
+from tests.opp_test_case import OPPTestCase
+from tests.shared_scenarios.functional.scenario_19_v2 import longer_single_mission_route
+from tests.opp_v2.route_assertions import assert_route_covers_orders
+
+
+class TestOPPModel(OPPTestCase):
+    def _solve_longer_route(
+        self,
+        due_date,
+        w1_override=None,
+        w2_override=None,
+        gamma_override=None,
+        delta_override=None,
+        duplicate_location=False,
+    ):
+        V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x = (
+            longer_single_mission_route()
+        )
+
+        w1, w2, gamma, delta = self.apply_weight_overrides(
+            w1,
+            w2,
+            gamma,
+            delta,
+            w1_override,
+            w2_override,
+            gamma_override,
+            delta_override,
+        )
+
+        N = {"O1", "O2", "O3", "O4", "O5", "O6"}
+        a = {(n, v): 0 for n in N for v in V}
+        a[("O1", "L2")] = 1
+        if duplicate_location:
+            a[("O2", "L2")] = 1
+        else:
+            a[("O2", "L3")] = 1
+        a[("O3", "L4")] = 1
+        a[("O4", "L5")] = 1
+        a[("O5", "L6")] = 1
+        a[("O6", "L7")] = 1
+
+        y = {
+            ("O1", "B1"): 1,
+            ("O2", "B1"): 1,
+            ("O3", "B1"): 1,
+            ("O4", "B1"): 1,
+            ("O5", "B1"): 1,
+            ("O6", "B1"): 1,
+        }
+        cap_n = {n: 2.0 for n in N}
+
+        due_date_by_order = self.normalize_due_dates(N, due_date)
+
+        params = SolveModelDTO()
+        params.W_full = w1
+        params.W_ea_ta = w2
+        params.W_ea = gamma
+        params.W_ta = delta
+        params.C_n = cap_n
+        params.C_v = cap_vehicle
+        params.A = a
+        params.B_time = 0.5
+        params.B_setup = 1.0
+        params.B_picking = 1.0
+        params.Dd = due_date_by_order
+        params.M = 1000.0
+        params.x = x
+        params.Bn = y
+
+        model_dto = ModelDTO()
+        model_dto.N = N
+        model_dto.location_graph = location_graph
+        model_dto.P = P
+        model_dto.B = B
+        model_dto.start_time = self.start_time
+        model = OPPModelV2(model_dto)
+        model.attach(OutputHandler())
+
+        result, output_graph = model.solve(params)
+
+        return result, output_graph, model, location_graph
+
+    def test_longer_single_mission_route(self):
+        try:
+            result, output_graph, _, _ = self._solve_longer_route(due_date=25.0)
+        except Exception as e:
+            self.fail(f"Model execution failed: {e}")
+
+        self.assertEqual(result, "optimal")
+        assert_route_covers_orders(
+            self, output_graph, {"L2", "L3", "L4", "L5", "L6", "L7"}
+        )
+
+    def test_longer_single_mission_penalties(self):
+        try:
+            result_low, _, model_low, _ = self._solve_longer_route(
+                due_date=0.0,
+                w1_override=0.0,
+                w2_override=1.0,
+                gamma_override=0.0,
+                delta_override=1.0,
+            )
+        except Exception as e:
+            self.fail(f"Model execution failed: {e}")
+
+        self.assertIn(result_low, ("optimal", "feasible"))
+
+        total_tardiness_low = self.sum_vars_with_prefix(model_low.model, "ta_")
+        self.assertGreater(total_tardiness_low, 1e-6)
+
+        try:
+            result_high, _, model_high, _ = self._solve_longer_route(
+                due_date=100.0,
+                w1_override=0.0,
+                w2_override=1.0,
+                gamma_override=0.0,
+                delta_override=1.0,
+            )
+        except Exception as e:
+            self.fail(f"Model execution failed: {e}")
+
+        self.assertIn(result_high, ("optimal", "feasible"))
+
+        total_tardiness_high = self.sum_vars_with_prefix(model_high.model, "ta_")
+        self.assertLessEqual(total_tardiness_high, 1e-6)
+
+    def test_longer_single_mission_duplicate_location(self):
+        try:
+            result, _, _, _ = self._solve_longer_route(
+                due_date=25.0,
+                duplicate_location=True,
+            )
+        except Exception as e:
+            self.fail(f"Model execution failed: {e}")
+
+        self.assertIn(result, ("optimal", "feasible"))
+
+
+if __name__ == "__main__":
+    unittest.main()
+

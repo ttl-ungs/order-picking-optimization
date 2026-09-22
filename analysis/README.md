@@ -1,7 +1,7 @@
 # Pipeline de análisis de resultados
 
 Generaliza `specs/model_analysis.md` (escrito originalmente para
-`opp_v3`/`opp_hc`/`opp_aco`) a los modelos actuales:
+`opp_v3`/`opp_hc_1`/`opp_aco_1`) a los modelos actuales:
 
 | Label       | Rol                                                          |
 |-------------|---------------------------------------------------------------|
@@ -16,30 +16,35 @@ Generaliza `specs/model_analysis.md` (escrito originalmente para
 ## 1. Generar los datos
 
 El pipeline **no ejecuta los tests**, solo lee lo que ya está en
-`tests/outputs/<modelo>/<normal|stress>/*.csv`. Para generarlos:
+`results/<modelo>/<functional|stress>/*.csv`. Para generarlos:
 
 ```bash
 export WRITE_RESULTS_CSV=1
 
-python tests/opp_v4/execute_tests.py            # opp_v4 normal
-python tests/opp_v4/execute_stress_tests.py     # opp_v4 stress
-python tests/opp_hc_2/execute_tests.py          # opp_hc_2 normal
-python tests/opp_hc_2/execute_stress_tests.py   # opp_hc_2 stress
-python tests/opp_aco_2/execute_tests.py         # opp_aco_2 normal
-python tests/opp_aco_2/execute_stress_tests.py  # opp_aco_2 stress
-python tests/opp_hc_3/execute_tests.py          # opp_hc_3 normal
-python tests/opp_hc_3/execute_stress_tests.py   # opp_hc_3 stress
-python tests/opp_aco_3/execute_tests.py         # opp_aco_3 normal
-python tests/opp_aco_3/execute_stress_tests.py  # opp_aco_3 stress
+python -m tests.run_suite opp_v4 functional
+python -m tests.run_suite opp_v4 stress
+python -m tests.run_suite opp_hc_2 functional
+python -m tests.run_suite opp_hc_2 stress
+python -m tests.run_suite opp_aco_2 functional
+python -m tests.run_suite opp_aco_2 stress
+python -m tests.run_suite opp_hc_3 functional
+python -m tests.run_suite opp_hc_3 stress
+python -m tests.run_suite opp_aco_3 functional
+python -m tests.run_suite opp_aco_3 stress
 ```
 
-Cada `execute_stress_tests.py` acepta un id de dos dígitos como único
-argumento para correr un solo test (p. ej. `python tests/opp_hc_3/execute_stress_tests.py 04`).
+(One shared entry point, `tests/run_suite.py`, replaced the ~24 near-identical
+per-model `execute_tests.py`/`execute_stress_tests.py` scripts -- see its
+module docstring. `opp`/`opp_v2` predate it and keep their own scripts, since
+they don't use `TestRunner`/write CSVs at all.)
+
+`--id` runs a single test instead of the full stress suite (p. ej.
+`python -m tests.run_suite opp_hc_3 stress --id 04`).
 
 ### Alcance de los stress tests que se agregaron
 
 `opp_hc_2` ya tenía su batería completa de 34 escenarios de estrés (heredada
-de `opp_v3`/`opp_hc`/`opp_aco`). Para `opp_v4`, `opp_aco_2`, `opp_hc_3` y
+de `opp_v3`/`opp_hc_1`/`opp_aco_1`). Para `opp_v4`, `opp_aco_2`, `opp_hc_3` y
 `opp_aco_3` **no** se portaron los 34 — se eligió un subconjunto curado de
 11 escenarios (mismo *builder* de escenario y mismos parámetros numéricos que
 sus equivalentes en `opp_hc_2`, para que el join por instancia en `analysis/`
@@ -59,7 +64,7 @@ sea válido), pensado para cubrir el rango de `N` (cantidad de pedidos) y `V`
   5000 nodos) se excluyeron a propósito para el modelo exacto: el propio
   `opp_v3` (antecesor de `opp_v4`) ya demostró en su suite de estrés que a
   esa escala el solver exacto no converge en tiempo razonable (ver
-  `tests/outputs/opp_v3/stress/complete_output_v3_stress_tests.csv`, y la
+  `results/opp_v3/stress/complete_output_v3_stress_tests.csv`, y la
   hipótesis de "asintotismo exponencial" en `specs/model_analysis.md` sec. 5)
   — correrlos ahí solo quemaría CPU para un timeout garantizado. Confirmado
   empíricamente: de las 8 que sí tiene, solo 1 converge (la infeasible
@@ -137,7 +142,7 @@ heurístico ni cuestión de tuneo:
    correctamente — esa restricción sí es compartida con el modelo exacto).
    El diseño original exigía que **todos** los lotes de una hormiga salieran
    sin loop *a la vez*; con una tasa de éxito por lote de 5-68%, la
-   probabilidad de los 25 lotes de `test_04` a la vez era ~1e-21 —
+   probabilidad de los 25 lotes de `test_case_04` a la vez era ~1e-21 —
    imposible sin importar el presupuesto de hormigas/iteraciones.
 
 El fix real: cada lote se reintenta individualmente hasta salir limpio, en
@@ -149,7 +154,7 @@ tope de reintentos (`_MAX_ROUTE_ATTEMPTS_PER_BATCH`, subido de 40 a 100 el
 sin costo extra en los que ya andaban bien -- pero **no** en instancias con
 ~25+ ubicaciones requeridas por lote, ver más abajo) queda registrado como
 columna en el CSV (`Max_route_attempts_per_batch`) para que quede trazable
-con qué presupuesto se corrió cada fila. Con este fix, `test_04` (25 lotes)
+con qué presupuesto se corrió cada fila. Con este fix, `test_case_04` (25 lotes)
 resuelve `optimal` en ~13 minutos con los hiperparámetros **default**
 (15×60) -- sin necesidad de tocar `A_ants`/`Max_it`. Al portarlo, la Fase 2
 tenía además una sutileza: hay que intentar primero la ruta *limpia*
@@ -172,17 +177,17 @@ costo de simular congestión; el switch probabilístico τ1/τ2 de ACO3 no.
 
 **Instancias que quedan fuera de alcance de cualquier tuneo -- y por qué NO
 es infeasibilidad por construcción (hipótesis refutada, 2026-08-27)**:
-`test_09`/`10`/`11` (750 órdenes, ~25 ubicaciones requeridas por lote) le
+`test_case_09`/`10`/`11` (750 órdenes, ~25 ubicaciones requeridas por lote) le
 dan timeout incluso a `opp_hc_2` en la corrida real, y hasta el método
 rápido de `opp_hc_2` (`_generate_feasible_route`, Dijkstra determinístico)
 devuelve `None` para esos lotes. Con 2000 órdenes de visita distintos (al
 azar) sobre ese mismo Dijkstra, ninguno encontró una ruta simple para el
-lote B1 de `test_09` -- lo que en su momento se documentó acá como fuerte
+lote B1 de `test_case_09` -- lo que en su momento se documentó acá como fuerte
 evidencia de que **la instancia sería infeasible por construcción** bajo la
 restricción "sin loops" (17), compartida por los 5 modelos.
 
 **Se corrió el chequeo directo contra SCIP
-(`tests/opp_v4/tests/diagnostics/test_single_batch_infeasibility_check.py`,
+(`tests/opp_v4/diagnostics/test_case_single_batch_infeasibility_check.py`,
 con límite de 1800s) y la hipótesis quedó refutada**: SCIP resuelve ese
 mismo lote B1 (25 ubicaciones requeridas, mismo grid 10x10) en **1.8
 segundos**, `status=optimal`, encontrando una ruta simple de 56 nodos que
@@ -224,7 +229,7 @@ grilla). En una instancia de estrés de 100 nodos, `has_edge` sola explicaba
 ordenada -- mismo orden que `get_vertices()`, así que no cambia qué ruta
 determinística eligen `opp_hc_2`/`opp_hc_3` cuando hay varias igual de
 cortas) y se reemplazó el patrón en los 4 lugares. Resultado, mismo
-resultado, más rápido nada más: `test_02` (400 nodos) 566s→3.7s (~153x);
+resultado, más rápido nada más: `test_case_02` (400 nodos) 566s→3.7s (~153x);
 perfil completo de un caso 149.8s→2.6s (~57x); el caso que sigue sin
 converger (densidad 25) también corre ~16x más rápido aunque el resultado
 final (`infeasible`) no cambia -- confirma que ese límite es matemático, no
@@ -272,7 +277,7 @@ buscando bugs y mejoras (no solo performance). Encontró y corrigió:
    *dentro* del mismo camino) y agregando un presupuesto explícito de
    expansiones (`_MAX_BFF_EXPANSIONS = 200_000`) para acotar el costo, ya que
    sin ninguna poda esto es exponencial en el peor caso. **Verificado que
-   esto NO cambia el resultado de `test_09`/`10`/`11`** (25 ubicaciones
+   esto NO cambia el resultado de `test_case_09`/`10`/`11`** (25 ubicaciones
    requeridas agota el presupuesto en ~1s, sigue devolviendo `None`) -- el
    bug solo afectaba instancias chicas/medianas, no las gigantes de estrés.
 2. **HC -- `opp_hc_2._calculate_batch_execution_time` (solo usado para el
@@ -306,7 +311,7 @@ regeneró el 2026-08-27 (post-fix de performance) queda desactualizada de
 nuevo y hay que volver a correrla** antes de cerrar la sección de
 resultados. Los fixes #1/#2 no cambiaron ningún resultado ya observado
 (#2 no toca el objetivo optimizado; #1 se verificó explícitamente que no
-cambia `test_09/10/11`) pero, para ser prolijos, conviene re-correr también
+cambia `test_case_09/10/11`) pero, para ser prolijos, conviene re-correr también
 `opp_hc_2`/`opp_hc_3` en estrés antes de dar los números por definitivos.
 
 ### Auditoría de código, parte 2 (2026-08-28): secuenciación en ACO
@@ -383,7 +388,7 @@ compartían un mtime de checkout con solo 16 segundos de diferencia (un
 artefacto del orden de escritura del checkout, no de cuándo se generó cada
 uno realmente), y `_pick_csv` eligió la que casualmente cayó más tarde en
 esa ventana -- que resultó ser la más VIEJA en términos reales (de antes de
-que existieran `test_opp_v4_model_12/13/14`). El reporte publicado decía
+que existieran `test_case_15/13/14`). El reporte publicado decía
 `opp_v4` normal 97.7% (43/44) sobre esa base.
 
 **Arreglado**: `load.py` ahora usa la fecha embebida en el *nombre* del
@@ -485,7 +490,7 @@ Se completó la cobertura de tests normales de `opp_v5`
 comparan, las dos capacidades propias de `opp_v5` (velocidad heterogénea de
 pickers, cadena de frío):
 
-- **Cobertura**: `tests/opp_v5/tests/normal/test_opp_v5_model_{22,...,30}.py`
+- **Cobertura**: `tests/opp_v5/functional/test_opp_v5_model_{22,...,30}.py`
   -- una línea cada uno, usando el adaptador genérico `migrated_case()` que
   ya existía en `v4_compat.py` (creado para portar `model_01-19`, nunca
   extendido). `opp_v5` reusó los números 20/21 para sus propios tests de
@@ -494,9 +499,9 @@ pickers, cadena de frío):
   vencimientos extremos, lote vacío, capacidades fraccionarias/cero, orden
   en múltiples lotes, orden que excede el vehículo, tiempos de servicio) se
   agregaron como `model_22-30`. También se agregó el test de estrés #08 que
-  faltaba (`tests/opp_v5/tests/stress/test_opp_v5_model_08.py`, el único de
+  faltaba (`tests/opp_v5/stress/test_case_08.py`, el único de
   los 8 de `opp_v4` que `opp_v5` no tenía).
-- **Validación de funcionalidad** (`tests/opp_v5/tests/normal/test_opp_v5_model_31.py`,
+- **Validación de funcionalidad** (`tests/opp_v5/functional/test_case_34.py`,
   nuevo): más allá de los 4 tests básicos que ya existían (`model_20`/`21`,
   "¿qué picker lo hace?"), se agregaron 3 tests que verifican la fórmula y
   los casos límite exactos:
@@ -595,7 +600,7 @@ una réplica en Python de `PB_elig`/`t_exec_pb` (mismo patrón que
 `OPPTestCaseV5.run_pipeline` para cortocircuitar a `status="infeasible"`
 **antes** de invocar ZIMPL para la Etapa 2, en vez de dejar que el error
 de compilación se propague como excepción sin manejar. El test que
-documentaba el bug (`test_opp_v5_model_31.py`) se actualizó para verificar
+documentaba el bug (`test_case_34.py`) se actualizó para verificar
 el comportamiento corregido (antes esperaba la excepción con
 `assertRaises`; ahora espera `status == "infeasible"` limpio).
 

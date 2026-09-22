@@ -3,7 +3,7 @@ Discovery and loading of the raw per-test CSVs into one tidy DataFrame.
 
 Each row in the output DataFrame is one test execution, tagged with:
 - model     : short label from config.MODEL_DIRS
-- scenario  : "normal" | "stress"
+- scenario  : "functional" | "stress"
 - instance  : the test *method* name (e.g. "test_basic_two_orders_capacity_limit"),
               used to join the same scenario across models -- unittest method
               names are shared across model variants because they exercise the
@@ -126,7 +126,7 @@ def load_all(verbose: bool = True) -> pd.DataFrame:
     if verbose:
         for label, scenario in missing:
             print(f"[load_all] No CSV found for model={label} scenario={scenario} "
-                  f"-- run its execute_tests.py first. Skipping.")
+                  f"-- run `python -m tests.run_suite {label} {scenario}` first. Skipping.")
         for label, scenario, chosen, dropped in dropped_report:
             print(f"[load_all] model={label} scenario={scenario}: using "
                   f"{os.path.basename(chosen)}, ignoring {len(dropped)} older run(s): "
@@ -147,12 +147,12 @@ def load_all(verbose: bool = True) -> pd.DataFrame:
 def load_stability(verbose: bool = True) -> pd.DataFrame:
     """
     Loads the latest seed-stability CSV (analysis/run_stability_study.py) per
-    heuristic model in STABILITY_MODELS, from tests/outputs/<model>/stability/.
+    heuristic model in STABILITY_MODELS, from results/<model>/stability/.
 
     Separate from load_all() because the schema is different: one row per
     (instance, seed) solve of a SHARED instance (tests/shared_scenarios/
     instances.py), not one row per unittest test method -- there's no
-    "scenario" (normal/stress) dimension, and "instance" here means one of
+    "scenario" (functional/stress) dimension, and "instance" here means one of
     the 3 shared instances, not a test method name.
     """
     frames = []

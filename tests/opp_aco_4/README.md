@@ -31,7 +31,7 @@ route_time(b)   = B_time * travel_distance + service_time          # scaled by s
   `opp_aco_2` already precomputes) since ACO has no single deterministic
   route per batch the way `opp_hc_4`'s construction does.
 - Default `T_frio_max = +inf` and unset `V_p` make `opp_aco_4` behave
-  exactly like `opp_aco_2` (see `test_opp_aco_4_model_01_equivalence.py`).
+  exactly like `opp_aco_2` (see `test_case_equivalence.py`).
 
 **Deliberately no congestion** (unlike `opp_aco_3`): congestion and
 picker-speed/cold-chain are orthogonal additions over `opp_aco_2`. This
@@ -43,22 +43,18 @@ reservation or its multi-pheromone (m-ACO4) architecture, matching how
 
 ```
 tests/opp_aco_4/
-├── execute_tests.py            # Main test runner (normal suite)
-├── execute_stress_tests.py     # Stress suite runner
-├── scenarios/normal/            # Fixtures that need a SolveAco4ModelDTO (single_order_params)
-└── tests/
-    ├── opp_aco_4_test_case.py           # Base assertions (picker assignment, workload, no-overlap, cold chain)
-    ├── normal/
-    │   ├── test_opp_aco_4_model_01_equivalence.py    # dedicated: no-op equivalence with aco_2
-    │   ├── test_opp_aco_4_model_02_picker_speed.py   # dedicated: faster picker preferred
-    │   ├── test_opp_aco_4_model_03_cold_chain_infeasible.py  # dedicated: unreachable deadline -> infeasible
-    │   ├── test_opp_aco_4_model_04_cold_chain_eligibility.py # dedicated: forced onto the eligible picker
-    │   ├── test_opp_aco_4_model_05_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
-    │   └── test_opp_aco_4_model_{02,03,...,30}.py            # ported 1:1 from opp_aco_2 (V_p unset, T_frio_max=+inf)
-    └── stress/
-        ├── test_opp_aco_4_model_{01,...,20}.py       # ported 1:1 from opp_aco_2 (full parity)
-        ├── test_opp_aco_4_model_11_picker_speed.py   # dedicated: heterogeneous speeds at scale
-        └── test_opp_aco_4_model_12_cold_chain.py      # dedicated: binding T_frio_max at scale
+├── opp_aco_4_test_case.py           # Base assertions (picker assignment, workload, no-overlap, cold chain)
+├── functional/
+│   ├── test_case_equivalence.py    # dedicated: no-op equivalence with aco_2
+│   ├── test_case_picker_speed.py   # dedicated: faster picker preferred
+│   ├── test_case_cold_chain_infeasible.py  # dedicated: unreachable deadline -> infeasible
+│   ├── test_case_cold_chain_eligibility.py # dedicated: forced onto the eligible picker
+│   ├── test_case_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
+│   └── test_case_NN.py                     # ported 1:1 from opp_aco_2 (V_p unset, T_frio_max=+inf)
+└── stress/
+    ├── test_case_{01..20}.py       # ported 1:1 from opp_aco_2 (full parity)
+    ├── test_case_picker_speed.py   # dedicated: heterogeneous speeds at scale
+    └── test_case_cold_chain.py      # dedicated: binding T_frio_max at scale
 ```
 
 The ported files (both normal and stress) are literal copies of their
@@ -73,7 +69,11 @@ all 20 were ported for full parity (`opp_aco_3` also has all 20).
 `opp_aco_4` is registered in `analysis/config.py`'s `MODEL_DIRS` (and
 deliberately left OUT of `CONGESTION_AWARE_MODELS`).
 
-**Note on `test_opp_aco_4_model_17`** (ported as-is from `opp_aco_2`):
+Its `single_order_params` fixture (needs a `SolveAco4ModelDTO`) lives in
+`tests/shared_scenarios/functional/single_order_params_aco4.py` -- this model
+has no `scenarios/` of its own.
+
+**Note on `tests/opp_aco_4/functional/test_case_12.py`** (ported as-is from `opp_aco_2`):
 like its `opp_aco_2` counterpart, it sets no `Seed`, so it is inherently
 stochastic -- an unlucky ACO run can occasionally construct a different
 (still feasible) route than the one hardcoded in the assertion. This is a
@@ -84,8 +84,8 @@ test repeatedly).
 ## Running Tests
 
 ```bash
-python tests/opp_aco_4/execute_tests.py
-WRITE_RESULTS_CSV=1 python tests/opp_aco_4/execute_tests.py          # to feed analysis/
-WRITE_RESULTS_CSV=1 python tests/opp_aco_4/execute_stress_tests.py
-python -m unittest tests.opp_aco_4.tests.normal.test_opp_aco_4_model_02_picker_speed
+python -m tests.run_suite opp_aco_4 functional
+WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_aco_4 functional          # to feed analysis/
+WRITE_RESULTS_CSV=1 python -m tests.run_suite opp_aco_4 stress
+python -m unittest tests.opp_aco_4.functional.test_case_picker_speed
 ```

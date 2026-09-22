@@ -1,3 +1,5 @@
+NOTA (2026-09-19): documento histórico de la etapa opp_v3/opp_hc/opp_aco (hoy opp_v3/opp_hc_1/opp_aco_1). La estructura vigente de resultados (`results/<modelo>/<functional|stress>/`) y del pipeline está en `analysis/README.md`.
+
 Especificación de Diseño de Software (SDD)
 
 Pipeline de Análisis de Resultados - LPRP (Linear Picking Routing Problem)
@@ -7,15 +9,15 @@ Propósito: Definir de manera formal, estructurada y reproducible la metodologí
 
 1. Fuentes de Datos (Data Sources)
 
-Los datos de entrada son archivos en formato .csv ubicados en el árbol de directorios de pruebas (tests/outputs/). El pipeline debe mapear dos dimensiones: Modelo y Escenario.
+Los datos de entrada son archivos en formato .csv ubicados en el árbol de directorios de pruebas (results/). El pipeline debe mapear dos dimensiones: Modelo y Escenario.
 
 1.1. Mapeo de Modelos y Directorios
 
-Exacto (OPP_v3): tests/outputs/opp_v3/
+Exacto (OPP_v3): results/opp_v3/
 
-Heurística (HC): tests/outputs/opp_hc/
+Heurística (HC): results/opp_hc_1/
 
-Metaheurística (ACO): tests/outputs/opp_aco/
+Metaheurística (ACO): results/opp_aco_1/
 
 1.2. Mapeo de Escenarios y Archivos Específicos
 
@@ -125,12 +127,12 @@ import os
 
 # 1. Definición de Rutas
 paths = {
-    'opp_v3_normal': 'tests/outputs/opp_v3/normal/*.csv',
-    'opp_v3_stress': 'tests/outputs/opp_v3/stress/complete_output_v3_stress_tests.csv',
-    'hc_normal': 'tests/outputs/opp_hc/normal/*.csv',
-    'hc_stress': 'tests/outputs/opp_hc/stress/*.csv',
-    'aco_normal': 'tests/outputs/opp_aco/normal/*.csv',
-    'aco_stress': 'tests/outputs/opp_aco/stress/*20260617_123001.csv',
+    'opp_v3_normal': 'results/opp_v3/normal/*.csv',
+    'opp_v3_stress': 'results/opp_v3/stress/complete_output_v3_stress_tests.csv',
+    'hc_normal': 'results/opp_hc_1/normal/*.csv',
+    'hc_stress': 'results/opp_hc_1/stress/*.csv',
+    'aco_normal': 'results/opp_aco_1/normal/*.csv',
+    'aco_stress': 'results/opp_aco_1/stress/*20260617_123001.csv',
 }
 
 # 2. Función de Recuperación Latest

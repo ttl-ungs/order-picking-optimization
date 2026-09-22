@@ -407,7 +407,7 @@ def correlation_table(df: pd.DataFrame, level: str = "global") -> pd.DataFrame:
     """
     Pearson r of total_time against CORRELATION_INDEPENDENTS.
 
-    level="global"   -> one row per model, pooling normal+stress.
+    level="global"   -> one row per model, pooling functional+stress.
     level="scenario" -> one row per (model, scenario).
     """
     ok = _ok(df)

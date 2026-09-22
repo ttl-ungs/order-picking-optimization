@@ -4,14 +4,14 @@ CLI entrypoint for the model-comparison analysis pipeline.
 Usage:
     python -m analysis.run_analysis
 
-Reads the latest CSVs under tests/outputs/<model>/<normal|stress>/ for every
+Reads the latest CSVs under results/<model>/<functional|stress>/ for every
 model in analysis.config.MODEL_DIRS, computes the six metric tables, saves
 the charts under analysis/output/, and writes a consolidated
 analysis/output/report.md.
 
 This does NOT run the test suites itself -- generate the CSVs first with
-each model's execute_tests.py (see each tests/<model>/execute_tests.py),
-then run this script.
+WRITE_RESULTS_CSV=1 python -m tests.run_suite <model> functional|stress
+(see tests/run_suite.py), then run this script.
 """
 
 import os
@@ -60,9 +60,9 @@ def _md_table(df: pd.DataFrame) -> str:
 def main():
     df = load_all()
     if df.empty:
-        print("No se encontró ningún CSV en tests/outputs/. Corré primero los "
-              "execute_tests.py de cada modelo (opp_v4, opp_hc_2, opp_aco_2, "
-              "opp_hc_3, opp_aco_3).")
+        print("No se encontró ningún CSV en results/. Corré primero "
+              "WRITE_RESULTS_CSV=1 python -m tests.run_suite <model> functional|stress "
+              "para cada modelo (opp_v4, opp_hc_2, opp_aco_2, opp_hc_3, opp_aco_3).")
         return
 
     success = success_rate_table(df)
@@ -88,7 +88,7 @@ def main():
     stability = stability_table(stability_df)
 
     charts = []
-    for scenario in ("normal", "stress"):
+    for scenario in ("functional", "stress"):
         charts.append(plot_mean_time_by_scenario(times, scenario))
     charts.append(plot_profiling_stacked(profiling))
     charts.append(plot_quality_gap(quality_gap))
@@ -141,7 +141,7 @@ def main():
         f.write(_md_table(congestion_overhead))
 
         f.write("\n## 6. Sensibilidad paramétrica (correlación de Pearson con total_time)\n\n")
-        f.write("### 6.1 Nivel global (normal + estrés)\n\n")
+        f.write("### 6.1 Nivel global (functional + estrés)\n\n")
         f.write(_md_table(corr_global))
         f.write("\n### 6.2 Nivel escenario\n\n")
         f.write(_md_table(corr_scenario))

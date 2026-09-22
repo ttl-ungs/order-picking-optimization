@@ -2,7 +2,7 @@
 Example usage of the OPP Ant Colony Optimization V4 heuristic (picker-parallel).
 
 This script demonstrates how to use the ACO solver with the same input
-format as the exact solver (opp_model_v4). The key differences vs. opp_aco (v3):
+format as the exact solver (opp_model_v4). The key differences vs. opp_aco_1 (v3):
 - Input: Fixed batch assignments (Bn parameter) + a set of pickers (P)
 - Optimize: Routes within each batch (probabilistic ACO construction) AND the
   assignment/sequencing of batches to pickers (X_pb), so batches on different

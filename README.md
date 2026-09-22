@@ -40,19 +40,20 @@ The project is implemented in Python and uses `PySCIPOpt` as the optimization en
 ### Current Repository Structure
 
 - `models/base/model.py` contains the abstract base model shared by all optimization approaches.
-- `models/opp/` contains the concrete OPP implementation and its related classes.
-- `tests/opp/` contains the tests for the OPP implementation.
-- `tests/opp/scenarios/` contains the reusable scenarios used by the OPP tests.
+- `models/opp_v1/` contains the original OPP implementation and its related classes; later exact models are `opp_v2`..`opp_v5`, and the heuristics are `opp_hc_1`..`opp_hc_4` (Hill Climbing) and `opp_aco_1`..`opp_aco_4` (Ant Colony Optimization).
+- `tests/<model>/functional/` and `tests/<model>/stress/` contain each model's tests (`test_case_NN.py`).
+- `tests/shared_scenarios/` contains every reusable warehouse scenario used by the tests.
+- `results/<model>/<functional|stress|stability>/` holds the CSV results produced by the test runs, read by `analysis/`.
 
 Main components:
 
 - `models/base/model.py` defines a base abstract model and supports an observer pattern.
-- `models/opp/opp_model.py` contains the main OPP optimization model. It creates decision variables, defines the objective function, adds routing and timing constraints, solves the model, and returns the resulting status and output graph.
-- `models/opp/opp_location_graph.py` defines a lightweight directed graph structure used to represent warehouse locations, depot and final nodes, and distances between locations.
-- `models/opp/opp_output_builder.py` reconstructs the selected arcs from the solved model and converts them into an output graph.
+- `models/opp_v1/opp_model_v1.py` contains the main OPP optimization model. It creates decision variables, defines the objective function, adds routing and timing constraints, solves the model, and returns the resulting status and output graph.
+- `models/opp_v1/opp_location_graph.py` defines a lightweight directed graph structure used to represent warehouse locations, depot and final nodes, and distances between locations.
+- `models/opp_v1/opp_output_builder.py` reconstructs the selected arcs from the solved model and converts them into an output graph.
 - `utils/output_handler.py` acts as an observer that prints the optimization results in a readable way, including objective value, mission times, tardiness/earliness, and selected routes.
-- `tests/opp/scenarios/` contains reusable warehouse layouts and parameter sets used by the tests.
-- `tests/opp/` contains unit tests that validate different routing and assignment situations for the OPP implementation.
+- `tests/shared_scenarios/` contains reusable warehouse layouts and parameter sets used by the tests.
+- `tests/<model>/` contains the tests that validate different routing and assignment situations for each implementation.
 
 ### How the Observer Pattern Is Used
 
@@ -69,7 +70,7 @@ The implementation works as follows:
 3. `utils/output_handler.py` implements `Observer`.
   Its `update()` method receives the solved SCIP model, the relevant sets, and the decision variables, and then prints a readable summary of the solution.
 
-4. `models/opp/opp_model.py` inherits from `Model`.
+4. `models/opp_v1/opp_model_v1.py` inherits from `Model`.
   After the optimization finishes, it calls `notify(...)` with the solution data.
 
 5. In the tests, an `OutputHandler` object is created and attached to the model before calling `solve()`.
@@ -147,7 +148,14 @@ The test suite is implemented with Python's built-in `unittest` framework.
 From the project root:
 
 ```bash
-python -m unittest discover -s tests/opp -p "test_opp_model_*.py"
+python -m unittest discover -s tests/opp_v1/functional -p "test_case_*.py"
+```
+
+To run any model's suite (functional or stress) with the timeout/CSV runner:
+
+```bash
+python -m tests.run_suite opp_hc_2 functional
+python -m tests.run_suite opp_hc_3 stress --id 04
 ```
 
 ### Run a single test file
@@ -155,7 +163,7 @@ python -m unittest discover -s tests/opp -p "test_opp_model_*.py"
 For example:
 
 ```bash
-python tests/opp/test_opp_model_8.py
+python tests/opp_v1/functional/test_case_08.py
 ```
 
 ### What the tests cover
