@@ -49,6 +49,11 @@
    "failures": 1,
    "errors": 0,
    "note": "test_3_orders_1_mission_1_picker (test_case_15, was test_opp_model_15): the output graph differs from the expected one; fails identically on main. The whole opp_v1 suite takes ~8 min (real SCIP solves)."
+  },
+  "functional/opp_v5_1_mono": {
+   "failures": 1,
+   "errors": 0,
+   "note": "test_two_possible_routes (test_case_06): the monolithic model chose a non-shortest route (R_b_time=7.5 vs 4.0) that is equally optimal (obj_val=30.0). The test asserts the specific arc graph of the shortest route; the split model always returns it from stage 1."
   }
  }
 }
