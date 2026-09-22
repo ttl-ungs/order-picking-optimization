@@ -19,7 +19,7 @@ class TestOPPAntColonyOptimization4Model4ColdChainEligibility(OPPTestCaseACO4):
     """
     Test ACO4-4: Cold chain eligibility. Same batch/graph as ACO4-2/3, with
     two pickers: P1 (slow) violates T_frio_max, P2 (fast) satisfies it.
-    Purpose: mirrors stage2_scheduling.zpl's PB_elig -- _select_picker's
+    Purpose: mirrors opp_model_v5_2_split_stage2_scheduling.zpl's PB_elig -- _select_picker's
     candidate pool must exclude ineligible (picker, batch) pairs, so the
     batch must be assigned to P2, without needing pheromones to "discover"
     it via reinforcement over many iterations (unlike ACO4-2, where both

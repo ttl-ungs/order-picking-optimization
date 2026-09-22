@@ -5,7 +5,7 @@ class SolveHC4ModelDTO(SolveHCModelDTO):
     """
     DTO for opp_hc_4: adds picker speed and cold-chain hyperparameters on
     top of opp_hc_2's (SolveHCModelDTO) fields - the Hill Climbing
-    counterpart of opp_v5_2_split's stage2_scheduling.zpl additions over opp_v4.
+    counterpart of opp_v5_2_split's opp_model_v5_2_split_stage2_scheduling.zpl additions over opp_v4.
 
     Unlike opp_hc_3, congestion between concurrent pickers is intentionally
     left out here (see models/opp_hc_4/opp_hc_4.py header for why) - the two
@@ -19,7 +19,7 @@ class SolveHC4ModelDTO(SolveHCModelDTO):
     does NOT depend on picker speed (setup/picking are manual work, not
     walking), and route_time(b) = B_time * travel_distance + service_time
     is the part scaled by how fast the picker walks/scans (same split as
-    stage2_scheduling.zpl lines ~72-81).
+    opp_model_v5_2_split_stage2_scheduling.zpl lines ~72-81).
     """
 
     def __init__(self):

@@ -19,7 +19,7 @@ class TestOPPHillClimbing4Model4ColdChainEligibility(OPPTestCaseHC4):
     """
     Test HC4-4: Cold chain eligibility. Same batch/graph as HC4-2/3, with
     two pickers: P1 (slow) violates T_frio_max, P2 (fast) satisfies it.
-    Purpose: mirrors stage2_scheduling.zpl's PB_elig -- X_pb's domain must
+    Purpose: mirrors opp_model_v5_2_split_stage2_scheduling.zpl's PB_elig -- X_pb's domain must
     exclude ineligible (picker, batch) pairs, so the batch must be assigned
     to P2 from the very first feasible solution, without needing Hill
     Climbing to "discover" it via an improving move (unlike HC4-2, where

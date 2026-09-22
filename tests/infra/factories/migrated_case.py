@@ -83,7 +83,7 @@ def make_split_compat_case(v4_module, v4_case):
         def assert_no_time_overlap(self, var_values, P, B):
             """
             Overrides opp_v4's OPPTestCaseV4.assert_no_time_overlap (which
-            reconstructs a task's duration as v_pb - u_pb): stage2_scheduling.zpl
+            reconstructs a task's duration as v_pb - u_pb): opp_model_v5_2_split_stage2_scheduling.zpl
             has no u_pb variable at all (opp_v5_2_split replaced it with the fixed
             parameter t_exec_pb, see that file's header) -- var_values never
             contains a "u_pb$..." key, so u_pb.get(...) always returned 0

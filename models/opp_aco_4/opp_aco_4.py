@@ -13,7 +13,7 @@ Same problem as opp_aco_2 (multi-picker, all constraints validated):
 
 Added on top of opp_aco_2 - picker speed and cold chain, the ACO
 counterpart of opp_hc_4 (itself the Hill Climbing counterpart of opp_v5_2_split's
-stage2_scheduling.zpl additions over opp_v4):
+opp_model_v5_2_split_stage2_scheduling.zpl additions over opp_v4):
 
 - Picker speed (V_p): a batch's execution time is no longer a single
   t_exec_b fixed for every picker. Instead t_exec_pb[p, b] = fixed_time(b)

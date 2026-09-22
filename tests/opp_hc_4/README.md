@@ -20,7 +20,7 @@ route_time(b)   = B_time * travel_distance + service_time          # scaled by s
 - **Cold chain (`T_frio_max`)**: a `(picker, batch)` pair is only eligible
   if `t_exec_pb[p, b] <= T_frio_max`. This restricts which picker a batch
   can be assigned to (X_pb's domain), mirroring
-  `stage2_scheduling.zpl`'s `PB_elig`. A batch left with zero eligible
+  `opp_model_v5_2_split_stage2_scheduling.zpl`'s `PB_elig`. A batch left with zero eligible
   pickers makes the instance `"infeasible"`, short-circuited up front via
   `models/opp_v5_2_split/utils/cold_chain_validation.py::batches_without_eligible_picker`
   (reused directly, not re-implemented).

@@ -18,7 +18,7 @@ class TestOPPSplitSpeedFormula(OPPTestCaseSplit):
     asserts the exact t_exec_pb = tiempo_fijo + R_b_time / V_p formula
     numerically, confirming ONLY the route-time component is divided by
     speed -- setup/picking stays fixed regardless of which picker runs it,
-    per stage2_scheduling.zpl's documented assumption.
+    per opp_model_v5_2_split_stage2_scheduling.zpl's documented assumption.
     """
 
     def test_completion_time_matches_the_documented_formula_exactly(self):
@@ -71,7 +71,7 @@ class TestOPPSplitColdChainEdgeCases(OPPTestCaseSplit):
 
     def test_no_eligible_picker_returns_infeasible_gracefully(self):
         # Regression test for the bug found 2026-08-31 and fixed 2026-09-01:
-        # stage2_scheduling.zpl's own comment on B_sin_picker_elegible claims
+        # opp_model_v5_2_split_stage2_scheduling.zpl's own comment on B_sin_picker_elegible claims
         # a batch with no eligible (picker, batch) pair under the cold-chain
         # limit "will surely come back infeasible", but ZIMPL itself rejects
         # the resulting empty-sum constraint at COMPILE time,  raising a bare

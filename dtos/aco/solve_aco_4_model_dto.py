@@ -6,7 +6,7 @@ class SolveAco4ModelDTO(SolveAcoModelDTO):
     DTO for opp_aco_4: adds picker speed and cold-chain hyperparameters on
     top of opp_aco_2's (SolveAcoModelDTO) fields - the ACO counterpart of
     opp_hc_4 (itself the Hill Climbing counterpart of opp_v5_2_split's
-    stage2_scheduling.zpl additions over opp_v4).
+    opp_model_v5_2_split_stage2_scheduling.zpl additions over opp_v4).
 
     Unlike opp_aco_3, congestion between concurrent pickers is intentionally
     left out here (see models/opp_aco_4/opp_aco_4.py header for why) - the

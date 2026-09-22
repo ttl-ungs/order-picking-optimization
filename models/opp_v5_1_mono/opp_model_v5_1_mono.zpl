@@ -4,7 +4,7 @@
 # Modelo con asignación de lotes a pickers.
 #
 # Resuelve EL MISMO problema que opp_v5_2_split (la descomposicion en dos
-# etapas: stage1_routing.zpl + stage2_scheduling.zpl), pero como un unico MIP
+# etapas: opp_model_v5_2_split_stage1_routing.zpl + opp_model_v5_2_split_stage2_scheduling.zpl), pero como un unico MIP
 # monolitico: ruteo + asignacion + secuenciacion se deciden juntos. Respecto de
 # opp_v4 agrega las dos extensiones de la familia v5:
 #   - Pickers heterogeneos por velocidad (V_p): la velocidad escala solo el
@@ -118,7 +118,7 @@ param tiempo_fijo[<b> in B] :=
 # de tiempo (ver tests/opp_v4/functional/test_case_13 y test_case_14:
 # solapamiento de picker detectado por assert_no_time_overlap). 500 ya cubre la
 # escala de las instancias actuales manteniendo el margen necesario para que el
-# presolve no recorte la variable. Mismo valor que stage2_scheduling.zpl de opp_v5_2_split.
+# presolve no recorte la variable. Mismo valor que opp_model_v5_2_split_stage2_scheduling.zpl de opp_v5_2_split.
 param M_seq := 500;
 
 ##############################################################################
@@ -145,7 +145,7 @@ var v_b[B]          >= 0;
 #             (variable del modelo v2; se conserva).
 # La cota superior implementa la cadena de frio: si X_pb = 1, (15) obliga a
 # u_pb >= t_exec_pb, asi que t_exec_pb <= T_frio_max (+1e-9, la misma
-# tolerancia que PB_elig de stage2_scheduling.zpl); si X_pb = 0 la cota no
+# tolerancia que PB_elig de opp_model_v5_2_split_stage2_scheduling.zpl); si X_pb = 0 la cota no
 # restringe nada porque u_pb puede valer 0.
 var u_pb[P * B]     >= 0 <= T_frio_max + 1e-9;
 
@@ -293,7 +293,7 @@ subto f_flow_conservation:
 # R_b_time[b] = traslado (distancia * B_time) + servicio en cada ubicacion
 # visitada. NO incluye B_setup ni B_picking (ver tiempo_fijo): esos no dependen
 # de la ruta. Es la misma definicion que define_route_time de
-# stage1_routing.zpl (opp_v5_2_split); la unica diferencia es que aca la ruta y su
+# opp_model_v5_2_split_stage1_routing.zpl (opp_v5_2_split); la unica diferencia es que aca la ruta y su
 # tiempo se deciden en el mismo MIP que la asignacion y la secuenciacion.
 subto define_route_time:
     forall <b> in B:
@@ -312,7 +312,7 @@ subto assign_exactly_one_picker:
 
 # (15) Ejecución acota procesamiento (cota inferior)
 # t_exec_pb = tiempo_fijo[b] + R_b_time[b] / V_p[p]  (solo la ruta escala con la
-# velocidad del picker, igual que t_exec_pb de stage2_scheduling.zpl).
+# velocidad del picker, igual que t_exec_pb de opp_model_v5_2_split_stage2_scheduling.zpl).
 #   tiempo_fijo[b] + R_b_time[b]/V_p[p] - M * (1 - X_pb[p,b]) <= u_pb[p,b]
 subto batch_execution_time:
     forall <p,b> in P * B:
@@ -341,7 +341,7 @@ subto v_b_lower_bound:
 # (19) Secuenciamiento sin solapamiento (orden 1) - Nueva constraint
 # Si ambos lotes se asignan al mismo picker, uno debe ejecutarse después del otro.
 # La duracion del lote k depende del picker p (velocidad V_p[p]), igual que
-# t_exec_pb[p,k] en stage2_scheduling.zpl.
+# t_exec_pb[p,k] en opp_model_v5_2_split_stage2_scheduling.zpl.
 subto non_overlap_1:
     forall <p> in P:
         forall <b, k> in B * B with b < k:
@@ -357,7 +357,7 @@ subto non_overlap_2:
 
 ########################### Earliness y tardiness ############################
 
-# Filtradas por Bn[n,b] == 1 (igual que stage2_scheduling.zpl): para un par
+# Filtradas por Bn[n,b] == 1 (igual que opp_model_v5_2_split_stage2_scheduling.zpl): para un par
 # (n,b) con Bn = 0 la restriccion nunca es activa (M es cota valida), asi que
 # generarla solo agrega filas.
 

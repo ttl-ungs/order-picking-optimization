@@ -506,14 +506,14 @@ pickers, cadena de frío):
   "¿qué picker lo hace?"), se agregaron 3 tests que verifican la fórmula y
   los casos límite exactos:
   - Verifica numéricamente la fórmula documentada en
-    `stage2_scheduling.zpl` (`t_exec_pb = tiempo_fijo + R_b_time / V_p`,
+    `opp_model_v5_2_split_stage2_scheduling.zpl` (`t_exec_pb = tiempo_fijo + R_b_time / V_p`,
     donde `tiempo_fijo` NO se escala por velocidad) contra valores exactos
     calculados a mano, no solo "qué picker ganó".
   - Verifica el límite exacto de `T_frio_max` (`<=`, no `<`) -- un picker
     cuyo `t_exec_pb` coincide exactamente con el límite debe seguir siendo
     elegible.
   - **Encontró un bug real**: cuando ningún picker es elegible para un
-    lote por cadena de frío, el comentario de `stage2_scheduling.zpl`
+    lote por cadena de frío, el comentario de `opp_model_v5_2_split_stage2_scheduling.zpl`
     sobre `B_sin_picker_elegible` dice que "el modelo va a dar infactible
     seguro" -- pero no es así. La restricción `assign_exactly_one_picker`
     queda con una suma vacía (`0 == 1`), y **ZIMPL la rechaza en tiempo de
@@ -523,7 +523,7 @@ pickers, cadena de frío):
     cualquier llamador esperaría según el propio comentario del modelo. El
     test documenta el comportamiento real (`assertRaises`), no lo
     enmascara -- **pendiente reportar** como bug de
-    `models/opp_v5_2_split/stage2_scheduling.zpl` (el chequeo `eligible_pairs()`
+    `models/opp_v5_2_split/opp_model_v5_2_split_stage2_scheduling.zpl` (el chequeo `eligible_pairs()`
     del lado Python es, hoy, lo único que evita este crash).
 
 Verificado con la suite normal completa: 53 tests, 52 ok, 1 timeout
@@ -577,7 +577,7 @@ instancia**. Inspeccionando el `.lp` crudo:
 
 Esto excede lo que se puede diagnosticar sin entrar a las entrañas del
 compilador de ZIMPL (no es un bug de este repositorio ni de
-`stage1_routing.zpl` en un sentido que se pueda arreglar en Python).
+`opp_model_v5_2_split_stage1_routing.zpl` en un sentido que se pueda arreglar en Python).
 Parece un problema de generación/truncamiento de nombres de ZIMPL
 específico de instancias con muchos lotes y grafos grandes. 
 Puede requerir ayuda de alguien con más experiencia en ZIMPL
@@ -605,7 +605,7 @@ el comportamiento corregido (antes esperaba la excepción con
 `assertRaises`; ahora espera `status == "infeasible"` limpio).
 
 Este fix vive en el harness de tests (`OPPTestCaseSplit`), no en
-`stage2_scheduling.zpl` en sí, porque `opp_v5_2_split` todavía no tiene un punto
+`opp_model_v5_2_split_stage2_scheduling.zpl` en sí, porque `opp_v5_2_split` todavía no tiene un punto
 de entrada de "producción" fuera de los tests -- si en algún momento lo
 tiene, este mismo chequeo debería moverse ahí (o agregarse directamente
 al `.zpl`, si ZIMPL ofrece una forma limpia de expresar "sum vacía ==

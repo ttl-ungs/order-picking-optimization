@@ -1,6 +1,6 @@
 """
-Pre-solve input validation for opp_v5_2_split's Etapa 2 (stage2_scheduling.zpl).
-Bug: stage2_scheduling.zpl restricts X_pb's domain to PB_elig = {(p,b) : t_exec_pb[p,b] <= T_frio_max},
+Pre-solve input validation for opp_v5_2_split's Etapa 2 (opp_model_v5_2_split_stage2_scheduling.zpl).
+Bug: opp_model_v5_2_split_stage2_scheduling.zpl restricts X_pb's domain to PB_elig = {(p,b) : t_exec_pb[p,b] <= T_frio_max},
 so that`assign_exactly_one_picker` becomes a sum over an EMPTY set for that batch, and ZIMPL rejects that at
 COMPILE time.
 This mirrors models/utils/input_validation.py's role for opp_v4.
@@ -14,7 +14,7 @@ three compute t_exec_pb = fixed_time(b) + route_time(b) / V_p[p]).
 # check can't be stricter than what those models actually enforce, which
 # would make it possible for a picker they'd accept to be reported as
 # ineligible by batches_without_eligible_picker (2026-09-10 audit finding:
-# stage2_scheduling.zpl's PB_elig used a bare <=, with no epsilon at all).
+# opp_model_v5_2_split_stage2_scheduling.zpl's PB_elig used a bare <=, with no epsilon at all).
 COLD_CHAIN_TOLERANCE = 1e-9
 
 
@@ -43,7 +43,7 @@ def batches_without_eligible_picker(
 ) -> set:
     """
     Returns the set of batch ids in B that have zero (picker, batch) pair satisfying t_exec_pb <= T_frio_max
-    Replicates stage2_scheduling.zpl's PB_elig/B_sin_picker_elegible computation exactly
+    Replicates opp_model_v5_2_split_stage2_scheduling.zpl's PB_elig/B_sin_picker_elegible computation exactly
     (same tiempo_fijo/t_exec_pb formula, including its +1e-9 tolerance -- see COLD_CHAIN_TOLERANCE), so
     solve_v5_stage2 can short-circuit to a clean "infeasible" before invoking ZIMPL for these.
     Empty result means every batch has at least one eligible picker.

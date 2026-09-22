@@ -25,7 +25,7 @@ class OPPTestCaseSplit(unittest.TestCase):
         route_times = self.extract_route_times(stage1_values, scenario["B"])
         self.assertEqual(set(route_times), set(scenario["B"]), "Stage 1 did not export every batch time")
 
-        # V_p[p] is a divisor in stage2_scheduling.zpl's t_exec_pb (t_exec_pb
+        # V_p[p] is a divisor in opp_model_v5_2_split_stage2_scheduling.zpl's t_exec_pb (t_exec_pb
         # = tiempo_fijo[b] + R_b_time[b] / V_p[p]), evaluated eagerly by
         # ZIMPL for every (p, b) pair as soon as the .dat is read -- a speed
         # of exactly 0 divides by zero there (no graceful "infeasible", it's
@@ -47,7 +47,7 @@ class OPPTestCaseSplit(unittest.TestCase):
             return stage1_values, route_times, None, None
 
         # Fix (2026-09-01, code audit): a batch with zero eligible pickers
-        # under the cold-chain limit makes stage2_scheduling.zpl's
+        # under the cold-chain limit makes opp_model_v5_2_split_stage2_scheduling.zpl's
         # assign_exactly_one_picker sum over an empty PB_elig slice for
         # that batch, which ZIMPL rejects at COMPILE time (RuntimeError).
         # Short-circuit here instead of letting that crash surface

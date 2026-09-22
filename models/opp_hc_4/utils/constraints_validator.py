@@ -128,7 +128,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
         return total
 
     def t_exec_pb(self, batch: str, route: list, picker: str) -> float:
-        """Same formula as stage2_scheduling.zpl's t_exec_pb: fixed setup/
+        """Same formula as opp_model_v5_2_split_stage2_scheduling.zpl's t_exec_pb: fixed setup/
         picking time (speed-independent) plus travel+service time divided
         by the picker's speed."""
         fixed_time = self.B_setup + self.B_picking * sum(

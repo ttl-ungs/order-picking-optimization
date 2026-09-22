@@ -1,7 +1,7 @@
 """
-Per-batch decomposition of opp_v5_2_split's Stage 1 (stage1_routing.zpl).
+Per-batch decomposition of opp_v5_2_split's Stage 1 (opp_model_v5_2_split_stage1_routing.zpl).
 
-stage1_routing.zpl's own header says batches never interact (every
+opp_model_v5_2_split_stage1_routing.zpl's own header says batches never interact (every
 constraint is `forall <b> in B: ...`, and the objective is a plain sum of
 independent R_b_time[b] terms) -- solving all of them together in one MIP
 wastes work a MIP branch-and-bound tree doesn't give back. Measured
@@ -14,7 +14,7 @@ every batch's variables in one model multiplies that cost for nothing:
 nothing in the objective or constraints ever links two different batches'
 variables.
 
-No change to stage1_routing.zpl itself was needed: it only ever reads
+No change to opp_model_v5_2_split_stage1_routing.zpl itself was needed: it only ever reads
 whatever data_B.dat/Bn.dat a caller has written, so calling the exact
 same file once per batch (with just those two narrowed to that one
 batch) is enough. data_N.dat/a_ni.dat are deliberately left UNTOUCHED

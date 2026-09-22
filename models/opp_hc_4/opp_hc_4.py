@@ -10,7 +10,7 @@ Same problem as opp_hc_2 (multi-picker, all constraints validated):
 - Output: compatible with build_output
 
 Added on top of opp_hc_2 - picker speed and cold chain, the Hill Climbing
-counterpart of opp_v5_2_split's stage2_scheduling.zpl additions over opp_v4:
+counterpart of opp_v5_2_split's opp_model_v5_2_split_stage2_scheduling.zpl additions over opp_v4:
 
 - Picker speed (V_p): a batch's execution time is no longer a single
   t_exec_b fixed for every picker. Instead t_exec_pb[p, b] = fixed_time(b)
