@@ -59,6 +59,7 @@ raiz-del-proyecto/
 │       ├── functional/          # Pruebas funcionales regulares: test_case_01.py, test_case_02.py, ...
 │       └── stress/              # Pruebas de estrés
 ├── examples/                    # Scripts de uso de los modelos heurísticos
+├── scripts/                     # Herramientas del repo: check_repo, run_all, new_family_tests (ver scripts/README.md)
 ├── docs/                        # Documentación: thesis/ (tex, pdf, results_outline), guides/, specs/, tests/<modelo>/ (índice en docs/README.md)
 └── results/                     # CSV de resultados (datos generados): results/<modelo>/<functional|stress|stability>/
 ```

@@ -1,0 +1,170 @@
+"""Repository consistency checks (imports, layout, naming, stale references).
+
+The checks that were done by hand after every restructuring, as one command:
+
+    python -m scripts.check_repo            # everything
+    python -m scripts.check_repo --skip-imports   # layout/naming/references only (instant)
+
+Checks:
+  imports     every tracked module imports cleanly (this also resolves the base
+              module of every family_case()/migrated_case() factory)
+  factories   the module path inside every family_case()/migrated_case() call exists
+  naming      test files (test_*.py) under tests/<model>/{functional,stress,diagnostics}/
+              are test_case_<NN|slug>.py, and the numbered ones are continuous (01..N)
+  layout      no leftover scenarios/, tests/, doc/ inside tests/<model>/;
+              results/<model>/<tier> tiers are functional|stress|stability
+  references  no tracked .py/.md still uses a module path or directory that
+              was removed or renamed
+Exit code is 1 if any check fails.
+"""
+
+import importlib
+import os
+import re
+import subprocess
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+ROOT = os.getcwd()
+TIERS = ("functional", "stress", "diagnostics")
+RESULT_TIERS = {"functional", "stress", "stability"}
+
+# Entry points / scripts whose import would run something or is not a library module.
+IMPORT_SKIP_PREFIXES = ("examples/",)
+IMPORT_SKIP_FILES = {"tests/run_suite.py"}
+
+# (pattern, why) -- paths and dotted modules that no longer exist.
+STALE = [
+    (r"tests/outputs", "results moved to results/"),
+    (r"tests\.opp_test_case\b", "moved to tests.infra.cases.opp_test_case"),
+    (r"tests\.family_case\b", "moved to tests.infra.factories.family_case"),
+    (r"tests\.test_(runner|config)\b", "moved to tests.infra.execution.(runner|config)"),
+    (r"tests\.utils\.zpl_utils\b", "moved to tests.infra.zimpl.zpl_utils"),
+    (r"models\.utils\.dat_files_builder\b", "moved to tests.infra.zimpl.dat_files_builder"),
+    (r"\bgraphs\.graphs_factory\b", "moved to tests.infra.factories.graphs_factory"),
+    (r"tests\.opp_v5\.v4_compat\b", "renamed to tests.infra.factories.migrated_case"),
+    (r"tests\.opp_v[24]\.route_assertions\b", "moved to tests.infra.cases.route_assertions"),
+    (r"tests\.opp_\w+\.tests\.(normal|stress|diagnostics)\b", "tests/<model>/tests/ was flattened"),
+    (r"tests\.support\b|tests/support\b", "tests/support/ was regrouped into tests/infra/{execution,cases,factories,zimpl}"),
+    (r"tests\.shared_scenarios\.normal\b", "renamed to tests.shared_scenarios.functional"),
+    (r"\bmodels\.opp\.|\bmodels\.opp_hc\.|\bmodels\.opp_aco\.", "renamed to opp_v1 / opp_hc_1 / opp_aco_1"),
+]
+# Text where the old names are the point (history), not live references.
+STALE_ALLOW = ("meta.md", "scripts/check_repo.py", "analysis/output/")
+
+
+def tracked():
+    out = subprocess.run(["git", "ls-files"], capture_output=True, text=True).stdout.split("\n")
+    return [f for f in out if f and os.path.exists(f)]
+
+
+def check_imports(files):
+    errors = []
+    mods = 0
+    for f in files:
+        if not f.endswith(".py") or f.startswith(IMPORT_SKIP_PREFIXES) or f in IMPORT_SKIP_FILES:
+            continue
+        mod = f[:-3].replace("/", ".")
+        if mod.endswith(".__init__"):
+            mod = mod[: -len(".__init__")]
+        if not mod:
+            continue
+        mods += 1
+        try:
+            importlib.import_module(mod)
+        except Exception as exc:  # noqa: BLE001 -- report any failure, whatever its type
+            errors.append(f"{mod}: {type(exc).__name__}: {str(exc)[:100]}")
+    return mods, errors
+
+
+def check_factories(files):
+    errors = []
+    pat = re.compile(r"(?:family_case|migrated_case)\(\s*['\"]([\w.]+)['\"]")
+    for f in files:
+        if not f.startswith("tests/") or not f.endswith(".py"):
+            continue
+        for target in pat.findall(open(f, encoding="utf-8").read()):
+            if not os.path.exists(target.replace(".", "/") + ".py"):
+                errors.append(f"{f}: factory points at missing module {target}")
+    return errors
+
+
+def check_naming(files):
+    errors = []
+    by_dir = {}
+    for f in files:
+        m = re.match(r"tests/(opp_\w+)/(functional|stress|diagnostics)/([^/]+\.py)$", f)
+        if m and m.group(3).startswith("test_"):  # helper modules in a tier dir are not tests
+            by_dir.setdefault((m.group(1), m.group(2)), []).append(m.group(3))
+    for (model, tier), names in sorted(by_dir.items()):
+        numbers = []
+        for n in names:
+            m = re.fullmatch(r"test_case_(\d+|[a-z0-9_]+)\.py", n)
+            if not m:
+                errors.append(f"tests/{model}/{tier}/{n}: not named test_case_<NN|slug>.py")
+            elif m.group(1).isdigit():
+                if len(m.group(1)) != 2:
+                    errors.append(f"tests/{model}/{tier}/{n}: number must have two digits")
+                numbers.append(int(m.group(1)))
+        if numbers and sorted(numbers) != list(range(1, len(numbers) + 1)):
+            missing = sorted(set(range(1, max(numbers) + 1)) - set(numbers))
+            errors.append(f"tests/{model}/{tier}: numbering not continuous (missing {missing}, duplicates: {len(numbers) - len(set(numbers))})")
+    return errors
+
+
+def check_layout(files):
+    errors = []
+    for f in files:
+        m = re.match(r"tests/(opp_\w+)/(scenarios|tests|doc)/", f)
+        if m:
+            errors.append(f"{f}: tests/<model>/{m.group(2)}/ should not exist (scenarios -> tests/shared_scenarios, docs -> docs/tests)")
+        if re.match(r"models/opp_\w+/example_usage\.py$", f):
+            errors.append(f"{f}: usage examples live in examples/")
+        m = re.match(r"results/[^/]+/([^/]+)/", f)
+        if m and m.group(1) not in RESULT_TIERS:
+            errors.append(f"{f}: results tier must be one of {sorted(RESULT_TIERS)}")
+    return errors
+
+
+def check_references(files):
+    errors = []
+    for f in files:
+        if not f.endswith((".py", ".md")) or f.startswith(STALE_ALLOW):
+            continue
+        text = open(f, encoding="utf-8", errors="ignore").read()
+        for pattern, why in STALE:
+            m = re.search(pattern, text)
+            if m:
+                line = text[: m.start()].count("\n") + 1
+                errors.append(f"{f}:{line}: '{m.group(0)}' -- {why}")
+    return errors
+
+
+def main():
+    skip_imports = "--skip-imports" in sys.argv
+    files = tracked()
+    failed = 0
+    sections = [
+        ("layout", lambda: (None, check_layout(files))),
+        ("naming", lambda: (None, check_naming(files))),
+        ("factories", lambda: (None, check_factories(files))),
+        ("references", lambda: (None, check_references(files))),
+    ]
+    if not skip_imports:
+        sections.append(("imports", lambda: check_imports(files)))
+    for name, fn in sections:
+        count, errors = fn()
+        extra = f" ({count} modules)" if count else ""
+        print(f"[{'FAIL' if errors else ' ok '}] {name}{extra}")
+        for e in errors[:25]:
+            print(f"        {e}")
+        if len(errors) > 25:
+            print(f"        ... and {len(errors) - 25} more")
+        failed += bool(errors)
+    print("\nAll checks passed." if not failed else f"\n{failed} check(s) failed.")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

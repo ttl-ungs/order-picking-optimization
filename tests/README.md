@@ -14,7 +14,7 @@ This document describes a workflow to design and maintain OPP (v1 and v2) tests 
 - tests/shared_scenarios: definition of graphs and base assignments (shared by every model; model-specific ones carry a `_vN` suffix).
 - tests/<model>/functional and tests/<model>/stress: test cases per model (`test_case_NN.py`).
 - tests/infra/: shared test infrastructure, in four groups: `execution/` (runner, config), `cases/` (`OPPTestCase`, `route_assertions`), `factories/` (`family_case`, `migrated_case`, `graphs_factory`) and `zimpl/` (helpers of the ZIMPL-based tests).
-- tests/run_suite.py: single entry point to run a model's suite.
+- tests/run_suite.py: single entry point to run a model's suite. Repo-wide checks and runs (`check_repo`, `run_all`) live in `scripts/`.
 
 ## Workflow per graph (recommended)
 

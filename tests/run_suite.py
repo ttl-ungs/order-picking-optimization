@@ -37,24 +37,34 @@ def main(argv=None):
     parser.add_argument(
         "--id",
         metavar="NN",
-        help="Run only test_case_<id>.py instead of the full suite (stress tier only).",
+        nargs="+",
+        help="Run only test_case_<id>.py for each given id instead of the full suite.",
+    )
+    parser.add_argument(
+        "--timeout-minutes",
+        type=float,
+        help="Per-test timeout in minutes (default: TEST_TIMEOUT_MINUTES / STRESS_TEST_TIMEOUT_MINUTES from .env).",
+    )
+    parser.add_argument(
+        "--allow-timeout",
+        action="store_true",
+        help="Do not fail the exit code on timeouts (failures and errors still do).",
     )
     args = parser.parse_args(argv)
-
-    if args.id and args.tier != "stress":
-        parser.error("--id is only supported for the stress tier")
 
     model_dir = os.path.join(os.path.dirname(__file__), args.model)
     start_dir = os.path.join(model_dir, args.tier)
     if not os.path.isdir(start_dir):
         parser.error(f"No such directory: {start_dir}")
 
-    test_pattern = "test_*.py"
+    patterns = ["test_*.py"]
     if args.id:
-        test_pattern = f"test_case_{args.id}.py"
-        print(f"Modo individual: Buscando el test {test_pattern}")
+        patterns = [f"test_case_{i}.py" for i in args.id]
+        print(f"Modo individual: Buscando {', '.join(patterns)}")
 
-    timeout_minutes = STRESS_TEST_TIMEOUT_MINUTES if args.tier == "stress" else TEST_TIMEOUT_MINUTES
+    timeout_minutes = args.timeout_minutes or (
+        STRESS_TEST_TIMEOUT_MINUTES if args.tier == "stress" else TEST_TIMEOUT_MINUTES
+    )
 
     runner = TestRunner(
         timeout_minutes=timeout_minutes,
@@ -63,16 +73,18 @@ def main(argv=None):
         test_type=args.tier,
     )
 
-    suite = unittest.TestLoader().discover(start_dir=start_dir, pattern=test_pattern)
-    test_ids = TestRunner.collect_test_ids(suite)
+    test_ids = []
+    for pattern in patterns:
+        suite = unittest.TestLoader().discover(start_dir=start_dir, pattern=pattern)
+        test_ids += [t for t in TestRunner.collect_test_ids(suite) if t not in test_ids]
 
     results = runner.run(test_ids)
     label = f"{args.tier.upper()} TESTS ({args.model})"
     if args.id:
-        label += f" [{test_pattern}]"
+        label += f" [{', '.join(patterns)}]"
     runner.print_summary(results, label)
 
-    sys.exit(0 if runner.succeeded(results) else 1)
+    sys.exit(0 if runner.succeeded(results, allow_timeout=args.allow_timeout) else 1)
 
 
 if __name__ == "__main__":
