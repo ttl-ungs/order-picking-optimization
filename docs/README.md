@@ -21,4 +21,6 @@ Other documentation lives next to the code it describes:
 | `opp_v1`..`opp_v3`, `opp_aco_1` | | `docs/tests/<model>/` |
 | `opp_v4`, `opp_v5` | (ZIMPL models: see `docs/thesis/`) | |
 
+CI and repo tooling: `../scripts/README.md`, `../.github/workflows/`.
+
 Repo-level: `../README.md` (overview), `../conventions.md` (binding conventions), `../meta.md` (live changelog and project state), `../analysis/README.md` (analysis pipeline and every audit finding), `../tests/README.md` (how tests are organized), `../examples/README.md`.

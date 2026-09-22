@@ -5,6 +5,8 @@
     python -m scripts.run_all --profile full               # every model (opp_v1..v5 use SCIP/zimpl: slow)
     python -m scripts.run_all --tier stress --stress-timeout-minutes 1
     python -m scripts.run_all --models opp_hc_2,opp_aco_3 --tier all
+    python -m scripts.run_all --tier stress --smoke        # only the fast stress tests (scripts/stress_smoke.json)
+    python -m scripts.run_all --retries 1                  # re-run a failing suite once (ACO tests without a Seed can flake)
     python -m scripts.run_all --json report.json           # machine-readable result too
 
 scripts/baseline_counts.json holds how many tests each suite had on main before
@@ -17,6 +19,10 @@ the reorganization (and the failures known to exist there). A suite is:
   SKIP      needs the `zimpl` binary and it is not on PATH
 Stress suites run through tests/run_suite.py with --allow-timeout: a single test that
 exceeds --stress-timeout-minutes is reported but does not make the suite fail.
+--smoke restricts stress suites to the tests listed in scripts/stress_smoke.json (built by
+scripts/make_stress_smoke.py from the recorded results: the ones that finished quickly).
+--retries N re-runs a suite that FAILed up to N more times; if it then passes it is reported
+as PASS with "flaky" in the detail, so instability stays visible.
 Exit code is 1 if any suite is FAIL, COUNT or (functional) TIMEOUT.
 """
 
@@ -33,6 +39,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 ROOT = os.getcwd()
 BASELINE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "baseline_counts.json")
+SMOKE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stress_smoke.json")
 FAST_MODELS = ["opp_hc_1", "opp_hc_2", "opp_hc_3", "opp_hc_4", "opp_aco_1", "opp_aco_2", "opp_aco_3", "opp_aco_4"]
 NEEDS_ZIMPL = {"opp_v2_zpl", "opp_v4", "opp_v5"}
 
@@ -102,11 +109,19 @@ def do_suite(args, baseline, model, tier):
     if tier == "stress":
         cmd = [sys.executable, "-m", "tests.run_suite", model, "stress", "--allow-timeout",
                "--timeout-minutes", str(args.stress_timeout_minutes)]
+        if args.smoke:
+            entry = args.smoke_list.get(model)
+            if not entry:
+                return dict(model=model, tier=tier, status="SKIP", ran=None, expected=None, detail="no smoke tests listed")
+            cmd += ["--id"] + entry["ids"]
+            expected = entry["tests"]
         rc, out, to = run(cmd, args.stress_suite_timeout, env)
         ran = grab(r"^Ran: (\d+)", out)
         failures, errors, timeouts = (grab(r"^Failures: (\d+)", out) or 0, grab(r"^Errors: (\d+)", out) or 0,
                                       grab(r"^Timeouts: (\d+)", out) or 0)
         status = judge(tier, model, ran, failures, errors, baseline, to)
+        if args.smoke and status in ("PASS", "COUNT"):
+            status = "PASS" if ran == expected else "COUNT"
         return dict(model=model, tier=tier, status=status, ran=ran, expected=expected,
                     detail=f"failures={failures} errors={errors} per-test timeouts={timeouts}")
     cmd = [sys.executable, "-m", "unittest", "discover", "-s", suite_dir(model, tier), "-p", "test_*.py"]
@@ -118,6 +133,21 @@ def do_suite(args, baseline, model, tier):
                 detail=f"failures={failures} errors={errors}")
 
 
+def do_suite_with_retries(args, baseline, model, tier):
+    result = do_suite(args, baseline, model, tier)
+    attempt = 0
+    while result["status"] == "FAIL" and attempt < args.retries:
+        attempt += 1
+        again = do_suite(args, baseline, model, tier)
+        if again["status"] != "FAIL":
+            again["detail"] += f" (flaky: failed {attempt} time(s) before passing)"
+            return again
+        result = again
+    if attempt:
+        result["detail"] += f" (still failing after {attempt} retr{'y' if attempt == 1 else 'ies'})"
+    return result
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--tier", choices=["functional", "stress", "all"], default="functional")
@@ -127,12 +157,20 @@ def main():
     ap.add_argument("--timeout", type=int, default=900, help="seconds for a whole functional suite (default 900)")
     ap.add_argument("--stress-timeout-minutes", type=float, default=1.0, help="per stress test (default 1)")
     ap.add_argument("--stress-suite-timeout", type=int, default=3600, help="seconds for a whole stress suite (default 3600)")
+    ap.add_argument("--smoke", action="store_true", help="stress tier: only the fast tests in scripts/stress_smoke.json")
+    ap.add_argument("--retries", type=int, default=0, help="re-run a failing suite up to N more times (default 0)")
     ap.add_argument("--collect-only", action="store_true", help="only count tests (no test is run)")
     ap.add_argument("--update-baseline", action="store_true", help="rewrite the baseline counts from the current tree")
     ap.add_argument("--json", help="also write the results to this file")
     args = ap.parse_args()
 
     baseline = load_baseline()
+    args.smoke_list = {}
+    if args.smoke:
+        with open(SMOKE_PATH, encoding="utf-8") as fh:
+            args.smoke_list = json.load(fh)["models"]
+        if args.models is None and args.profile == "fast":
+            args.models = ",".join(args.smoke_list)
     tiers = ["functional", "stress"] if args.tier == "all" else [args.tier]
     known = {m for t in baseline["counts"].values() for m in t}
     if args.models:
@@ -146,7 +184,7 @@ def main():
     if args.update_baseline:
         args.collect_only = True
     with ThreadPoolExecutor(max_workers=max(1, args.jobs)) as pool:
-        results = list(pool.map(lambda s: do_suite(args, baseline, *s), suites))
+        results = list(pool.map(lambda s: do_suite_with_retries(args, baseline, *s), suites))
 
     if args.update_baseline:
         for r in results:
