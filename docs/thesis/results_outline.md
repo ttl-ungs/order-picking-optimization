@@ -323,6 +323,6 @@ con datos completos (`opp_v4`, `opp_hc_2`, `opp_hc_3`, `opp_aco_2`,
 `opp_aco_3`). Excepciones documentadas y aceptadas: `opp_v4` en estrés
 sigue con el dataset de 2026-08-18 (8 tests, no se re-corrió porque tomaría
 horas y los fixes de esta auditoría no tocan `opp_v4`, que es exacto vía
-SCIP, no heurístico); `opp_v5` sigue fuera del alcance mientras está en
+SCIP, no heurístico); `opp_v5_2_split`/`opp_v5_1_mono` siguen fuera del alcance mientras están en
 construcción. Con esto, `docs/thesis/results_outline.md` está listo para pasar de
 bosquejo a texto real de la sección de resultados.

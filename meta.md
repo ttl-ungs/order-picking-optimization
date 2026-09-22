@@ -35,7 +35,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 
 ### Contexto activo
 
-- Modelo base / referencia: `opp_v4` (exacto, ZIMPL+SCIP), comparado también contra `opp_v5` (exacto, descomposición en 2 etapas).
+- Modelo base / referencia: `opp_v4` (exacto, ZIMPL+SCIP), comparado también contra la familia v5: `opp_v5_1_mono` (exacto, MIP monolítico) y `opp_v5_2_split` (exacto, descomposición en 2 etapas; antes llamado `opp_v5`).
 - Modelos alternativos vigentes: `opp_hc_2/3/4` (Hill Climbing), `opp_aco_2/3/4` (ACO).
 - Alcance de la tesina confirmado (2026-09-17): solo `opp_v4` en adelante, incluyendo sus heurísticas. `opp`, `opp_v2`, `opp_v3`, `opp_hc`, `opp_aco` (sin numerar) son legacy — se mantienen en el repo por historial pero quedan fuera del alcance de la tesina.
 - Aspecto prioritario actual: la limpieza y reorganización del repo quedó hecha (ver el bloque del 2026-09-17/19); falta la verificación a fondo de todas las suites y luego separar en un repo aparte lo que entra en la tesina (tarea futura, todavía no iniciada).
@@ -306,7 +306,7 @@ python -m unittest discover -s tests
 ## 7. Riesgos, deuda y pendientes
 
 ### Riesgos conocidos
-- `opp_v5` en estrés: 0/8, con un fallo por nombres de variables truncados/corruptos en el `.lp` que genera ZIMPL para instancias grandes (ver `analysis/README.md`).
+- `opp_v5_2_split` en estrés: 0/8, con un fallo por nombres de variables truncados/corruptos en el `.lp` que genera ZIMPL para instancias grandes (ver `analysis/README.md`).
 - Las heurísticas HC no tienen retroceso en la construcción de rutas y no resuelven instancias con ~25 ubicaciones requeridas por lote, aunque SCIP las resuelva en segundos (limitación documentada en `docs/thesis/results_outline.md`).
 - La comparación heurístico vs. exacto sólo es válida si la instancia es la misma: se une por nombre de método y forma de la instancia, no por número de archivo.
 
