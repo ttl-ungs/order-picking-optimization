@@ -30,13 +30,32 @@ their original (always non-empty, whole-scenario) size sidesteps that
 entirely, and costs nothing that matters: the actual combinatorial
 complexity driver is z_ijb/f_ijb (indexed by E * B), not the N-indexed
 sums, so narrowing B alone already captures the decomposition's benefit.
+
+Parallel mode (>= 2 batches, default): each batch is solved in its own
+temporary directory by a separate OS process via ProcessPoolExecutor,
+giving true parallelism on multi-core machines. Each worker gets a copy
+of the dat_files/ directory with data_B.dat/Bn.dat narrowed to its batch,
+plus a copy of the ZPL file so that ZIMPL's relative-path reads
+(../dat_files/...) resolve into the worker's own directory regardless of
+whether ZIMPL resolves paths relative to CWD or to the ZPL file's location.
 """
 
 import os
+import shutil
+import tempfile
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from tests.infra.zimpl.dat_files_builder import write_set_dat, write_indexed_dat
 from tests.opp_v5_2_split.config import STAGE1_ZPL_PATH
 from tests.infra.zimpl.zpl_utils import solve_zpl
+
+_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+
+
+def _solve_one_batch(zpl_path, worker_dat_dir):
+    """Solve a single batch in an isolated temp directory (child process)."""
+    from tests.infra.zimpl.zpl_utils import solve_zpl as _solve
+    return _solve(zpl_path, dat_dir=worker_dat_dir)
 
 
 def _read_set_dat(path):
@@ -67,7 +86,7 @@ def _write_file(path, content):
         f.write(content)
 
 
-def solve_stage1_decomposed(dat_dir):
+def solve_stage1_decomposed(dat_dir, max_workers=None):
     """
     Call AFTER the full scenario's .dat files have already been written
     to `dat_dir` (however the caller normally does that -- build_dat_files(),
@@ -81,6 +100,12 @@ def solve_stage1_decomposed(dat_dir):
     invoke Stage 2 (which also reads data_B.dat/Bn.dat) sees the correct
     full scenario, not whichever batch was solved last.
 
+    With >= 2 batches and max_workers != 1, batches are solved in parallel
+    using separate OS processes (one per batch, up to max_workers at a
+    time). Each process works on its own copy of the dat files in a temp
+    directory, so the original dat_dir is never modified. max_workers
+    defaults to min(cpu_count, len(batches)).
+
     Returns (status, merged_values): status is "optimal"/"feasible" iff
     EVERY batch solved to one of those (the first non-"optimal"/"feasible"
     status found is returned instead, matching what a single joint solve's
@@ -92,20 +117,28 @@ def solve_stage1_decomposed(dat_dir):
     data_B_path = os.path.join(dat_dir, "data_B.dat")
     bn_path = os.path.join(dat_dir, "Bn.dat")
 
-    # Snapshot the exact original file contents (byte-for-byte) so they
-    # can be restored verbatim -- avoids any parse/reserialize mismatch.
-    original_data_B = _read_file(data_B_path)
-    original_bn = _read_file(bn_path)
-
     batches = _read_set_dat(data_B_path)
     bn = _read_indexed_dat_pairs(bn_path)
 
+    if max_workers is None:
+        max_workers = min(os.cpu_count() or 1, len(batches))
+
+    # Parallel overhead (spawning processes, copying dat files) only pays off
+    # with enough batches; for small instances the sequential path is faster.
+    if len(batches) <= 4 or max_workers <= 1:
+        return _solve_sequential(dat_dir, batches, bn, data_B_path, bn_path)
+
+    return _solve_parallel(dat_dir, batches, bn, max_workers)
+
+
+def _solve_sequential(dat_dir, batches, bn, data_B_path, bn_path):
+    original_data_B = _read_file(data_B_path)
+    original_bn = _read_file(bn_path)
     merged_values = {}
     try:
         for batch in sorted(batches):
             write_set_dat(data_B_path, {batch})
             write_indexed_dat(bn_path, {k: v for k, v in bn.items() if k[1] == batch})
-
             status, values = solve_zpl(STAGE1_ZPL_PATH, dat_dir=dat_dir)
             if status not in ("optimal", "feasible"):
                 return status, merged_values
@@ -113,5 +146,54 @@ def solve_stage1_decomposed(dat_dir):
     finally:
         _write_file(data_B_path, original_data_B)
         _write_file(bn_path, original_bn)
-
     return "optimal", merged_values
+
+
+def _solve_parallel(dat_dir, batches, bn, max_workers):
+    zpl_basename = os.path.basename(STAGE1_ZPL_PATH)
+    zpl_parent_name = os.path.basename(os.path.dirname(STAGE1_ZPL_PATH))
+
+    old_pythonpath = os.environ.get("PYTHONPATH", "")
+    if _PROJECT_ROOT not in old_pythonpath.split(os.pathsep):
+        os.environ["PYTHONPATH"] = _PROJECT_ROOT + (os.pathsep + old_pythonpath if old_pythonpath else "")
+
+    tmp_base = tempfile.mkdtemp(prefix="opp_stage1_")
+    try:
+        worker_args = []
+        for batch in sorted(batches):
+            worker_root = os.path.join(tmp_base, batch)
+            worker_dat = os.path.join(worker_root, "dat_files")
+            worker_zpl_dir = os.path.join(worker_root, zpl_parent_name)
+
+            shutil.copytree(dat_dir, worker_dat)
+            os.makedirs(worker_zpl_dir, exist_ok=True)
+            shutil.copy2(STAGE1_ZPL_PATH, worker_zpl_dir)
+
+            write_set_dat(os.path.join(worker_dat, "data_B.dat"), {batch})
+            write_indexed_dat(
+                os.path.join(worker_dat, "Bn.dat"),
+                {k: v for k, v in bn.items() if k[1] == batch},
+            )
+
+            worker_zpl = os.path.join(worker_zpl_dir, zpl_basename)
+            worker_args.append((batch, worker_zpl, worker_dat))
+
+        merged_values = {}
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            future_to_batch = {
+                executor.submit(_solve_one_batch, zpl, dat): batch
+                for batch, zpl, dat in worker_args
+            }
+            for future in as_completed(future_to_batch):
+                batch = future_to_batch[future]
+                status, values = future.result()
+                if status not in ("optimal", "feasible"):
+                    for f in future_to_batch:
+                        f.cancel()
+                    return status, merged_values
+                merged_values.update(values)
+
+        return "optimal", merged_values
+    finally:
+        shutil.rmtree(tmp_base, ignore_errors=True)
+        os.environ["PYTHONPATH"] = old_pythonpath

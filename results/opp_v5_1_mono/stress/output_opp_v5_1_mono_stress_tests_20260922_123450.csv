@@ -1,0 +1,4 @@
+test,status,total_time,model_time,obj_val,peak_rss_mb
+test_case_01.TestOPPMonoStress01.test_25_orders_per_batch_30_batches_25x25,timeout,Ejecución detenida por timeout - 40.0,Ejecución detenida por timeout - 40.0,Ejecución detenida por timeout - 40.0,Ejecución detenida por timeout - 40.0
+test_case_02.TestOPPMonoStress02.test_25_orders_per_batch_30_batches_100x100,no_result,,,,
+test_case_03.TestOPPMonoStress03.test_30_orders_per_batch_20_batches_100x100,failed,336.13168358802795,,,956.44140625
