@@ -633,28 +633,89 @@ class OPPHillClimbing(Model):
         starting point (see _generate_initial_feasible_solution's call
         site for why this matters). Bounded to len(route) sweeps as a
         safety valve -- in practice 2-opt converges in far fewer.
+
+        Each candidate reversal is scored via a distance DELTA (the 2 edges
+        leaving/entering the reversed segment, plus the segment's own
+        distance re-summed in reverse) instead of rebuilding the whole
+        candidate route and re-validating/re-summing it from scratch --
+        O(1) per candidate (after an O(n) prefix pass per sweep) instead of
+        O(n). This graph can be directed/asymmetric (see e.g.
+        tests/shared_scenarios/functional/scenario_05_v4.py, where L1->L2
+        and L2->L1 have different weights), so get_distance/has_edge are
+        NOT assumed symmetric: reversing route[i:j+1] also reverses the
+        direction every edge inside it is traversed in, so the reverse-
+        direction prefix sums/broken-edge counts below are tracked
+        separately from the forward ones, not derived by just negating or
+        reusing them.
         """
         if len(route) <= 1:
             return route
 
+        depot = self.location_graph.get_depot()
+        final = self.location_graph.get_final()
+        get_distance = self.location_graph.get_distance
+        has_edge = self.location_graph.has_edge
+
         current = route
         for _ in range(len(route)):
-            best_route = None
-            best_distance = self._calculate_route_distance(current)
+            n = len(current)
 
-            for i in range(len(current) - 1):
-                for j in range(i + 1, len(current)):
-                    candidate = current[:i] + current[i:j + 1][::-1] + current[j + 1:]
-                    if not self._route_topology_feasible(candidate):
+            # fwd_prefix[k]/rev_prefix[k]: cumulative distance of
+            # current[0..k] traversed forward / in reverse. rev_broken_count[k]:
+            # how many of the reverse-direction edges among current[0..k]
+            # don't exist -- a reversal is only feasible if this is the same
+            # at both ends of the segment (i.e. zero reverse edges are
+            # missing inside it).
+            fwd_prefix = [0.0] * n
+            rev_prefix = [0.0] * n
+            rev_broken_count = [0] * n
+            for t in range(n - 1):
+                # current[t] -> current[t + 1] is one of the CURRENT route's
+                # own edges, which is always feasible (an invariant this loop
+                # maintains -- see the class docstring), so get_distance here
+                # is always finite. The reverse direction may not exist at
+                # all (get_distance returns float("inf")): rev_broken_count
+                # tracks that separately (used to reject any candidate whose
+                # reversed segment would need this edge) so a 0.0 placeholder
+                # is used for rev_prefix's running sum instead -- letting an
+                # "inf" into the cumulative sum would poison every later
+                # prefix value (inf - inf = nan), including for ranges that
+                # never touch this broken edge.
+                fwd_prefix[t + 1] = fwd_prefix[t] + get_distance(current[t], current[t + 1])
+                edge_ok = has_edge(current[t + 1], current[t])
+                rev_prefix[t + 1] = rev_prefix[t] + (
+                    get_distance(current[t + 1], current[t]) if edge_ok else 0.0
+                )
+                rev_broken_count[t + 1] = rev_broken_count[t] + (0 if edge_ok else 1)
+
+            best_i = best_j = None
+            best_delta = -1e-9
+
+            for i in range(n - 1):
+                prev_node = current[i - 1] if i > 0 else depot
+                removed_head = get_distance(prev_node, current[i])
+
+                for j in range(i + 1, n):
+                    if rev_broken_count[j] - rev_broken_count[i] != 0:
+                        continue  # a reverse-direction edge inside [i, j] is missing
+
+                    next_node = current[j + 1] if j + 1 < n else final
+
+                    if not has_edge(prev_node, current[j]) or not has_edge(current[i], next_node):
                         continue
-                    candidate_distance = self._calculate_route_distance(candidate)
-                    if candidate_distance < best_distance - 1e-9:
-                        best_distance = candidate_distance
-                        best_route = candidate
 
-            if best_route is None:
+                    removed = removed_head + (fwd_prefix[j] - fwd_prefix[i]) + get_distance(current[j], next_node)
+                    added = get_distance(prev_node, current[j]) + (rev_prefix[j] - rev_prefix[i]) + get_distance(current[i], next_node)
+                    delta = added - removed
+
+                    if delta < best_delta:
+                        best_delta = delta
+                        best_i, best_j = i, j
+
+            if best_i is None:
                 break
-            current = best_route
+
+            current = current[:best_i] + current[best_i:best_j + 1][::-1] + current[best_j + 1:]
 
         return current
 
@@ -772,14 +833,33 @@ class OPPHillClimbing(Model):
     ) -> Optional[RouteSolution]:
         """
         Full 2-opt on a randomly selected batch's route: every
-        topologically feasible reversal is scored by
-        _route_local_search_cost (distance + this batch's own cold-chain
-        overrun penalty), and the single best (steepest-descent)
-        improving one is kept -- deliberately NOT required to already be
-        fully cold-chain-compliant (see _generate_feasible_neighbor's
-        docstring): a move that reduces the overrun without eliminating
-        it is still progress, and the outer solve() loop decides whether
-        the resulting whole solution is actually better.
+        topologically feasible reversal is scored by the same distance +
+        cold-chain-overrun penalty _route_local_search_cost computes
+        (this batch's own cost alone), and the single best (steepest-
+        descent) improving one is kept -- deliberately NOT required to
+        already be fully cold-chain-compliant (see
+        _generate_feasible_neighbor's docstring): a move that reduces the
+        overrun without eliminating it is still progress, and the outer
+        solve() loop decides whether the resulting whole solution is
+        actually better.
+
+        Each candidate's cost is derived from a distance DELTA (see
+        _two_opt_tighten_route's docstring for why get_distance/has_edge
+        are NOT assumed symmetric here) instead of building a new route
+        list, re-validating it end-to-end, and re-summing its distance/
+        t_exec_pb from scratch for every one of the O(n^2) reversals a
+        sweep considers. This is valid because:
+        - a reversal never changes `route`'s node set, so the duplicate-
+          nodes/required-locations checks _is_route_feasible also does
+          are automatically satisfied (already true of `route` itself)
+          and don't need re-checking per candidate -- only topology
+          (edge existence) actually varies between candidates;
+        - fixed_time and service_time depend on which orders/locations
+          are in the batch, not on the route's ORDER, so t_exec_pb is an
+          affine function of distance alone for a fixed batch/picker
+          (t_exec = intercept + (B_time / speed) * distance) and can be
+          evaluated from a candidate's distance without recomputing
+          _t_exec_pb/_route_time per candidate.
         """
         batches_with_routes = [b for b in self.B if solution.get_batch_route(b)]
         if not batches_with_routes:
@@ -792,23 +872,68 @@ class OPPHillClimbing(Model):
         if len(route) <= 1:
             return None
 
-        best_route = None
-        best_local_cost = self._route_local_search_cost(batch, route, picker, batch_assignments, params)
+        n = len(route)
+        depot = self.location_graph.get_depot()
+        final = self.location_graph.get_final()
+        get_distance = self.location_graph.get_distance
+        has_edge = self.location_graph.has_edge
 
-        for i in range(len(route) - 1):
-            for j in range(i + 1, len(route)):
-                new_route = route[:i] + route[i:j+1][::-1] + route[j+1:]
+        base_distance = self._calculate_route_distance(route)
 
-                if not self._is_route_feasible(new_route, batch, batch_assignments, params.A):
+        speed = self._picker_speed(picker, params)
+        fixed_time = self._fixed_time(batch, batch_assignments, params)
+        service_time = sum(params.S.get(loc, 0) for loc in route) if isinstance(params.S, dict) else 0
+        t_exec_intercept = fixed_time + service_time / speed
+        b_time_over_speed = params.B_time / speed
+
+        def local_cost(distance: float) -> float:
+            t_exec = t_exec_intercept + b_time_over_speed * distance
+            violation = max(0.0, t_exec - params.T_frio_max)
+            return params.B_time * distance + self._COLD_CHAIN_PENALTY_WEIGHT * violation
+
+        # See _two_opt_tighten_route's docstring for what these mean; same
+        # construction, just a single pass here (this method returns the
+        # single best 2-opt move, not a fully-tightened route).
+        fwd_prefix = [0.0] * n
+        rev_prefix = [0.0] * n
+        rev_broken_count = [0] * n
+        for t in range(n - 1):
+            fwd_prefix[t + 1] = fwd_prefix[t] + get_distance(route[t], route[t + 1])
+            edge_ok = has_edge(route[t + 1], route[t])
+            rev_prefix[t + 1] = rev_prefix[t] + (
+                get_distance(route[t + 1], route[t]) if edge_ok else 0.0
+            )
+            rev_broken_count[t + 1] = rev_broken_count[t] + (0 if edge_ok else 1)
+
+        best_i = best_j = None
+        best_local_cost = local_cost(base_distance)
+
+        for i in range(n - 1):
+            prev_node = route[i - 1] if i > 0 else depot
+            removed_head = get_distance(prev_node, route[i])
+
+            for j in range(i + 1, n):
+                if rev_broken_count[j] - rev_broken_count[i] != 0:
+                    continue  # a reverse-direction edge inside [i, j] is missing
+
+                next_node = route[j + 1] if j + 1 < n else final
+
+                if not has_edge(prev_node, route[j]) or not has_edge(route[i], next_node):
                     continue
 
-                local_cost = self._route_local_search_cost(batch, new_route, picker, batch_assignments, params)
-                if local_cost < best_local_cost - 1e-9:
-                    best_local_cost = local_cost
-                    best_route = new_route
+                removed = removed_head + (fwd_prefix[j] - fwd_prefix[i]) + get_distance(route[j], next_node)
+                added = get_distance(prev_node, route[j]) + (rev_prefix[j] - rev_prefix[i]) + get_distance(route[i], next_node)
+                candidate_distance = base_distance + (added - removed)
 
-        if best_route is None:
+                candidate_cost = local_cost(candidate_distance)
+                if candidate_cost < best_local_cost - 1e-9:
+                    best_local_cost = candidate_cost
+                    best_i, best_j = i, j
+
+        if best_i is None:
             return None
+
+        best_route = route[:best_i] + route[best_i:best_j + 1][::-1] + route[best_j + 1:]
 
         neighbor = solution.copy()
         neighbor.set_batch_route(batch, best_route)
