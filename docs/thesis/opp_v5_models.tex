@@ -1,0 +1,400 @@
+\setupcolors[state=start]
+\setupcolor[hex]
+\definecolor[darkblue][h=003366]
+\definecolor[darkgray][h=e6e6e6]
+\definecolor[redline][h=d9534f]
+\definecolor[blueline][h=5bc0de]
+\definecolor[greenline][h=5cb85c]
+
+\setuphead[section][style=\bfa, color=darkblue, before=\blank, after=\blank]
+\setuphead[subsection][style=\bf, color=black, before={\blank[2*big]}, after=\blank]
+\setuphead[subsubsection][style=\bf, color=darkblue, before=\blank, after=\blank]
+\setuppapersize[A4][A4]
+\setupbodyfont[11pt]
+\setuplayout[width=middle, height=middle, topspace=2cm, bottomspace=2cm]
+
+\starttext
+
+\title{\bf Modelos OPP v5: formulación monolítica y formulación en dos etapas}
+\blank[big]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsection[title={Introducción}]
+
+Ambos modelos resuelven el mismo problema de {\em order-picking}: dado un conjunto de lotes
+de pedidos, un grafo de locaciones de almacén y un conjunto de pickers heterogéneos en
+velocidad, determinar simultáneamente la ruta de recolección de cada lote, la asignación de
+lotes a pickers y la secuenciación temporal, minimizando una función objetivo que combina
+tiempos de completitud con penalizaciones de tardanza y adelanto, sujeto a una restricción
+de cadena de frío.
+
+Las dos formulaciones difieren en la estrategia de resolución:
+
+\startitemize
+\item {\bf OPP v5.1 (monolítico)}: un único MIP que decide ruta, asignación y secuenciación
+en conjunto. El tiempo de ruta \(Rt_b\) es una {\em variable} de decisión.
+\item {\bf OPP v5.2 (dos etapas)}: la Etapa~1 resuelve el ruteo óptimo de cada lote de
+forma independiente (minimizando el tiempo de ruta); la Etapa~2 recibe el tiempo de ruta
+como {\em dato} fijo y resuelve asignación, secuenciación y cadena de frío.
+\stopitemize
+
+Ambos tienen el mismo valor óptimo: la ruta más corta domina cualquier otra porque el
+objetivo no contiene un término de tiempo de ruta y una ruta más corta solo relaja las
+restricciones de duración y cadena de frío. Sin embargo, el conjunto de soluciones óptimas
+difiere: el modelo monolítico puede devolver rutas no mínimas que alcanzan el mismo
+objetivo.
+
+Los archivos fuente de las formulaciones son:
+\startitemize
+\item \type{models/opp_v5_1_mono/opp_model_v5_1_mono.zpl}
+\item \type{models/opp_v5_2_split/opp_model_v5_2_split_stage1_routing.zpl}
+\item \type{models/opp_v5_2_split/opp_model_v5_2_split_stage2_scheduling.zpl}
+\stopitemize
+
+\stopsection
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsection[title={Notación común}]
+
+\startsubsection[title={Conjuntos}]
+\startformula
+\startalign
+    \NC \mathcal{N} \NC = \text{Órdenes de clientes} \NR
+    \NC \mathcal{V} \NC = \text{Locaciones del almacén, incluidos } v_1 \text{ (depósito) y } v_f \text{ (nodo final)} \NR
+    \NC \mathcal{P} \NC = \text{Pickers} \NR
+    \NC \mathcal{B} \NC = \text{Lotes factibles de pedidos} \NR
+    \NC \mathcal{E} \NC = \text{Arcos válidos del grafo de locaciones } \subseteq \mathcal{V} \times \mathcal{V} \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Parámetros}]
+\startformula
+\startalign
+    \NC v_1, v_f \NC = \text{Nodo depósito inicial y nodo final} \NR
+    \NC W_{full}, W_{ea\_ta}, W_{ea}, W_{ta} \NC = \text{Pesos de la función objetivo} \NR
+    \NC B_{time} \NC = \text{Tiempo por unidad de distancia (velocidad de referencia)} \NR
+    \NC B_{setup} \NC = \text{Tiempo de preparación por lote (independiente de la ruta)} \NR
+    \NC B_{picking} \NC = \text{Tiempo de picking por unidad de capacidad (independiente de la ruta)} \NR
+    \NC M \NC = \text{Constante Big-M general} \NR
+    \NC M_{seq} \NC = \text{Big-M para restricciones de secuenciación (fijo en 500)} \NR
+    \NC C_n \NC = \text{Capacidad requerida por la orden } n \in \mathcal{N} \NR
+    \NC Dd_n \NC = \text{Due date de la orden } n \in \mathcal{N} \NR
+    \NC d_{ij} \NC = \text{Distancia entre } i \text{ y } j, \quad (i,j) \in \mathcal{E} \NR
+    \NC S_i \NC = \text{Tiempo de servicio en la locación } i \in \mathcal{V} \NR
+    \NC V_p \NC = \text{Factor de velocidad del picker } p \in \mathcal{P} \ (1{,}0 = \text{referencia}) \NR
+    \NC T_{frio} \NC = \text{Tiempo máximo fuera de cámara de frío} \NR
+\stopalign
+\stopformula
+
+\startformula
+\startalign
+    \NC A_{ni} \NC = \startmathcases
+                    \NC 1 \MC \text{si la orden } n \text{ requiere visitar la locación } i \NR
+                    \NC 0 \MC \text{en otro caso} \NR
+                 \stopmathcases \NR
+    \NC Bn_{nb} \NC = \startmathcases
+                    \NC 1 \MC \text{si la orden } n \text{ pertenece al lote } b \NR
+                    \NC 0 \MC \text{en otro caso} \NR
+                 \stopmathcases \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Parámetros derivados}]
+\startformula
+\startalign
+    \NC R_b \NC = \left| \left\{ i \in \mathcal{V} \setminus \{v_1,v_f\} : \sum_{n \in \mathcal{N}} A_{ni} \cdot Bn_{nb} \ge 1 \right\} \right| \quad \text{(locaciones requeridas por el lote } b \text{)} \NR
+    \NC F_b \NC = B_{setup} + B_{picking} \cdot \sum_{n \in \mathcal{N}} C_n \cdot Bn_{nb} \quad \text{(tiempo fijo del lote, independiente de la ruta y del picker)} \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\stopsection
+
+
+\page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsection[title={OPP v5.1 — Formulación monolítica}]
+
+Un único MIP que decide ruta, asignación y secuenciación en conjunto.
+
+\startsubsection[title={Variables}]
+\startformula
+\startalign
+    \NC z_{ijb} \in \{0,1\} \NC \quad \text{1 si el arco } (i,j) \in \mathcal{E} \text{ se usa en la ruta del lote } b \NR
+    \NC f_{ijb} \ge 0 \NC \quad \text{Flujo Gavish-Graves sobre } (i,j) \in \mathcal{E} \text{ en el lote } b \NR
+    \NC Rt_b \ge 0 \NC \quad \text{Tiempo de ruta del lote } b \text{ (traslado + servicio; {\em variable})} \NR
+    \NC X_{pb} \in \{0,1\} \NC \quad \text{1 si el lote } b \text{ es asignado al picker } p, \quad \forall (p,b) \in \mathcal{P} \times \mathcal{B} \NR
+    \NC u_{pb} \ge 0 \NC \quad \text{Tiempo de procesamiento del lote } b \text{ por el picker } p \NR
+    \NC \NC \quad \text{con cota superior } u_{pb} \le T_{frio} + 10^{-9} \text{ (cadena de frío)} \NR
+    \NC v_{pb} \ge 0 \NC \quad \text{Tiempo de completitud del lote } b \text{ en la agenda del picker } p \NR
+    \NC v_b \ge 0 \NC \quad \text{Tiempo de completitud del lote } b \text{ (agregado)} \NR
+    \NC Z_{bk} \in \{0,1\} \NC \quad \text{1 si } b \text{ va antes que } k \text{ en el mismo picker, } b < k \NR
+    \NC ta_n, ea_n \ge 0 \NC \quad \text{Tardanza y adelanto de la orden } n \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Función objetivo}]
+\placeformula
+\startformula
+\min \left( W_{full} \cdot \sum_{b \in \mathcal{B}} v_b + W_{ea\_ta} \cdot \left( W_{ea} \cdot \sum_{n \in \mathcal{N}} ea_n + W_{ta} \cdot \sum_{n \in \mathcal{N}} ta_n \right) \right)
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Restricciones de ruteo (1)--(12)}]
+
+\startsubsubsection[title={Rutas de lote}]
+\startformula
+\startalign[n=4, align={right,left,left,left}]
+    \NC (1) \NC \sum_{j:(v_1,j) \in \mathcal{E}} z_{v_1 j b} = 1 \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Salida del depósito)} \NR
+    \NC (2) \NC \sum_{i:(i,v_f) \in \mathcal{E}} z_{i\, v_f\, b} = 1 \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Entrada al nodo final)} \NR
+    \NC (3) \NC \sum_{i:(i,v_1) \in \mathcal{E}} z_{i\, v_1\, b} = 0 \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Sin retorno al depósito)} \NR
+    \NC (4) \NC \sum_{j:(v_f,j) \in \mathcal{E}} z_{v_f\, j\, b} = 0 \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Sin salida del nodo final)} \NR
+\stopalign
+\stopformula
+
+Las restricciones (3) y (4) aplican cuando \(v_1 \ne v_f\).
+\stopsubsubsection
+
+\startsubsubsection[title={Visita y conservación de flujo}]
+\startformula
+\startalign[n=4, align={right,left,left,left}]
+    \NC (5) \NC \sum_{i:(i,j) \in \mathcal{E}} z_{ijb} \ge \min\!\left(1,\, \textstyle\sum_{n} A_{nj} \cdot Bn_{nb}\right) \NC \quad \forall b,\; j \in \mathcal{V} \setminus \{v_1,v_f\} \NC \quad \text{(Entrada requerida)} \NR
+    \NC (6) \NC \sum_{i:(j,i) \in \mathcal{E}} z_{jib} \ge \min\!\left(1,\, \textstyle\sum_{n} A_{nj} \cdot Bn_{nb}\right) \NC \quad \forall b,\; j \in \mathcal{V} \setminus \{v_1,v_f\} \NC \quad \text{(Salida requerida)} \NR
+    \NC (7) \NC \sum_{g:(g,i) \in \mathcal{E}} z_{gib} - \sum_{j:(i,j) \in \mathcal{E}} z_{ijb} = 0 \NC \quad \forall b,\; i \in \mathcal{V} \setminus \{v_1,v_f\} \NC \quad \text{(Conservación)} \NR
+    \NC (8) \NC \sum_{j:(j,i) \in \mathcal{E}} z_{jib} \le 1 \NC \quad \forall b,\; i \in \mathcal{V} \setminus \{v_1\} \NC \quad \text{(Máx.\ un arco de entrada)} \NR
+    \NC (9) \NC \sum_{j:(i,j) \in \mathcal{E}} z_{ijb} \le 1 \NC \quad \forall b,\; i \in \mathcal{V} \setminus \{v_f\} \NC \quad \text{(Máx.\ un arco de salida)} \NR
+\stopalign
+\stopformula
+\stopsubsubsection
+
+\startsubsubsection[title={Eliminación de subtours (Gavish-Graves)}]
+\startformula
+\startalign[n=4, align={right,left,left,left}]
+    \NC (10) \NC f_{ijb} \le R_b \cdot z_{ijb} \NC \quad \forall b,\; (i,j) \in \mathcal{E} \NC \quad \text{(Flujo solo en arcos activos)} \NR
+    \NC (11) \NC \sum_{j:(v_1,j) \in \mathcal{E}} f_{v_1\, j\, b} = R_b \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Flujo total desde depósito)} \NR
+    \NC (12) \NC \sum_{g:(g,i) \in \mathcal{E}} f_{gib} - \sum_{j:(i,j) \in \mathcal{E}} f_{ijb} = \min\!\left(1,\, \textstyle\sum_{n} A_{ni} \cdot Bn_{nb}\right) \NC \quad \forall b,\; i \in \mathcal{V} \setminus \{v_1,v_f\} \NC \quad \text{(Balance GG)} \NR
+\stopalign
+\stopformula
+\stopsubsubsection
+\stopsubsection
+
+\startsubsection[title={Definición del tiempo de ruta (13)}]
+\startformula
+\startalign[n=2, align={right,left}]
+    \NC (13) \quad Rt_b = \NC B_{time} \cdot \displaystyle\sum_{\scriptstyle (i,j) \in \mathcal{E},\; i \ne v_f,\; j \ne v_1} d_{ij} \cdot z_{ijb}
+    \;+\; \sum_{i \in \mathcal{V} \setminus \{v_1,v_f\}} S_i \cdot \sum_{j:(i,j) \in \mathcal{E}} z_{ijb} \quad \forall b \in \mathcal{B} \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Asignación y tiempo de ejecución (14)--(18)}]
+\startformula
+\startalign[n=4, align={right,left,left,left}]
+    \NC (14) \NC \sum_{p \in \mathcal{P}} X_{pb} = 1 \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Asignación única)} \NR
+    \NC (15) \NC F_b + \frac{Rt_b}{V_p} - M \cdot (1 - X_{pb}) \le u_{pb} \NC \quad \forall p \in \mathcal{P},\; b \in \mathcal{B} \NC \quad \text{(Cota inferior de procesamiento)} \NR
+    \NC (16) \NC u_{pb} \le F_b + \frac{Rt_b}{V_p} + M \cdot (1 - X_{pb}) \NC \quad \forall p \in \mathcal{P},\; b \in \mathcal{B} \NC \quad \text{(Cota superior de procesamiento)} \NR
+    \NC (17) \NC u_{pb} \le v_{pb} \NC \quad \forall p \in \mathcal{P},\; b \in \mathcal{B} \NC \quad \text{(Procesamiento precede completitud)} \NR
+    \NC (18) \NC v_{pb} - M \cdot (1 - X_{pb}) \le v_b \NC \quad \forall p \in \mathcal{P},\; b \in \mathcal{B} \NC \quad \text{(Completitud del lote)} \NR
+\stopalign
+\stopformula
+
+La cadena de frío se implementa mediante la cota superior de la variable:
+\(u_{pb} \le T_{frio} + 10^{-9}\). Cuando \(X_{pb} = 1\), (15) fuerza
+\(u_{pb} \ge F_b + Rt_b / V_p\), por lo que \(F_b + Rt_b / V_p \le T_{frio} + 10^{-9}\).
+Cuando \(X_{pb} = 0\), \(u_{pb}\) puede valer 0 y la cota no restringe.
+\stopsubsection
+
+\startsubsection[title={Secuenciación sin solapamiento (19)--(20)}]
+\startformula
+\startalign[n=3, align={right,left,left}]
+    \NC (19) \NC v_{pk} \ge v_{pb} + F_k + \frac{Rt_k}{V_p} - M_{seq} \cdot (3 - X_{pb} - X_{pk} - Z_{bk}) \NC \quad \forall p,\; b < k \NR
+    \NC (20) \NC v_{pb} \ge v_{pk} + F_b + \frac{Rt_b}{V_p} - M_{seq} \cdot (2 - X_{pb} - X_{pk} + Z_{bk}) \NC \quad \forall p,\; b < k \NR
+\stopalign
+\stopformula
+\stopsubsection
+
+\startsubsection[title={Tardanza y adelanto (21)--(22)}]
+\startformula
+\startalign[n=4, align={right,left,left,left}]
+    \NC (21) \NC v_{pb} - Dd_n - M \cdot (2 - X_{pb} - Bn_{nb}) \le ta_n \NC \quad \forall p,\; b,\; n : Bn_{nb} = 1 \NC \quad \text{(Tardanza)} \NR
+    \NC (22) \NC Dd_n - v_{pb} - M \cdot (2 - X_{pb} - Bn_{nb}) \le ea_n \NC \quad \forall p,\; b,\; n : Bn_{nb} = 1 \NC \quad \text{(Adelanto)} \NR
+\stopalign
+\stopformula
+
+Las restricciones se generan solo para pares \((n,b)\) con \(Bn_{nb} = 1\).
+\stopsubsection
+
+\stopsection
+
+
+\page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsection[title={OPP v5.2 — Formulación en dos etapas}]
+
+La resolución se descompone en dos MIP secuenciales. La Etapa~1 resuelve el ruteo
+independientemente de los pickers; la Etapa~2 recibe los tiempos de ruta y resuelve
+asignación, secuenciación y cadena de frío.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsubsection[title={Etapa 1: Ruteo por lote}]
+
+Como ningún término de ruteo depende de qué picker ejecuta el lote ni del orden entre
+lotes, el ruteo óptimo de cada lote se resuelve de forma independiente.
+
+\startsubsubsection[title={Variables}]
+\startformula
+\startalign
+    \NC z_{ijb} \in \{0,1\} \NC \quad \text{1 si el arco } (i,j) \in \mathcal{E} \text{ se usa en la ruta del lote } b \NR
+    \NC f_{ijb} \ge 0 \NC \quad \text{Flujo Gavish-Graves sobre } (i,j) \in \mathcal{E} \text{ en el lote } b \NR
+    \NC Rt_b \ge 0 \NC \quad \text{Tiempo de ruta del lote } b \text{ (traslado + servicio)} \NR
+\stopalign
+\stopformula
+\stopsubsubsection
+
+\startsubsubsection[title={Función objetivo}]
+\placeformula
+\startformula
+\min \sum_{b \in \mathcal{B}} Rt_b
+\stopformula
+
+Como los lotes no interactúan, minimizar la suma equivale a minimizar cada \(Rt_b\) por
+separado.
+\stopsubsubsection
+
+\startsubsubsection[title={Restricciones (1)--(13)}]
+Idénticas a las restricciones (1)--(13) del modelo monolítico. Definen la estructura de
+la ruta (camino de \(v_1\) a \(v_f\) visitando locaciones requeridas), la eliminación de
+subtours por Gavish-Graves y el cálculo de \(Rt_b\).
+
+La Etapa~1 no usa los conjuntos \(\mathcal{P}\) ni los parámetros de scheduling
+(\(W_{full}\), \(B_{setup}\), etc.). Solo necesita \(\mathcal{N}\), \(\mathcal{V}\),
+\(\mathcal{B}\), \(\mathcal{E}\), y los parámetros de grafo y lote.
+\stopsubsubsection
+
+\startsubsubsection[title={Salida}]
+\(Rt_b^*\) para cada \(b \in \mathcal{B}\): el tiempo mínimo de traslado + servicio.
+Este valor se pasa como dato a la Etapa~2.
+\stopsubsubsection
+\stopsubsection
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsubsection[title={Etapa 2: Asignación, secuenciación y cadena de frío}]
+
+Recibe \(Rt_b^*\) como dato fijo. Ya no decide nada sobre el ruteo.
+
+\startsubsubsection[title={Parámetros adicionales (derivados del resultado de Etapa 1)}]
+\startformula
+\startalign
+    \NC Rt_b \NC = \text{Tiempo de ruta óptimo del lote } b \text{ ({\em dato} de Etapa 1)} \NR
+    \NC t^{exec}_{pb} \NC = F_b + \frac{Rt_b}{V_p} \quad \text{(parámetro precalculado, no variable)} \NR
+    \NC \mathcal{PB}_{elig} \NC = \left\{ (p,b) \in \mathcal{P} \times \mathcal{B} : t^{exec}_{pb} \le T_{frio} + 10^{-9} \right\} \NR
+\stopalign
+\stopformula
+
+El conjunto \(\mathcal{PB}_{elig}\) implementa la cadena de frío: solo los pares
+(picker, lote) cuyo tiempo de ejecución no excede el límite de frío son elegibles. Todas
+las variables y restricciones de la Etapa~2 se definen solo sobre \(\mathcal{PB}_{elig}\).
+\stopsubsubsection
+
+\startsubsubsection[title={Variables}]
+\startformula
+\startalign
+    \NC X_{pb} \in \{0,1\} \NC \quad \text{1 si el lote } b \text{ es asignado al picker } p, \quad (p,b) \in \mathcal{PB}_{elig} \NR
+    \NC v_{pb} \ge 0 \NC \quad \text{Tiempo de completitud del lote } b \text{ en el picker } p, \quad (p,b) \in \mathcal{PB}_{elig} \NR
+    \NC v_b \ge 0 \NC \quad \text{Tiempo de completitud del lote } b \NR
+    \NC Z_{bk} \in \{0,1\} \NC \quad \text{1 si } b \text{ va antes que } k \text{ en el mismo picker, } b < k \NR
+    \NC ta_n, ea_n \ge 0 \NC \quad \text{Tardanza y adelanto de la orden } n \NR
+\stopalign
+\stopformula
+
+No hay variable \(u_{pb}\): como \(t^{exec}_{pb}\) es un parámetro, el vínculo entre tiempo
+de ejecución y completitud no requiere Big-M.
+\stopsubsubsection
+
+\startsubsubsection[title={Función objetivo}]
+\placeformula
+\startformula
+\min \left( W_{full} \cdot \sum_{b \in \mathcal{B}} v_b + W_{ea\_ta} \cdot \left( W_{ea} \cdot \sum_{n \in \mathcal{N}} ea_n + W_{ta} \cdot \sum_{n \in \mathcal{N}} ta_n \right) \right)
+\stopformula
+
+Idéntica a la del modelo monolítico.
+\stopsubsubsection
+
+\startsubsubsection[title={Asignación y completitud (1)--(3)}]
+\startformula
+\startalign[n=4, align={right,left,left,left}]
+    \NC (1) \NC \sum_{p: (p,b) \in \mathcal{PB}_{elig}} X_{pb} = 1 \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Asignación única en pares elegibles)} \NR
+    \NC (2) \NC t^{exec}_{pb} \cdot X_{pb} \le v_{pb} \NC \quad \forall (p,b) \in \mathcal{PB}_{elig} \NC \quad \text{(Piso de completitud, sin Big-M)} \NR
+    \NC (3) \NC v_{pb} - M \cdot (1 - X_{pb}) \le v_b \NC \quad \forall (p,b) \in \mathcal{PB}_{elig} \NC \quad \text{(Completitud del lote)} \NR
+\stopalign
+\stopformula
+
+La restricción (2) aprovecha que \(t^{exec}_{pb}\) es un coeficiente constante: el producto
+\(t^{exec}_{pb} \cdot X_{pb}\) es lineal. Cuando \(X_{pb} = 1\), impone
+\(v_{pb} \ge t^{exec}_{pb}\); cuando \(X_{pb} = 0\), el lado izquierdo es cero.
+Esto elimina la necesidad de la variable \(u_{pb}\) y sus dos restricciones Big-M (15)--(16)
+del modelo monolítico.
+\stopsubsubsection
+
+\startsubsubsection[title={Secuenciación sin solapamiento (4)--(5)}]
+\startformula
+\startalign[n=3, align={right,left,left}]
+    \NC (4) \NC v_{pk} \ge v_{pb} + t^{exec}_{pk} - M_{seq} \cdot (3 - X_{pb} - X_{pk} - Z_{bk}) \NC \quad \forall p,\; b < k,\; (p,b),(p,k) \in \mathcal{PB}_{elig} \NR
+    \NC (5) \NC v_{pb} \ge v_{pk} + t^{exec}_{pb} - M_{seq} \cdot (2 - X_{pb} - X_{pk} + Z_{bk}) \NC \quad \forall p,\; b < k,\; (p,b),(p,k) \in \mathcal{PB}_{elig} \NR
+\stopalign
+\stopformula
+
+Misma estructura que (19)--(20) del monolítico, usando \(t^{exec}_{pb}\) como parámetro
+en lugar de la expresión \(F_b + Rt_b / V_p\) (que en el monolítico involucra la variable
+\(Rt_b\)).
+\stopsubsubsection
+
+\startsubsubsection[title={Tardanza y adelanto (6)--(7)}]
+\startformula
+\startalign[n=4, align={right,left,left,left}]
+    \NC (6) \NC v_{pb} - Dd_n - M \cdot (2 - X_{pb} - Bn_{nb}) \le ta_n \NC \quad \forall n,\; (p,b) \in \mathcal{PB}_{elig} : Bn_{nb} = 1 \NC \quad \text{(Tardanza)} \NR
+    \NC (7) \NC Dd_n - v_{pb} - M \cdot (2 - X_{pb} - Bn_{nb}) \le ea_n \NC \quad \forall n,\; (p,b) \in \mathcal{PB}_{elig} : Bn_{nb} = 1 \NC \quad \text{(Adelanto)} \NR
+\stopalign
+\stopformula
+\stopsubsubsection
+
+\startsubsubsection[title={Dominio de variables (8)--(9)}]
+\startformula
+\startalign[n=3, align={right,left,left}]
+    \NC (8) \NC ta_n,\; ea_n,\; v_b,\; v_{pb} \ge 0 \NC \quad \forall n,\; b,\; (p,b) \in \mathcal{PB}_{elig} \NR
+    \NC (9) \NC X_{pb},\; Z_{bk} \in \{0,1\} \NC \quad \forall (p,b) \in \mathcal{PB}_{elig},\; b < k \NR
+\stopalign
+\stopformula
+\stopsubsubsection
+\stopsubsection
+
+\stopsection
+
+
+\page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsection[title={Diferencias entre las formulaciones}]
+
+\bTABLE[split=yes, align=middle, frame=on, width=broad]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Aspecto \eTH \bTH v5.1 Monolítico \eTH \bTH v5.2 Dos etapas \eTH \eTR
+\bTR \bTD Número de MIPs \eTD \bTD 1 \eTD \bTD 2 (secuenciales) \eTD \eTR
+\bTR \bTD \(Rt_b\) \eTD \bTD Variable de decisión \eTD \bTD Dato (resultado de Etapa 1) \eTD \eTR
+\bTR \bTD \(t^{exec}_{pb}\) \eTD \bTD Expresión con variable (\(F_b + Rt_b / V_p\)) \eTD \bTD Parámetro precalculado \eTD \eTR
+\bTR \bTD Variable \(u_{pb}\) \eTD \bTD Sí (con Big-M en (15)--(16)) \eTD \bTD No (innecesaria) \eTD \eTR
+\bTR \bTD Cadena de frío \eTD \bTD Cota superior: \(u_{pb} \le T_{frio} + 10^{-9}\) \eTD \bTD Dominio: \(\mathcal{PB}_{elig}\) \eTD \eTR
+\bTR \bTD Dominio de \(X_{pb}\) \eTD \bTD \(\mathcal{P} \times \mathcal{B}\) (todos los pares) \eTD \bTD \(\mathcal{PB}_{elig}\) (solo elegibles) \eTD \eTR
+\bTR \bTD Piso de completitud \eTD \bTD \(u_{pb} \le v_{pb}\) (17) \eTD \bTD \(t^{exec}_{pb} \cdot X_{pb} \le v_{pb}\) (2) \eTD \eTR
+\bTR \bTD Ruta garantizada mínima \eTD \bTD No (puede elegir ruta no mínima) \eTD \bTD Sí (Etapa 1 minimiza \(Rt_b\)) \eTD \eTR
+\bTR \bTD Tamaño del MIP principal \eTD \bTD Grande (ruteo + scheduling juntos) \eTD \bTD Menor (cada etapa por separado) \eTD \eTR
+\eTABLE
+
+\stopsection
+
+\stoptext
