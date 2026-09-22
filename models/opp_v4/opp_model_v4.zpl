@@ -53,9 +53,6 @@ param B_time    := read "../dat_files/params.dat" as "1n" skip 4 comment "#";  #
 param B_setup   := read "../dat_files/params.dat" as "1n" skip 5 comment "#";  # tiempo de setup por lote
 param B_picking := read "../dat_files/params.dat" as "1n" skip 6 comment "#";  # tiempo de picking por unidad de capacidad
 
-# Capacidades --> NO USADO EN ESTE MODELO.
-# param C_v       := read "../dat_files/params.dat" as "1n" skip 7 comment "#";  # capacidad del vehiculo de picking
-
 # Big-M
 param M         := read "../dat_files/params.dat" as "1n" skip 8 comment "#";  # entero suficientemente grande
 
@@ -117,16 +114,10 @@ var u_pb[P * B]     >= 0;
 #             (variable del modelo v2; se conserva)
 var v_pb[P * B]     >= 0;
 
-# z_ijb[i,j,b] : 1 si el arco (i,j) esta incluido en el lote b  (binaria)
-#var z_ijb[V * V * B]  binary;
-
-# z_ijb[i,j,b] : 1 si el arco valido (i,j) esta incluido en el lote b --> redefinimos la variable para que considere solo arcos válidos
+# z_ijb[i,j,b] : 1 si el arco valido (i,j) esta incluido en el lote b
 var z_ijb[E * B] binary;
 
-# f_ijb[i,j,b] : unidades que pasan por el arco (i,j) en el lote b  (continua >= 0)
-#var f_ijb[V * V * B]  >= 0;
-
-# f_ijb[i,j,b] : unidades que pasan por el arco valido (i,j) en el lote b --> redefinimos la variable para que considere solo arcos válidos
+# f_ijb[i,j,b] : unidades que pasan por el arco valido (i,j) en el lote b
 var f_ijb[E * B] >= 0;
 
 ##############################################################################
@@ -136,23 +127,18 @@ var f_ijb[E * B] >= 0;
 # X_pb[p,b] : 1 si el lote b es asignado al picker p
 var X_pb[P * B] binary;
 
-# w_b[b] : tiempo de espera o inactividad del lote b (continua >= 0)
-var w_b[B] >= 0;
-
 # Variable auxiliar para secuenciación (solo definida para pares únicos b < k)
 var Z_bk[<b,k> in B * B with b < k] binary;
 
 ##############################################################################
 # OBJECTIVE FUNCTION
 #
-# min  W_full * sum_{p,b} v_pb[p,b]
+# min  W_full * sum_{b} v_b[b]
 #    + W_ea_ta * ( W_ea * sum_n ea_n[n]  +  W_ta * sum_n ta_n[n] )
-#
-# Nota: v_b se vincula a v_pb mediante las restricciones de completitud (ver abajo).
 ##############################################################################
 
 minimize obj:
-      W_full  * (sum <p,b> in P * B: v_pb[p,b])
+      W_full  * (sum <b> in B: v_b[b])
     + W_ea_ta * (  W_ea * (sum <n> in N: ea_n[n])
                  + W_ta * (sum <n> in N: ta_n[n])
                 );
@@ -261,8 +247,7 @@ subto valid_execution_time:
             + B_time    * (sum <i,j> in E with i != v_f and j != v_1:
                                d_ij[i,j] * z_ijb[i,j,b])
             + (sum <i> in V with i != v_1 and i != v_f:
-                   S_i[i] * (sum <i, j> in E: z_ijb[i, j, b]))
-            + w_b[b]; # tiempo de espera
+                   S_i[i] * (sum <i, j> in E: z_ijb[i, j, b]));
 
 #################### Asignación de lotes y secuenciación #####################
 
@@ -313,13 +298,13 @@ subto non_overlap_2:
 ########################### Earliness y tardiness ############################
 
 # (21) Definición de tardanza
-# v_pb[p,b] - Dd[n] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ta_n[n]
 subto tardiness_definition:
-    forall <p,b,n> in P * B * N:
-        v_pb[p,b] - Dd[n] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ta_n[n];
+    forall <n,b> in N * B with Bn[n,b] == 1:
+        forall <p> in P:
+            v_pb[p,b] - Dd[n] - M * (1 - X_pb[p,b]) <= ta_n[n];
 
 # (22) Definición de adelanto
-# Dd[n] - v_pb[p,b] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ea_n[n]
 subto earliness_definition:
-    forall <p,b,n> in P * B * N:
-        Dd[n] - v_pb[p,b] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ea_n[n];
+    forall <n,b> in N * B with Bn[n,b] == 1:
+        forall <p> in P:
+            Dd[n] - v_pb[p,b] - M * (1 - X_pb[p,b]) <= ea_n[n];
