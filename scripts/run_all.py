@@ -17,8 +17,11 @@ the reorganization (and the failures known to exist there). A suite is:
   TIMEOUT   the suite hit its time limit (functional: --timeout seconds for the whole
             suite; stress: --stress-suite-timeout for the whole suite)
   SKIP      needs the `zimpl` binary and it is not on PATH
-Stress suites run through tests/run_suite.py with --allow-timeout: a single test that
-exceeds --stress-timeout-minutes is reported but does not make the suite fail.
+Stress suites, and the zimpl-dependent functional suites (opp_v2_zpl/opp_v4/opp_v5), run
+through tests/run_suite.py with --allow-timeout: a single test that exceeds
+--stress-timeout-minutes / --timeout-minutes is reported but does not make the suite fail.
+Every other functional suite runs via plain `unittest discover` (no per-test cap needed --
+none of them are expected to hang).
 --smoke restricts stress suites to the tests listed in scripts/stress_smoke.json (built by
 scripts/make_stress_smoke.py from the recorded results: the ones that finished quickly).
 --retries N re-runs a suite that FAILed up to N more times; if it then passes it is reported
@@ -124,6 +127,28 @@ def do_suite(args, baseline, model, tier):
             status = "PASS" if ran == expected else "COUNT"
         return dict(model=model, tier=tier, status=status, ran=ran, expected=expected,
                     detail=f"failures={failures} errors={errors} per-test timeouts={timeouts}")
+    if model in NEEDS_ZIMPL:
+        # Plain `unittest discover` (below) has no per-test cap: a single non-converging
+        # instance runs unbounded until this whole suite's --timeout kills the process, wiping
+        # out every other test's result with it (no final "Ran N tests" summary line ever gets
+        # printed). opp_v4/opp_v5 each have one documented instance that never converges (see
+        # analysis/README.md) -- exactly the "many tests, one is fine to time out" case
+        # tests.run_suite/TestRunner already handles for the stress tier above. Scoped to
+        # NEEDS_ZIMPL only: TestRunner spawns a fresh process per test, which is needless
+        # overhead for the HC/ACO suites below (fast, never expected to hang).
+        cmd = [sys.executable, "-m", "tests.run_suite", model, "functional", "--allow-timeout"]
+        if args.timeout_minutes is not None:
+            cmd += ["--timeout-minutes", str(args.timeout_minutes)]
+        rc, out, to = run(cmd, args.timeout, env)
+        ran = grab(r"^Ran: (\d+)", out)
+        failures, errors, timeouts = (grab(r"^Failures: (\d+)", out) or 0, grab(r"^Errors: (\d+)", out) or 0,
+                                      grab(r"^Timeouts: (\d+)", out) or 0)
+        status = judge(tier, model, ran, failures, errors, baseline, to)
+        detail = f"failures={failures} errors={errors}"
+        if timeouts:
+            detail += f" per-test timeouts={timeouts}"
+        return dict(model=model, tier=tier, status=status, ran=ran, expected=expected, detail=detail)
+
     cmd = [sys.executable, "-m", "unittest", "discover", "-s", suite_dir(model, tier), "-p", "test_*.py"]
     rc, out, to = run(cmd, args.timeout, env)
     ran = grab(r"^Ran (\d+) tests? in", out)
@@ -155,6 +180,8 @@ def main():
     ap.add_argument("--models", help="comma-separated; overrides --profile")
     ap.add_argument("--jobs", type=int, default=2, help="suites run in parallel (default 2)")
     ap.add_argument("--timeout", type=int, default=900, help="seconds for a whole functional suite (default 900)")
+    ap.add_argument("--timeout-minutes", type=float, default=None,
+                     help="per test, for opp_v2_zpl/opp_v4/opp_v5 only (default: TEST_TIMEOUT_MINUTES from .env)")
     ap.add_argument("--stress-timeout-minutes", type=float, default=1.0, help="per stress test (default 1)")
     ap.add_argument("--stress-suite-timeout", type=int, default=3600, help="seconds for a whole stress suite (default 3600)")
     ap.add_argument("--smoke", action="store_true", help="stress tier: only the fast tests in scripts/stress_smoke.json")
