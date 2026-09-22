@@ -184,10 +184,11 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
   - Nuevo `opp_v5_1_mono`: el mismo problema que resuelve `opp_v5` (velocidad `V_p` por picker y cadena de frío), pero como un solo MIP en vez de dos etapas. Parte de `opp_v4` y agrega `V_p` (`t_exec_pb = tiempo_fijo + R_b_time / V_p`), la cadena de frío como cota `u_pb <= T_frio_max + 1e-9`, el objetivo `Σ v_b` y las filas de tardanza/adelanto solo para `Bn = 1`. `t_exec_b` y `w_b` se eliminan y `R_b_time` pasa a ser variable. `opp_v4` no se modificó y queda como referencia sin las extensiones.
   - `opp_v5` pasó a llamarse `opp_v5_2_split` (`models/`, `tests/`, `results/`, imports, `analysis/config.py`, `scripts/`, CI, y las clases base de tests, ahora `OPPTestCaseSplit`). No se tocaron `docs/thesis/`, `analysis/output/` ni las entradas anteriores de este archivo, que siguen diciendo `opp_v5`.
   - Tests de `opp_v5_1_mono`: los mismos 34 funcionales y 8 de estrés que `opp_v5_2_split` (31 migrados de v4 con `migrated_mono_case`, 3 propios portados), sin ningún test nuevo y con las assertions intactas. Único test de v5 no portado: `test_preflight_detects_when_no_picker_is_eligible` (usa `run_pipeline(solve_stage2=False)`, y el monolítico no tiene una etapa 1 separada).
+  - `opp_v5_1_mono` quedó registrado en `scripts/run_all.py` (`NEEDS_ZIMPL`), `scripts/baseline_counts.json` (52 funcionales y 8 de estrés, contados desde su propio árbol: el baseline es de `main` antes de la reorganización y este modelo no existía) y `analysis/config.py` (`MODEL_DIRS`; `load_all` avisa y sigue si un modelo no tiene CSV todavía).
   - `build_dat_files` ahora escribe `velocities.dat` (`V_p = 1` para todos) y `frio.dat` (sin límite) cuando el escenario no los define, para que los tests de v4 corran contra el monolítico sin cambios.
 - Pendiente:
   - **No se corrió ningún test en este cambio.** Correr las suites de `opp_v5_1_mono` y `opp_v5_2_split`, y comparar `obj_val` entre los dos sobre los mismos escenarios.
-  - Registrar `opp_v5_1_mono` en `scripts/run_all.py`, `scripts/baseline_counts.json`, el nightly de CI y `analysis/config.py`.
+  - Agregar `opp_v5_1_mono` al nightly de CI (`exact-zimpl`). No se hizo a propósito: sin haber corrido la suite no se sabe cuánto tarda ni cuántos tests llegan al tope por test, y con el tope por suite de ese job un `TIMEOUT` funcional deja el nightly en rojo.
   - Con la formulación monolítica, `test_case_06` de v4 falló en una corrida previa. La hipótesis es que la ruta óptima no es única (el `v_pb` puede rellenarse hasta la fecha de entrega), pero no está confirmada.
   - Regenerar `analysis/output/` y decidir qué hacer con los nombres viejos de `docs/thesis/`.
 - Impacto:
@@ -197,7 +198,8 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
   - Los dos modelos son equivalentes en definición y en valor óptimo (la ruta mínima domina a cualquier otra, y los lotes no interactúan en el ruteo), pero no en el conjunto de soluciones óptimas: el monolítico puede devolver rutas no mínimas con el mismo objetivo. Es un argumento por lectura, sin verificación empírica todavía.
   - Ambos dependen de que `M` y `M_seq` (500, fijo) cubran el horizonte de tiempo.
 - Validación:
-  - `python -m scripts.check_repo`: pasa completo (861 módulos importan, sin referencias a rutas viejas).
+  - `python -m scripts.check_repo`: pasa completo (911 módulos importan, sin referencias a rutas viejas).
+  - `python -m scripts.run_all --collect-only --profile full --tier all` (lo que hace el CI): las 28 suites coinciden con el baseline.
   - Sin corridas de tests.
 
 ---

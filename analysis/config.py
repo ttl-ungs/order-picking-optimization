@@ -9,6 +9,10 @@ opp_v3 / opp_hc_1 / opp_aco_1) to the current model lineup:
 - opp_aco_2 : ACO, parallel pickers, no congestion
 - opp_hc_3  : Hill Climbing, congestion-aware
 - opp_aco_3 : ACO, congestion-aware, multi-pheromone
+- opp_v5_1_mono : exact model, the same problem as opp_v5_2_split (heterogeneous picker
+              speed + cold chain) solved as ONE monolithic MIP instead of two stages;
+              tested with the same suites as opp_v5_2_split. No results recorded yet
+              (load_all skips and reports a model with no CSVs).
 - opp_v5_2_split    : exact model, 2-stage decomposition (routing then scheduling),
               no congestion -- migrated normal/stress tests neutralize its
               two extra features (heterogeneous picker speed, cold-chain
@@ -61,6 +65,7 @@ MODEL_DIRS = {
     "opp_aco_2": "opp_aco_2",
     "opp_hc_3": "opp_hc_3",
     "opp_aco_3": "opp_aco_3",
+    "opp_v5_1_mono": "opp_v5_1_mono",
     "opp_v5_2_split": "opp_v5_2_split",
     "opp_hc_4": "opp_hc_4",
     "opp_aco_4": "opp_aco_4",
