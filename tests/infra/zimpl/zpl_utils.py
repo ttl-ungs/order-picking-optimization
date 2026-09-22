@@ -63,7 +63,7 @@ def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
 
     # Paso 1: compilar .zpl → .lp con zimpl
     result = subprocess.run(
-        ["zimpl", "-t", "lp", "-o", out_base, zpl_path],
+        ["zimpl", "-t", "lp", "-l", "8192", "-o", out_base, zpl_path],
         cwd=dat_dir,
         capture_output=True,
         text=True,

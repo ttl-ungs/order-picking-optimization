@@ -49,13 +49,7 @@ param B_setup   := read "../dat_files/params.dat" as "1n" skip 5 comment "#";
 param B_picking := read "../dat_files/params.dat" as "1n" skip 6 comment "#";
 
 param M     := read "../dat_files/params.dat" as "1n" skip 8 comment "#";
-# Big-M local para las restricciones de secuenciamiento sin solapamiento
-# (non_overlap_1/2). Antes 100000: un valor tan grande frente a la escala
-# real de v_pb/t_exec_pb (decenas-cientos) infla la fila numericamente y
-# hace que SCIP acepte como "optimal" soluciones que violan la restriccion
-# por ~0.1 unidades de tiempo -- exactamente el bug ya corregido en
-# opp_v4 (commit dbb27b7, "Minor fix: M_seq", 100000 -> 500)
-param M_seq := 500; # TODO: derivar de datos reales, no dejar fijo
+param M_seq := read "../dat_files/params.dat" as "1n" skip 9 comment "#";
 
 param C_n[N] := read "../dat_files/cap_n.dat"    as "<1s> 2n" comment "#";
 param Dd[N]  := read "../dat_files/due_date.dat" as "<1s> 2n" comment "#";

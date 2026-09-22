@@ -53,6 +53,32 @@ def write_indexed_dat(path, data):
             f.write(f"{keys_str} {val}\n")
 
 
+def _compute_m_seq(scenario_data):
+    """Upper bound on max completion time: safe Big-M for non-overlap constraints.
+
+    M_seq must exceed the latest possible v_pb.  In the worst case every batch
+    is assigned to one picker sequentially, so v_pb_max ≈ Σ_b t_exec_pb_max.
+    We approximate max route time per batch as |V|*max(d_ij)*B_time (every
+    location visited) and use min(V_p) for the slowest picker.
+    """
+    B, N, V = scenario_data["B"], scenario_data["N"], scenario_data["V"]
+    C_n, Bn = scenario_data["C_n"], scenario_data["Bn"]
+    B_setup, B_picking, B_time = scenario_data["B_setup"], scenario_data["B_picking"], scenario_data["B_time"]
+    d_ij = scenario_data["d_ij"]
+    speeds = scenario_data.get("V_p") or {p: 1.0 for p in scenario_data["P"]}
+    min_speed = min(speeds.values())
+    max_dist = max(d_ij.values()) if d_ij else 1.0
+    max_service = max(scenario_data["S_i"].values()) if scenario_data["S_i"] else 0.0
+    max_route_time = B_time * len(V) * max_dist + len(V) * max_service
+
+    total = 0.0
+    for b in B:
+        fijo = B_setup + B_picking * sum(C_n[n] * Bn[(n, b)] for n in N)
+        total += fijo + max_route_time / min_speed
+
+    return max(500.0, round(total + 1.0))
+
+
 def build_dat_files(tmpdir, scenario_data):
     """
     Recibe un dict con todos los datos del escenario y escribe los .dat
@@ -67,6 +93,8 @@ def build_dat_files(tmpdir, scenario_data):
     write_scalar_dat(os.path.join(tmpdir, "depot.dat"), scenario_data["depot"])
     write_scalar_dat(os.path.join(tmpdir, "final.dat"), scenario_data["final"])
 
+    m_seq = _compute_m_seq(scenario_data)
+
     write_scalar_params(
         os.path.join(tmpdir, "params.dat"),
         W_full    = scenario_data["W_full"],
@@ -78,6 +106,7 @@ def build_dat_files(tmpdir, scenario_data):
         B_picking = scenario_data["B_picking"],
         C_v       = scenario_data["C_v"],
         M         = scenario_data["M"],
+        M_seq     = m_seq,
     )
 
     write_indexed_dat(os.path.join(tmpdir, "cap_n.dat"),       scenario_data["C_n"])

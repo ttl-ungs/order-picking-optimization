@@ -111,15 +111,7 @@ param R_b[<b> in B] :=
 param tiempo_fijo[<b> in B] :=
     B_setup + B_picking * (sum <n> in N: C_n[n] * Bn[n,b]);
 
-# Parámetro Big-M local para las restricciones de secuenciación sin solapamiento
-# (19)-(20). Antes era 100000: un valor tan grande frente a la escala real de
-# v_pb/t_exec_pb (decenas-cientos) infla la fila numéricamente y hace que SCIP
-# acepte como "optimal" soluciones que violan la restricción por ~0.1 unidades
-# de tiempo (ver tests/opp_v4/functional/test_case_13 y test_case_14:
-# solapamiento de picker detectado por assert_no_time_overlap). 500 ya cubre la
-# escala de las instancias actuales manteniendo el margen necesario para que el
-# presolve no recorte la variable. Mismo valor que opp_model_v5_2_split_stage2_scheduling.zpl de opp_v5_2_split.
-param M_seq := 500;
+param M_seq := read "../dat_files/params.dat" as "1n" skip 9 comment "#";
 
 ##############################################################################
 # VARIABLES
