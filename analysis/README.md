@@ -1,6 +1,6 @@
 # Pipeline de análisis de resultados
 
-Generaliza `specs/model_analysis.md` (escrito originalmente para
+Generaliza `docs/specs/model_analysis.md` (escrito originalmente para
 `opp_v3`/`opp_hc_1`/`opp_aco_1`) a los modelos actuales:
 
 | Label       | Rol                                                          |
@@ -65,7 +65,7 @@ sea válido), pensado para cubrir el rango de `N` (cantidad de pedidos) y `V`
   `opp_v3` (antecesor de `opp_v4`) ya demostró en su suite de estrés que a
   esa escala el solver exacto no converge en tiempo razonable (ver
   `results/opp_v3/stress/complete_output_v3_stress_tests.csv`, y la
-  hipótesis de "asintotismo exponencial" en `specs/model_analysis.md` sec. 5)
+  hipótesis de "asintotismo exponencial" en `docs/specs/model_analysis.md` sec. 5)
   — correrlos ahí solo quemaría CPU para un timeout garantizado. Confirmado
   empíricamente: de las 8 que sí tiene, solo 1 converge (la infeasible
   instantánea).
@@ -212,7 +212,7 @@ más abajo), pero en HC es 100% determinístico -- por eso ningún reintento
 ni cambio de semilla lo arregla, y por eso HC nunca lo resuelve mientras
 que ACO sí puede (con su fix de reintento-por-lote) porque ACO explora
 alternativas donde HC comete el mismo error todas las veces.
-Ver también `docs/results_outline.md` sección "Hallazgo más fuerte
+Ver también `docs/thesis/results_outline.md` sección "Hallazgo más fuerte
 todavía..." (a corregir con este resultado) para el registro completo.
 
 ### Optimización de rendimiento (2026-08-27): ~57-150x más rápido
@@ -244,7 +244,7 @@ conclusión ahí. El ranking relativo NO se invirtió -- HC sigue siendo más
 rápido que ACO en ambos pares, porque ACO repite la construcción de ruta
 `A_ants × Max_it` veces por diseño; el fix arregla el costo anormal por
 paso, no la diferencia estructural esperada entre "una construcción greedy"
-y "una búsqueda con muchas hormigas". Ver `docs/results_outline.md`
+y "una búsqueda con muchas hormigas". Ver `docs/thesis/results_outline.md`
 secciones 1-2 para el detalle.
 
 Los tests de estrés pueden tardar bastante por instancia, sobre todo en ACO
@@ -370,7 +370,7 @@ Verificado con las 4 suites normales completas: `hc_2` 46/46, `hc_3` 51/51,
 Se auditó código todavía no revisado en las partes 1-3: `models/base/`,
 `models/utils/`, `models/opp_v4/opp_model_v4.zpl` (verificado con el
 binario real de `zimpl`), las 4 DTOs completas, y el propio pipeline de
-`analysis/` (la fuente de cada número citado en `docs/results_outline.md`).
+`analysis/` (la fuente de cada número citado en `docs/thesis/results_outline.md`).
 
 **Sin hallazgos críticos en el código compartido/`opp_v4`** -- solo gaps
 defensivos latentes, sin disparador actual. Corregidos los dos más
@@ -474,10 +474,10 @@ Lecturas clave:
   cambió de magnitud con los tiempos nuevos pero la asimetría central se
   mantiene: `hc_3` +18.5% (antes ~0%, ahora se nota más porque `hc_2` se
   volvió mucho más rápido) vs. `aco_3` +231% (bajó del +513% pre-auditoría,
-  porque `aco_3` mismo mejoró). Ver `docs/results_outline.md` sección 5
+  porque `aco_3` mismo mejoró). Ver `docs/thesis/results_outline.md` sección 5
   para el detalle.
 
-`docs/results_outline.md` ya refleja estos números finales en todas sus
+`docs/thesis/results_outline.md` ya refleja estos números finales en todas sus
 secciones (1, 2, 5, 6) y su lista de pendientes quedó cerrada -- no falta
 ninguna corrida más antes de pasar a redactar el texto de la tesina.
 
@@ -492,7 +492,7 @@ pickers, cadena de frío):
 
 - **Cobertura**: `tests/opp_v5/functional/test_opp_v5_model_{22,...,30}.py`
   -- una línea cada uno, usando el adaptador genérico `migrated_case()` que
-  ya existía en `v4_compat.py` (creado para portar `model_01-19`, nunca
+  ya existía en `migrated_case.py` (creado para portar `model_01-19`, nunca
   extendido). `opp_v5` reusó los números 20/21 para sus propios tests de
   velocidad/frío, así que los 9 casos que faltaban de `opp_v4`
   (`model_20`=grilla, `model_21`=puente, `model_24-30`=pesos distintos,
@@ -587,7 +587,7 @@ variable.
 Con esto, `opp_v5` en estrés queda confirmado como **no competitivo a
 esta escala** (0% contra el 12.5% de `opp_v4`, que además solo pierde
 por timeout, no por soluciones mal formadas) -- se mantiene excluido de
-las comparaciones de escalabilidad en `docs/results_outline.md`, ahora
+las comparaciones de escalabilidad en `docs/thesis/results_outline.md`, ahora
 con el dato completo (no parcial) respaldando esa decisión.
 
 ### Fix del bug de cadena de frío (2026-09-01)
@@ -667,5 +667,5 @@ inventa un cero ni se descarta en silencio.
 - `analysis/load.py` — descubre y concatena los CSVs en un DataFrame ordenado.
 - `analysis/metrics.py` — las 6 tablas.
 - `analysis/plots.py` — los gráficos (paleta fija: `#003366, #e6e6e6, #d9534f,
-  #5bc0de, #5cb85c`, igual que la especificada en `specs/model_analysis.md`).
+  #5bc0de, #5cb85c`, igual que la especificada en `docs/specs/model_analysis.md`).
 - `analysis/run_analysis.py` — CLI que junta todo y escribe el reporte.

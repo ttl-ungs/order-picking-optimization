@@ -10,9 +10,9 @@ from dtos.opp.model_dto import ModelDTO
 from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
 from models.opp_aco_2 import OPPAntColonyOptimization
 from models.opp_aco_2.utils.output_handler import OutputHandler
-from tests.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 from tests.shared_scenarios.functional.scenario_18 import detour_single_mission_route
-from tests.opp_v2.route_assertions import (
+from tests.infra.cases.route_assertions import (
     assert_correct_path,
     assert_route_covers_orders,
 )

@@ -10,7 +10,7 @@ sys.path.insert(
 
 from dtos import ModelDTO
 from models.opp_hc_1 import OPPHillClimbing
-from tests.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 
 from tests.shared_scenarios.common.six_missions_three_pickers_grid_graph import (
     scenario_six_missions_two_periods_grid_graph,

@@ -2,7 +2,7 @@ import unittest
 from models.opp_v3.opp_model_v3 import OPPModelV3
 from models.opp_v3.utils.output_handler import OutputHandler
 from observer.observer import Observer
-from tests.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 import sys
 import os
 

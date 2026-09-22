@@ -10,7 +10,7 @@ sys.path.insert(
 
 
 from models.opp_hc_2 import OPPHillClimbing
-from tests.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 from dtos.opp.model_dto import ModelDTO
 from models.opp_hc_2.utils.output_handler import OutputHandler
 

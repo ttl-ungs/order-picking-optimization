@@ -1,4 +1,4 @@
-from tests.family_case import family_case
+from tests.infra.factories.family_case import family_case
 from models.opp_hc_3 import OPPHillClimbing
 from dtos.hc.solve_hc_3_model_dto import SolveHC3ModelDTO
 

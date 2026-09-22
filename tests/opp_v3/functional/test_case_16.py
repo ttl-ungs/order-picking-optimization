@@ -10,9 +10,9 @@ from dtos.opp.model_dto import ModelDTO
 from dtos.opp.solve_model_dto import SolveModelDTO
 from models.opp_v3.opp_model_v3 import OPPModelV3
 from models.opp_v3.utils.output_handler import OutputHandler
-from tests.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 from tests.shared_scenarios.functional.scenario_12 import grid_5x3_two_pickers_four_batches
-from tests.opp_v2.route_assertions import assert_batch_routes_cover_locations
+from tests.infra.cases.route_assertions import assert_batch_routes_cover_locations
 
 
 class TestOPPModelGrid(OPPTestCase):

@@ -7,7 +7,7 @@ sys.path.insert(
 )
 
 from models.opp_aco_1.opp_aco_1 import OPPAntColonyOptimization
-from tests.opp_test_case import OPPTestCase
+from tests.infra.cases.opp_test_case import OPPTestCase
 from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
 from dtos.opp.model_dto import ModelDTO
 from models.opp_aco_1.utils.output_handler import OutputHandler

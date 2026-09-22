@@ -50,10 +50,10 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".."))
 )
 
-from models.utils.dat_files_builder import build_dat_files
+from tests.infra.zimpl.dat_files_builder import build_dat_files
 from tests.opp_v4.opp_test_case_v4 import OPPTestCaseV4
 from tests.opp_v4.config import DAT_DIR, ZPL_PATH
-from tests.utils.zpl_utils import solve_zpl
+from tests.infra.zimpl.zpl_utils import solve_zpl
 from tests.shared_scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
 # How long to let SCIP search before giving up. 30 min by default -- raise

@@ -1,7 +1,7 @@
 """
 Configuration for the model-comparison analysis pipeline.
 
-Generalizes specs/model_analysis.md (originally written for
+Generalizes docs/specs/model_analysis.md (originally written for
 opp_v3 / opp_hc_1 / opp_aco_1) to the current model lineup:
 
 - opp_v4    : exact model (ZIMPL + SCIP)               -> ground truth for quality gap
@@ -12,7 +12,7 @@ opp_v3 / opp_hc_1 / opp_aco_1) to the current model lineup:
 - opp_v5    : exact model, 2-stage decomposition (routing then scheduling),
               no congestion -- migrated normal/stress tests neutralize its
               two extra features (heterogeneous picker speed, cold-chain
-              limit) via tests/opp_v5/v4_compat.py, so those rows
+              limit) via tests/infra/factories/migrated_case.py, so those rows
               solve the same problem as opp_v4/opp_hc_2/opp_aco_2. Kept
               OUT of CONGESTION_AWARE_MODELS and NOT set as EXACT_MODEL
               (still opp_v4) -- it's compared AGAINST opp_v4, not used to
@@ -25,7 +25,7 @@ opp_v3 / opp_hc_1 / opp_aco_1) to the current model lineup:
               addition, see models/opp_hc_4/opp_hc_4.py header). Most of
               its normal/stress tests are ports of opp_hc_2's (V_p unset /
               T_frio_max default +inf -> pure equivalence, same pattern as
-              opp_v5's v4_compat.py), plus a handful of its own that
+              opp_v5's migrated_case.py), plus a handful of its own that
               actually exercise heterogeneous speeds and a binding
               cold-chain deadline (see tests/opp_hc_4/README.md). Kept OUT
               of CONGESTION_AWARE_MODELS.
@@ -91,7 +91,7 @@ CORRELATION_INDEPENDENTS = ["N", "V", "B", "C_v", "W_full", "W_ea_ta"]
 STABILITY_MODELS = ["opp_hc_2", "opp_hc_3", "opp_hc_4", "opp_aco_2", "opp_aco_3", "opp_aco_4"]
 
 # Hard-coded "latest file" overrides, mirroring the exceptions called out in
-# specs/model_analysis.md (e.g. a consolidated file that must win over any
+# docs/specs/model_analysis.md (e.g. a consolidated file that must win over any
 # later partial run, or a specific high-density stress run). Keyed by
 # (model_label, scenario) -> exact filename (relative to its output dir).
 # Only labels present in MODEL_DIRS are ever looked up here (see

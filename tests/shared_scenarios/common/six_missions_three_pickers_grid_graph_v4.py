@@ -1,4 +1,4 @@
-from graphs.graphs_factory import GraphsFactory
+from tests.infra.factories.graphs_factory import GraphsFactory
 
 def scenario_six_missions_three_pickers_two_periods_grid_graph(rows=4, cols=4, v_weight=4, h_weight=4):
     P = {"P1", "P2", "P3"}

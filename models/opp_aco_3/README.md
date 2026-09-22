@@ -154,7 +154,7 @@ models/opp_aco_3/
   │   ├── route_evaluator.py        # Time objective (tau1) and congestion objective (tau2)
   │   ├── constraints_validator.py  # Validates ALL constraints (congestion is a cost, not a hard constraint)
   │   └── output_handler.py
-  ├── example_usage.py               # Two-picker bottleneck example
+  ├── (usage example: examples/opp_aco_3_usage.py)               # Two-picker bottleneck example
   └── README.md (this file)
 
 models/utils/congestion.py          # CongestionTracker, shared resource/wait scheduling

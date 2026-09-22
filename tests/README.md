@@ -13,8 +13,7 @@ This document describes a workflow to design and maintain OPP (v1 and v2) tests 
 
 - tests/shared_scenarios: definition of graphs and base assignments (shared by every model; model-specific ones carry a `_vN` suffix).
 - tests/<model>/functional and tests/<model>/stress: test cases per model (`test_case_NN.py`).
-- tests/opp_test_case.py: shared `OPPTestCase` base class and helpers.
-- tests/opp_v2/route_assertions.py, tests/opp_v4/route_assertions.py: utilities to validate routes and batches.
+- tests/infra/: shared test infrastructure, in four groups: `execution/` (runner, config), `cases/` (`OPPTestCase`, `route_assertions`), `factories/` (`family_case`, `migrated_case`, `graphs_factory`) and `zimpl/` (helpers of the ZIMPL-based tests).
 - tests/run_suite.py: single entry point to run a model's suite.
 
 ## Workflow per graph (recommended)
@@ -90,3 +89,5 @@ python -m unittest tests.opp_v2.functional.test_case_{number}
 Or run a whole suite with the timeout/CSV runner:
 
 python -m tests.run_suite opp_v2 functional
+
+Settings (per-test timeouts, whether to write result CSVs) come from a local `.env`; copy `.env.example` to `.env` to change them. `.env` itself is not versioned.

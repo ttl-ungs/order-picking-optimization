@@ -24,3 +24,5 @@ script.py
 # dat files
 *.dat
 */dat_files/*
+# Local test settings (copy .env.example to .env)
+.env

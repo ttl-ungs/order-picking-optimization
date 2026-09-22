@@ -4,10 +4,10 @@ import os
 import inspect
 from importlib import import_module
 
-from models.utils.dat_files_builder import write_indexed_dat, write_scalar_dat
+from tests.infra.zimpl.dat_files_builder import write_indexed_dat, write_scalar_dat
 from tests.opp_v5.config import DAT_DIR, STAGE1_ZPL_PATH, STAGE2_ZPL_PATH
 from tests.opp_v5.stage1_decomposition import solve_stage1_decomposed
-from tests.utils.zpl_utils import solve_zpl
+from tests.infra.zimpl.zpl_utils import solve_zpl
 
 
 def _route_times(values, batches):

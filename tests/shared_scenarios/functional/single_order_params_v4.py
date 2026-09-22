@@ -1,5 +1,5 @@
 from dtos import SolveModelDTO, ModelDTO
-from graphs.graphs_factory import GraphsFactory
+from tests.infra.factories.graphs_factory import GraphsFactory
 
 
 def single_order_params(due_date_value, start_time, cap_vehicle=100.0):

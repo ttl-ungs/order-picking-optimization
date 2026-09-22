@@ -1,7 +1,7 @@
 """
 Metric computations over the tidy DataFrame produced by analysis.load.load_all().
 
-Sections (mirroring the discussion / specs/model_analysis.md, generalized to
+Sections (mirroring the discussion / docs/specs/model_analysis.md, generalized to
 opp_v4 / opp_hc_2 / opp_aco_2 / opp_hc_3 / opp_aco_3):
 
 1. success_rate_table   -- feasibility / convergence rate per model x scenario
@@ -228,7 +228,7 @@ def profiling_table(df: pd.DataFrame, exact_model: str = EXACT_MODEL) -> pd.Data
     For the exact model only: what share of total_time is spent inside the
     solver (`model_time`, i.e. pyscipopt model.optimize()) vs everything else
     (ZIMPL compilation, subprocess/python overhead). Mirrors the "90% modeling
-    time" hypothesis from specs/model_analysis.md, adapted to opp_v4's
+    time" hypothesis from docs/specs/model_analysis.md, adapted to opp_v4's
     solve_zpl() split (there model_time == pure SCIP optimize time).
     """
     ok = _ok(df)

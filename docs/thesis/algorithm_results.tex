@@ -44,7 +44,7 @@ Cada modelo ''simple'' funciona como grupo de control del par ''complejo'' corre
 \startsection[title={Convergencia y tasa de éxito}]
 
 \placefigure[force][fig:mean_time_stress]{Tiempo medio de ejecución en estrés, por modelo (escala logarítmica)}
-{\externalfigure[../analysis/output/mean_time_stress.png][width=0.85\textwidth]}
+{\externalfigure[../../analysis/output/mean_time_stress.png][width=0.85\textwidth]}
 
 \bTABLE[split=yes, align=middle, frame=on, width=broad]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
@@ -121,7 +121,7 @@ Durante el desarrollo se identificó que la construcción de rutas de los cuatro
 \startsection[title={Perfil de ejecución del modelo exacto}]
 
 \placefigure[force][fig:profiling]{Perfil de tiempo del modelo exacto: resolución del solver vs. overhead}
-{\externalfigure[../analysis/output/profiling_exact_model.png][width=0.85\textwidth]}
+{\externalfigure[../../analysis/output/profiling_exact_model.png][width=0.85\textwidth]}
 
 En instancias unitarias, el 90.5\% del tiempo total de \type{opp_v4} corresponde al solver SCIP resolviendo el modelo, y el 9.5\% restante al overhead de compilación ZIMPL y orquestación en Python. En estrés no hay datos de perfil significativos: el único caso \type{ok} es una instancia trivialmente infeasible por capacidad (detectada antes de invocar al solver), y ninguna instancia no trivial converge dentro del límite de tiempo.
 
@@ -130,7 +130,7 @@ En instancias unitarias, el 90.5\% del tiempo total de \type{opp_v4} corresponde
 \startsection[title={Gap de calidad respecto al óptimo}, reference=sec:gap]
 
 \placefigure[force][fig:quality_gap]{Gap de calidad de las heurísticas respecto al óptimo exacto (media y mediana)}
-{\externalfigure[../analysis/output/quality_gap.png][width=0.85\textwidth]}
+{\externalfigure[../../analysis/output/quality_gap.png][width=0.85\textwidth]}
 
 \bTABLE[split=yes, align=middle, frame=on, width=broad]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
@@ -161,7 +161,7 @@ Esta es la comparación central del trabajo, porque es la única que aísla el e
 \blank
 
 \placefigure[force][fig:congestion]{Espera media por congestión, \type{opp\_hc\_3} y \type{opp\_aco\_3}}
-{\externalfigure[../analysis/output/congestion_wait.png][width=0.85\textwidth]}
+{\externalfigure[../../analysis/output/congestion_wait.png][width=0.85\textwidth]}
 
 \bTABLE[split=yes, align=middle, frame=on, width=broad]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
@@ -195,10 +195,10 @@ Para identificar qué características de una instancia explican mejor su tiempo
 
 \startplacefigure[title={Correlación tiempo vs. tamaño del grafo/órdenes, por modelo (estrés)}]
 \startcombination[2*2]
-{\externalfigure[../analysis/output/scatter_opp_hc_2_stress_N.png][width=0.42\textwidth]}{\type{opp\_hc\_2} vs. N}
-{\externalfigure[../analysis/output/scatter_opp_aco_2_stress_V.png][width=0.42\textwidth]}{\type{opp\_aco\_2} vs. V}
-{\externalfigure[../analysis/output/scatter_opp_hc_3_stress_V.png][width=0.42\textwidth]}{\type{opp\_hc\_3} vs. V}
-{\externalfigure[../analysis/output/scatter_opp_aco_3_stress_N.png][width=0.42\textwidth]}{\type{opp\_aco\_3} vs. N}
+{\externalfigure[../../analysis/output/scatter_opp_hc_2_stress_N.png][width=0.42\textwidth]}{\type{opp\_hc\_2} vs. N}
+{\externalfigure[../../analysis/output/scatter_opp_aco_2_stress_V.png][width=0.42\textwidth]}{\type{opp\_aco\_2} vs. V}
+{\externalfigure[../../analysis/output/scatter_opp_hc_3_stress_V.png][width=0.42\textwidth]}{\type{opp\_hc\_3} vs. V}
+{\externalfigure[../../analysis/output/scatter_opp_aco_3_stress_N.png][width=0.42\textwidth]}{\type{opp\_aco\_3} vs. N}
 \stopcombination
 \stopplacefigure
 

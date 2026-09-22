@@ -3,10 +3,10 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
-from models.utils.dat_files_builder import build_dat_files
+from tests.infra.zimpl.dat_files_builder import build_dat_files
 from tests.opp_v4.opp_test_case_v4 import OPPTestCaseV4
 from tests.opp_v4.config import DAT_DIR, ZPL_PATH
-from tests.utils.zpl_utils import extract_active_arcs, solve_zpl
+from tests.infra.zimpl.zpl_utils import extract_active_arcs, solve_zpl
 from tests.shared_scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
 
@@ -16,7 +16,7 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
 
     Purpose: stress the exact model's scalability (mirrors opp_v3's own
     stress suite / opp_hc_2's picker-aware stress test #04, see
-    specs/model_analysis.md sec. 5 for the "exponential blow-up vs. V"
+    docs/specs/model_analysis.md sec. 5 for the "exponential blow-up vs. V"
     hypothesis this is meant to check). Reuses opp_hc_2's scenario builder
     (pure graph/order construction, no model coupling) instead of duplicating it.
     """

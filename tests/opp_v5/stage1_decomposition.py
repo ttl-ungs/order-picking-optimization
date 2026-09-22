@@ -34,9 +34,9 @@ sums, so narrowing B alone already captures the decomposition's benefit.
 
 import os
 
-from models.utils.dat_files_builder import write_set_dat, write_indexed_dat
+from tests.infra.zimpl.dat_files_builder import write_set_dat, write_indexed_dat
 from tests.opp_v5.config import STAGE1_ZPL_PATH
-from tests.utils.zpl_utils import solve_zpl
+from tests.infra.zimpl.zpl_utils import solve_zpl
 
 
 def _read_set_dat(path):
