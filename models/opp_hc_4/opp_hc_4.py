@@ -98,6 +98,12 @@ class OPPHillClimbing(Model):
         self.B = sorted(dto.B)
         self.T_0 = dto.start_time
         self.P = sorted(dto.P) if getattr(dto, "P", None) else ["P1"]
+        # Per-solve() caches for values that are invariant for the whole
+        # search (batch_assignments never changes once a run starts -- only
+        # picker/route/sequence do): reset at the top of solve(), read-only
+        # afterwards. See _fixed_time and _generate_feasible_neighbor.
+        self._fixed_time_cache: Dict[str, float] = {}
+        self._batches_with_orders_cache: List[str] = []
 
     def solve(self, params: SolveHC4ModelDTO):
         """
@@ -118,6 +124,13 @@ class OPPHillClimbing(Model):
             return "infeasible", None
 
         batch_assignments = params.extract_batch_assignments()
+
+        # batch_assignments is fixed for the rest of this run (only picker/
+        # route/sequence change during search), so these two per-batch
+        # values -- recomputed from scratch on every call otherwise -- can
+        # be built once here instead.
+        self._fixed_time_cache = {}
+        self._batches_with_orders_cache = [b for b in self.B if batch_assignments[b]]
 
         # V_p[p] is a divisor in _t_exec_pb (fixed_time(b) + route_time(b)
         # / V_p[p]): a speed of exactly 0 is a ZeroDivisionError waiting
@@ -349,10 +362,19 @@ class OPPHillClimbing(Model):
         return {p: self._picker_speed(p, params) for p in self.P}
 
     def _fixed_time(self, batch: str, batch_assignments: Dict[str, Set[str]], params: SolveHC4ModelDTO) -> float:
-        """Setup + picking time -- the part of t_exec_pb that does NOT depend on picker speed."""
+        """Setup + picking time -- the part of t_exec_pb that does NOT depend
+        on picker speed. Cached per batch (see solve()'s _fixed_time_cache):
+        batch_assignments/C_n/B_setup/B_picking are all invariant for the
+        duration of a run, so this is the same value every time for a given
+        batch."""
+        cached = self._fixed_time_cache.get(batch)
+        if cached is not None:
+            return cached
         orders = batch_assignments.get(batch, set())
         picking_capacity = sum(params.C_n.get(o, 0) for o in orders) if isinstance(params.C_n, dict) else 0
-        return params.B_setup + params.B_picking * picking_capacity
+        fixed_time = params.B_setup + params.B_picking * picking_capacity
+        self._fixed_time_cache[batch] = fixed_time
+        return fixed_time
 
     def _route_time(self, route: List, params: SolveHC4ModelDTO, distance: Optional[float] = None) -> float:
         """
@@ -731,7 +753,7 @@ class OPPHillClimbing(Model):
           reasoning: the outer step judges whether it actually helps)
         - Swap the processing order of two batches on the same picker
         """
-        batches_with_orders = [b for b in self.B if batch_assignments[b]]
+        batches_with_orders = self._batches_with_orders_cache
 
         moves = [self._generate_route_neighbor]
         if len(self.P) > 1 and batches_with_orders:
@@ -821,7 +843,7 @@ class OPPHillClimbing(Model):
         currently-ineligible batch towards a picker that gets it closer to
         (or all the way to) compliance.
         """
-        batches_with_orders = [b for b in self.B if batch_assignments[b]]
+        batches_with_orders = self._batches_with_orders_cache
         if not batches_with_orders:
             return None
 

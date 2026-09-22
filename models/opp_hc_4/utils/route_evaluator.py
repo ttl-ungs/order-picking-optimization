@@ -57,6 +57,15 @@ class RouteEvaluator:
         self.Dd = Dd
         self.M = M
         self.V_p = V_p or {}
+        # batch_assignments is immutable for the lifetime of this evaluator
+        # (only picker/route/sequence change during search, never which
+        # orders belong to which batch), so the order->batch lookup evaluate()
+        # needs can be built once here instead of an O(N*B) scan per call.
+        self._order_to_batch = {
+            order: batch
+            for batch, orders in self.batch_assignments.items()
+            for order in orders
+        }
 
     def picker_speed(self, picker: str) -> float:
         """Speed of `picker`; defaults to 1.0 when unset (no-op, matches
@@ -74,11 +83,7 @@ class RouteEvaluator:
         tardiness_total = 0.0
 
         for order in self.N:
-            batch = None
-            for b in self.B:
-                if order in self.batch_assignments[b]:
-                    batch = b
-                    break
+            batch = self._order_to_batch.get(order)
 
             if batch is None or batch not in batch_times:
                 continue
