@@ -169,6 +169,37 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
   - Conversión a `family_case()`: conteos de test idénticos antes/después en las 4 familias, tier normal (`hc_3` 51, `hc_4` 51, `aco_3` 59, `aco_4` 54, todos `OK`) — verificado de forma independiente además de por el propio proceso de conversión. Tier estrés verificado por compilación (`py_compile`, 0 errores en 142 archivos) + chequeo de imports + comparación exhaustiva de imports contra el archivo base (0 discrepancias tras el fix del bug de arriba), más 2 corridas reales de punta a punta como muestra (`opp_hc_4` model_03, `opp_aco_3` model_04, ambas `OK`) — no se corrieron las 4 baterías de estrés completas por el tiempo que toman.
   - Chequeo de seguridad cruzada entre familias: las 4 familias completas (tier normal, 215 tests) corridas juntas en un solo proceso de Python — 0 errores, 0 fallas — confirma que el parcheo scoped a `setUp`/`tearDown` evita que `hc_3`/`hc_4` (o `aco_3`/`aco_4`) se pisen al compartir el mismo módulo base.
 
+
+### Cambio 2026-09-21 - `opp_v5` pasa a familia v5.x: `opp_v5_1_mono` y `opp_v5_2_split`
+- Autor: IA / Ximena Ebertz
+- Alcance: modelos / tests / infraestructura (rama `align/opp-v4-with-v5`, apilada sobre `feat/ci-zimpl-opp-v4-v5`)
+- Archivos principales:
+  - [models/opp_v5_1_mono/opp_model_v5_1_mono.zpl](models/opp_v5_1_mono/opp_model_v5_1_mono.zpl)
+  - [models/opp_v5_2_split/](models/opp_v5_2_split/)
+  - [tests/opp_v5_1_mono/](tests/opp_v5_1_mono/)
+  - [tests/opp_v5_2_split/](tests/opp_v5_2_split/)
+  - [tests/infra/factories/migrated_mono_case.py](tests/infra/factories/migrated_mono_case.py)
+  - [tests/infra/zimpl/dat_files_builder.py](tests/infra/zimpl/dat_files_builder.py)
+- Qué se hizo:
+  - Nuevo `opp_v5_1_mono`: el mismo problema que resuelve `opp_v5` (velocidad `V_p` por picker y cadena de frío), pero como un solo MIP en vez de dos etapas. Parte de `opp_v4` y agrega `V_p` (`t_exec_pb = tiempo_fijo + R_b_time / V_p`), la cadena de frío como cota `u_pb <= T_frio_max + 1e-9`, el objetivo `Σ v_b` y las filas de tardanza/adelanto solo para `Bn = 1`. `t_exec_b` y `w_b` se eliminan y `R_b_time` pasa a ser variable. `opp_v4` no se modificó y queda como referencia sin las extensiones.
+  - `opp_v5` pasó a llamarse `opp_v5_2_split` (`models/`, `tests/`, `results/`, imports, `analysis/config.py`, `scripts/`, CI, y las clases base de tests, ahora `OPPTestCaseSplit`). No se tocaron `docs/thesis/`, `analysis/output/` ni las entradas anteriores de este archivo, que siguen diciendo `opp_v5`.
+  - Tests de `opp_v5_1_mono`: los mismos 34 funcionales y 8 de estrés que `opp_v5_2_split` (31 migrados de v4 con `migrated_mono_case`, 3 propios portados), sin ningún test nuevo y con las assertions intactas. Único test de v5 no portado: `test_preflight_detects_when_no_picker_is_eligible` (usa `run_pipeline(solve_stage2=False)`, y el monolítico no tiene una etapa 1 separada).
+  - `build_dat_files` ahora escribe `velocities.dat` (`V_p = 1` para todos) y `frio.dat` (sin límite) cuando el escenario no los define, para que los tests de v4 corran contra el monolítico sin cambios.
+- Pendiente:
+  - **No se corrió ningún test en este cambio.** Correr las suites de `opp_v5_1_mono` y `opp_v5_2_split`, y comparar `obj_val` entre los dos sobre los mismos escenarios.
+  - Registrar `opp_v5_1_mono` en `scripts/run_all.py`, `scripts/baseline_counts.json`, el nightly de CI y `analysis/config.py`.
+  - Con la formulación monolítica, `test_case_06` de v4 falló en una corrida previa. La hipótesis es que la ruta óptima no es única (el `v_pb` puede rellenarse hasta la fecha de entrega), pero no está confirmada.
+  - Regenerar `analysis/output/` y decidir qué hacer con los nombres viejos de `docs/thesis/`.
+- Impacto:
+  - Permite comparar un modelo exacto monolítico contra su descomposición en dos etapas sobre el mismo problema.
+  - Sin tests nuevos ni assertions modificadas, la comparación de `opp_v5_2_split` contra `opp_v5_1_mono` usa exactamente las mismas suites.
+- Riesgo / atención:
+  - Los dos modelos son equivalentes en definición y en valor óptimo (la ruta mínima domina a cualquier otra, y los lotes no interactúan en el ruteo), pero no en el conjunto de soluciones óptimas: el monolítico puede devolver rutas no mínimas con el mismo objetivo. Es un argumento por lectura, sin verificación empírica todavía.
+  - Ambos dependen de que `M` y `M_seq` (500, fijo) cubran el horizonte de tiempo.
+- Validación:
+  - `python -m scripts.check_repo`: pasa completo (861 módulos importan, sin referencias a rutas viejas).
+  - Sin corridas de tests.
+
 ---
 
 
@@ -220,7 +251,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - [tests/](tests/)
 
 ### Modelos vigentes para la tesina
-- Exactos: [models/opp_v4/](models/opp_v4/), [models/opp_v5/](models/opp_v5/)
+- Exactos: [models/opp_v4/](models/opp_v4/), [models/opp_v5_1_mono/](models/opp_v5_1_mono/), [models/opp_v5_2_split/](models/opp_v5_2_split/)
 - Hill Climbing: [models/opp_hc_2/](models/opp_hc_2/), [models/opp_hc_3/](models/opp_hc_3/), [models/opp_hc_4/](models/opp_hc_4/)
 - ACO: [models/opp_aco_2/](models/opp_aco_2/), [models/opp_aco_3/](models/opp_aco_3/), [models/opp_aco_4/](models/opp_aco_4/)
 - Legacy (fuera de la tesina, se conservan): `opp_v1`, `opp_v2`, `opp_v3`, `opp_hc_1`, `opp_aco_1`
