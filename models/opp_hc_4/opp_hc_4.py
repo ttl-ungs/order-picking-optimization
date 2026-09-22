@@ -227,7 +227,9 @@ class OPPHillClimbing(Model):
         # are what actually get reported: the search is free to wander
         # through cold-chain-violating states along the way, but only ever
         # reports one that's fully compliant.
-        current_cost = self._search_cost(current_solution, evaluator, validator)
+        current_cost, current_objective, current_violation = self._search_cost(current_solution, evaluator, validator)
+        evaluator.commit(current_solution)
+        validator.commit(current_solution)
 
         best_feasible_solution = None
         best_feasible_cost = float("inf")
@@ -236,9 +238,9 @@ class OPPHillClimbing(Model):
         # cold-chain-violating states -- see comment above). 0 means the
         # initial construction was already the best feasible answer found.
         best_found_at_iteration = 0
-        if validator.cold_chain_violation(current_solution) == 0.0:
+        if current_violation == 0.0:
             best_feasible_solution = current_solution.copy()
-            best_feasible_cost = evaluator.evaluate(current_solution)
+            best_feasible_cost = current_objective
 
         max_time = params.Max_time if getattr(params, "Max_time", None) else 30.0
 
@@ -261,16 +263,19 @@ class OPPHillClimbing(Model):
                 no_improvement_count += 1
                 continue
 
-            neighbor_cost = self._search_cost(neighbor_solution, evaluator, validator)
+            neighbor_cost, neighbor_objective, neighbor_violation = self._search_cost(
+                neighbor_solution, evaluator, validator
+            )
 
             if neighbor_cost < current_cost:
                 current_solution = neighbor_solution
                 current_cost = neighbor_cost
                 no_improvement_count = 0
+                evaluator.commit(current_solution)
+                validator.commit(current_solution)
 
-                violation = validator.cold_chain_violation(current_solution)
-                if violation == 0.0:
-                    true_cost = evaluator.evaluate(current_solution)
+                if neighbor_violation == 0.0:
+                    true_cost = neighbor_objective
                     if true_cost < best_feasible_cost:
                         best_feasible_solution = current_solution.copy()
                         best_feasible_cost = true_cost
@@ -771,15 +776,31 @@ class OPPHillClimbing(Model):
 
         return None
 
-    def _search_cost(self, solution: RouteSolution, evaluator: "RouteEvaluator", validator: "ConstraintsValidator") -> float:
+    def _search_cost(
+        self, solution: RouteSolution, evaluator: "RouteEvaluator", validator: "ConstraintsValidator"
+    ) -> Tuple[float, float, float]:
         """
         Objective + a large penalty for any cold-chain overrun -- drives
         ALL accept/reject decisions during the search (initial cost,
-        neighbor acceptance). NOT the reported obj_val: see solve()'s
+        neighbor acceptance). Returns (cost, objective, violation)
+        separately (not just cost) so solve() can reuse objective/
+        violation after accepting `solution` instead of recomputing them a
+        second time -- neither is the reported obj_val: see solve()'s
         best_feasible_solution/best_feasible_cost, tracked separately with
         the real (unpenalized) objective, only from fully compliant states.
+
+        Uses evaluate_incremental()/cold_chain_violation_incremental()
+        (diffed against each object's last COMMITTED solution) rather than
+        evaluate()/cold_chain_violation() -- solve() is responsible for
+        calling evaluator.commit(solution)/validator.commit(solution)
+        whenever it actually accepts `solution` as the new current_solution
+        (see their docstrings for why a rejected candidate must not
+        trigger a commit).
         """
-        return evaluator.evaluate(solution) + self._COLD_CHAIN_PENALTY_WEIGHT * validator.cold_chain_violation(solution)
+        objective = evaluator.evaluate_incremental(solution)
+        violation = validator.cold_chain_violation_incremental(solution)
+        cost = objective + self._COLD_CHAIN_PENALTY_WEIGHT * violation
+        return cost, objective, violation
 
     def _route_local_search_cost(
         self, batch: str, route: List, picker: str,
