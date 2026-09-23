@@ -600,33 +600,46 @@ class OPPHillClimbing(Model):
 
         return route
 
-    def _route_topology_feasible(self, route: List) -> bool:
+    def _build_reversal_prefix_arrays(self, route: List) -> Tuple[List[float], List[float], List[int]]:
         """
-        Topology-only feasibility (depot/final edges + every consecutive
-        edge exists) for a route that is a PERMUTATION of an already-valid
-        route's nodes -- unlike _is_route_feasible, doesn't need to re-check
-        "no repeated nodes" or "covers all required locations", both
-        automatically preserved by any reordering of the same node set.
-        Used by _two_opt_tighten_route, which only ever reorders segments
-        of a route it was handed (never adds/removes nodes).
+        fwd_prefix[k]/rev_prefix[k]: cumulative distance of route[0..k]
+        traversed forward / in reverse. rev_broken_count[k]: how many of
+        the reverse-direction edges among route[0..k] don't exist -- a
+        2-opt reversal of route[i:j+1] is only feasible if this is the
+        same at both ends of the segment (i.e. zero reverse edges are
+        missing inside it). Shared by _two_opt_tighten_route and
+        _generate_route_neighbor -- see _two_opt_tighten_route's
+        docstring for why get_distance/has_edge are NOT assumed
+        symmetric here.
         """
-        if not route:
-            return True
+        n = len(route)
+        get_distance = self.location_graph.get_distance
+        has_edge = self.location_graph.has_edge
 
-        depot = self.location_graph.get_depot()
-        final = self.location_graph.get_final()
+        fwd_prefix = [0.0] * n
+        rev_prefix = [0.0] * n
+        rev_broken_count = [0] * n
+        for t in range(n - 1):
+            # route[t] -> route[t + 1] is one of the route's own edges,
+            # which is always feasible for a route this is called on
+            # (topology-valid, or the current sweep state in
+            # _two_opt_tighten_route), so get_distance here is always
+            # finite. The reverse direction may not exist at all
+            # (get_distance returns float("inf")): rev_broken_count
+            # tracks that separately (used to reject any candidate whose
+            # reversed segment would need this edge) so a 0.0 placeholder
+            # is used for rev_prefix's running sum instead -- letting an
+            # "inf" into the cumulative sum would poison every later
+            # prefix value (inf - inf = nan), including for ranges that
+            # never touch this broken edge.
+            fwd_prefix[t + 1] = fwd_prefix[t] + get_distance(route[t], route[t + 1])
+            edge_ok = has_edge(route[t + 1], route[t])
+            rev_prefix[t + 1] = rev_prefix[t] + (
+                get_distance(route[t + 1], route[t]) if edge_ok else 0.0
+            )
+            rev_broken_count[t + 1] = rev_broken_count[t] + (0 if edge_ok else 1)
 
-        if not self.location_graph.has_edge(depot, route[0]):
-            return False
-
-        for i in range(len(route) - 1):
-            if not self.location_graph.has_edge(route[i], route[i + 1]):
-                return False
-
-        if not self.location_graph.has_edge(route[-1], final):
-            return False
-
-        return True
+        return fwd_prefix, rev_prefix, rev_broken_count
 
     def _two_opt_tighten_route(self, route: List) -> List:
         """
@@ -664,34 +677,7 @@ class OPPHillClimbing(Model):
         current = route
         for _ in range(len(route)):
             n = len(current)
-
-            # fwd_prefix[k]/rev_prefix[k]: cumulative distance of
-            # current[0..k] traversed forward / in reverse. rev_broken_count[k]:
-            # how many of the reverse-direction edges among current[0..k]
-            # don't exist -- a reversal is only feasible if this is the same
-            # at both ends of the segment (i.e. zero reverse edges are
-            # missing inside it).
-            fwd_prefix = [0.0] * n
-            rev_prefix = [0.0] * n
-            rev_broken_count = [0] * n
-            for t in range(n - 1):
-                # current[t] -> current[t + 1] is one of the CURRENT route's
-                # own edges, which is always feasible (an invariant this loop
-                # maintains -- see the class docstring), so get_distance here
-                # is always finite. The reverse direction may not exist at
-                # all (get_distance returns float("inf")): rev_broken_count
-                # tracks that separately (used to reject any candidate whose
-                # reversed segment would need this edge) so a 0.0 placeholder
-                # is used for rev_prefix's running sum instead -- letting an
-                # "inf" into the cumulative sum would poison every later
-                # prefix value (inf - inf = nan), including for ranges that
-                # never touch this broken edge.
-                fwd_prefix[t + 1] = fwd_prefix[t] + get_distance(current[t], current[t + 1])
-                edge_ok = has_edge(current[t + 1], current[t])
-                rev_prefix[t + 1] = rev_prefix[t] + (
-                    get_distance(current[t + 1], current[t]) if edge_ok else 0.0
-                )
-                rev_broken_count[t + 1] = rev_broken_count[t] + (0 if edge_ok else 1)
+            fwd_prefix, rev_prefix, rev_broken_count = self._build_reversal_prefix_arrays(current)
 
             best_i = best_j = None
             best_delta = -1e-9
@@ -879,11 +865,11 @@ class OPPHillClimbing(Model):
         list, re-validating it end-to-end, and re-summing its distance/
         t_exec_pb from scratch for every one of the O(n^2) reversals a
         sweep considers. This is valid because:
-        - a reversal never changes `route`'s node set, so the duplicate-
-          nodes/required-locations checks _is_route_feasible also does
-          are automatically satisfied (already true of `route` itself)
-          and don't need re-checking per candidate -- only topology
-          (edge existence) actually varies between candidates;
+        - a reversal never changes `route`'s node set, so a duplicate-
+          nodes/required-locations check would trivially pass for any
+          candidate (already true of `route` itself) and doesn't need
+          doing per candidate -- only topology (edge existence) actually
+          varies between candidates;
         - fixed_time and service_time depend on which orders/locations
           are in the batch, not on the route's ORDER, so t_exec_pb is an
           affine function of distance alone for a fixed batch/picker
@@ -921,19 +907,11 @@ class OPPHillClimbing(Model):
             violation = max(0.0, t_exec - params.T_frio_max)
             return params.B_time * distance + self._COLD_CHAIN_PENALTY_WEIGHT * violation
 
-        # See _two_opt_tighten_route's docstring for what these mean; same
-        # construction, just a single pass here (this method returns the
-        # single best 2-opt move, not a fully-tightened route).
-        fwd_prefix = [0.0] * n
-        rev_prefix = [0.0] * n
-        rev_broken_count = [0] * n
-        for t in range(n - 1):
-            fwd_prefix[t + 1] = fwd_prefix[t] + get_distance(route[t], route[t + 1])
-            edge_ok = has_edge(route[t + 1], route[t])
-            rev_prefix[t + 1] = rev_prefix[t] + (
-                get_distance(route[t + 1], route[t]) if edge_ok else 0.0
-            )
-            rev_broken_count[t + 1] = rev_broken_count[t] + (0 if edge_ok else 1)
+        # See _build_reversal_prefix_arrays' docstring for what these mean;
+        # same construction as _two_opt_tighten_route, just a single pass
+        # here (this method returns the single best 2-opt move, not a
+        # fully-tightened route).
+        fwd_prefix, rev_prefix, rev_broken_count = self._build_reversal_prefix_arrays(route)
 
         best_i = best_j = None
         best_local_cost = local_cost(base_distance)
@@ -1033,35 +1011,6 @@ class OPPHillClimbing(Model):
         sequence[i], sequence[j] = sequence[j], sequence[i]
         neighbor.set_picker_sequence(picker, sequence)
         return neighbor
-
-    def _is_route_feasible(
-        self, route: List, batch: str, batch_assignments: Dict[str, Set[str]], A: Dict
-    ) -> bool:
-        """Topology-only feasibility check (cold chain is checked separately by callers)."""
-        if not route:
-            return True
-
-        depot = self.location_graph.get_depot()
-        final = self.location_graph.get_final()
-
-        if len(route) != len(set(route)):
-            return False
-
-        if not self.location_graph.has_edge(depot, route[0]):
-            return False
-
-        for i in range(len(route) - 1):
-            if not self.location_graph.has_edge(route[i], route[i+1]):
-                return False
-
-        if not self.location_graph.has_edge(route[-1], final):
-            return False
-
-        required = self._find_required_locations(batch, batch_assignments[batch], A)
-        if not required.issubset(set(route)):
-            return False
-
-        return True
 
     def _build_solution_output(self, solution: RouteSolution) -> OPPLocationGraph:
         """Convert RouteSolution to OPPLocationGraph format compatible with build_output."""
