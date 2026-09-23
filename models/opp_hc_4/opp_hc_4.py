@@ -743,16 +743,25 @@ class OPPHillClimbing(Model):
     def _bff_search(
         self, depot, final, initial_remaining: frozenset, memoize: bool
     ) -> Optional[List]:
-        """BFS over states (current_node, remaining_required, path_so_far)."""
+        """BFS over states (current_node, remaining_required, path_so_far).
+
+        The _MAX_BFF_EXPANSIONS safety valve applies regardless of `memoize`
+        -- it used to only fire in the memoize=False pass (a bug: since
+        _generate_feasible_route_bff always tries memoize=True FIRST, that
+        pass had no bound at all on either time or memory, the `seen` set
+        growing unboundedly for any batch with enough required locations
+        that the state space doesn't collapse quickly. Observed in practice:
+        a single batch with 25 required locations on a ~100-node grid ran
+        for 3+ minutes and 3+ GB of RAM without terminating).
+        """
         queue: deque = deque([(depot, initial_remaining, [depot])])
         seen: Set = {(depot, initial_remaining)} if memoize else None
         expansions = 0
 
         while queue:
-            if not memoize:
-                expansions += 1
-                if expansions > self._MAX_BFF_EXPANSIONS:
-                    return None
+            expansions += 1
+            if expansions > self._MAX_BFF_EXPANSIONS:
+                return None
 
             node, remaining, path = queue.popleft()
             visited = set(path)
