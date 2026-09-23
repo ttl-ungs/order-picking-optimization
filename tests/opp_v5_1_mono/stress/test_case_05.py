@@ -1,7 +1,8 @@
-from tests.shared_scenarios.stress.stress_scenarios_v5 import migrated_stress_scenario
+from tests.shared_scenarios.stress.stress_scenarios_v5_designed import realistic_crew_scenario
 from tests.opp_v5_1_mono.stress.stress_test_case import OPPMonoStressTestCase
 
 
 class TestOPPMonoStress05(OPPMonoStressTestCase):
-    def test_10_orders_per_batch(self):
-        self.assert_stress_pipeline(migrated_stress_scenario(10, 10, 100, 10, 10))
+    def test_realistic_crew_13x13_warehouse(self):
+        """Same instance as opp_v5_2_split's stress 05, solved in one MIP."""
+        self.assert_stress_pipeline(realistic_crew_scenario(13))

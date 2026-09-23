@@ -1,5 +1,5 @@
 {
- "_source": "Tests discovered on main before the 2026-09 reorganization (git worktree of main, unittest discovery per suite), with the old model names mapped to the current ones (opp->opp_v1, opp_hc->opp_hc_1, opp_aco->opp_aco_1) and tier normal->functional. opp_v5_1_mono did not exist then: its counts (52 functional = opp_v5_2_split's 53 minus the one test that needs a separate stage 1; 8 stress) were collected from its own tree when it was added (2026-09-21). Regenerate with `python -m scripts.run_all --update-baseline` only when tests are added or removed on purpose.",
+ "_source": "Tests discovered on main before the 2026-09 reorganization (git worktree of main, unittest discovery per suite), with the old model names mapped to the current ones (opp->opp_v1, opp_hc->opp_hc_1, opp_aco->opp_aco_1) and tier normal->functional. opp_v5_1_mono did not exist then: its counts (52 functional = opp_v5_2_split's 53 minus the one test that needs a separate stage 1; 8 stress) were collected from its own tree when it was added (2026-09-21). Both opp_v5 stress suites were redesigned on 2026-09-23 (19 tests each; old-to-new numbering in meta.md). Regenerate with `python -m scripts.run_all --update-baseline` only when tests are added or removed on purpose.",
  "counts": {
   "functional": {
    "opp_v1": 18,
@@ -30,8 +30,8 @@
    "opp_v2": 7,
    "opp_v3": 34,
    "opp_v4": 8,
-   "opp_v5_2_split": 8,
-   "opp_v5_1_mono": 8
+   "opp_v5_2_split": 19,
+   "opp_v5_1_mono": 19
   }
  },
  "known_failures": {

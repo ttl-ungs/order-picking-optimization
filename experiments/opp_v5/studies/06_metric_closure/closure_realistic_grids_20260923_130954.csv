@@ -1,0 +1,7 @@
+label,model,batches,pickers,orders_per_batch,grid,vertices,weights,speed_spread,speed_tiers,speeds,batch_locations_min,batch_locations_max,stage1_s,stage2_s,zimpl_s,mono_s,total_s,hard_cap_s,status,obj,gap_pct,bb_nodes,sla_pct,route_min,route_max,estimated_finish
+E1nc,split,6,3,12,25x25,625,4/5,0.0,-,1.00,12,12,,,,,900.5,900,hard_kill:in_stage1,,,,,,,
+E1,split,6,3,12,25x25,625,4/5,0.0,-,1.00,12,12,,,,,900.5,900,hard_kill:in_stage1,,,,,,,
+E2,split,6,3,20,25x25,625,4/5,0.0,-,1.00,19,20,,,,,900.5,900,hard_kill:in_stage1,,,,,,,
+E3nc,split,6,3,12,35x35,1225,4/5,0.0,-,1.00,12,12,,,,,900.5,900,hard_kill:in_stage1,,,,,,,
+E2nc,split,6,3,20,25x25,625,4/5,0.0,-,1.00,19,20,,,,,900.5,900,hard_kill:in_stage1,,,,,,,
+E3,split,6,3,12,35x35,1225,4/5,0.0,-,1.00,12,12,,,,,900.5,900,hard_kill:in_stage1,,,,,,,

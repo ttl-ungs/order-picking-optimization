@@ -31,13 +31,19 @@ entirely, and costs nothing that matters: the actual combinatorial
 complexity driver is z_ijb/f_ijb (indexed by E * B), not the N-indexed
 sums, so narrowing B alone already captures the decomposition's benefit.
 
-Parallel mode (>= 2 batches, default): each batch is solved in its own
-temporary directory by a separate OS process via ProcessPoolExecutor,
-giving true parallelism on multi-core machines. Each worker gets a copy
-of the dat_files/ directory with data_B.dat/Bn.dat narrowed to its batch,
-plus a copy of the ZPL file so that ZIMPL's relative-path reads
-(../dat_files/...) resolve into the worker's own directory regardless of
-whether ZIMPL resolves paths relative to CWD or to the ZPL file's location.
+Parallel mode is OPT-IN, via OPP_STAGE1_WORKERS=<n> (default: sequential).
+Each batch is then solved in its own temporary directory by a separate OS
+process via ProcessPoolExecutor. Each worker gets a copy of the dat_files/
+directory with data_B.dat/Bn.dat narrowed to its batch, plus a copy of the
+ZPL file so that ZIMPL's relative-path reads (../dat_files/...) resolve
+into the worker's own directory regardless of whether ZIMPL resolves paths
+relative to CWD or to the ZPL file's location.
+
+It defaults to off because wall-clock timings are what this repo measures
+to compare models: with parallel batch solves those timings depend on how
+much CPU and RAM happened to be free at the time, which makes runs
+non-reproducible and not comparable against opp_v5_1_mono (which cannot
+decompose, so it never gets the same treatment).
 """
 
 import os
@@ -50,6 +56,17 @@ from tests.opp_v5_2_split.config import STAGE1_ZPL_PATH
 from tests.infra.zimpl.zpl_utils import solve_zpl
 
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+
+
+def _default_workers(batch_count):
+    """Worker count from OPP_STAGE1_WORKERS; 1 (sequential) when unset or unparseable."""
+    raw = os.environ.get("OPP_STAGE1_WORKERS", "").strip()
+    if not raw:
+        return 1
+    try:
+        return max(1, min(int(raw), batch_count))
+    except ValueError:
+        return 1
 
 
 def _solve_one_batch(zpl_path, worker_dat_dir):
@@ -100,11 +117,11 @@ def solve_stage1_decomposed(dat_dir, max_workers=None):
     invoke Stage 2 (which also reads data_B.dat/Bn.dat) sees the correct
     full scenario, not whichever batch was solved last.
 
-    With >= 2 batches and max_workers != 1, batches are solved in parallel
-    using separate OS processes (one per batch, up to max_workers at a
-    time). Each process works on its own copy of the dat files in a temp
-    directory, so the original dat_dir is never modified. max_workers
-    defaults to min(cpu_count, len(batches)).
+    Sequential by default. Set OPP_STAGE1_WORKERS=<n> (or pass max_workers)
+    to solve batches in parallel instead, using separate OS processes, up
+    to <n> at a time; each works on its own copy of the dat files in a temp
+    directory, so the original dat_dir is never modified. Parallel needs
+    more than 4 batches to be worth its process-spawn overhead.
 
     Returns (status, merged_values): status is "optimal"/"feasible" iff
     EVERY batch solved to one of those (the first non-"optimal"/"feasible"
@@ -121,7 +138,7 @@ def solve_stage1_decomposed(dat_dir, max_workers=None):
     bn = _read_indexed_dat_pairs(bn_path)
 
     if max_workers is None:
-        max_workers = min(os.cpu_count() or 1, len(batches))
+        max_workers = _default_workers(len(batches))
 
     # Parallel overhead (spawning processes, copying dat files) only pays off
     # with enough batches; for small instances the sequential path is faster.

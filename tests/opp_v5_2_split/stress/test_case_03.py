@@ -3,5 +3,12 @@ from tests.opp_v5_2_split.stress.stress_test_case import OPPSplitStressTestCase
 
 
 class TestOPPSplitStress03(OPPSplitStressTestCase):
-    def test_30_orders_per_batch_20_batches_100x100(self):
-        self.assert_stress_pipeline(migrated_stress_scenario(20, 20, 600, 100, 100))
+    """
+    Ported from opp_v4's stress test #08 (40 batches, 320 orders, 7x7 grid,
+    single picker -- opp_v4's own test_08 uses P={"P1"} directly rather than
+    its 5-arg scenario_custom_setup, so this mirrors that with pickers=1)
+    -- was the one opp_v4 stress instance missing from opp_v5_2_split's battery.
+    """
+
+    def test_8_orders_per_batch_7x7_320_orders(self):
+        self.assert_stress_pipeline(migrated_stress_scenario(40, 1, 320, 7, 7))

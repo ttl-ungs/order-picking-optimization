@@ -1,14 +1,13 @@
-from tests.shared_scenarios.stress.stress_scenarios_v5 import migrated_stress_scenario
+from tests.shared_scenarios.stress.stress_scenarios_v5_designed import realistic_crew_scenario
 from tests.opp_v5_2_split.stress.stress_test_case import OPPSplitStressTestCase
 
 
 class TestOPPSplitStress08(OPPSplitStressTestCase):
-    """
-    Ported from opp_v4's stress test #08 (40 batches, 320 orders, 7x7 grid,
-    single picker -- opp_v4's own test_08 uses P={"P1"} directly rather than
-    its 5-arg scenario_custom_setup, so this mirrors that with pickers=1)
-    -- was the one opp_v4 stress instance missing from opp_v5_2_split's battery.
-    """
+    def test_realistic_crew_16x16_warehouse(self):
+        """Realistic crew on a 256-location warehouse: the ceiling probe.
 
-    def test_8_orders_per_batch_7x7_320_orders(self):
-        self.assert_stress_pipeline(migrated_stress_scenario(40, 1, 320, 7, 7))
+        15x15 solved in about 28 minutes with routing taking most of it; this
+        size is expected to exhaust the runner's 40 minutes, marking where the
+        exact approach stops reaching with a realistic profile.
+        """
+        self.assert_stress_pipeline(realistic_crew_scenario(16))

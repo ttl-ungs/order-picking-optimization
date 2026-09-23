@@ -31,7 +31,9 @@ TIERS = ("functional", "stress", "diagnostics")
 RESULT_TIERS = {"functional", "stress", "stability"}
 
 # Entry points / scripts whose import would run something or is not a library module.
-IMPORT_SKIP_PREFIXES = ("examples/",)
+# experiments/*/studies/ keeps each study's scripts exactly as they were run;
+# most execute the experiment at import time.
+IMPORT_SKIP_PREFIXES = ("examples/", "experiments/opp_v5/studies/")
 IMPORT_SKIP_FILES = {"tests/run_suite.py"}
 
 # (pattern, why) -- paths and dotted modules that no longer exist.

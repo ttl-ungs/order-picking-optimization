@@ -1,0 +1,4 @@
+label,model,batches,pickers,orders_per_batch,grid,vertices,weights,speed_spread,speed_tiers,speeds,batch_locations_min,batch_locations_max,stage1_s,stage2_s,zimpl_s,mono_s,total_s,hard_cap_s,status,obj,gap_pct,bb_nodes,sla_pct,route_min,route_max,estimated_finish
+T1,split,4,2,10,5x5,25,4/4,0.0,-,1.00,7,8,2.26,0.84,,,3.2,120,optimal,8966.27,0.0,85,95.0,32.0,36.0,170.0
+T3,split,6,4,26,7x7,49,4/4,0.3,2,0.70|1.30,18,22,18.2,9.37,,,27.7,40,timelimit,59793.84,96.63,213,69.2,60.0,68.0,398.0
+T2,mono,4,2,10,5x5,25,4/4,0.0,-,1.00,7,8,,,0.26,89.21,89.7,120,timelimit,8966.27,1.66,25867,95.0,,,

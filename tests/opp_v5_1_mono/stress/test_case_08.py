@@ -1,14 +1,8 @@
-from tests.shared_scenarios.stress.stress_scenarios_v5 import migrated_stress_scenario
+from tests.shared_scenarios.stress.stress_scenarios_v5_designed import realistic_crew_scenario
 from tests.opp_v5_1_mono.stress.stress_test_case import OPPMonoStressTestCase
 
 
 class TestOPPMonoStress08(OPPMonoStressTestCase):
-    """
-    Ported from opp_v4's stress test #08 (40 batches, 320 orders, 7x7 grid,
-    single picker -- opp_v4's own test_08 uses P={"P1"} directly rather than
-    its 5-arg scenario_custom_setup, so this mirrors that with pickers=1)
-    -- was the one opp_v4 stress instance missing from opp_v5_2_split's battery.
-    """
-
-    def test_8_orders_per_batch_7x7_320_orders(self):
-        self.assert_stress_pipeline(migrated_stress_scenario(40, 1, 320, 7, 7))
+    def test_realistic_crew_16x16_warehouse(self):
+        """Same instance as opp_v5_2_split's stress 08, solved in one MIP."""
+        self.assert_stress_pipeline(realistic_crew_scenario(16))
