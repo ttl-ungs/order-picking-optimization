@@ -1,0 +1,17 @@
+[
+  {"label": "s01-orders-10", "model": "pair", "batches": 6, "pickers": 2, "orders_per_batch": 10, "side": 7, "weights": [4, 4], "hard_cap_s": 330},
+  {"label": "s01-orders-14", "model": "pair", "batches": 6, "pickers": 2, "orders_per_batch": 14, "side": 7, "weights": [4, 4], "hard_cap_s": 330},
+  {"label": "s01-orders-18", "model": "pair", "batches": 6, "pickers": 2, "orders_per_batch": 18, "side": 7, "weights": [4, 4], "hard_cap_s": 330},
+  {"label": "s01-orders-22", "model": "pair", "batches": 6, "pickers": 2, "orders_per_batch": 22, "side": 7, "weights": [4, 4], "hard_cap_s": 330},
+  {"label": "s01-orders-26", "model": "pair", "batches": 6, "pickers": 2, "orders_per_batch": 26, "side": 7, "weights": [4, 4], "hard_cap_s": 330},
+  {"label": "s01-pickers-3", "model": "pair", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 7, "weights": [4, 4], "hard_cap_s": 330},
+  {"label": "s01-pickers-4", "model": "pair", "batches": 6, "pickers": 4, "orders_per_batch": 26, "side": 7, "weights": [4, 4], "hard_cap_s": 330},
+  {"label": "s01-pickers-5", "model": "pair", "batches": 6, "pickers": 5, "orders_per_batch": 26, "side": 7, "weights": [4, 4], "hard_cap_s": 330},
+  {"label": "s01-warehouse-10", "model": "pair", "batches": 6, "pickers": 2, "orders_per_batch": 26, "side": 10, "weights": [4, 4], "hard_cap_s": 330},
+  {"label": "s02-w26-orders-10", "model": "pair", "batches": 6, "pickers": 2, "orders_per_batch": 10, "side": 7, "weights": [2, 6], "hard_cap_s": 330},
+  {"label": "s02-w26-orders-18", "model": "pair", "batches": 6, "pickers": 2, "orders_per_batch": 18, "side": 7, "weights": [2, 6], "hard_cap_s": 330},
+  {"label": "s02-w26-orders-26", "model": "pair", "batches": 6, "pickers": 2, "orders_per_batch": 26, "side": 7, "weights": [2, 6], "hard_cap_s": 330},
+  {"label": "s03-spread-26", "model": "pair", "batches": 6, "pickers": 2, "orders_per_batch": 26, "side": 7, "weights": [4, 4], "speed_spread": 0.3, "hard_cap_s": 330},
+  {"label": "s03-tiers-2", "model": "pair", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 7, "weights": [4, 4], "speed_spread": 0.3, "speed_tiers": 2, "hard_cap_s": 330},
+  {"label": "s03-tiers-3", "model": "pair", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 7, "weights": [4, 4], "speed_spread": 0.3, "speed_tiers": 3, "hard_cap_s": 330}
+]

@@ -169,9 +169,9 @@ Cada principio sale de una medición de la sección 2.
 
 ## 4. Calibración
 
-Herramienta: `python -m experiments.opp_v5.exploration --puntos <archivo>.json`. Cada configuración corre en su propio proceso con un kill duro de 25 min que cubre el árbol completo de procesos. Puntos y resultados en `experiments/opp_v5/estudios/05_calibracion_realista/` (índice en `experiments/opp_v5/README.md`).
+Herramienta: `python -m experiments.opp_v5.exploration --puntos <archivo>.json`. Cada configuración corre en su propio proceso con un kill duro de 25 min que cubre el árbol completo de procesos. Puntos y resultados en `experiments/opp_v5/studies/05_realistic_calibration/` (índice en `experiments/opp_v5/README.md`).
 
-**Tiempos absolutos (de a una medición por vez, sin clausura)** — `calibracion_solo_20260923_*.csv`:
+**Tiempos absolutos (de a una medición por vez, sin clausura)** — `solo_20260923_*.csv`:
 
 | Depósito | Ubic./lote | Etapa 1 | Etapa 2 | **Total** | Nodos Etapa 2 | SLA |
 |---|---|---|---|---|---|---|

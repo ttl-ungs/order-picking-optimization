@@ -1,40 +1,49 @@
-# Experimentos sobre opp_v5
+# opp_v5 experiments
 
-Exploración que no son tests: barridos y calibraciones para entender dónde y por qué se rompe cada etapa del modelo, y para diseñar los tests de stress. Los tests responden "¿esta instancia resuelve?"; estos estudios dan la curva.
+Exploration that is not tests: sweeps and calibrations to understand where and why each model stops solving, and to design the stress tests. A test answers "does this instance solve?"; a study gives the curve.
 
-- `exploration.py` — herramienta para barridos y listas de puntos. Cada punto corre en su propio proceso y se mata desde afuera al agotar `tope_duro`: el `limits/time` de SCIP no es un tope duro. Escribe en el estudio que se le indica:
+- `exploration.py` — the tool for sweeps, point lists and the split-vs-mono frontier. Each point runs in its own process and is killed from outside when it exhausts `hard_cap_s`: SCIP's `limits/time` is not a hard limit. It writes into the study it is given:
 
   ```
-  python -m experiments.opp_v5.exploration --estudio 08_nombre --puntos experiments/opp_v5/estudios/08_nombre/puntos.json
+  python -m experiments.opp_v5.exploration --study 08_name --points experiments/opp_v5/studies/08_name/points.json
   ```
 
-- `propuesta_tests_stress.md` — el diseño de los tests de stress, que sintetiza los estudios 01–07. Usa la numeración vieja de los tests (ver aviso al principio del documento).
-- `estudios/NN_nombre/` — un directorio por pregunta, con los puntos o scripts que se corrieron y los CSV que dieron. Los CSV conservan fecha y hora de la corrida en el nombre.
+  A `pair` point solves the same instance with the split and then with the monolithic model, and measures the monolithic run against the split's proven optimum (the two models share it). That separates finding a good solution from proving it optimal. See the module docstring for every column.
+- `stress_test_design.md` — the design of the stress tests, which draws on studies 01–07. It uses the old test numbering (see the note at its top).
+- `studies/NN_name/` — one directory per question, holding the points or scripts that were run and the CSVs they produced. CSV names keep the date and time of the run.
 
-Los resultados viven acá y no en `results/<modelo>/<tier>/` a propósito: `analysis/load.py` hace glob sobre ese patrón y los tomaría como corridas de tests.
+Results live here and not in `results/<model>/<tier>/` on purpose: `analysis/load.py` globs that pattern and would take them for test runs.
 
-Las conclusiones completas están en `meta.md`; este índice solo resume y apunta.
+The full conclusions are in `meta.md` and, for studies 01–07, in `docs/thesis/opp_v5_2_split_exploration.tex`; this index only summarizes and points.
 
-## Estudios
+## Studies
 
-| # | Pregunta | Conclusión | Entrada de `meta.md` |
-|---|---|---|---|
-| 01 | ¿Qué dimensión rompe primero? | Los lotes rompen la Etapa 2 (en 8); el tamaño del depósito rompe la Etapa 1 (15×15). Órdenes por lote y pickers no rompieron. | "Barrido de ejes 2026-09-22" |
-| 02 | ¿Los pesos uniformes de la grilla son una degeneración? | Sí, por cobertura. Los pesos 2/6 aceleran la Etapa 1 hasta 3,7x en 7×7, pero la ventaja desaparece en 15×15: no es una optimización. | "Los pesos uniformes de la grilla son una degeneración cara" |
-| 03 | ¿Las velocidades distintas encarecen el problema? | Todas distintas sobre un escenario sano: no. En bandas, como una cuadrilla real: el salto de 1 a 2 velocidades cuesta ~7x en la Etapa 2, y con 4 pickers no resuelve en 5 min. | "Las velocidades heterogéneas NO son inherentemente caras" y "Velocidades en niveles" |
-| 04 | ¿El corte forzado por tiempo de la herramienta funciona? | Sí: mata el árbol de procesos y guarda la etapa en la que murió cada punto. | "`limits/time` de SCIP NO es un tope duro" |
-| 05 | ¿Qué perfil realista cae en 10–20 min? | Solo, sin clausura: 7×7 3,6 min, 13×13 11,8 min, 15×15 > 25 min (Etapa 1). Mono en 7×7: brecha de 144% a los 25 min. De acá salieron los tests de stress 04–07. | "Tests de stress 09-11 con perfil realista" y `propuesta_tests_stress.md` §4 |
-| 06 | ¿La clausura métrica sirve en depósitos realistas? | No: el 67–100% de los lotes vuelve a resolverse con el grafo completo. Se sacó del código. | "En un depósito real la ruta óptima repite pasillos" (y su corrección) y "Clausura métrica eliminada del código" |
-| 07 | ¿El `<= 1` por vértice cambia las respuestas o el tiempo? | No cambia las rutas (11 funcionales de ruta y dos escalas de stress idénticas). En tiempo gana en una escala y pierde en la otra. | "⚠ Corrección 2026-09-23 - La entrada siguiente atribuye al `<= 1`…" |
+| # | Model | Question | Conclusion | `meta.md` entry |
+|---|---|---|---|---|
+| 01 | split | Which dimension breaks first? | Batches break Stage 2 (at 8); warehouse size breaks Stage 1 (15×15). Orders per batch and pickers did not break. | "Barrido de ejes 2026-09-22" |
+| 02 | split | Are uniform grid weights a degeneracy? | Yes, for coverage. Weights 2/6 speed Stage 1 up to 3.7x on 7×7, but the advantage is gone at 15×15: not an optimization. | "Los pesos uniformes de la grilla son una degeneración cara" |
+| 03 | split | Do distinct picker speeds make it harder? | All distinct on a healthy scenario: no. In bands, like a real crew: going from 1 to 2 speeds costs ~7x in Stage 2, and 4 pickers do not solve in 5 min. | "Las velocidades heterogéneas NO son inherentemente caras" and "Velocidades en niveles" |
+| 04 | both | Does the tool's hard kill work? | Yes: it kills the process tree and records the stage each point died in. | "`limits/time` de SCIP NO es un tope duro" |
+| 05 | split | Which realistic profile lands in 10–20 min? | Solo: 7×7 3.6 min, 13×13 11.8 min, 15×15 > 25 min (Stage 1). Mono on 7×7: 144% gap at 25 min. Stress tests 04–07 came from here. | "Tests de stress 09-11 con perfil realista" and `stress_test_design.md` §4 |
+| 06 | split | Does the metric closure help on realistic warehouses? | No: 67–100% of batches fall back to the full graph. Removed from the code. | "En un depósito real la ruta óptima repite pasillos" (and its correction) and "Clausura métrica eliminada del código" |
+| 07 | split | Does the `<= 1` per-vertex limit change the answers or the time? | It does not change the routes (11 route functional tests and two stress scales identical). Time: faster at one scale, slower at the other. | "⚠ Corrección 2026-09-23 - La entrada siguiente atribuye al `<= 1`…" |
+| 08 | pair | Where does the monolithic model stop proving the optimum, on the realistic profile? | Planned. | — |
 
-## Cómo se corrió cada uno
+## How each one was run
 
-Los scripts `.py` dentro de `estudios/` se guardaron **tal como se corrieron**. Varios ejecutan el experimento al importarse, así que `scripts/check_repo.py` no los importa. Todos, salvo el de 07, ponen `OPP_STAGE1_METRIC_CLOSURE=1`: la clausura ya no existe, así que si se vuelven a correr lo hacen con el grafo completo. Los objetivos dan igual, porque la clausura era exacta; los tiempos de la Etapa 1, no.
+Studies 01–07 ran before the tool was translated on 2026-09-23; the commands below use the current flag names, and their CSVs have fewer columns (no incumbents, memory or model size).
 
-- **01** — `sweep.py`: 6 lotes / 2 pickers / 26 órdenes por lote / 7×7, un eje por vez, 300 s por solve; da `sweep_axes_*.csv`. `sweep_orders_50.py` extiende las órdenes por lote de 32 a 50 y da `sweep_orders_extended_*.csv`. `exploration.py` nació de estos dos scripts y hace el mismo tipo de barrido desde la misma base, pero sus rangos no coinciden exactamente (por ejemplo, lleva las órdenes por lote hasta 50 en una sola pasada). Para reproducir el CSV tal cual, hay que usar estos scripts.
-- **02** — `exploration.py --pesos 2,6` da `pesos_asimetricos_*.csv`. `exploration.py --axes deposito --base 6,2,26,7 --pesos 2,6` da `deposito_controlado_pesos26_*.csv`.
-- **03** — `exploration.py --velocidades 0.3` da `velocidades_dispares_*.csv`. `speed_tiers.py` da `niveles_velocidad_*.csv`.
-- **04** — `exploration.py --puntos validar_kill.json --paralelo 3` da `validacion_kill_duro.csv`; con `validar_kill2.json` da `validacion_kill_duro_etapa1.csv`.
-- **05** — `exploration.py --puntos` con `calibracion_ronda1.json` (4 en paralelo), `calibracion_ronda1b.json` (8 en paralelo) y `calibracion_solo.json` (de a uno). Solo los tiempos de `calibracion_solo` sirven como absolutos: los de las rondas en paralelo están inflados 2–3x por la CPU híbrida.
-- **06** — `exploration.py --puntos clausura_realista.json --paralelo 6` da `clausura_realista_*.csv`; el archivo de puntos se borró junto con la clausura. `tasa_respaldo.py` midió cuántos lotes caían en el respaldo; depende del código de la clausura y ya no corre.
-- **07** — `exploration.py --puntos prueba_le1_etapa1.json --paralelo 6` da `prueba_le1_etapa1_*.csv`: solo la Etapa 1, con y sin `<= 1`. `prueba_sin_le1.py` corrió los 11 funcionales de ruta con y sin `<= 1` e imprimió los resultados sin guardar CSV.
+The `.py` scripts inside `studies/` are kept **exactly as they were run**. Several run their experiment when imported, so `scripts/check_repo.py` does not import them. All of them except 07's set `OPP_STAGE1_METRIC_CLOSURE=1`: the closure no longer exists, so rerunning them solves on the full graph. Objectives come out the same, because the closure was exact; Stage 1 times do not.
+
+- **01** — `sweep.py`: 6 batches / 2 pickers / 26 orders per batch / 7×7, one axis at a time, 300 s per solve; gives `sweep_axes_*.csv`. `sweep_orders_50.py` extends orders per batch from 32 to 50; gives `sweep_orders_extended_*.csv`. `exploration.py` grew out of these two and sweeps the same way from the same base, but its ranges differ (for example, it takes orders per batch up to 50 in one pass). To reproduce the CSVs as they are, use these scripts.
+- **02** — `--weights 2,6` gives `asymmetric_weights_*.csv`; `--axes warehouse --base 6,2,26,7 --weights 2,6` gives `warehouse_size_weights26_*.csv`.
+- **03** — `--speed-spread 0.3` gives `spread_speeds_*.csv`. `speed_tiers.py` gives `speed_tiers_*.csv`.
+- **04** — `--points kill_points.json --parallel 3` gives `kill_check.csv`; with `kill_points_stage1.json`, `kill_check_stage1.csv`.
+- **05** — `--points` with `round1.json` (4 in parallel), `round1b.json` (8 in parallel) and `solo.json` (one at a time). Only the `solo` times are valid as absolutes: the parallel rounds are inflated 2–3x by the hybrid CPU.
+- **06** — `--points` over a closure on/off points file with `--parallel 6` gave `closure_realistic_grids_*.csv`; the points file was deleted along with the closure. `fallback_rate.py` measured how many batches fell back; it depends on the closure's code and no longer runs.
+- **07** — `--points le1_stage1.json --parallel 6` gives `le1_stage1_*.csv`: Stage 1 only, with and without `<= 1`. `le1_functional_routes.py` ran the 11 route functional tests with and without `<= 1` and printed the results without saving a CSV.
+- **08** — the monolithic frontier on the realistic profile (26 orders per batch, weights 4/5, two speed bands), two batches per picker, each point as a `pair`, run alone with Stage 1 of the split on 6 workers:
+
+  ```
+  python -m experiments.opp_v5.exploration --study 08_mono_frontier --frontier --frontier-batches 1,2,3,4,6 --frontier-sides 3,4,5,6,7 --batches-per-picker 2 --orders-per-batch 26 --weights 4,5 --speed-spread 0.2 --speed-tiers 2 --hard-cap 600
+  ```
