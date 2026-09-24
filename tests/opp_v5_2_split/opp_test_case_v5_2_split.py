@@ -5,7 +5,10 @@ import unittest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from tests.infra.zimpl.dat_files_builder import build_dat_files, write_indexed_dat, write_scalar_dat
-from models.opp_v5_2_split.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
+from models.opp_v5_2_split.utils.cold_chain_validation import (
+    COLD_CHAIN_TOLERANCE, batches_without_eligible_picker, invalid_speeds,
+)
+from models.utils.solve_registry import get_last
 from tests.opp_v5_2_split.config import DAT_DIR, STAGE1_ZPL_PATH, STAGE2_ZPL_PATH
 from tests.opp_v5_2_split.stage1_decomposition import solve_stage1_decomposed
 from tests.infra.zimpl.zpl_utils import extract_active_arcs, solve_zpl
@@ -15,6 +18,22 @@ class OPPTestCaseSplit(unittest.TestCase):
     """Runs both OPP v5 stages and exposes assertions for their contract."""
 
     def run_pipeline(self, scenario, solve_stage2=True):
+        # V_p[p] is a divisor in opp_model_v5_2_split_stage2_scheduling.zpl's t_exec_pb (t_exec_pb
+        # = tiempo_fijo[b] + R_b_time[b] / V_p[p]), evaluated eagerly by
+        # ZIMPL for every (p, b) pair as soon as the .dat is read -- a speed
+        # of exactly 0 divides by zero there (no graceful "infeasible", it's
+        # a plain parameter expression, not a constraint); a negative one
+        # silently yields a negative t_exec_pb that would look "eligible"
+        # for any T_frio_max. Reject before ZIMPL ever sees it (2026-09-10
+        # audit finding), same pattern as the stuck_batches short-circuit below.
+        # It has to run before build_dat_files too: its M_seq estimate divides
+        # by the slowest speed, so a 0 crashed there first (found 2026-09-24).
+        bad_speeds = invalid_speeds(scenario["V_p"])
+        self.assertFalse(
+            bad_speeds,
+            f"V_p must be strictly positive for every picker; got non-positive speed for {sorted(bad_speeds)}",
+        )
+
         build_dat_files(DAT_DIR, scenario)
         # Decomposed into one solve per batch instead of one joint solve
         # for every batch (see stage1_decomposition.py's module docstring
@@ -24,20 +43,6 @@ class OPPTestCaseSplit(unittest.TestCase):
 
         route_times = self.extract_route_times(stage1_values, scenario["B"])
         self.assertEqual(set(route_times), set(scenario["B"]), "Stage 1 did not export every batch time")
-
-        # V_p[p] is a divisor in opp_model_v5_2_split_stage2_scheduling.zpl's t_exec_pb (t_exec_pb
-        # = tiempo_fijo[b] + R_b_time[b] / V_p[p]), evaluated eagerly by
-        # ZIMPL for every (p, b) pair as soon as the .dat is read -- a speed
-        # of exactly 0 divides by zero there (no graceful "infeasible", it's
-        # a plain parameter expression, not a constraint); a negative one
-        # silently yields a negative t_exec_pb that would look "eligible"
-        # for any T_frio_max. Reject before ZIMPL ever sees it (2026-09-10
-        # audit finding), same pattern as the stuck_batches short-circuit below.
-        bad_speeds = invalid_speeds(scenario["V_p"])
-        self.assertFalse(
-            bad_speeds,
-            f"V_p must be strictly positive for every picker; got non-positive speed for {sorted(bad_speeds)}",
-        )
 
         write_indexed_dat(os.path.join(DAT_DIR, "route_time_b.dat"), route_times)
         write_indexed_dat(os.path.join(DAT_DIR, "velocities.dat"), scenario["V_p"])
@@ -129,7 +134,7 @@ class OPPTestCaseSplit(unittest.TestCase):
 
     @staticmethod
     def eligible_pairs(scenario, route_times):
-        """Replicates the PB_elig definition before compiling Stage 2."""
+        """Replicates the PB_elig definition before compiling Stage 2, tolerance included."""
         pairs = set()
         for picker in scenario["P"]:
             for batch in scenario["B"]:
@@ -137,6 +142,13 @@ class OPPTestCaseSplit(unittest.TestCase):
                     scenario["C_n"][order] * scenario["Bn"][(order, batch)]
                     for order in scenario["N"]
                 )
-                if fixed_time + route_times[batch] / scenario["V_p"][picker] <= scenario["T_frio_max"]:
+                t_exec = fixed_time + route_times[batch] / scenario["V_p"][picker]
+                if t_exec <= scenario["T_frio_max"] + COLD_CHAIN_TOLERANCE:
                     pairs.add((picker, batch))
         return pairs
+
+    @staticmethod
+    def objective_value():
+        """Objective of the last solve: Stage 2, which carries the whole objective."""
+        last = get_last()
+        return last.params.get("obj_val") if last is not None else None

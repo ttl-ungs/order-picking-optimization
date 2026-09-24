@@ -4,7 +4,8 @@ import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from models.opp_v5_2_split.utils.cold_chain_validation import invalid_speeds
+from models.opp_v5_2_split.utils.cold_chain_validation import COLD_CHAIN_TOLERANCE, invalid_speeds
+from models.utils.solve_registry import get_last
 from tests.infra.zimpl.dat_files_builder import build_dat_files
 from tests.infra.zimpl.zpl_utils import extract_active_arcs, solve_zpl
 from tests.opp_v5_1_mono.config import DAT_DIR, ZPL_PATH
@@ -109,7 +110,7 @@ class OPPTestCaseMono(unittest.TestCase):
 
     @staticmethod
     def eligible_pairs(scenario, route_times):
-        """Replicates the (picker, batch) eligibility under the cold-chain limit."""
+        """Replicates the (picker, batch) eligibility under the cold-chain limit, tolerance included."""
         pairs = set()
         for picker in scenario["P"]:
             for batch in scenario["B"]:
@@ -117,6 +118,13 @@ class OPPTestCaseMono(unittest.TestCase):
                     scenario["C_n"][order] * scenario["Bn"][(order, batch)]
                     for order in scenario["N"]
                 )
-                if fixed_time + route_times[batch] / scenario["V_p"][picker] <= scenario["T_frio_max"]:
+                t_exec = fixed_time + route_times[batch] / scenario["V_p"][picker]
+                if t_exec <= scenario["T_frio_max"] + COLD_CHAIN_TOLERANCE:
                     pairs.add((picker, batch))
         return pairs
+
+    @staticmethod
+    def objective_value():
+        """Objective of the last solve (the model's only one)."""
+        last = get_last()
+        return last.params.get("obj_val") if last is not None else None

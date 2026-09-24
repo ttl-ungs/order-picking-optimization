@@ -48,7 +48,7 @@ Los 52 tests de opp\_v5\_1\_mono se corresponden uno a uno con 52 de los 53 de
 opp\_v5\_2\_split. El test \type{test_preflight_detects_when_no_picker_is_eligible}
 (test\_case\_24) no se portó al monolítico porque solo resuelve la etapa 1, que el modelo
 monolítico no tiene. Los escenarios heredados de opp\_v4 (31 tests migrados) neutralizan
-las capacidades de v5 con \(V_p = 1\) y un límite de frío no restrictivo.
+las capacidades de v5 con $V_p = 1$ y un límite de frío no restrictivo.
 \stopsection
 
 \startsection[title={Cobertura y éxito de ejecución}]
@@ -72,7 +72,7 @@ De los 52 pares equivalentes:
 \startsection[title={Equivalencia de valor objetivo}]
 De los 41 pares factibles exitosos, {\bf los 41 tienen el mismo valor objetivo}. Dos pares
 (test\_case\_13 y test\_case\_14) presentan una diferencia de punto flotante de
-\(3{,}83 \times 10^{-6}\), dentro de la tolerancia del solver SCIP.
+$3{,}83 \times 10^{-6}$, dentro de la tolerancia del solver SCIP.
 
 Esto confirma empíricamente el argumento teórico de que ambas formulaciones tienen el mismo
 valor óptimo.
@@ -113,7 +113,7 @@ etapas por separado.
 
 \startsubsection[title={Tiempo total: monolítico vs.\ dos etapas}]
 Cada punto representa un caso de test factible. Los puntos por encima de la diagonal
-\(y = x\) corresponden a instancias donde el monolítico fue más lento.
+$y = x$ corresponden a instancias donde el monolítico fue más lento.
 
 \placefigure[here][fig:scatter]{Scatter de \type{total_time}: monolítico vs.\ dos etapas.}
 {\externalfigure[figures/chart_scatter_total_time.pdf][width=0.75\textwidth]}
@@ -130,11 +130,11 @@ La escala logarítmica permite apreciar tanto los casos cercanos a 1 como los ex
 
 \startsubsection[title={Tiempo de resolución vs.\ tamaño de instancia}]
 Se grafica \type{model_time} (solo solver, sin compilación ZIMPL) contra el tamaño de la
-instancia medido como \(B \times V\) (lotes × locaciones). La separación entre las dos
+instancia medido como $B \times V$ (lotes × locaciones). La separación entre las dos
 nubes de puntos crece con el tamaño de la instancia, confirmando que la descomposición
 en dos etapas escala mejor.
 
-\placefigure[here][fig:scalability]{Tiempo de resolución vs.\ tamaño de instancia (\(B \times V\)).}
+\placefigure[here][fig:scalability]{Tiempo de resolución vs.\ tamaño de instancia ($B \times V$).}
 {\externalfigure[figures/chart_model_time_vs_size.pdf][width=0.8\textwidth]}
 \stopsubsection
 
@@ -248,7 +248,7 @@ Este fallo se registra como \type{known_failure} en \type{baseline_counts.json}.
 \startitemize[n]
 \item {\bf Equivalencia de valor objetivo:} confirmada empíricamente en los 41 pares
 factibles exitosos. Los valores coinciden exactamente (diferencia máxima de
-\(3{,}83 \times 10^{-6}\), atribuible al solver).
+$3{,}83 \times 10^{-6}$, atribuible al solver).
 
 \item {\bf Rendimiento en instancias pequeñas:} para escenarios chicos (2--4 ubicaciones,
 1--2 lotes), el monolítico es comparable o ligeramente más rápido (ratios 0,50×--0,99×),

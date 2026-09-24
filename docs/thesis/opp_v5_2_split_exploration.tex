@@ -961,6 +961,141 @@ principio, no un cambio del modelo.
 \stopitemize
 \stopsection
 
+\startsection[title={La Etapa 1 en paralelo}]
+El split puede resolver en paralelo los ruteos de los lotes, que son independientes
+(\type{OPP_STAGE1_WORKERS}; solo se activa con más de 4 lotes).
+
+\startsubsection[title={Primer intento: comparar corridas de la suite}]
+La suite de stress se corrió una vez con 6 procesos, y seis de sus tests ya tenían una corrida
+en secuencia. Todos dieron el mismo objetivo en las dos corridas.
+
+\placefigure[force][fig:paralelo]{Cuántas veces más rápida fue cada etapa en la corrida en paralelo que en la secuencial (escala logarítmica; por encima de 1, más rápida en paralelo).}
+{\startMPcode
+numeric w, h; w := 12cm; h := 5.5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+label.bot(textext("\tfx 04: 7×7"), (1.000cm,-0.100cm));
+label.bot(textext("\tfx 05: 13×13"), (3.000cm,-0.100cm));
+label.bot(textext("\tfx 06: 14×14"), (5.000cm,-0.100cm));
+label.bot(textext("\tfx 07: 15×15"), (7.000cm,-0.100cm));
+label.bot(textext("\tfx 09: 8×21"), (9.000cm,-0.100cm));
+label.bot(textext("\tfx 11: frío"), (11.000cm,-0.100cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,25"), (-0.120cm,0.000cm));
+draw (0.000cm,1.375cm)--(-0.120cm,1.375cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,5"), (-0.120cm,1.375cm));
+draw (0.000cm,2.750cm)--(-0.120cm,2.750cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1"), (-0.120cm,2.750cm));
+draw (0.000cm,4.125cm)--(-0.120cm,4.125cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 2"), (-0.120cm,4.125cm));
+draw (0.000cm,5.500cm)--(-0.120cm,5.500cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 4"), (-0.120cm,5.500cm));
+label.lft(textext("Secuencial / paralelo") rotated 90, (-1.25cm,h/2));
+draw (0.000cm,2.750cm)--(12.000cm,2.750cm) withpen pencircle scaled .5pt dashed evenly;
+label.lft(textext("\tfxx "), (11.900cm,2.550cm));
+fill (0.300cm,2.750cm)--(0.960cm,2.750cm)--(0.960cm,3.689cm)--(0.300cm,3.689cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 1,61"), (0.630cm,3.719cm));
+draw (1.040cm,1.660cm)--(1.700cm,1.660cm)--(1.700cm,2.750cm)--(1.040cm,2.750cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.bot(textext("\tfxx 0,58"), (1.370cm,1.630cm));
+fill (2.300cm,2.750cm)--(2.960cm,2.750cm)--(2.960cm,3.942cm)--(2.300cm,3.942cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 1,82"), (2.630cm,3.972cm));
+draw (3.040cm,2.025cm)--(3.700cm,2.025cm)--(3.700cm,2.750cm)--(3.040cm,2.750cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.bot(textext("\tfxx 0,69"), (3.370cm,1.995cm));
+fill (4.300cm,2.750cm)--(4.960cm,2.750cm)--(4.960cm,3.213cm)--(4.300cm,3.213cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 1,26"), (4.630cm,3.243cm));
+draw (5.040cm,1.973cm)--(5.700cm,1.973cm)--(5.700cm,2.750cm)--(5.040cm,2.750cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.bot(textext("\tfxx 0,68"), (5.370cm,1.943cm));
+fill (6.300cm,2.750cm)--(6.960cm,2.750cm)--(6.960cm,3.021cm)--(6.300cm,3.021cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 1,15"), (6.630cm,3.051cm));
+draw (7.040cm,2.750cm)--(7.700cm,2.750cm)--(7.700cm,4.134cm)--(7.040cm,4.134cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 2,01"), (7.370cm,4.164cm));
+fill (8.300cm,2.750cm)--(8.960cm,2.750cm)--(8.960cm,3.032cm)--(8.300cm,3.032cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 1,15"), (8.630cm,3.062cm));
+draw (9.040cm,2.750cm)--(9.700cm,2.750cm)--(9.700cm,2.992cm)--(9.040cm,2.992cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 1,13"), (9.370cm,3.022cm));
+fill (10.300cm,2.750cm)--(10.960cm,2.750cm)--(10.960cm,3.848cm)--(10.300cm,3.848cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 1,74"), (10.630cm,3.878cm));
+draw (11.040cm,2.366cm)--(11.700cm,2.366cm)--(11.700cm,2.750cm)--(11.040cm,2.750cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.bot(textext("\tfxx 0,82"), (11.370cm,2.336cm));
+fill (0.300cm,5.230cm)--(0.700cm,5.230cm)--(0.700cm,5.470cm)--(0.300cm,5.470cm)--cycle withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx Etapa 1 (paralelizada con 6 procesos)"), (0.900cm,5.350cm));
+draw (0.300cm,4.810cm)--(0.700cm,4.810cm)--(0.700cm,5.050cm)--(0.300cm,5.050cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.rt(textext("\tfx Etapa 2 (idéntica en las dos corridas: ruido)"), (0.900cm,4.930cm));
+\stopMPcode}
+
+La Etapa 1 fue más rápida en paralelo en los seis tests, entre 1,15 y 1,82 veces. Pero la
+Etapa 2, que no se paraleliza y es exactamente el mismo problema en las dos corridas, varió entre
+0,58 y 2,01 veces: ese es el ruido de la máquina entre una corrida y otra, y es tan grande como
+la mejora de la Etapa 1. Comparando corridas distintas no se puede medir el paralelismo.
+\stopsubsection
+
+\startsubsection[title={Medición controlada (estudio 12)}]
+Solo la Etapa 1 de las instancias exactas de los tests 05 (13×13) y 06 (14×14), con la máquina
+sola, en orden secuencial–paralelo–paralelo–secuencial para compensar el calentamiento de la
+notebook.
+
+\placefigure[force][fig:paralelo_ab]{Tiempo de la Etapa 1 en secuencia y con 6 procesos, dos corridas de cada una por instancia.}
+{\startMPcode
+numeric w, h; w := 11.0cm; h := 5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+label.bot(textext("\tfx 13×13 (test 05)"), (2.750cm,-0.100cm));
+label.bot(textext("\tfx 14×14 (test 06)"), (8.250cm,-0.100cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0"), (-0.120cm,0.000cm));
+draw (0.000cm,1.111cm)--(-0.120cm,1.111cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100"), (-0.120cm,1.111cm));
+draw (0.000cm,2.222cm)--(-0.120cm,2.222cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 200"), (-0.120cm,2.222cm));
+draw (0.000cm,3.333cm)--(-0.120cm,3.333cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 300"), (-0.120cm,3.333cm));
+draw (0.000cm,4.444cm)--(-0.120cm,4.444cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 400"), (-0.120cm,4.444cm));
+label.lft(textext("Tiempo de la Etapa 1 (s)") rotated 90, (-1.25cm,h/2));
+fill (0.550cm,0.000cm)--(1.485cm,0.000cm)--(1.485cm,2.686cm)--(0.550cm,2.686cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 242"), (1.018cm,2.716cm));
+fill (1.650cm,0.000cm)--(2.585cm,0.000cm)--(2.585cm,1.223cm)--(1.650cm,1.223cm)--cycle withcolor \MPcolor{redline};
+label.top(textext("\tfxx 110"), (2.118cm,1.253cm));
+fill (2.750cm,0.000cm)--(3.685cm,0.000cm)--(3.685cm,1.231cm)--(2.750cm,1.231cm)--cycle withcolor \MPcolor{redline};
+label.top(textext("\tfxx 111"), (3.217cm,1.261cm));
+fill (3.850cm,0.000cm)--(4.785cm,0.000cm)--(4.785cm,2.709cm)--(3.850cm,2.709cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 244"), (4.317cm,2.739cm));
+fill (6.050cm,0.000cm)--(6.985cm,0.000cm)--(6.985cm,4.460cm)--(6.050cm,4.460cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 401"), (6.518cm,4.490cm));
+fill (7.150cm,0.000cm)--(8.085cm,0.000cm)--(8.085cm,2.328cm)--(7.150cm,2.328cm)--cycle withcolor \MPcolor{redline};
+label.top(textext("\tfxx 210"), (7.617cm,2.358cm));
+fill (8.250cm,0.000cm)--(9.185cm,0.000cm)--(9.185cm,2.399cm)--(8.250cm,2.399cm)--cycle withcolor \MPcolor{redline};
+label.top(textext("\tfxx 216"), (8.717cm,2.429cm));
+fill (9.350cm,0.000cm)--(10.285cm,0.000cm)--(10.285cm,4.506cm)--(9.350cm,4.506cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 406"), (9.818cm,4.536cm));
+fill (0.300cm,4.730cm)--(0.700cm,4.730cm)--(0.700cm,4.970cm)--(0.300cm,4.970cm)--cycle withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx secuencial"), (0.900cm,4.850cm));
+fill (0.300cm,4.310cm)--(0.700cm,4.310cm)--(0.700cm,4.550cm)--(0.300cm,4.550cm)--cycle withcolor \MPcolor{redline};
+label.rt(textext("\tfx 6 procesos"), (0.900cm,4.430cm));
+\stopMPcode}
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Instancia \eTH \bTH Secuencial \eTH \bTH 6 procesos \eTH \bTH Mejora \eTH \eTR
+\bTR \bTD 13×13 (test 05) \eTD \bTD 241,8 s y 243,8 s \eTD \bTD 110,1 s y 110,8 s \eTD \bTD 2,2 veces \eTD \eTR
+\bTR \bTD 14×14 (test 06) \eTD \bTD 401,4 s y 405,6 s \eTD \bTD 209,5 s y 215,9 s \eTD \bTD 1,9 veces \eTD \eTR
+\eTABLE
+\blank[medium]
+
+Las dos corridas de cada modo quedaron a menos del 3\% entre sí, y las rutas fueron idénticas
+en todas. {\bf El paralelismo divide por unas 2 el tiempo de la Etapa 1.} No llega a 6 por dos
+razones: el tiempo en paralelo queda atado al lote más lento, y la notebook tiene 4 núcleos de
+rendimiento y 8 de eficiencia, que van a cerca de la mitad de velocidad.
+
+Sobre el test completo el efecto depende de cuánto pesa la Etapa 1: en 13×13 el test pasaría de
+unos 6 minutos a unos 4, y en 15×15, donde la Etapa 1 es casi todo, de unos 28 a unos 15. En las
+instancias chicas, donde manda la Etapa 2, no cambia nada. La memoria que reporta la
+herramienta en paralelo (44 MB) es solo la del proceso principal: los procesos de cada lote no
+se miden.
+\stopsubsection
+\stopsection
+
 \startsection[title={Comparación puntual con el modelo monolítico},reference=sec:mono]
 En dos puntos de la exploración se resolvió la misma instancia con OPP\_v5\_1\_mono.
 

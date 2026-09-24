@@ -1,0 +1,9 @@
+label,model,variant,batches,pickers,orders_per_batch,grid,vertices,weights,speed_spread,speed_tiers,speeds,batch_locations_min,batch_locations_max,stage1_s,stage2_s,zimpl_s,mono_s,total_s,hard_cap_s,status,obj,gap_pct,bb_nodes,sla_pct,route_min,route_max,estimated_finish,n_vars,n_conss,lp_mb,peak_rss_mb,first_sol_s,first_sol_obj,n_incumbents,root_dual,dual,ref_obj,first_gap_to_opt_pct,best_gap_to_opt_pct,time_to_1pct_s,time_to_opt_s,dual_ratio_pct,root_dual_ratio_pct,incumbents
+S13-seq-1,split,full_graph workers=1,6,3,26,13x13,169,4/5,0.2,2,0.80|1.20,23,26,241.77,,,,241.9,1500,stage1_ok,,,,,142.0,154.0,566.0,,,,235.0,,,,,,,,,,,,,
+S13-par-2,split,full_graph workers=6,6,3,26,13x13,169,4/5,0.2,2,0.80|1.20,23,26,110.07,,,,110.1,1500,stage1_ok,,,,,142.0,154.0,566.0,,,,43.9,,,,,,,,,,,,,
+S13-par-3,split,full_graph workers=6,6,3,26,13x13,169,4/5,0.2,2,0.80|1.20,23,26,110.8,,,,110.9,1500,stage1_ok,,,,,142.0,154.0,566.0,,,,43.8,,,,,,,,,,,,,
+S13-seq-4,split,full_graph workers=1,6,3,26,13x13,169,4/5,0.2,2,0.80|1.20,23,26,243.82,,,,243.9,1500,stage1_ok,,,,,142.0,154.0,566.0,,,,235.5,,,,,,,,,,,,,
+S14-seq-1,split,full_graph workers=1,6,3,26,14x14,196,4/5,0.2,2,0.80|1.20,23,26,401.43,,,,401.5,1500,stage1_ok,,,,,142.5,175.5,608.0,,,,183.0,,,,,,,,,,,,,
+S14-par-2,split,full_graph workers=6,6,3,26,14x14,196,4/5,0.2,2,0.80|1.20,23,26,209.51,,,,209.6,1500,stage1_ok,,,,,142.5,175.5,608.0,,,,44.6,,,,,,,,,,,,,
+S14-par-3,split,full_graph workers=6,6,3,26,14x14,196,4/5,0.2,2,0.80|1.20,23,26,215.9,,,,216.0,1500,stage1_ok,,,,,142.5,175.5,608.0,,,,44.6,,,,,,,,,,,,,
+S14-seq-4,split,full_graph workers=1,6,3,26,14x14,196,4/5,0.2,2,0.80|1.20,23,26,405.56,,,,405.6,1500,stage1_ok,,,,,142.5,175.5,608.0,,,,187.9,,,,,,,,,,,,,

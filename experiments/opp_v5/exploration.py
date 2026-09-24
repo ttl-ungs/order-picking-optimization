@@ -58,6 +58,8 @@ both, split first; writes two rows). Missing `hard_cap_s` takes --hard-cap.
 `"stage1_only": true` stops the split after Stage 1 -- for questions that are
 purely about routing. (A `"closure"` key in older points files is ignored: the
 Stage 1 metric closure was removed on 2026-09-23.)
+`"stage1_workers": n` (split only) sets OPP_STAGE1_WORKERS for that point, so
+sequential and parallel Stage 1 can be compared within one points file.
 `"relax_le1": true` removes the `<= 1` per-vertex limits (Stage 1's in the
 split, the routing part's in the monolithic model; same constraint names) from
 that process's temp copy of the model -- a trial, never applied to models/.
@@ -125,7 +127,8 @@ def _point_row(point):
         "speed_spread": point.get("speed_spread", 0.0),
         "speed_tiers": point.get("speed_tiers") or ("all" if point.get("speed_spread") else "-"),
         "hard_cap_s": point["hard_cap_s"],
-        "variant": ("no_le1 " if point.get("relax_le1") else "") + "full_graph",
+        "variant": ("no_le1 " if point.get("relax_le1") else "") + "full_graph"
+                   + (f" workers={point['stage1_workers']}" if "stage1_workers" in point else ""),
     }
 
 
@@ -247,6 +250,9 @@ def _split_child(point, q):
 
     if point.get("relax_le1"):
         _relax_simple_path(STAGE1_ZPL_PATH)
+    if "stage1_workers" in point:
+        # Read by solve_stage1_decomposed at call time; this is the child's own env.
+        os.environ["OPP_STAGE1_WORKERS"] = str(point["stage1_workers"])
 
     start = time.time()
     scenario = _scenario(point)

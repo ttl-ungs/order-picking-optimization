@@ -32,7 +32,7 @@ Las dos formulaciones difieren en la estrategia de resolución:
 
 \startitemize
 \item {\bf OPP v5.1 (monolítico)}: un único MIP que decide ruta, asignación y secuenciación
-en conjunto. El tiempo de ruta \(Rt_b\) es una {\em variable} de decisión.
+en conjunto. El tiempo de ruta $Rt_b$ es una {\em variable} de decisión.
 \item {\bf OPP v5.2 (dos etapas)}: la Etapa~1 resuelve el ruteo óptimo de cada lote de
 forma independiente (minimizando el tiempo de ruta); la Etapa~2 recibe el tiempo de ruta
 como {\em dato} fijo y resuelve asignación, secuenciación y cadena de frío.
@@ -157,7 +157,7 @@ Un único MIP que decide ruta, asignación y secuenciación en conjunto.
 \stopalign
 \stopformula
 
-Las restricciones (3) y (4) aplican cuando \(v_1 \ne v_f\).
+Las restricciones (3) y (4) aplican cuando $v_1 \ne v_f$.
 \stopsubsubsection
 
 \startsubsubsection[title={Visita y conservación de flujo}]
@@ -204,9 +204,9 @@ Las restricciones (3) y (4) aplican cuando \(v_1 \ne v_f\).
 \stopformula
 
 La cadena de frío se implementa mediante la cota superior de la variable:
-\(u_{pb} \le T_{frio} + 10^{-9}\). Cuando \(X_{pb} = 1\), (15) fuerza
-\(u_{pb} \ge F_b + Rt_b / V_p\), por lo que \(F_b + Rt_b / V_p \le T_{frio} + 10^{-9}\).
-Cuando \(X_{pb} = 0\), \(u_{pb}\) puede valer 0 y la cota no restringe.
+$u_{pb} \le T_{frio} + 10^{-9}$. Cuando $X_{pb} = 1$, (15) fuerza
+$u_{pb} \ge F_b + Rt_b / V_p$, por lo que $F_b + Rt_b / V_p \le T_{frio} + 10^{-9}$.
+Cuando $X_{pb} = 0$, $u_{pb}$ puede valer 0 y la cota no restringe.
 \stopsubsection
 
 \startsubsection[title={Secuenciación sin solapamiento (19)--(20)}]
@@ -226,7 +226,7 @@ Cuando \(X_{pb} = 0\), \(u_{pb}\) puede valer 0 y la cota no restringe.
 \stopalign
 \stopformula
 
-Las restricciones se generan solo para pares \((n,b)\) con \(Bn_{nb} = 1\).
+Las restricciones se generan solo para pares $(n,b)$ con $Bn_{nb} = 1$.
 \stopsubsection
 
 \stopsection
@@ -263,22 +263,22 @@ lotes, el ruteo óptimo de cada lote se resuelve de forma independiente.
 \min \sum_{b \in \mathcal{B}} Rt_b
 \stopformula
 
-Como los lotes no interactúan, minimizar la suma equivale a minimizar cada \(Rt_b\) por
+Como los lotes no interactúan, minimizar la suma equivale a minimizar cada $Rt_b$ por
 separado.
 \stopsubsubsection
 
 \startsubsubsection[title={Restricciones (1)--(13)}]
 Idénticas a las restricciones (1)--(13) del modelo monolítico. Definen la estructura de
-la ruta (camino de \(v_1\) a \(v_f\) visitando locaciones requeridas), la eliminación de
-subtours por Gavish-Graves y el cálculo de \(Rt_b\).
+la ruta (camino de $v_1$ a $v_f$ visitando locaciones requeridas), la eliminación de
+subtours por Gavish-Graves y el cálculo de $Rt_b$.
 
-La Etapa~1 no usa los conjuntos \(\mathcal{P}\) ni los parámetros de scheduling
-(\(W_{full}\), \(B_{setup}\), etc.). Solo necesita \(\mathcal{N}\), \(\mathcal{V}\),
-\(\mathcal{B}\), \(\mathcal{E}\), y los parámetros de grafo y lote.
+La Etapa~1 no usa los conjuntos $\mathcal{P}$ ni los parámetros de scheduling
+($W_{full}$, $B_{setup}$, etc.). Solo necesita $\mathcal{N}$, $\mathcal{V}$,
+$\mathcal{B}$, $\mathcal{E}$, y los parámetros de grafo y lote.
 \stopsubsubsection
 
 \startsubsubsection[title={Salida}]
-\(Rt_b^*\) para cada \(b \in \mathcal{B}\): el tiempo mínimo de traslado + servicio.
+$Rt_b^*$ para cada $b \in \mathcal{B}$: el tiempo mínimo de traslado + servicio.
 Este valor se pasa como dato a la Etapa~2.
 \stopsubsubsection
 \stopsubsection
@@ -286,7 +286,7 @@ Este valor se pasa como dato a la Etapa~2.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \startsubsection[title={Etapa 2: Asignación, secuenciación y cadena de frío}]
 
-Recibe \(Rt_b^*\) como dato fijo. Ya no decide nada sobre el ruteo.
+Recibe $Rt_b^*$ como dato fijo. Ya no decide nada sobre el ruteo.
 
 \startsubsubsection[title={Parámetros adicionales (derivados del resultado de Etapa 1)}]
 \startformula
@@ -297,9 +297,9 @@ Recibe \(Rt_b^*\) como dato fijo. Ya no decide nada sobre el ruteo.
 \stopalign
 \stopformula
 
-El conjunto \(\mathcal{PB}_{elig}\) implementa la cadena de frío: solo los pares
+El conjunto $\mathcal{PB}_{elig}$ implementa la cadena de frío: solo los pares
 (picker, lote) cuyo tiempo de ejecución no excede el límite de frío son elegibles. Todas
-las variables y restricciones de la Etapa~2 se definen solo sobre \(\mathcal{PB}_{elig}\).
+las variables y restricciones de la Etapa~2 se definen solo sobre $\mathcal{PB}_{elig}$.
 \stopsubsubsection
 
 \startsubsubsection[title={Variables}]
@@ -313,7 +313,7 @@ las variables y restricciones de la Etapa~2 se definen solo sobre \(\mathcal{PB}
 \stopalign
 \stopformula
 
-No hay variable \(u_{pb}\): como \(t^{exec}_{pb}\) es un parámetro, el vínculo entre tiempo
+No hay variable $u_{pb}$: como $t^{exec}_{pb}$ es un parámetro, el vínculo entre tiempo
 de ejecución y completitud no requiere Big-M.
 \stopsubsubsection
 
@@ -335,10 +335,10 @@ Idéntica a la del modelo monolítico.
 \stopalign
 \stopformula
 
-La restricción (2) aprovecha que \(t^{exec}_{pb}\) es un coeficiente constante: el producto
-\(t^{exec}_{pb} \cdot X_{pb}\) es lineal. Cuando \(X_{pb} = 1\), impone
-\(v_{pb} \ge t^{exec}_{pb}\); cuando \(X_{pb} = 0\), el lado izquierdo es cero.
-Esto elimina la necesidad de la variable \(u_{pb}\) y sus dos restricciones Big-M (15)--(16)
+La restricción (2) aprovecha que $t^{exec}_{pb}$ es un coeficiente constante: el producto
+$t^{exec}_{pb} \cdot X_{pb}$ es lineal. Cuando $X_{pb} = 1$, impone
+$v_{pb} \ge t^{exec}_{pb}$; cuando $X_{pb} = 0$, el lado izquierdo es cero.
+Esto elimina la necesidad de la variable $u_{pb}$ y sus dos restricciones Big-M (15)--(16)
 del modelo monolítico.
 \stopsubsubsection
 
@@ -350,9 +350,9 @@ del modelo monolítico.
 \stopalign
 \stopformula
 
-Misma estructura que (19)--(20) del monolítico, usando \(t^{exec}_{pb}\) como parámetro
-en lugar de la expresión \(F_b + Rt_b / V_p\) (que en el monolítico involucra la variable
-\(Rt_b\)).
+Misma estructura que (19)--(20) del monolítico, usando $t^{exec}_{pb}$ como parámetro
+en lugar de la expresión $F_b + Rt_b / V_p$ (que en el monolítico involucra la variable
+$Rt_b$).
 \stopsubsubsection
 
 \startsubsubsection[title={Tardanza y adelanto (6)--(7)}]
@@ -385,13 +385,13 @@ en lugar de la expresión \(F_b + Rt_b / V_p\) (que en el monolítico involucra 
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \bTR \bTH Aspecto \eTH \bTH v5.1 Monolítico \eTH \bTH v5.2 Dos etapas \eTH \eTR
 \bTR \bTD Número de MIPs \eTD \bTD 1 \eTD \bTD 2 (secuenciales) \eTD \eTR
-\bTR \bTD \(Rt_b\) \eTD \bTD Variable de decisión \eTD \bTD Dato (resultado de Etapa 1) \eTD \eTR
-\bTR \bTD \(t^{exec}_{pb}\) \eTD \bTD Expresión con variable (\(F_b + Rt_b / V_p\)) \eTD \bTD Parámetro precalculado \eTD \eTR
-\bTR \bTD Variable \(u_{pb}\) \eTD \bTD Sí (con Big-M en (15)--(16)) \eTD \bTD No (innecesaria) \eTD \eTR
-\bTR \bTD Cadena de frío \eTD \bTD Cota superior: \(u_{pb} \le T_{frio} + 10^{-9}\) \eTD \bTD Dominio: \(\mathcal{PB}_{elig}\) \eTD \eTR
-\bTR \bTD Dominio de \(X_{pb}\) \eTD \bTD \(\mathcal{P} \times \mathcal{B}\) (todos los pares) \eTD \bTD \(\mathcal{PB}_{elig}\) (solo elegibles) \eTD \eTR
-\bTR \bTD Piso de completitud \eTD \bTD \(u_{pb} \le v_{pb}\) (17) \eTD \bTD \(t^{exec}_{pb} \cdot X_{pb} \le v_{pb}\) (2) \eTD \eTR
-\bTR \bTD Ruta garantizada mínima \eTD \bTD No (puede elegir ruta no mínima) \eTD \bTD Sí (Etapa 1 minimiza \(Rt_b\)) \eTD \eTR
+\bTR \bTD $Rt_b$ \eTD \bTD Variable de decisión \eTD \bTD Dato (resultado de Etapa 1) \eTD \eTR
+\bTR \bTD $t^{exec}_{pb}$ \eTD \bTD Expresión con variable ($F_b + Rt_b / V_p$) \eTD \bTD Parámetro precalculado \eTD \eTR
+\bTR \bTD Variable $u_{pb}$ \eTD \bTD Sí (con Big-M en (15)--(16)) \eTD \bTD No (innecesaria) \eTD \eTR
+\bTR \bTD Cadena de frío \eTD \bTD Cota superior: $u_{pb} \le T_{frio} + 10^{-9}$ \eTD \bTD Dominio: $\mathcal{PB}_{elig}$ \eTD \eTR
+\bTR \bTD Dominio de $X_{pb}$ \eTD \bTD $\mathcal{P} \times \mathcal{B}$ (todos los pares) \eTD \bTD $\mathcal{PB}_{elig}$ (solo elegibles) \eTD \eTR
+\bTR \bTD Piso de completitud \eTD \bTD $u_{pb} \le v_{pb}$ (17) \eTD \bTD $t^{exec}_{pb} \cdot X_{pb} \le v_{pb}$ (2) \eTD \eTR
+\bTR \bTD Ruta garantizada mínima \eTD \bTD No (puede elegir ruta no mínima) \eTD \bTD Sí (Etapa 1 minimiza $Rt_b$) \eTD \eTR
 \bTR \bTD Tamaño del MIP principal \eTD \bTD Grande (ruteo + scheduling juntos) \eTD \bTD Menor (cada etapa por separado) \eTD \eTR
 \eTABLE
 

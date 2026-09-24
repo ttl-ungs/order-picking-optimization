@@ -32,7 +32,7 @@ No se incorporan aún resultados de estrés. Estos deberán añadirse en una sec
 \startsection[title={Criterio de equivalencia}]
 Los archivos \type{test_opp_v5_model_01.py} a \type{test_opp_v5_model_19.py}, incluidas las variantes \type{02_01}, \type{02_02} y \type{02_03}, migran uno a uno los escenarios y las aserciones de OPP\_v4. En la migración, v5 ejecuta primero el modelo de ruteo y luego el de asignación y secuenciación.
 
-Para aislar el comportamiento heredado de v4, las capacidades nuevas de v5 se neutralizan en esos casos: todos los pickers usan \(V_p=1\) y el límite de frío se fija en un valor no restrictivo. Así, las pruebas comparan factibilidad, rutas, asignación, secuenciación y penalizaciones sobre escenarios equivalentes. Las pruebas v5 específicas de velocidades heterogéneas y cadena de frío (modelos 20 y 21) no se incluyen en la comparación uno a uno.
+Para aislar el comportamiento heredado de v4, las capacidades nuevas de v5 se neutralizan en esos casos: todos los pickers usan $V_p=1$ y el límite de frío se fija en un valor no restrictivo. Así, las pruebas comparan factibilidad, rutas, asignación, secuenciación y penalizaciones sobre escenarios equivalentes. Las pruebas v5 específicas de velocidades heterogéneas y cadena de frío (modelos 20 y 21) no se incluyen en la comparación uno a uno.
 
 El tiempo informado es \type{total_time}: el tiempo de ejecución de cada prueba. En v5 incluye ambas etapas del pipeline. No se comparan \type{obj_val} ni \type{model_time} como métricas homogéneas, porque v5 registra como último resultado el de la segunda etapa y su función objetivo no es directamente equivalente a la formulación monolítica de v4.
 \stopsection

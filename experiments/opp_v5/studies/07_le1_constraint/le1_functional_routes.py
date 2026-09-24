@@ -8,6 +8,9 @@ side-by-side comparison.
 
 The 11 tests are the v4 functional ones that assert the exact route
 (`assertEqual(output_graph, expected_graph)`): 01-06, 08-11, 17.
+
+Kept as it was run on 2026-09-23 (translated to English on 2026-09-24, same
+logic). Its printed output is recorded in meta.md; it saved no CSV.
 """
 import os
 import re
@@ -15,7 +18,7 @@ import sys
 import time
 import unittest
 
-sys.path.insert(0, r"C:\Users\xime-\tesis\linear-picking-routing")
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
 os.environ.pop("OPP_STAGE1_METRIC_CLOSURE", None)
 os.environ["OPP_STAGE1_WORKERS"] = "1"
 
@@ -59,27 +62,27 @@ def run(label, zpl_text):
             problems = result.failures + result.errors
             detail = problems[0][1].strip().splitlines()[-1][:110] if problems else ""
             key = f"{n}.{test.id().split('.')[-1]}"
-            out[key] = ("ok" if result.wasSuccessful() else "FALLA", obj, elapsed, detail,
+            out[key] = ("ok" if result.wasSuccessful() else "FAIL", obj, elapsed, detail,
                         problems[0][1] if problems else "")
     return out
 
 
 original = run("original", ORIGINAL)
-relaxed = run("sin <= 1", RELAXED)
+relaxed = run("without <= 1", RELAXED)
 
 with open(STAGE1_ZPL_PATH, "w", encoding="utf-8") as fh:
     fh.write(ORIGINAL)
 
-print(f"{'test':<46}{'original':>10}{'obj':>10}{'sin <=1':>10}{'obj':>10}  t orig/relaj")
+print(f"{'test':<46}{'original':>10}{'obj':>10}{'no <=1':>10}{'obj':>10}  t orig/relaxed")
 print("-" * 104)
 for key in original:
     s0, o0, t0, _, _ = original[key]
     s1, o1, t1, d1, _ = relaxed[key]
     fmt = lambda v: f"{v:.1f}" if isinstance(v, (int, float)) else "-"
-    mark = "  <== cambia" if (s0 != s1 or (o0 is not None and o1 is not None and abs(o0 - o1) > 1e-6)) else ""
+    mark = "  <== changes" if (s0 != s1 or (o0 is not None and o1 is not None and abs(o0 - o1) > 1e-6)) else ""
     print(f"{key[:46]:<46}{s0:>10}{fmt(o0):>10}{s1:>10}{fmt(o1):>10}  {t0:.2f}/{t1:.2f}s{mark}")
 
-print("\n--- detalle de las fallas sin <= 1 ---")
+print("\n--- failures without <= 1, in detail ---")
 for key, (s1, o1, t1, d1, full) in relaxed.items():
     if s1 != "ok":
         print(f"\n[{key}]")

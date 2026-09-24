@@ -6,12 +6,20 @@ paths between locations share corridors, so that may fire almost every time --
 which would explain a closure run that never finishes on a 25x25 grid. This
 solves each batch on the closure and checks the expansion, without paying for
 the fallback re-solve.
+
+Kept as it was run on 2026-09-23 (translated to English on 2026-09-24, same
+logic). It NO LONGER RUNS: it calls the closure helpers of
+tests/opp_v5_2_split/stage1_decomposition.py (`_closure_context`,
+`_narrow_to_batch`, `_expand_to_real_arcs`, `_CLOSURE_FILES`) and
+tests/opp_v5_2_split/metric_closure.py, all removed with the closure on
+2026-09-23. Its printed output is recorded in meta.md and in
+docs/thesis/opp_v5_2_split_exploration.tex (study 06).
 """
 import os
 import sys
 import time
 
-sys.path.insert(0, r"C:\Users\xime-\tesis\linear-picking-routing")
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
 os.environ["OPP_STAGE1_METRIC_CLOSURE"] = "1"
 
 from tests.shared_scenarios.stress.stress_scenarios_v5_designed import designed_stress_scenario
@@ -20,8 +28,8 @@ from tests.opp_v5_2_split.config import DAT_DIR, STAGE1_ZPL_PATH
 from tests.opp_v5_2_split import stage1_decomposition as s1
 from tests.infra.zimpl.zpl_utils import solve_zpl
 
-for lado, ord_lote in ((25, 12), (13, 26), (7, 26)):
-    scenario = designed_stress_scenario(6, 3, 6 * ord_lote, lado, lado,
+for side, orders_per_batch in ((25, 12), (13, 26), (7, 26)):
+    scenario = designed_stress_scenario(6, 3, 6 * orders_per_batch, side, side,
                                         vertical_weight=4, horizontal_weight=5)
     build_dat_files(DAT_DIR, scenario)
     ctx = s1._closure_context(DAT_DIR)
@@ -38,7 +46,7 @@ for lado, ord_lote in ((25, 12), (13, 26), (7, 26)):
         expanded = s1._expand_to_real_arcs(values, batch, paths, ctx["depot"], ctx["final"])
         if expanded is None:
             fallbacks += 1
-            # how badly: count vertices the walked route visits more than once
+            # How badly: count the vertices the walked route visits more than once.
             succ = {}
             for k, v in values.items():
                 parts = k.split("$")
@@ -53,7 +61,7 @@ for lado, ord_lote in ((25, 12), (13, 26), (7, 26)):
         for n, content in originals.items():
             s1._write_file(os.path.join(DAT_DIR, n), content)
 
-    print(f"{lado}x{lado}, {ord_lote} ord/lote: respaldo en {fallbacks}/6 lotes | "
-          f"solve sobre clausura {min(times):.2f}-{max(times):.2f}s | "
-          f"vertices repetidos por ruta: {reuse or '-'}")
+    print(f"{side}x{side}, {orders_per_batch} orders/batch: fallback in {fallbacks}/6 batches | "
+          f"solve on the closure {min(times):.2f}-{max(times):.2f}s | "
+          f"repeated vertices per route: {reuse or '-'}")
     sys.stdout.flush()
