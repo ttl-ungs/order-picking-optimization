@@ -597,6 +597,19 @@ Las dos primeras son de rendimiento puro y están medidas. Las otras cuatro son 
 4. **Todas las velocidades en 1.0**, o sea que ningún escenario de stress ejercita `V_p` heterogéneo, que es lo que distingue v5 de v4. Medido aparte: con velocidades distintas el mismo escenario pasa de 33s a más de 600s, o sea que el caso que v5 vino a modelar es MÁS duro, no menos.
 5. **Lotes vacíos**: el funcional `test_case_30` (vía `multigrid_5x5_3x3_five_pickers_twelve_batches`) define 12 lotes y solo carga órdenes en 2. Los 10 vacíos son idénticos entre sí (mismo `tiempo_fijo`, misma ruta depot→final), o sea 10! permutaciones indistinguibles. Da timeout a los 5 minutos **con 4 órdenes y 34 nodos** — la prueba más clara de que la dificultad de la Etapa 2 la gobierna la relación lotes/pickers y no el tamaño.
 
+### Cambio 2026-09-24 - Corridas funcionales de opp_v5 y comparación mono vs split regenerada
+- Alcance: resultados / documentación
+- Archivos principales:
+  - [results/opp_v5_2_split/functional/](results/opp_v5_2_split/functional/), [results/opp_v5_1_mono/functional/](results/opp_v5_1_mono/functional/)
+  - [experiments/opp_v5/reports/build_functional_comparison.py](experiments/opp_v5/reports/build_functional_comparison.py), [functional_comparison_template.tex](experiments/opp_v5/reports/functional_comparison_template.tex)
+  - [docs/thesis/opp_v5_1_mono_vs_opp_v5_2_split_comparison.tex](docs/thesis/opp_v5_1_mono_vs_opp_v5_2_split_comparison.tex)
+- Qué se hizo:
+  - Se corrieron las suites funcionales completas (incluidos los tests 35–38). Split: 63 tests, 62 ok y 1 timeout. Mono: 62 tests, 60 ok, 1 falla conocida (test_case_06) y 1 timeout.
+  - El test_case_30 de los dos modelos se corrió aparte, en paralelo con la suite de mono, y sus filas se agregaron al CSV de cada modelo. La variante factible da timeout (25 min) en los dos; la infactible pasa. Los tiempos de mono pueden estar algo inflados por esa concurrencia.
+  - La comparación mono vs split ahora sale de un generador, como los documentos de exploración (el `.tex` de docs/thesis no se edita a mano). Figuras en MetaPost en vez de los PDF externos.
+- Resultado: 48 pares factibles con el mismo objetivo (diferencia máxima 3,83e-6, casos 13 y 14). En la suma de todos los tests, mono tarda 8,5× lo que split; en la mediana, mono es más rápido (0,342 s contra 0,408 s) y gana en 18 de los 48 pares, todos chicos; en las grillas llega a tardar 36,5× lo que split.
+- Validación: el generador corre sin errores; el documento compila con `context` (0 errores) y se revisaron las páginas renderizadas.
+
 ---
 
 
