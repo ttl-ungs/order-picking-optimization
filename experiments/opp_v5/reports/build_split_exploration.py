@@ -177,11 +177,21 @@ def build_figures():
         c.note(i + 0.5, gap, txt or f"{es(gap, 2)}\\%", "top", dy=0.05)
     FIG["formas"] = c.code()
 
-    # 11. stress tests: time by stage (split, realistic profile)
-    tests = [("7×7", 122.856, 116.897), ("13×13", 351.450, 127.630), ("14×14", 421.904, 80.896),
-             ("15×15", 1707.438, 222.451), ("8×21", 377.488, 97.281)]
-    c = Chart(0, 5, 0, 1800, h=6)
-    c.cat_axes([(i + 0.5, t[0]) for i, t in enumerate(tests)], [(v, es(v, 0)) for v in (0, 300, 600, 900, 1200, 1500, 1800)],
+    # 11. stress tests: time by stage (split, realistic profile), from the suite run (6 workers)
+    suite_path = os.path.join(ROOT, "results", "opp_v5_2_split", "stress",
+                              "output_opp_v5_2_split_stress_tests_20260923_181823.csv")
+    with open(suite_path, encoding="utf-8", errors="replace") as fh:
+        suite = {r["test"].split(".")[0]: r for r in csv.DictReader(fh)}
+
+    def stage_times(test_case):
+        r = suite[test_case]
+        return f(r, "total_time"), f(r, "model_time")
+
+    tests = [(label, *stage_times(case)) for label, case in (
+        ("7×7", "test_case_04"), ("13×13", "test_case_05"), ("14×14", "test_case_06"),
+        ("15×15", "test_case_07"), ("8×21", "test_case_09"))]
+    c = Chart(0, 5, 0, 1500, h=6)
+    c.cat_axes([(i + 0.5, t[0]) for i, t in enumerate(tests)], [(v, es(v, 0)) for v in (0, 300, 600, 900, 1200, 1500)],
                "Tiempo total (s)")
     for i, (lab, total, s2) in enumerate(tests):
         s1 = total - s2
@@ -232,57 +242,34 @@ def build_figures():
     c.legend([("darkblue", "con $\\leq 1$", "box"), ("darkblue", "sin $\\leq 1$", "outline")], x=0.2, top=4.85)
     FIG["le1"] = c.code()
 
-    # 15. realistic profile: Stage 1 vs grid side (calibration solo vs test runs)
+    # Study 12's controlled A/B: Stage 1 alone, sequential vs 6 workers, ABBA order.
+    ab_path = sorted(glob.glob(os.path.join(STUDIES, "12_stage1_parallel", "points_*.csv")))[-1]
+    ab = rows(os.path.relpath(ab_path, STUDIES))
+
+    def ab_mean(side, parallel):
+        times = [f(r, "stage1_s") for r in ab
+                 if r["label"].startswith(f"S{side}-") and ("workers=6" in r["variant"]) == parallel]
+        return sum(times) / len(times)
+
+    # 15. realistic profile: Stage 1 vs grid side -- suite run (6 workers), study 12 (sequential), calibration
+    runs = [(side, stage_times(case)[0] - stage_times(case)[1])
+            for side, case in ((7, "test_case_04"), (13, "test_case_05"), (14, "test_case_06"), (15, "test_case_07"))]
+    seq = [(side, ab_mean(side, False)) for side in (13, 14)]
     cal = [(7, f(solo[0], "stage1_s")), (13, f(solo[1], "stage1_s"))]
-    runs = [(7, 122.856 - 116.897), (13, 351.450 - 127.630), (14, 421.904 - 80.896), (15, 1707.438 - 222.451)]
     c = Chart(6, 16, 1, 10000, logy=True)
     c.axes([(v, f"{v}×{v}") for v in (7, 10, 13, 14, 15)], log_ticks(0, 4), "Grilla (perfil realista)", "Tiempo de Etapa 1 (s)")
     c.line(runs, "darkblue")
+    c.line(seq, "blueline")
     c.line(cal, "redline")
     c.open_dot(15, 1500, "redline")
     c.note(15, 1500, "cortado a 1.500 s", "lft", dx=-0.2, dy=0.35)
-    c.legend([("darkblue", "corridas de los tests de stress", "line"),
-              ("redline", "calibración, de a un punto", "line"),
+    c.legend([("darkblue", "tests de stress, 6 procesos", "line"),
+              ("blueline", "estudio 12, en secuencia", "line"),
+              ("redline", "calibración en secuencia, de a un punto", "line"),
               ("redline", "calibración cortada sin terminar", "open")])
     FIG["etapa1_realista"] = c.code()
 
-
-    # 16. Stage 1 in parallel vs sequential (stress suite runs), with Stage 2 as the noise gauge.
-    RES = os.path.join(ROOT, "results", "opp_v5_2_split", "stress", "output_opp_v5_2_split_stress_tests_")
-
-
-    def suite(stamp):
-        with open(RES + stamp + ".csv", encoding="utf-8", errors="replace") as fh:
-            return {r["test"].split(".")[-1]: r for r in csv.DictReader(fh)}
-
-
-    seq_runs = {**suite("20260923_142920"), **suite("20260923_152436")}
-    par_run = suite("20260923_181823")
-    PAR = [("test_realistic_crew_7x7_warehouse", "04: 7×7"), ("test_realistic_crew_13x13_warehouse", "05: 13×13"),
-           ("test_realistic_crew_14x14_warehouse", "06: 14×14"), ("test_realistic_crew_15x15_warehouse", "07: 15×15"),
-           ("test_realistic_crew_rectangular_warehouse", "09: 8×21"), ("test_realistic_crew_cold_chain", "11: frío")]
-    c = Chart(0, len(PAR), 0.25, 4, logy=True, w=12, h=5.5)
-    c.cat_axes([(i + 0.5, lab) for i, (_, lab) in enumerate(PAR)],
-               [(0.25, "0,25"), (0.5, "0,5"), (1, "1"), (2, "2"), (4, "4")], "Secuencial / paralelo")
-    c.hline(1, "", at="right")
-    for i, (name, _) in enumerate(PAR):
-        s, p = seq_runs[name], par_run[name]
-        s1 = (float(s["total_time"]) - float(s["model_time"])) / (float(p["total_time"]) - float(p["model_time"]))
-        s2 = float(s["model_time"]) / float(p["model_time"])
-        for x0, v, color, outline in ((i + 0.15, s1, "darkblue", False), (i + 0.52, s2, "redline", True)):
-            lo, hi = (1, v) if v >= 1 else (v, 1)
-            a, b = c.X(x0), c.X(x0 + 0.33)
-            box = f"{c.p(a, c.Y(lo))}--{c.p(b, c.Y(lo))}--{c.p(b, c.Y(hi))}--{c.p(a, c.Y(hi))}--cycle"
-            c.out.append(f"{'draw' if outline else 'fill'} {box} " + ("withpen pencircle scaled 1pt " if outline else "")
-                         + f"withcolor \\MPcolor{{{color}}};")
-            c.note(x0 + 0.165, v, es(v, 2), "top" if v >= 1 else "bot", dy=0.03 if v >= 1 else -0.03)
-    c.legend([("darkblue", "Etapa 1 (paralelizada con 6 procesos)", "box"),
-              ("redline", "Etapa 2 (idéntica en las dos corridas: ruido)", "outline")], x=0.2, top=5.35)
-    FIG["paralelo"] = c.code()
-
-    # 17. Controlled A/B (study 12): Stage 1 alone, sequential vs 6 workers, ABBA order.
-    ab_path = sorted(glob.glob(os.path.join(STUDIES, "12_stage1_parallel", "points_*.csv")))[-1]
-    ab = rows(os.path.relpath(ab_path, STUDIES))
+    # 16. Controlled A/B (study 12), each run as a bar.
     c = Chart(0, 2, 0, 450, h=5)
     c.cat_axes([(0.5, "13×13 (test 05)"), (1.5, "14×14 (test 06)")], [(v, str(v)) for v in (0, 100, 200, 300, 400)],
                "Tiempo de la Etapa 1 (s)")
