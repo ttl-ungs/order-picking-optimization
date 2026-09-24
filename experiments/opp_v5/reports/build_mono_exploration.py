@@ -15,6 +15,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from experiments.opp_v5.reports.charts import Chart, ROOT, STUDIES as S, es, log_ticks
+from experiments.opp_v5.reports.stress_suite import counts, stress_table
 
 TEMPLATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mono_exploration_template.tex")
 OUT = os.path.join(ROOT, "docs", "thesis", "opp_v5_1_mono_exploration.tex")
@@ -341,6 +342,11 @@ def main():
     assert used == set(figures), (used ^ set(figures))
     for key, code in figures.items():
         text = text.replace(f"%%FIG:{key}%%", code)
+    text = text.replace("%%TABLE:stress%%", stress_table())
+    for key, value in counts().items():
+        text = text.replace(f"%%NUM:{key}%%", value)
+    left = re.findall(r"%%\w+:\w+%%", text)
+    assert not left, left
     with open(OUT, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(text)
     print(f"wrote {OUT} with {len(figures)} charts")

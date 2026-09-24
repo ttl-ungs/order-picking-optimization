@@ -1,4 +1,5 @@
-"""Build docs/thesis/opp_v5_1_mono_vs_opp_v5_2_split_comparison.tex from the functional runs.
+"""Build docs/thesis/opp_v5_1_mono_vs_opp_v5_2_split_comparison.tex from the functional
+and stress runs.
 
     python -m experiments.opp_v5.reports.build_functional_comparison
 
@@ -19,11 +20,12 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from experiments.opp_v5.reports.charts import Chart, ROOT, es
+from experiments.opp_v5.reports.stress_suite import counts as stress_counts, stress_table
 
 TEMPLATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "functional_comparison_template.tex")
 OUT = os.path.join(ROOT, "docs", "thesis", "opp_v5_1_mono_vs_opp_v5_2_split_comparison.tex")
-SPLIT_RUN = "results/opp_v5_2_split/functional/output_opp_v5_2_split_functional_tests_20260924_121018.csv"
-MONO_RUN = "results/opp_v5_1_mono/functional/output_opp_v5_1_mono_functional_tests_20260924_121110.csv"
+SPLIT_RUN = "results/opp_v5_2_split/functional/output_opp_v5_2_split_functional_tests.csv"
+MONO_RUN = "results/opp_v5_1_mono/functional/output_opp_v5_1_mono_functional_tests.csv"
 
 # (test_case, fragment of the method name, short Spanish label for the tables)
 LABELS = [
@@ -234,6 +236,9 @@ def build():
     c.legend([("redline", "mono", "dot"), ("darkblue", "split (Etapa 2)", "dot")], x=0.3)
     FIG["size"] = c.code()
     NUM["sized"] = str(len(sized))
+
+    TABLE["stress"] = stress_table()
+    NUM.update(stress_counts())
     return TABLE, FIG, NUM
 
 

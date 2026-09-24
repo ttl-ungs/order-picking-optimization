@@ -14,11 +14,11 @@
 \mainlanguage[es]
 
 \starttext
-\title{\bf Comparación de OPP\_v5\_1\_mono\crlf y OPP\_v5\_2\_split en pruebas funcionales}
+\title{\bf Comparación de OPP\_v5\_1\_mono\crlf y OPP\_v5\_2\_split en pruebas funcionales y de stress}
 \blank[big]
 
 \startsection[title={Objetivo y alcance}]
-Este documento compara las ejecuciones de los tests funcionales de OPP\_v5\_1\_mono
+Este documento compara las ejecuciones de los tests funcionales y de stress de OPP\_v5\_1\_mono
 (formulación monolítica) y OPP\_v5\_2\_split (formulación en dos etapas) sobre los mismos
 escenarios. Los dos modelos definen el mismo problema de optimización (ruteo, asignación y
 secuenciación, con velocidades heterogéneas de pickers y cadena de frío) y tienen el mismo valor
@@ -35,8 +35,12 @@ inflados.
 
 El test\_case\_30 se corrió por separado y sus filas se agregaron a cada CSV. Su variante
 factible no termina en los 25 minutos de tope en ninguno de los dos modelos y queda fuera de la
-estadística; la infactible figura con los demás infactibles. No se incluyen resultados de
-stress; están en los documentos de exploración de cada modelo.
+estadística; la infactible figura con los demás infactibles.
+
+La suite de stress (sección \in[sec:stress]) usa \type{results/opp_v5_2_split/stress/} y
+\type{results/opp_v5_1_mono/stress/}: los mismos %%NUM:stress_total%% escenarios en los dos
+modelos, con un tope de 40 minutos por test. Los estudios que explican esos resultados están en
+los documentos de exploración de cada modelo.
 \stopsection
 
 \startsection[title={Criterio de equivalencia}]
@@ -149,6 +153,24 @@ soluciones óptimas difieren entre las formulaciones. La falla está registrada 
 \type{known_failures} en \type{scripts/baseline_counts.json}.
 \stopsection
 
+\startsection[title={Suite de stress},reference=sec:stress]
+Los tests de stress llevan los dos modelos a instancias de tamaño real: el perfil realista (26
+órdenes por lote, dos bandas de velocidad, pesos 4/5) en grillas de 7×7 a 16×16 y cuadrillas de
+hasta 24 lotes, más tres escenarios heredados de OPP\_v4. El split corre la Etapa 1 con seis
+procesos. Su tiempo es la duración completa del test y es un techo: la máquina entró en
+suspensión durante parte de esa corrida, y el tiempo suspendido cuenta en la duración pero no en
+el tope.
+
+%%TABLE:stress%%
+
+El monolítico termina %%NUM:stress_mono_ok%% de los %%NUM:stress_total%% tests; el split,
+%%NUM:stress_split_ok%%, ninguno en más de %%NUM:stress_split_max%% minutos. En los tests
+funcionales las dos formulaciones son intercambiables salvo en las grillas; a este tamaño, solo
+el split da una respuesta. Los tests que tampoco termina el split son los del perfil realista
+con 8 lotes o más (12 a 14 y 16 a 19), la grilla de 16×16 (08) y dos de los heredados (01 y
+03).
+\stopsection
+
 \startsection[title={Conclusiones}]
 \startitemize[n]
 \item {\bf Equivalencia del valor objetivo:} confirmada en los %%NUM:feasible%% pares factibles,
@@ -159,8 +181,9 @@ compilar dos modelos ZIMPL; el split paga un costo fijo por la segunda etapa.
 MIP combinado tiene bastantes más variables y restricciones que cualquiera de las dos etapas.
 \item {\bf Diferencia de conjuntos de soluciones:} el test\_case\_06 muestra que el monolítico
 puede devolver rutas no mínimas con el mismo objetivo.
-\item {\bf Escalabilidad:} la ventaja del split crece con el tamaño de la instancia; los
-documentos de exploración la cuantifican en instancias de stress.
+\item {\bf Escalabilidad:} la ventaja del split crece con el tamaño de la instancia. En la suite
+de stress el monolítico termina %%NUM:stress_mono_ok%% de %%NUM:stress_total%% tests en 40
+minutos y el split %%NUM:stress_split_ok%%.
 \stopitemize
 \stopsection
 

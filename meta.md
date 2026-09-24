@@ -610,6 +610,21 @@ Las dos primeras son de rendimiento puro y están medidas. Las otras cuatro son 
 - Resultado: 48 pares factibles con el mismo objetivo (diferencia máxima 3,83e-6, casos 13 y 14). En la suma de todos los tests, mono tarda 8,5× lo que split; en la mediana, mono es más rápido (0,342 s contra 0,408 s) y gana en 18 de los 48 pares, todos chicos; en las grillas llega a tardar 36,5× lo que split.
 - Validación: el generador corre sin errores; el documento compila con `context` (0 errores) y se revisaron las páginas renderizadas.
 
+### Cambio 2026-09-24 - Suite de stress de opp_v5 cerrada, CSV con nombre fijo y documentos finales
+- Alcance: resultados / documentación / análisis
+- Archivos principales:
+  - `results/opp_v5_2_split/stress/output_opp_v5_2_split_stress_tests_parallel.csv`, `results/opp_v5_1_mono/stress/output_opp_v5_1_mono_stress_tests.csv`, `results/opp_v5_{2_split,1_mono}/functional/output_opp_v5_*_functional_tests.csv`
+  - [experiments/opp_v5/reports/stress_suite.py](experiments/opp_v5/reports/stress_suite.py) (nuevo), los generadores de exploración y de comparación
+  - [analysis/config.py](analysis/config.py) (`LATEST_FILE_OVERRIDES`)
+- Qué se hizo:
+  - Stress 16–19 del split (Etapa 1 con 6 procesos): los cuatro dan timeout a 40 min. El CSV del split tiene los 19 tests: 9 resueltos (02, 04–07, 09–11, 15) y 10 timeouts.
+  - Stress del mono: medidos 01 (sin resultado) y 03–07 (timeout). 08–19 figuran como timeout sin haberse corrido todavía: el test más chico de la suite (04) ya no cierra en 40 min y el resto lo domina en tamaño (estudios 08 y 11). Si la corrida real de 08–19 da otro resultado, se reemplazan esas filas y se regeneran los documentos. El 02 se está corriendo; mientras falte su fila, `MONO_ASSUMED_TIMEOUT` en `stress_suite.py` lo informa como timeout (el generador falla si la fila aparece y la constante no se actualizó).
+  - Los CSV de opp_v5 pasan a nombre fijo, sin fecha: son la versión que cuenta. `_parallel` marca la corrida de stress del split con la Etapa 1 en paralelo. `LATEST_FILE_OVERRIDES` los fija para que el análisis no elija una corrida nueva que se escriba al lado.
+  - La exploración del mono cierra la sección de predicción con la tabla de la suite (0 de 19 contra 9 del split) y pierde la sección de pendientes. La comparación mono vs split suma una sección de stress con la misma tabla.
+  - Nombres de test duplicados: en `tests/opp_v4/functional/test_case_23.py` y `test_case_24.py`, `test_grid_multi_location_orders` y `test_bridge_disconnected_required_location` pasan a `..._with_capacities` (cuerpo idéntico al de 20/21; solo registran también las capacidades). Los opp_v5 que los heredan (25/26) toman el nombre nuevo y se renombraron sus filas en los CSV funcionales. El análisis ya no reporta esas colisiones.
+- Riesgo / atención: la notebook entró en suspensión durante las corridas de stress del 23-09 y del 24-09. Los timeouts valen (el tope cuenta solo tiempo despierto), pero la duración de los tests resueltos incluye el tiempo suspendido: los tiempos del split son un techo. Los documentos lo dicen.
+- Validación: los tres generadores corren; los tres documentos compilan con `context` (0 errores) y se revisaron las páginas nuevas.
+
 ---
 
 

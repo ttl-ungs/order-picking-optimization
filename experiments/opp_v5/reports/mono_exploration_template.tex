@@ -20,9 +20,8 @@
 Este documento es el par de la exploración de OPP\_v5\_2\_split
 (\type{docs/thesis/opp_v5_2_split_exploration.tex}). Las preguntas son las mismas, pero
 aplicadas al modelo monolítico: dónde deja de probar el óptimo, qué lo encarece y cuánto más
-lento es que el split sobre la misma instancia. Reúne los estudios 08 a 11. La suite de stress
-del monolítico seguía corriendo cuando se escribió, así que el contraste con la predicción es
-parcial (sección \in[sec:pendiente]).
+lento es que el split sobre la misma instancia. Reúne los estudios 08 a 11 y cierra con la suite
+de stress de los dos modelos.
 
 \blank
 
@@ -331,16 +330,26 @@ solución y una brecha grande.
 más grandes. El monolítico ya no cierra 6 lotes en 5×5 y, en la mitad de los casos con 6 lotes en
 7×7, no encuentra solución en 5 minutos. Predicción: {\bf ninguno termina}, y en varios puede no
 haber ni una solución que reportar.
-\item {\bf Tests heredados 01 a 03:} no entran en esta corrida, que se lanzó con los tests 04 a
-19. Del 01 (100×100), la corrida anterior del monolítico terminó sin resultado.
+\item {\bf Tests heredados 01 a 03:} quedaron fuera de la predicción. Del 01 (100×100), la
+corrida anterior del monolítico terminó sin resultado.
 \stopitemize
 
 {\bf Lo que confirmó el estudio 11:} sobre la instancia exacta del test 04, el monolítico llega a
 los 40 minutos con una solución a 0,66\% del óptimo y una brecha del 143,5\%. La suite no registra
 brechas, solo el timeout, así que ese número es la predicción cuantitativa para el test 04.
 
-{\bf Resultados de la suite hasta el momento de escribir esto:} los tests 04, 05, 06 y 07 dieron
-timeout a los 40 minutos, como se predijo. Faltan del 08 al 19.
+{\bf Resultados de la suite:} el monolítico terminó %%NUM:stress_mono_ok%% de los
+%%NUM:stress_total%% tests en 40 minutos; el split resolvió %%NUM:stress_split_ok%%, ninguno en
+más de %%NUM:stress_split_max%% minutos. Los tiempos del split son la duración completa del test
+(compilación, Etapa 1 con seis procesos y Etapa 2) y son un techo: la máquina entró en suspensión
+durante parte de esa corrida, y el tiempo suspendido cuenta en la duración pero no en el tope.
+
+%%TABLE:stress%%
+
+Los tests que el split tampoco termina son los del perfil realista con 8 lotes o más (12 a 14 y
+16 a 19), la grilla de 16×16 (08) y dos de los heredados (01 y 03). En esos casos los dos modelos llegan al
+tope; en todos los demás, la diferencia es la que ya mostraban los estudios: el split cierra en
+minutos instancias donde el monolítico no demuestra el óptimo en 40.
 \stopsection
 
 \startsection[title={Síntesis}]
@@ -363,13 +372,8 @@ tres puntos que no cerraban, y en el test 04 pasó del 39\% al 41\%. La brecha d
 predice bien la de una larga.
 \item {\bf No es un problema de tamaño ni de memoria:} los modelos tienen pocos miles de
 variables y usan menos de 650 MB aun a los 40 minutos.
-\stopitemize
-\stopsection
-
-\startsection[title={Pendiente},reference=sec:pendiente]
-\startitemize
-\item {\bf Suite de stress del monolítico:} completar el contraste con la predicción cuando
-terminen los tests 08 a 19.
+\item {\bf En la suite de stress:} el monolítico termina %%NUM:stress_mono_ok%% de
+%%NUM:stress_total%% tests en 40 minutos, contra %%NUM:stress_split_ok%% del split.
 \stopitemize
 \stopsection
 

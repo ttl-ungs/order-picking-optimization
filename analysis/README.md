@@ -438,7 +438,13 @@ las 3 colisiones reales mencionadas arriba en cada corrida del pipeline.
 menor prioridad): renombrar los métodos de test colisionados en
 `opp_v4`/`opp_hc_2` para que dejen de compartir nombre -- mientras tanto,
 esas instancias específicas quedan excluidas de las tablas comparativas
-en vez de corromperlas.
+en vez de corromperlas. **Hecho para `opp_v4` (2026-09-24)**: en
+`test_case_23` y `test_case_24` los dos métodos pasan a
+`test_grid_multi_location_orders_with_capacities` y
+`test_bridge_disconnected_required_location_with_capacities` (el cuerpo es
+idéntico al de `test_case_20`/`21`; solo registran además las capacidades,
+que es lo que los hacía colisionar). Los opp_v5 que los heredan
+(`test_case_25`/`26`) toman el nombre nuevo. Queda el de `opp_hc_2` en estrés.
 
 ### Cierre de la auditoría (2026-08-30): las 4 baterías de estrés
    re-corridas y consolidadas -- estado final

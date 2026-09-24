@@ -11,8 +11,7 @@ opp_v3 / opp_hc_1 / opp_aco_1) to the current model lineup:
 - opp_aco_3 : ACO, congestion-aware, multi-pheromone
 - opp_v5_1_mono : exact model, the same problem as opp_v5_2_split (heterogeneous picker
               speed + cold chain) solved as ONE monolithic MIP instead of two stages;
-              tested with the same suites as opp_v5_2_split. No results recorded yet
-              (load_all skips and reports a model with no CSVs).
+              tested with the same suites as opp_v5_2_split.
 - opp_v5_2_split    : exact model, 2-stage decomposition (routing then scheduling),
               no congestion -- migrated normal/stress tests neutralize its
               two extra features (heterogeneous picker speed, cold-chain
@@ -121,4 +120,11 @@ LATEST_FILE_OVERRIDES = {
     # pending (several of its 8 tests are known to take the full 25min
     # timeout each, so budget hours, not minutes, for that run).
     ("opp_v4", "stress"): "output_opp_v4_stress_tests_20260818_181050.csv",
+    # 2026-09-24: opp_v5's results are consolidated runs under fixed names
+    # (no timestamp) -- the version that counts, whatever a later run writes
+    # next to it. "_parallel": the split stress run with Stage 1 on 6 workers.
+    ("opp_v5_1_mono", "functional"): "output_opp_v5_1_mono_functional_tests.csv",
+    ("opp_v5_1_mono", "stress"): "output_opp_v5_1_mono_stress_tests.csv",
+    ("opp_v5_2_split", "functional"): "output_opp_v5_2_split_functional_tests.csv",
+    ("opp_v5_2_split", "stress"): "output_opp_v5_2_split_stress_tests_parallel.csv",
 }

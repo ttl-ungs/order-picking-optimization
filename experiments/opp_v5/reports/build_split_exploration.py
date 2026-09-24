@@ -179,7 +179,7 @@ def build_figures():
 
     # 11. stress tests: time by stage (split, realistic profile), from the suite run (6 workers)
     suite_path = os.path.join(ROOT, "results", "opp_v5_2_split", "stress",
-                              "output_opp_v5_2_split_stress_tests_20260923_181823.csv")
+                              "output_opp_v5_2_split_stress_tests_parallel.csv")
     with open(suite_path, encoding="utf-8", errors="replace") as fh:
         suite = {r["test"].split(".")[0]: r for r in csv.DictReader(fh)}
 
