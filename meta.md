@@ -278,7 +278,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
   - Sospecha a verificar antes de diseñar escenarios nuevos: el salto de la Etapa 1 puede venir del generador, no del modelo. `scenario_custom_setup` reparte órdenes con `sorted_locations[i % len(V)]` y lotes con round-robin, así que cambiar la cantidad de lotes cambia la GEOMETRÍA de las ubicaciones de cada lote (con 10 lotes quedan espaciadas de a 10, con 12 de a 12). Si es así, una escalera de dificultad mediría ruido geométrico además de tamaño.
 
 ### Barrido de ejes 2026-09-22 - Dónde rompe cada dimensión
-- Datos crudos: [experiments/opp_v5/estudios/01_barrido_ejes/sweep_axes_20260922.csv](experiments/opp_v5/estudios/01_barrido_ejes/sweep_axes_20260922.csv) y [experiments/opp_v5/estudios/01_barrido_ejes/sweep_orders_extended_20260922.csv](experiments/opp_v5/estudios/01_barrido_ejes/sweep_orders_extended_20260922.csv). Se guardan en `experiments/opp_v5/estudios/` y NO en `results/<modelo>/<tier>/` a propósito: `analysis/load.py::_pick_csv` hace `glob` sobre ese patrón y levantaría estos archivos como si fueran corridas de tests.
+- Datos crudos: [experiments/opp_v5/studies/01_axis_sweep/sweep_axes_20260922.csv](experiments/opp_v5/studies/01_axis_sweep/sweep_axes_20260922.csv) y [experiments/opp_v5/studies/01_axis_sweep/sweep_orders_extended_20260922.csv](experiments/opp_v5/studies/01_axis_sweep/sweep_orders_extended_20260922.csv). Se guardan en `experiments/opp_v5/studies/` y NO en `results/<modelo>/<tier>/` a propósito: `analysis/load.py::_pick_csv` hace `glob` sobre ese patrón y levantaría estos archivos como si fueran corridas de tests.
 - Método: partir de la forma del stress 09 (6 lotes, 2 pickers, 26 órdenes/lote, grilla 7×7) y mover **un eje por vez**, con tope de 300s por solve, fijando el mejor valor antes de pasar al siguiente eje. Clausura métrica activada.
 
 | Eje | Rango probado | Dónde rompe |
@@ -343,7 +343,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
   4. **El modelo es "just-in-time"**: inserta tiempo ocioso a propósito para no entregar temprano, siempre que N_b > W_full. Eso lo convierte en un problema de scheduling con objetivo de adelanto/tardanza (no regular), una clase notoriamente difícil: `v_pb` no tiene una cota superior natural, solo la que le impone el objetivo. **Relevante para cualquier intento de optimizar la Etapa 2.**
 
 ### Medición 2026-09-23 - Los pesos uniformes de la grilla son una degeneración cara
-- Datos crudos: [experiments/opp_v5/estudios/02_pesos_grilla/pesos_asimetricos_20260922_235622.csv](experiments/opp_v5/estudios/02_pesos_grilla/pesos_asimetricos_20260922_235622.csv) y [velocidades_dispares_20260922_235629.csv](experiments/opp_v5/estudios/03_velocidades/velocidades_dispares_20260922_235629.csv).
+- Datos crudos: [experiments/opp_v5/studies/02_grid_weights/asymmetric_weights_20260922_235622.csv](experiments/opp_v5/studies/02_grid_weights/asymmetric_weights_20260922_235622.csv) y [spread_speeds_20260922_235629.csv](experiments/opp_v5/studies/03_picker_speeds/spread_speeds_20260922_235629.csv).
 - Comparación controlada: mismo seed (o sea ubicaciones por lote idénticas), y pesos 2/6 elegidos para que la **media siga siendo 4,00** igual que el 4/4 de la base. Lo único que cambia es la asimetría, no la magnitud.
 
 | Órdenes/lote | Etapa 1 con 4/4 | Etapa 1 con 2/6 | Ratio |
@@ -359,7 +359,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 
 - El mecanismo: con todas las aristas valiendo 4 hay cantidades enormes de rutas que empatan en costo exacto, y la Etapa 1 tiene que recorrer esos óptimos equivalentes para probar que no hay nada mejor. Con 2 y 6 los empates se rompen.
 - **Alcance 1: es una mejora de la Etapa 1, no del sistema.** La Etapa 2 es prácticamente indiferente — sube y baja sin patrón dentro del ruido (10,32 → 11,74; 6,32 → 10,27; 14,07 → 18,16; 14,05 → 13,18). La única excepción es el punto degenerado de 10 órdenes/lote, con SLA 96,7%, donde baja de 35,57s a 16,53s y los nodos de 153.934 a 65.954.
-- **Alcance 2 — y esto anula su valor como optimización: la ventaja se evapora al crecer la grilla.** Corrida controlada (mismas 26 órdenes/lote, mismos 2 pickers, mismo seed, solo cambian los pesos), archivo `experiments/opp_v5/estudios/02_pesos_grilla/deposito_controlado_pesos26_20260923_001445.csv`:
+- **Alcance 2 — y esto anula su valor como optimización: la ventaja se evapora al crecer la grilla.** Corrida controlada (mismas 26 órdenes/lote, mismos 2 pickers, mismo seed, solo cambian los pesos), archivo `experiments/opp_v5/studies/02_grid_weights/warehouse_size_weights26_20260923_001445.csv`:
 
   | Grilla | Etapa 1 con 4/4 | Etapa 1 con 2/6 | |
   |---|---|---|---|
@@ -378,7 +378,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - Explicación: `test_case_05` es 10 lotes / 10 pickers con `sla_on_time_pct = 0.0` — régimen de asignación pura con fechas degeneradas. Aquel 18x era una **interacción con esa degeneración**, no una propiedad de la heterogeneidad de velocidades. Sigue valiendo que ningún escenario de stress ejercita `V_p` heterogéneo, que es el hueco de cobertura real.
 
 ### Medición 2026-09-23 - Velocidades en niveles: lo realista es caro
-- Datos crudos: [experiments/opp_v5/estudios/03_velocidades/niveles_velocidad_20260923_003241.csv](experiments/opp_v5/estudios/03_velocidades/niveles_velocidad_20260923_003241.csv).
+- Datos crudos: [experiments/opp_v5/studies/03_picker_speeds/speed_tiers_20260923_003241.csv](experiments/opp_v5/studies/03_picker_speeds/speed_tiers_20260923_003241.csv).
 - Motivo: la parametrización anterior repartía `V_p` en abanico continuo, una velocidad distinta por picker. Una cuadrilla real no es así — se contrata en un grupo etario parecido y todos empujan el mismo carro, así que hay dos o tres bandas. Se agregó `speed_tiers` a `designed_stress_scenario` para reproducir eso: los pickers de una misma banda quedan intercambiables.
 - Instancia fija: 6 lotes, 26 órdenes/lote, grilla 7×7, pesos 4/4. Solo varía cuántas velocidades distintas hay (spread 0,3, o sea bandas en [0,7, 1,3]). Tope de 300s por solve de Etapa 2.
 
@@ -393,13 +393,13 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - Excepción que conviene entender: con 6 pickers para 6 lotes (`|B| = |P|`), 2 niveles resuelve en 110s. Es el régimen de asignación pura — cada lote toma su picker y no hay secuenciamiento — y ahí la heterogeneidad se tolera mejor. Pero `|B| = |P|` es justamente una de las degeneraciones de cobertura, así que no sirve como escenario de stress.
 - Control de ruido: con 3 pickers, "3 niveles" y "todas distintas" resultan la MISMA configuración (ambas dan 0,7 / 1,0 / 1,3). Dieron **exactamente los mismos 250.037 nodos** y tiempos a 0,7% (113,51 vs 112,67s). SCIP es determinista dado el mismo input: el ruido de medición sobre una misma instancia es ~1%. La variabilidad grande que se vio durante el día (pseudocosto ganando en 10/10 y perdiendo en 10/12) es ENTRE instancias distintas, no entre corridas. O sea: comparar sobre la misma instancia es confiable, y las conclusiones no se transfieren a la instancia de al lado.
 
-### Cambio 2026-09-23 - Resultados de exploración movidos a `experiments/opp_v5/estudios/`
+### Cambio 2026-09-23 - Resultados de exploración movidos a `experiments/opp_v5/studies/`
 - Autor: IA / equipo
 - Alcance: experimentos (no afecta tests ni análisis)
-- Qué se hizo: `results/exploration/` ya no existe. Cada estudio tiene su directorio en `experiments/opp_v5/estudios/NN_nombre/`, con los puntos o scripts que se corrieron y los CSV que dieron (01 barrido de ejes, 02 pesos de grilla, 03 velocidades, 04 validación del corte duro, 05 calibración realista, 06 clausura, 07 restricción `<= 1`). Los `.json` de puntos se movieron de `experiments/opp_v5/` a su estudio. Se copiaron del scratchpad de la sesión los scripts que generaron 01, 03, 04, 06 y 07; si no, se perdían y esos CSV quedaban sin procedencia. El índice, con cómo se corrió cada uno, está en [experiments/opp_v5/README.md](experiments/opp_v5/README.md).
-- Herramienta: `exploration.py` ahora exige `--estudio NN_nombre` y escribe ahí.
-- `scripts/check_repo.py`: `experiments/opp_v5/estudios/` se agregó a `IMPORT_SKIP_PREFIXES`. Los scripts de los estudios se guardaron tal como se corrieron y la mayoría ejecuta el experimento al importarse, así que el chequeo de imports no debe tocarlos.
-- Rutas actualizadas en meta.md, `propuesta_tests_stress.md` y la memoria. Único cambio en los scripts copiados: `speed_tiers.py` escribía en `results/exploration/`, que ya no existe, y ahora escribe en su propio directorio.
+- Qué se hizo: `results/exploration/` ya no existe. Cada estudio tiene su directorio en `experiments/opp_v5/studies/NN_name/`, con los puntos o scripts que se corrieron y los CSV que dieron (01 barrido de ejes, 02 pesos de grilla, 03 velocidades, 04 validación del corte duro, 05 calibración realista, 06 clausura, 07 restricción `<= 1`). Directorios, archivos, encabezados de los CSV y claves de los JSON quedaron en inglés, como pide `conventions.md`; en los CSV solo se tradujeron encabezados y etiquetas, ningún número cambió (verificado celda por celda). Los `.json` de puntos se movieron de `experiments/opp_v5/` a su estudio. Se copiaron del scratchpad de la sesión los scripts que generaron 01, 03, 04, 06 y 07; si no, se perdían y esos CSV quedaban sin procedencia. El índice, con cómo se corrió cada uno, está en [experiments/opp_v5/README.md](experiments/opp_v5/README.md).
+- Herramienta: `exploration.py` ahora exige `--study NN_name` y escribe ahí. Flags y claves de puntos en inglés (`--points`, `--hard-cap`, `batches`, `orders_per_batch`, `hard_cap_s`, ...). Suma el modelo `pair` (misma instancia por split y mono, con el óptimo del split como referencia para medir al mono), el registro de cada solución mejorada, cota dual raíz y final, tamaño del modelo y memoria pico, y el modo `--frontier` (grilla lotes × lado que se corta en la primera falla del mono).
+- `scripts/check_repo.py`: `experiments/opp_v5/studies/` se agregó a `IMPORT_SKIP_PREFIXES`. Los scripts de los estudios se guardaron tal como se corrieron y la mayoría ejecuta el experimento al importarse, así que el chequeo de imports no debe tocarlos.
+- Rutas actualizadas en meta.md, `stress_test_design.md` y la memoria. Único cambio en los scripts copiados: `speed_tiers.py` escribía en `results/exploration/`, que ya no existe, y ahora escribe en su propio directorio.
 - El análisis de la tesis no cambia: solo lee `results/<modelo>/<tier>/`.
 
 ### Cambio 2026-09-23 - Clausura métrica eliminada del código
@@ -411,7 +411,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
   - [experiments/opp_v5/exploration.py](experiments/opp_v5/exploration.py): sin opción `--closure` ni clave `clausura` (que además estaba **encendida por defecto**). La columna `variante` sigue existiendo y vale `grafo`. Los `.json` de puntos viejos que tienen `"clausura": "0"` se siguen pudiendo correr: la clave se ignora.
   - `experiments/opp_v5/clausura_realista.json`: borrado (era la comparación con/sin clausura; ya no se puede reproducir).
 - Por qué: era exacta (53/53 funcionales con el mismo objetivo), pero solo ahorra tiempo cuando el lote tiene pocas ubicaciones frente a la grilla y la ruta no repite vértices. En las grillas realistas el 67–100% de los lotes tuvo que volver a resolverse con el grafo completo, así que en los tests de stress no aportó. La entrada del 2026-09-22 ("Clausura métrica por lote en la Etapa 1") y las mediciones siguen valiendo como registro. El código borrado quedó sin commitear, así que no se puede recuperar de git.
-- Impacto: ninguno en los tests, que ya corrían sin clausura (era opt-in con `OPP_STAGE1_METRIC_CLOSURE=1`, que no estaba seteada). Los CSV de `experiments/opp_v5/estudios/` con `variante=clausura` quedan como datos históricos.
+- Impacto: ninguno en los tests, que ya corrían sin clausura (era opt-in con `OPP_STAGE1_METRIC_CLOSURE=1`, que no estaba seteada). Los CSV de `experiments/opp_v5/studies/` con `variante=clausura` quedan como datos históricos.
 - Validación: `python -m scripts.check_repo` pasa; split funcional 01 y 09 pasan (`WRITE_RESULTS_CSV=0`, sin generar CSV); `exploration.py` compila.
 
 ### Cambio 2026-09-23 - Stress de opp_v5 depurado y renumerado: 23 → 19 tests (split y mono)
@@ -458,7 +458,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - Archivos principales:
   - [tests/shared_scenarios/stress/stress_scenarios_v5_designed.py](tests/shared_scenarios/stress/stress_scenarios_v5_designed.py): `realistic_crew_scenario(side)` y `speed_tiers` en `designed_stress_scenario`.
   - `tests/opp_v5_2_split/stress/test_case_09.py`, `_10.py`, `_11.py` y los mismos en `tests/opp_v5_1_mono/stress/`.
-  - [experiments/opp_v5/propuesta_tests_stress.md](experiments/opp_v5/propuesta_tests_stress.md): análisis, calibración y resultados.
+  - [experiments/opp_v5/stress_test_design.md](experiments/opp_v5/stress_test_design.md): análisis, calibración y resultados.
   - [experiments/opp_v5/exploration.py](experiments/opp_v5/exploration.py): herramienta de calibración con kill duro por proceso.
 - Qué se hizo: tres tests de stress con un único eje variable (tamaño del depósito: 7×7, 13×13, 15×15) y perfil realista fijo — 6 lotes sobre 3 pickers, 156 órdenes, pesos 4/5, velocidades en dos bandas (0,8 y 1,2), sin clausura. Reemplazan la versión del 2026-09-22 de esos mismos números, que usaba todo uniforme. Split y mono llaman a la misma función, así que apuntan a instancias idénticas.
 - Impacto: primeros tests de stress que ejercitan a la vez secuenciamiento real (`|B| > |P|`), velocidades diferenciadas y pesos no uniformes, sin ninguna de las seis degeneraciones documentadas.
@@ -469,11 +469,18 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
   - `python -m scripts.check_repo`: pasa.
   - Mono: no corrido todavía.
 
+### ⚠ Hallazgo 2026-09-23 - El `<= 1` SÍ cambia respuestas cuando un lote satura una grilla chica (acota la entrada siguiente)
+- Qué pasó: en la frontera del estudio 08 (perfil realista, 26 órdenes por lote), el punto de 2 lotes / 1 picker en **4×4 dio infactible en los dos modelos**. Resuelto solo la Etapa 1 del split, el mismo punto es infactible con el `<= 1` y factible sin él (copia temporal del modelo, `relax_le1`; `models/` sin tocar).
+- Por qué: el lote 2 tiene que pasar por 13 de las 14 ubicaciones pickeables, y el depot (V1) y el final (V16) están en esquinas opuestas. La grilla es bipartita y esas dos esquinas tienen el mismo color, así que un camino simple entre ellas no puede cubrir tantos vértices. Un picker real lo resuelve pasando dos veces por el mismo cruce; el `<= 1` lo prohíbe.
+- Alcance: la conclusión de la entrada siguiente ("el `<= 1` no cambia las respuestas") vale para lotes que cubren una parte de la grilla, que es lo medido ahí (7×7 y 13×13 con 18–26 ubicaciones por lote). **En grillas chicas casi llenas vuelve infactible un caso físicamente posible.** Afecta igual a split y a mono (misma restricción), así que la equivalencia entre modelos se mantiene.
+- Impacto en la herramienta: `--frontier` ya no cuenta un punto infactible en los dos modelos como falla del mono (antes podaba todos los tamaños desde ese punto).
+- Pendiente de decisión del usuario: si el `<= 1` se mantiene como parte de la definición del problema, las instancias con lotes que saturan la grilla hay que evitarlas en los escenarios; si se quita, es un cambio de modelo en ambos.
+
 ### ⚠ Corrección 2026-09-23 - La entrada siguiente atribuye al `<= 1` más de lo que los datos sostienen
 - Prueba directa (solo split, `models/` sin tocar: se reemplazó la copia temporal del `.zpl` de Etapa 1 por una sin `one_input_arc_per_node`/`one_output_arc_per_node`): los **11 funcionales que verifican la ruta exacta** (01–06, 08–11, 17) **pasan todos, con exactamente el mismo objetivo**, con y sin el `<= 1`. Sin él corren algo más rápido (0,10–0,17s contra 0,16–0,43s).
 - **Lo que era falso**: se dijo que en el funcional `test_case_09` el `<= 1` inflaba la ruta 13x (26 contra 2). Da 1833 en las dos versiones. La ruta del pickeador, `L1 → L3 → L4 → L2 → L4`, pasa por **L4, que es el nodo final**, y `no_outflow_final` prohíbe salir del final. Ese es el bloqueo, no el `<= 1`.
 - **Lo que queda en duda**: la "tasa de respaldo" de la clausura (67–100% de lotes con vértices repetidos) contó cualquier repetición como culpa del `<= 1`. Pero pasar por el depot o por el final, o recorrer el mismo arco dos veces en el mismo sentido (`z_ijb` es binaria), sigue prohibido sin él. Esa tasa es una cota superior del efecto del `<= 1`, no una medición de él.
-- **Medido y cerrado** (Etapa 1 sola, grafo completo, 6 lotes, pesos 4/5; archivo `experiments/opp_v5/estudios/07_restriccion_le1/prueba_le1_etapa1_*.csv`):
+- **Medido y cerrado** (Etapa 1 sola, grafo completo, 6 lotes, pesos 4/5; archivo `experiments/opp_v5/studies/07_le1_constraint/le1_stage1_*.csv`):
 
   | Grilla | Con `<= 1` | Sin `<= 1` | Tiempos de ruta |
   |---|---|---|---|
@@ -485,7 +492,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - Lo que limita la Etapa 1 en depósitos grandes sigue **sin identificar**.
 
 ### Hallazgo 2026-09-23 - En un depósito real la ruta óptima repite pasillos, y el `<= 1` lo prohíbe (VER CORRECCIÓN ANTERIOR)
-- Datos crudos: [experiments/opp_v5/estudios/06_clausura/clausura_realista_20260923_130954.csv](experiments/opp_v5/estudios/06_clausura/clausura_realista_20260923_130954.csv) y el diagnóstico de tasa de respaldo ([experiments/opp_v5/estudios/06_clausura/tasa_respaldo.py](experiments/opp_v5/estudios/06_clausura/tasa_respaldo.py)).
+- Datos crudos: [experiments/opp_v5/studies/06_metric_closure/closure_realistic_grids_20260923_130954.csv](experiments/opp_v5/studies/06_metric_closure/closure_realistic_grids_20260923_130954.csv) y el diagnóstico de tasa de respaldo ([experiments/opp_v5/studies/06_metric_closure/fallback_rate.py](experiments/opp_v5/studies/06_metric_closure/fallback_rate.py)).
 - Pregunta: ¿la clausura métrica sirve en proporciones de depósito real (layout grande, listas cortas)? La regla de los arcos (ayuda cuando las ubicaciones por lote son menos que ~2× el lado de la grilla) predecía que sí.
 - Resultado directo: con 6 lotes, **ninguna** de estas configuraciones terminó la Etapa 1 en 15 minutos, **ni con ni sin clausura**: 25×25 con 12 y 20 órdenes/lote, 35×35 con 12. (Medido con 6 procesos en paralelo, ver nota sobre la CPU híbrida más abajo.)
 - Diagnóstico — cuántos lotes caen en el respaldo al grafo completo:
