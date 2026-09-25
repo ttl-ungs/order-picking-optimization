@@ -33,6 +33,14 @@ class OPPLocationGraph:
             final_node: Ending location
         """
         self.distances = {}
+        # Mirrors `distances` but keyed by raw (from_id, to_id) tuples instead
+        # of OPPLocation pairs, so has_edge/get_distance -- the hottest calls
+        # in the search loops -- can look up a distance without allocating a
+        # fresh OPPLocation (and hashing it) on every call. `distances` itself
+        # is kept as-is: some callers (to_string, _find_paths, __eq__, and
+        # tests/infra/cases/route_assertions.py) rely on it being keyed by
+        # OPPLocation objects with a `.location_id` attribute.
+        self._distance_by_id = {}
         self.depot_node = OPPLocation(depot_node, "depot") if depot_node else None
         self.final_node = OPPLocation(final_node, "final") if final_node else None
 
@@ -71,6 +79,7 @@ class OPPLocationGraph:
             raise ValueError("Both vertices must be in the graph.")
 
         self.distances[(OPPLocation(from_vertex), OPPLocation(to_vertex))] = distance
+        self._distance_by_id[(from_vertex, to_vertex)] = distance
         self._adjacency = None  # invalidate cache
 
     def get_neighbors(self, vertex):
@@ -98,15 +107,11 @@ class OPPLocationGraph:
 
     def get_distance(self, from_vertex, to_vertex):
         """Get distance between two vertices using location IDs."""
-        from_loc = OPPLocation(from_vertex)
-        to_loc = OPPLocation(to_vertex)
-        return self.distances.get((from_loc, to_loc), float("inf"))
+        return self._distance_by_id.get((from_vertex, to_vertex), float("inf"))
 
     def has_edge(self, from_vertex, to_vertex):
         """Check if an edge exists between two vertices."""
-        from_loc = OPPLocation(from_vertex)
-        to_loc = OPPLocation(to_vertex)
-        return (from_loc, to_loc) in self.distances
+        return (from_vertex, to_vertex) in self._distance_by_id
 
     def get_depot(self):
         """Get the depot (starting) node."""

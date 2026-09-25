@@ -12,6 +12,8 @@ batches on different pickers still run in parallel.
 
 from typing import Dict, List, Set
 
+from models.opp_aco_4.utils import exec_time
+
 
 class RouteEvaluator:
     """Evaluates the opp_aco_4 objective function (v4 objective, picker-speed-aware)."""
@@ -126,31 +128,11 @@ class RouteEvaluator:
         t_exec_pb = B_setup + B_picking * sum(C_n)          [fixed, no speed]
                   + (B_time * travel_distance + service_time) / V_p[picker]
         """
-        setup_time = self.B_setup
-        picking_capacity = sum(self.C_n.get(order, 0) for order in orders)
-        picking_time = self.B_picking * picking_capacity
-
-        travel_distance = self._calculate_route_distance(route)
-        travel_time = self.B_time * travel_distance
-        service_time = sum(self.S.get(loc, 0) for loc in route)
-
-        speed = self.picker_speed(picker)
-        return setup_time + picking_time + (travel_time + service_time) / speed
+        return exec_time.t_exec_pb(
+            self.location_graph, route, orders, picker,
+            self.C_n, self.B_setup, self.B_picking, self.B_time, self.S, self.V_p,
+        )
 
     def _calculate_route_distance(self, route: list) -> float:
         """Calculate total distance of a route."""
-        if not route:
-            return 0.0
-
-        depot = self.location_graph.get_depot()
-        final = self.location_graph.get_final()
-        total_distance = 0.0
-
-        total_distance += self.location_graph.get_distance(depot, route[0])
-
-        for i in range(len(route) - 1):
-            total_distance += self.location_graph.get_distance(route[i], route[i + 1])
-
-        total_distance += self.location_graph.get_distance(route[-1], final)
-
-        return total_distance
+        return exec_time.calculate_route_distance(self.location_graph, route)

@@ -29,6 +29,7 @@ class ConstraintsValidator:
         self.C_v = C_v
         self.A = A
         self.P = P or ["P1"]
+        self._required_locations_cache: Dict[str, Set] = {}
 
     def validate_solution(self, solution) -> bool:
         """Validate entire solution against all constraints."""
@@ -93,14 +94,27 @@ class ConstraintsValidator:
         return True
 
     def _get_required_locations(self, batch: str) -> Set:
-        """Get all locations required by orders in batch."""
+        """Get all locations required by orders in batch.
+
+        batch_assignments/A never change for the lifetime of a validator
+        instance (one instance per solve() call), so this is memoized --
+        profiling showed it recomputed once per ant per batch otherwise.
+        """
+        cached = self._required_locations_cache.get(batch)
+        if cached is not None:
+            return cached
+
+        depot = self.location_graph.get_depot()
+        final = self.location_graph.get_final()
         required = set()
         orders = self.batch_assignments[batch]
         for order in orders:
             for vertex in self.location_graph.get_vertices():
-                if vertex != self.location_graph.get_depot() and vertex != self.location_graph.get_final():
+                if vertex != depot and vertex != final:
                     if self.A.get((order, vertex), 0) > 0:
                         required.add(vertex)
+
+        self._required_locations_cache[batch] = required
         return required
 
     def _validate_edges(self, route: list) -> bool:
