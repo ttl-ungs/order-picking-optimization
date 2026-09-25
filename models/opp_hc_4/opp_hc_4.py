@@ -98,6 +98,12 @@ class OPPHillClimbing(Model):
         self.B = sorted(dto.B)
         self.T_0 = dto.start_time
         self.P = sorted(dto.P) if getattr(dto, "P", None) else ["P1"]
+        # Per-solve() caches for values that are invariant for the whole
+        # search (batch_assignments never changes once a run starts -- only
+        # picker/route/sequence do): reset at the top of solve(), read-only
+        # afterwards. See _fixed_time and _generate_feasible_neighbor.
+        self._fixed_time_cache: Dict[str, float] = {}
+        self._batches_with_orders_cache: List[str] = []
 
     def solve(self, params: SolveHC4ModelDTO):
         """
@@ -118,6 +124,13 @@ class OPPHillClimbing(Model):
             return "infeasible", None
 
         batch_assignments = params.extract_batch_assignments()
+
+        # batch_assignments is fixed for the rest of this run (only picker/
+        # route/sequence change during search), so these two per-batch
+        # values -- recomputed from scratch on every call otherwise -- can
+        # be built once here instead.
+        self._fixed_time_cache = {}
+        self._batches_with_orders_cache = [b for b in self.B if batch_assignments[b]]
 
         # V_p[p] is a divisor in _t_exec_pb (fixed_time(b) + route_time(b)
         # / V_p[p]): a speed of exactly 0 is a ZeroDivisionError waiting
@@ -214,7 +227,9 @@ class OPPHillClimbing(Model):
         # are what actually get reported: the search is free to wander
         # through cold-chain-violating states along the way, but only ever
         # reports one that's fully compliant.
-        current_cost = self._search_cost(current_solution, evaluator, validator)
+        current_cost, current_objective, current_violation = self._search_cost(current_solution, evaluator, validator)
+        evaluator.commit(current_solution)
+        validator.commit(current_solution)
 
         best_feasible_solution = None
         best_feasible_cost = float("inf")
@@ -223,9 +238,9 @@ class OPPHillClimbing(Model):
         # cold-chain-violating states -- see comment above). 0 means the
         # initial construction was already the best feasible answer found.
         best_found_at_iteration = 0
-        if validator.cold_chain_violation(current_solution) == 0.0:
+        if current_violation == 0.0:
             best_feasible_solution = current_solution.copy()
-            best_feasible_cost = evaluator.evaluate(current_solution)
+            best_feasible_cost = current_objective
 
         max_time = params.Max_time if getattr(params, "Max_time", None) else 30.0
 
@@ -248,16 +263,19 @@ class OPPHillClimbing(Model):
                 no_improvement_count += 1
                 continue
 
-            neighbor_cost = self._search_cost(neighbor_solution, evaluator, validator)
+            neighbor_cost, neighbor_objective, neighbor_violation = self._search_cost(
+                neighbor_solution, evaluator, validator
+            )
 
             if neighbor_cost < current_cost:
                 current_solution = neighbor_solution
                 current_cost = neighbor_cost
                 no_improvement_count = 0
+                evaluator.commit(current_solution)
+                validator.commit(current_solution)
 
-                violation = validator.cold_chain_violation(current_solution)
-                if violation == 0.0:
-                    true_cost = evaluator.evaluate(current_solution)
+                if neighbor_violation == 0.0:
+                    true_cost = neighbor_objective
                     if true_cost < best_feasible_cost:
                         best_feasible_solution = current_solution.copy()
                         best_feasible_cost = true_cost
@@ -349,10 +367,19 @@ class OPPHillClimbing(Model):
         return {p: self._picker_speed(p, params) for p in self.P}
 
     def _fixed_time(self, batch: str, batch_assignments: Dict[str, Set[str]], params: SolveHC4ModelDTO) -> float:
-        """Setup + picking time -- the part of t_exec_pb that does NOT depend on picker speed."""
+        """Setup + picking time -- the part of t_exec_pb that does NOT depend
+        on picker speed. Cached per batch (see solve()'s _fixed_time_cache):
+        batch_assignments/C_n/B_setup/B_picking are all invariant for the
+        duration of a run, so this is the same value every time for a given
+        batch."""
+        cached = self._fixed_time_cache.get(batch)
+        if cached is not None:
+            return cached
         orders = batch_assignments.get(batch, set())
         picking_capacity = sum(params.C_n.get(o, 0) for o in orders) if isinstance(params.C_n, dict) else 0
-        return params.B_setup + params.B_picking * picking_capacity
+        fixed_time = params.B_setup + params.B_picking * picking_capacity
+        self._fixed_time_cache[batch] = fixed_time
+        return fixed_time
 
     def _route_time(self, route: List, params: SolveHC4ModelDTO, distance: Optional[float] = None) -> float:
         """
@@ -573,33 +600,46 @@ class OPPHillClimbing(Model):
 
         return route
 
-    def _route_topology_feasible(self, route: List) -> bool:
+    def _build_reversal_prefix_arrays(self, route: List) -> Tuple[List[float], List[float], List[int]]:
         """
-        Topology-only feasibility (depot/final edges + every consecutive
-        edge exists) for a route that is a PERMUTATION of an already-valid
-        route's nodes -- unlike _is_route_feasible, doesn't need to re-check
-        "no repeated nodes" or "covers all required locations", both
-        automatically preserved by any reordering of the same node set.
-        Used by _two_opt_tighten_route, which only ever reorders segments
-        of a route it was handed (never adds/removes nodes).
+        fwd_prefix[k]/rev_prefix[k]: cumulative distance of route[0..k]
+        traversed forward / in reverse. rev_broken_count[k]: how many of
+        the reverse-direction edges among route[0..k] don't exist -- a
+        2-opt reversal of route[i:j+1] is only feasible if this is the
+        same at both ends of the segment (i.e. zero reverse edges are
+        missing inside it). Shared by _two_opt_tighten_route and
+        _generate_route_neighbor -- see _two_opt_tighten_route's
+        docstring for why get_distance/has_edge are NOT assumed
+        symmetric here.
         """
-        if not route:
-            return True
+        n = len(route)
+        get_distance = self.location_graph.get_distance
+        has_edge = self.location_graph.has_edge
 
-        depot = self.location_graph.get_depot()
-        final = self.location_graph.get_final()
+        fwd_prefix = [0.0] * n
+        rev_prefix = [0.0] * n
+        rev_broken_count = [0] * n
+        for t in range(n - 1):
+            # route[t] -> route[t + 1] is one of the route's own edges,
+            # which is always feasible for a route this is called on
+            # (topology-valid, or the current sweep state in
+            # _two_opt_tighten_route), so get_distance here is always
+            # finite. The reverse direction may not exist at all
+            # (get_distance returns float("inf")): rev_broken_count
+            # tracks that separately (used to reject any candidate whose
+            # reversed segment would need this edge) so a 0.0 placeholder
+            # is used for rev_prefix's running sum instead -- letting an
+            # "inf" into the cumulative sum would poison every later
+            # prefix value (inf - inf = nan), including for ranges that
+            # never touch this broken edge.
+            fwd_prefix[t + 1] = fwd_prefix[t] + get_distance(route[t], route[t + 1])
+            edge_ok = has_edge(route[t + 1], route[t])
+            rev_prefix[t + 1] = rev_prefix[t] + (
+                get_distance(route[t + 1], route[t]) if edge_ok else 0.0
+            )
+            rev_broken_count[t + 1] = rev_broken_count[t] + (0 if edge_ok else 1)
 
-        if not self.location_graph.has_edge(depot, route[0]):
-            return False
-
-        for i in range(len(route) - 1):
-            if not self.location_graph.has_edge(route[i], route[i + 1]):
-                return False
-
-        if not self.location_graph.has_edge(route[-1], final):
-            return False
-
-        return True
+        return fwd_prefix, rev_prefix, rev_broken_count
 
     def _two_opt_tighten_route(self, route: List) -> List:
         """
@@ -611,28 +651,62 @@ class OPPHillClimbing(Model):
         starting point (see _generate_initial_feasible_solution's call
         site for why this matters). Bounded to len(route) sweeps as a
         safety valve -- in practice 2-opt converges in far fewer.
+
+        Each candidate reversal is scored via a distance DELTA (the 2 edges
+        leaving/entering the reversed segment, plus the segment's own
+        distance re-summed in reverse) instead of rebuilding the whole
+        candidate route and re-validating/re-summing it from scratch --
+        O(1) per candidate (after an O(n) prefix pass per sweep) instead of
+        O(n). This graph can be directed/asymmetric (see e.g.
+        tests/shared_scenarios/functional/scenario_05_v4.py, where L1->L2
+        and L2->L1 have different weights), so get_distance/has_edge are
+        NOT assumed symmetric: reversing route[i:j+1] also reverses the
+        direction every edge inside it is traversed in, so the reverse-
+        direction prefix sums/broken-edge counts below are tracked
+        separately from the forward ones, not derived by just negating or
+        reusing them.
         """
         if len(route) <= 1:
             return route
 
+        depot = self.location_graph.get_depot()
+        final = self.location_graph.get_final()
+        get_distance = self.location_graph.get_distance
+        has_edge = self.location_graph.has_edge
+
         current = route
         for _ in range(len(route)):
-            best_route = None
-            best_distance = self._calculate_route_distance(current)
+            n = len(current)
+            fwd_prefix, rev_prefix, rev_broken_count = self._build_reversal_prefix_arrays(current)
 
-            for i in range(len(current) - 1):
-                for j in range(i + 1, len(current)):
-                    candidate = current[:i] + current[i:j + 1][::-1] + current[j + 1:]
-                    if not self._route_topology_feasible(candidate):
+            best_i = best_j = None
+            best_delta = -1e-9
+
+            for i in range(n - 1):
+                prev_node = current[i - 1] if i > 0 else depot
+                removed_head = get_distance(prev_node, current[i])
+
+                for j in range(i + 1, n):
+                    if rev_broken_count[j] - rev_broken_count[i] != 0:
+                        continue  # a reverse-direction edge inside [i, j] is missing
+
+                    next_node = current[j + 1] if j + 1 < n else final
+
+                    if not has_edge(prev_node, current[j]) or not has_edge(current[i], next_node):
                         continue
-                    candidate_distance = self._calculate_route_distance(candidate)
-                    if candidate_distance < best_distance - 1e-9:
-                        best_distance = candidate_distance
-                        best_route = candidate
 
-            if best_route is None:
+                    removed = removed_head + (fwd_prefix[j] - fwd_prefix[i]) + get_distance(current[j], next_node)
+                    added = get_distance(prev_node, current[j]) + (rev_prefix[j] - rev_prefix[i]) + get_distance(current[i], next_node)
+                    delta = added - removed
+
+                    if delta < best_delta:
+                        best_delta = delta
+                        best_i, best_j = i, j
+
+            if best_i is None:
                 break
-            current = best_route
+
+            current = current[:best_i] + current[best_i:best_j + 1][::-1] + current[best_j + 1:]
 
         return current
 
@@ -655,16 +729,25 @@ class OPPHillClimbing(Model):
     def _bff_search(
         self, depot, final, initial_remaining: frozenset, memoize: bool
     ) -> Optional[List]:
-        """BFS over states (current_node, remaining_required, path_so_far)."""
+        """BFS over states (current_node, remaining_required, path_so_far).
+
+        The _MAX_BFF_EXPANSIONS safety valve applies regardless of `memoize`
+        -- it used to only fire in the memoize=False pass (a bug: since
+        _generate_feasible_route_bff always tries memoize=True FIRST, that
+        pass had no bound at all on either time or memory, the `seen` set
+        growing unboundedly for any batch with enough required locations
+        that the state space doesn't collapse quickly. Observed in practice:
+        a single batch with 25 required locations on a ~100-node grid ran
+        for 3+ minutes and 3+ GB of RAM without terminating).
+        """
         queue: deque = deque([(depot, initial_remaining, [depot])])
         seen: Set = {(depot, initial_remaining)} if memoize else None
         expansions = 0
 
         while queue:
-            if not memoize:
-                expansions += 1
-                if expansions > self._MAX_BFF_EXPANSIONS:
-                    return None
+            expansions += 1
+            if expansions > self._MAX_BFF_EXPANSIONS:
+                return None
 
             node, remaining, path = queue.popleft()
             visited = set(path)
@@ -688,15 +771,31 @@ class OPPHillClimbing(Model):
 
         return None
 
-    def _search_cost(self, solution: RouteSolution, evaluator: "RouteEvaluator", validator: "ConstraintsValidator") -> float:
+    def _search_cost(
+        self, solution: RouteSolution, evaluator: "RouteEvaluator", validator: "ConstraintsValidator"
+    ) -> Tuple[float, float, float]:
         """
         Objective + a large penalty for any cold-chain overrun -- drives
         ALL accept/reject decisions during the search (initial cost,
-        neighbor acceptance). NOT the reported obj_val: see solve()'s
+        neighbor acceptance). Returns (cost, objective, violation)
+        separately (not just cost) so solve() can reuse objective/
+        violation after accepting `solution` instead of recomputing them a
+        second time -- neither is the reported obj_val: see solve()'s
         best_feasible_solution/best_feasible_cost, tracked separately with
         the real (unpenalized) objective, only from fully compliant states.
+
+        Uses evaluate_incremental()/cold_chain_violation_incremental()
+        (diffed against each object's last COMMITTED solution) rather than
+        evaluate()/cold_chain_violation() -- solve() is responsible for
+        calling evaluator.commit(solution)/validator.commit(solution)
+        whenever it actually accepts `solution` as the new current_solution
+        (see their docstrings for why a rejected candidate must not
+        trigger a commit).
         """
-        return evaluator.evaluate(solution) + self._COLD_CHAIN_PENALTY_WEIGHT * validator.cold_chain_violation(solution)
+        objective = evaluator.evaluate_incremental(solution)
+        violation = validator.cold_chain_violation_incremental(solution)
+        cost = objective + self._COLD_CHAIN_PENALTY_WEIGHT * violation
+        return cost, objective, violation
 
     def _route_local_search_cost(
         self, batch: str, route: List, picker: str,
@@ -731,7 +830,7 @@ class OPPHillClimbing(Model):
           reasoning: the outer step judges whether it actually helps)
         - Swap the processing order of two batches on the same picker
         """
-        batches_with_orders = [b for b in self.B if batch_assignments[b]]
+        batches_with_orders = self._batches_with_orders_cache
 
         moves = [self._generate_route_neighbor]
         if len(self.P) > 1 and batches_with_orders:
@@ -750,14 +849,33 @@ class OPPHillClimbing(Model):
     ) -> Optional[RouteSolution]:
         """
         Full 2-opt on a randomly selected batch's route: every
-        topologically feasible reversal is scored by
-        _route_local_search_cost (distance + this batch's own cold-chain
-        overrun penalty), and the single best (steepest-descent)
-        improving one is kept -- deliberately NOT required to already be
-        fully cold-chain-compliant (see _generate_feasible_neighbor's
-        docstring): a move that reduces the overrun without eliminating
-        it is still progress, and the outer solve() loop decides whether
-        the resulting whole solution is actually better.
+        topologically feasible reversal is scored by the same distance +
+        cold-chain-overrun penalty _route_local_search_cost computes
+        (this batch's own cost alone), and the single best (steepest-
+        descent) improving one is kept -- deliberately NOT required to
+        already be fully cold-chain-compliant (see
+        _generate_feasible_neighbor's docstring): a move that reduces the
+        overrun without eliminating it is still progress, and the outer
+        solve() loop decides whether the resulting whole solution is
+        actually better.
+
+        Each candidate's cost is derived from a distance DELTA (see
+        _two_opt_tighten_route's docstring for why get_distance/has_edge
+        are NOT assumed symmetric here) instead of building a new route
+        list, re-validating it end-to-end, and re-summing its distance/
+        t_exec_pb from scratch for every one of the O(n^2) reversals a
+        sweep considers. This is valid because:
+        - a reversal never changes `route`'s node set, so a duplicate-
+          nodes/required-locations check would trivially pass for any
+          candidate (already true of `route` itself) and doesn't need
+          doing per candidate -- only topology (edge existence) actually
+          varies between candidates;
+        - fixed_time and service_time depend on which orders/locations
+          are in the batch, not on the route's ORDER, so t_exec_pb is an
+          affine function of distance alone for a fixed batch/picker
+          (t_exec = intercept + (B_time / speed) * distance) and can be
+          evaluated from a candidate's distance without recomputing
+          _t_exec_pb/_route_time per candidate.
         """
         batches_with_routes = [b for b in self.B if solution.get_batch_route(b)]
         if not batches_with_routes:
@@ -770,23 +888,60 @@ class OPPHillClimbing(Model):
         if len(route) <= 1:
             return None
 
-        best_route = None
-        best_local_cost = self._route_local_search_cost(batch, route, picker, batch_assignments, params)
+        n = len(route)
+        depot = self.location_graph.get_depot()
+        final = self.location_graph.get_final()
+        get_distance = self.location_graph.get_distance
+        has_edge = self.location_graph.has_edge
 
-        for i in range(len(route) - 1):
-            for j in range(i + 1, len(route)):
-                new_route = route[:i] + route[i:j+1][::-1] + route[j+1:]
+        base_distance = self._calculate_route_distance(route)
 
-                if not self._is_route_feasible(new_route, batch, batch_assignments, params.A):
+        speed = self._picker_speed(picker, params)
+        fixed_time = self._fixed_time(batch, batch_assignments, params)
+        service_time = sum(params.S.get(loc, 0) for loc in route) if isinstance(params.S, dict) else 0
+        t_exec_intercept = fixed_time + service_time / speed
+        b_time_over_speed = params.B_time / speed
+
+        def local_cost(distance: float) -> float:
+            t_exec = t_exec_intercept + b_time_over_speed * distance
+            violation = max(0.0, t_exec - params.T_frio_max)
+            return params.B_time * distance + self._COLD_CHAIN_PENALTY_WEIGHT * violation
+
+        # See _build_reversal_prefix_arrays' docstring for what these mean;
+        # same construction as _two_opt_tighten_route, just a single pass
+        # here (this method returns the single best 2-opt move, not a
+        # fully-tightened route).
+        fwd_prefix, rev_prefix, rev_broken_count = self._build_reversal_prefix_arrays(route)
+
+        best_i = best_j = None
+        best_local_cost = local_cost(base_distance)
+
+        for i in range(n - 1):
+            prev_node = route[i - 1] if i > 0 else depot
+            removed_head = get_distance(prev_node, route[i])
+
+            for j in range(i + 1, n):
+                if rev_broken_count[j] - rev_broken_count[i] != 0:
+                    continue  # a reverse-direction edge inside [i, j] is missing
+
+                next_node = route[j + 1] if j + 1 < n else final
+
+                if not has_edge(prev_node, route[j]) or not has_edge(route[i], next_node):
                     continue
 
-                local_cost = self._route_local_search_cost(batch, new_route, picker, batch_assignments, params)
-                if local_cost < best_local_cost - 1e-9:
-                    best_local_cost = local_cost
-                    best_route = new_route
+                removed = removed_head + (fwd_prefix[j] - fwd_prefix[i]) + get_distance(route[j], next_node)
+                added = get_distance(prev_node, route[j]) + (rev_prefix[j] - rev_prefix[i]) + get_distance(route[i], next_node)
+                candidate_distance = base_distance + (added - removed)
 
-        if best_route is None:
+                candidate_cost = local_cost(candidate_distance)
+                if candidate_cost < best_local_cost - 1e-9:
+                    best_local_cost = candidate_cost
+                    best_i, best_j = i, j
+
+        if best_i is None:
             return None
+
+        best_route = route[:best_i] + route[best_i:best_j + 1][::-1] + route[best_j + 1:]
 
         neighbor = solution.copy()
         neighbor.set_batch_route(batch, best_route)
@@ -821,7 +976,7 @@ class OPPHillClimbing(Model):
         currently-ineligible batch towards a picker that gets it closer to
         (or all the way to) compliance.
         """
-        batches_with_orders = [b for b in self.B if batch_assignments[b]]
+        batches_with_orders = self._batches_with_orders_cache
         if not batches_with_orders:
             return None
 
@@ -856,35 +1011,6 @@ class OPPHillClimbing(Model):
         sequence[i], sequence[j] = sequence[j], sequence[i]
         neighbor.set_picker_sequence(picker, sequence)
         return neighbor
-
-    def _is_route_feasible(
-        self, route: List, batch: str, batch_assignments: Dict[str, Set[str]], A: Dict
-    ) -> bool:
-        """Topology-only feasibility check (cold chain is checked separately by callers)."""
-        if not route:
-            return True
-
-        depot = self.location_graph.get_depot()
-        final = self.location_graph.get_final()
-
-        if len(route) != len(set(route)):
-            return False
-
-        if not self.location_graph.has_edge(depot, route[0]):
-            return False
-
-        for i in range(len(route) - 1):
-            if not self.location_graph.has_edge(route[i], route[i+1]):
-                return False
-
-        if not self.location_graph.has_edge(route[-1], final):
-            return False
-
-        required = self._find_required_locations(batch, batch_assignments[batch], A)
-        if not required.issubset(set(route)):
-            return False
-
-        return True
 
     def _build_solution_output(self, solution: RouteSolution) -> OPPLocationGraph:
         """Convert RouteSolution to OPPLocationGraph format compatible with build_output."""

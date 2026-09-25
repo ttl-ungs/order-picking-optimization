@@ -67,6 +67,18 @@ class ConstraintsValidator(BaseConstraintsValidator):
         self.V_p = V_p or {}
         self.T_frio_max = T_frio_max
 
+        # Incremental cold_chain_violation() cache -- see
+        # cold_chain_violation_incremental()'s docstring. _last_* reflects
+        # the last COMMITTED solution (commit()); _pending_* is the tentative
+        # result of the most recent cold_chain_violation_incremental() call,
+        # promoted to _last_* only if that same solution gets committed.
+        self._last_solution = None
+        self._last_overrun_by_batch: Dict[str, float] = {}
+        self._last_total_violation = 0.0
+        self._pending_solution = None
+        self._pending_overrun_by_batch: Dict[str, float] = {}
+        self._pending_total_violation = 0.0
+
     def validate_solution(self, solution) -> bool:
         """
         opp_hc_2's ORIGINAL hard constraints only (topology, capacity,
@@ -126,6 +138,95 @@ class ConstraintsValidator(BaseConstraintsValidator):
                 total += overrun
 
         return total
+
+    def _batch_overrun(self, batch: str, solution) -> float:
+        """This batch's own contribution to cold_chain_violation()'s total
+        -- see that method's docstring for why it can be computed (and
+        cached) independently, per batch."""
+        orders = self.batch_assignments.get(batch)
+        if not orders:
+            return 0.0
+
+        picker = solution.get_batch_picker(batch)
+        if picker is None or picker not in self.P:
+            return 0.0
+
+        route = solution.get_batch_route(batch)
+        return max(0.0, self.t_exec_pb(batch, route, picker) - self.T_frio_max)
+
+    def _diff_batches(self, a, b) -> Set[str]:
+        """Batches whose route or assigned picker differs between two
+        solutions (a sequence-order-only change, e.g. a swap move, reports
+        no differing batches here -- cold chain doesn't depend on
+        position/order, only on (batch, route, picker))."""
+        changed = set()
+        for batch in self.B:
+            if a.get_batch_route(batch) != b.get_batch_route(batch):
+                changed.add(batch)
+            elif a.get_batch_picker(batch) != b.get_batch_picker(batch):
+                changed.add(batch)
+        return changed
+
+    def cold_chain_violation_incremental(self, solution) -> float:
+        """
+        Same value cold_chain_violation(solution) would return, computed as
+        a delta from the last COMMITTED solution (see commit()) instead of
+        recomputing every batch's t_exec_pb from scratch every call: unlike
+        the objective's completion times (which cascade through a picker's
+        whole sequence), a batch's cold-chain overrun depends only on its
+        OWN route and picker, never on other batches or on sequence order
+        -- so only batches that actually changed need their overrun
+        recomputed; everything else is reused from the cache untouched.
+
+        Does NOT mutate the committed cache itself -- see commit(), which
+        solve() calls only once it has decided to keep `solution` as the
+        new current_solution (a candidate that gets scored here and then
+        rejected must not corrupt the cache the NEXT candidate diffs
+        against).
+        """
+        if self._last_solution is None:
+            total = self.cold_chain_violation(solution)
+            self._pending_overrun_by_batch = {b: self._batch_overrun(b, solution) for b in self.B}
+            self._pending_total_violation = total
+            self._pending_solution = solution
+            return total
+
+        changed = self._diff_batches(self._last_solution, solution)
+        if not changed:
+            self._pending_solution = solution
+            self._pending_overrun_by_batch = self._last_overrun_by_batch
+            self._pending_total_violation = self._last_total_violation
+            return self._last_total_violation
+
+        total = self._last_total_violation
+        overrun_by_batch = dict(self._last_overrun_by_batch)
+        for batch in changed:
+            new_overrun = self._batch_overrun(batch, solution)
+            total += new_overrun - overrun_by_batch.get(batch, 0.0)
+            overrun_by_batch[batch] = new_overrun
+
+        self._pending_overrun_by_batch = overrun_by_batch
+        self._pending_total_violation = total
+        self._pending_solution = solution
+        return total
+
+    def commit(self, solution) -> None:
+        """Make `solution` the baseline cold_chain_violation_incremental()
+        diffs against from now on. Call this exactly when solve() accepts
+        `solution` as the new current_solution -- never for a candidate
+        that ends up rejected."""
+        if self._pending_solution is solution:
+            self._last_solution = solution
+            self._last_overrun_by_batch = self._pending_overrun_by_batch
+            self._last_total_violation = self._pending_total_violation
+            return
+
+        # solution wasn't the one most recently scored incrementally
+        # (shouldn't happen given how solve() uses this class -- defensive
+        # fallback so the cache can't silently go stale/incorrect instead).
+        self._last_solution = solution
+        self._last_overrun_by_batch = {b: self._batch_overrun(b, solution) for b in self.B}
+        self._last_total_violation = sum(self._last_overrun_by_batch.values())
 
     def t_exec_pb(self, batch: str, route: list, picker: str) -> float:
         """Same formula as opp_model_v5_2_split_stage2_scheduling.zpl's t_exec_pb: fixed setup/

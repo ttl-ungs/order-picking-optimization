@@ -43,6 +43,7 @@ from typing import Dict, List, Set
 from models.opp_aco_2.utils.constraints_validator import (
     ConstraintsValidator as BaseConstraintsValidator,
 )
+from models.opp_aco_4.utils import exec_time
 
 
 class ConstraintsValidator(BaseConstraintsValidator):
@@ -166,26 +167,13 @@ class ConstraintsValidator(BaseConstraintsValidator):
         """Same formula as opp_model_v5_2_split_stage2_scheduling.zpl's t_exec_pb: fixed setup/
         picking time (speed-independent) plus travel+service time divided
         by the picker's speed."""
-        fixed_time = self.B_setup + self.B_picking * sum(
-            self.C_n.get(order, 0) for order in self.batch_assignments.get(batch, set())
+        orders = self.batch_assignments.get(batch, set())
+        return exec_time.t_exec_pb(
+            self.location_graph, route, orders, picker,
+            self.C_n, self.B_setup, self.B_picking, self.B_time, self.S, self.V_p,
         )
-        speed = self.V_p.get(picker, 1.0)
-        return fixed_time + self._route_time(route) / speed
 
     def _route_time(self, route: list) -> float:
         """Travel time (B_time * distance) + service time -- the part of
         t_exec that scales with picker speed (opp_v5_2_split's R_b_time)."""
-        if not route:
-            return 0.0
-
-        depot = self.location_graph.get_depot()
-        final = self.location_graph.get_final()
-
-        distance = self.location_graph.get_distance(depot, route[0])
-        for i in range(len(route) - 1):
-            distance += self.location_graph.get_distance(route[i], route[i + 1])
-        distance += self.location_graph.get_distance(route[-1], final)
-
-        service_time = sum(self.S.get(loc, 0) for loc in route)
-
-        return self.B_time * distance + service_time
+        return exec_time.route_time(self.location_graph, route, self.B_time, self.S)
