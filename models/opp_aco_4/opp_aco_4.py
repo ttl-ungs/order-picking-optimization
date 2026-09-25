@@ -82,6 +82,7 @@ import models.utils.solve_registry as solve_registry
 from models.opp_aco_2.utils.route_solution import RouteSolution
 from models.opp_aco_4.utils.route_evaluator import RouteEvaluator
 from models.opp_aco_4.utils.constraints_validator import ConstraintsValidator
+from models.opp_aco_4.utils import exec_time
 from models.opp_v5.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
 from models.utils.sla import sla_on_time_pct
 
@@ -233,6 +234,34 @@ class OPPAntColonyOptimization(Model):
             for batch in self.B
             if batch_assignments.get(batch)
         }
+
+        # Exact (not estimated) reachability pre-check: if a required
+        # location can't be reached from the depot, or can't reach `final`,
+        # NO route -- built by any ant, in any iteration -- could ever
+        # visit it. This is a static graph-topology fact, already available
+        # from _sp_dist (Dijkstra, precomputed once in __init__), so it
+        # costs nothing to check upfront instead of letting every ant of
+        # every iteration exhaust _MAX_ROUTE_ATTEMPTS_PER_BATCH on a batch
+        # that was never solvable in the first place (same "honest
+        # infeasibility, no shortcut before trying" philosophy as the
+        # cold-chain pre-check above -- this is just the topology half of
+        # it, not a substitute for the search on batches that pass it).
+        depot = self.location_graph.get_depot()
+        final = self.location_graph.get_final()
+        unreachable_batches = {
+            batch
+            for batch, required in required_locations_by_batch.items()
+            for req in required
+            if self._sp_dist[(depot, req)] == float("inf") or self._sp_dist[(req, final)] == float("inf")
+        }
+        if unreachable_batches:
+            print(
+                "ERROR: No route can visit every required location for "
+                f"batches {sorted(unreachable_batches)} (some location is "
+                "unreachable from the depot, or can't reach `final`)"
+            )
+            self._register_infeasible(params, time.time() - start_time)
+            return "infeasible", None
 
         best_global_solution = None
         best_global_cost = float("inf")
@@ -392,8 +421,7 @@ class OPPAntColonyOptimization(Model):
     def _fixed_time(self, batch: str, batch_assignments: Dict[str, Set[str]], params: SolveAco4ModelDTO) -> float:
         """Setup + picking time -- the part of t_exec_pb that does NOT depend on picker speed."""
         orders = batch_assignments.get(batch, set())
-        picking_capacity = sum(params.C_n.get(o, 0) for o in orders) if isinstance(params.C_n, dict) else 0
-        return params.B_setup + params.B_picking * picking_capacity
+        return exec_time.fixed_time(orders, params.C_n, params.B_setup, params.B_picking)
 
     def _route_time(
         self, route: List[str], params: SolveAco4ModelDTO, distance: Optional[float] = None
@@ -406,12 +434,7 @@ class OPPAntColonyOptimization(Model):
         per picker, recomputing the SAME route's distance every time, even
         though distance doesn't depend on picker at all).
         """
-        if not route:
-            return 0.0
-        if distance is None:
-            distance = self._calculate_route_distance(route)
-        service_time = sum(params.S.get(loc, 0) for loc in route) if isinstance(params.S, dict) else 0
-        return params.B_time * distance + service_time
+        return exec_time.route_time(self.location_graph, route, params.B_time, params.S, distance)
 
     def _t_exec_pb(
         self, batch: str, route: List[str], picker: str,
@@ -419,9 +442,12 @@ class OPPAntColonyOptimization(Model):
         distance: Optional[float] = None,
     ) -> float:
         """See _route_time's docstring for why `distance` can be passed in precomputed."""
-        fixed_time = self._fixed_time(batch, batch_assignments, params)
-        speed = self._picker_speed(picker, params)
-        return fixed_time + self._route_time(route, params, distance=distance) / speed
+        orders = batch_assignments.get(batch, set())
+        return exec_time.t_exec_pb(
+            self.location_graph, route, orders, picker,
+            params.C_n, params.B_setup, params.B_picking, params.B_time, params.S, params.V_p,
+            distance=distance,
+        )
 
     def _eligible_pickers_for_batch(
         self, batch: str, route: List[str], batch_assignments: Dict[str, Set[str]], params: SolveAco4ModelDTO,
@@ -827,17 +853,7 @@ class OPPAntColonyOptimization(Model):
 
     def _calculate_route_distance(self, route: List[str]) -> float:
         """Total travel distance of depot -> route... -> final."""
-        if not route:
-            return 0.0
-
-        depot = self.location_graph.get_depot()
-        final = self.location_graph.get_final()
-
-        total = self.location_graph.get_distance(depot, route[0])
-        for i in range(len(route) - 1):
-            total += self.location_graph.get_distance(route[i], route[i + 1])
-        total += self.location_graph.get_distance(route[-1], final)
-        return total
+        return exec_time.calculate_route_distance(self.location_graph, route)
 
     def _calculate_batch_execution_time(
         self, route: List[str], orders: Set[str], picker: str, params: SolveAco4ModelDTO
@@ -851,12 +867,10 @@ class OPPAntColonyOptimization(Model):
         opp_aco_2/opp_hc_4 use between the search's evaluator and this
         reporting-only helper).
         """
-        picking_capacity = sum(params.C_n.get(o, 0) for o in orders) if isinstance(params.C_n, dict) else 0
-        picking_time = params.B_picking * picking_capacity
-        travel_time = params.B_time * self._calculate_route_distance(route)
-        service_time = sum(params.S.get(loc, 0) for loc in route) if isinstance(params.S, dict) else 0
-        speed = self._picker_speed(picker, params)
-        return params.B_setup + picking_time + (travel_time + service_time) / speed
+        return exec_time.t_exec_pb(
+            self.location_graph, route, orders, picker,
+            params.C_n, params.B_setup, params.B_picking, params.B_time, params.S, params.V_p,
+        )
 
     def _build_solution_info(
         self, solution: RouteSolution, cost: float, params: SolveAco4ModelDTO
