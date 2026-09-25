@@ -164,7 +164,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
         return compliant
 
     def t_exec_pb(self, batch: str, route: list, picker: str) -> float:
-        """Same formula as stage2_scheduling.zpl's t_exec_pb: fixed setup/
+        """Same formula as opp_model_v5_2_split_stage2_scheduling.zpl's t_exec_pb: fixed setup/
         picking time (speed-independent) plus travel+service time divided
         by the picker's speed."""
         orders = self.batch_assignments.get(batch, set())
@@ -175,5 +175,5 @@ class ConstraintsValidator(BaseConstraintsValidator):
 
     def _route_time(self, route: list) -> float:
         """Travel time (B_time * distance) + service time -- the part of
-        t_exec that scales with picker speed (opp_v5's R_b_time)."""
+        t_exec that scales with picker speed (opp_v5_2_split's R_b_time)."""
         return exec_time.route_time(self.location_graph, route, self.B_time, self.S)

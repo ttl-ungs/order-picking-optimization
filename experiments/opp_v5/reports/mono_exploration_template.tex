@@ -1,0 +1,380 @@
+\setupcolors[state=start]
+\setupcolor[hex]
+\definecolor[darkblue][h=003366]
+\definecolor[darkgray][h=e6e6e6]
+\definecolor[redline][h=d9534f]
+\definecolor[blueline][h=5bc0de]
+\definecolor[greenline][h=5cb85c]
+
+\setuphead[section][style=\bfa, color=darkblue, before=\blank, after=\blank]
+\setuphead[subsection][style=\bf, color=black, before=\blank, after=\blank]
+\setuppapersize[A4][A4]
+\setupbodyfont[11pt]
+\setuplayout[width=middle, height=middle, topspace=2cm, bottomspace=2cm]
+\mainlanguage[es]
+
+\starttext
+\title{\bf Exploración de OPP\_v5\_1\_mono: dónde deja de cerrar el modelo monolítico}
+\blank[big]
+
+Este documento es el par de la exploración de OPP\_v5\_2\_split
+(\type{docs/thesis/opp_v5_2_split_exploration.tex}). Las preguntas son las mismas, pero
+aplicadas al modelo monolítico: dónde deja de probar el óptimo, qué lo encarece y cuánto más
+lento es que el split sobre la misma instancia. Reúne los estudios 08 a 11 y cierra con la suite
+de stress de los dos modelos.
+
+\blank
+
+\startsection[title={Alcance y fuentes}]
+\startitemize
+\item {\bf Estudio 08, frontera:} una grilla de lotes (1, 2, 3, 4 y 6) por lado de la grilla
+del depósito (3×3 a 7×7), con el perfil realista de los tests de stress: 26 órdenes por lote,
+pesos 4/5, dos bandas de velocidad (0,8 y 1,2) y dos lotes por picker. Tope de 10 minutos por
+modelo. Cuando el monolítico no prueba el óptimo en un lado, ese lado y los mayores se saltean
+para los lotes siguientes.
+\item {\bf Estudio 09, casos compartidos:} 15 instancias idénticas a las de los estudios 01,
+02 y 03 del split, con el mismo límite de SCIP (300 s). Todas tienen 6 lotes, en 7×7 salvo
+una en 10×10.
+\item {\bf Estudio 10, factores:} las preguntas de los estudios 01, 02, 03 y 07 del split a una
+escala que el monolítico resuelve (4 lotes, 2 pickers, 5×5), moviendo un factor por vez.
+\item {\bf Estudio 11, 40 minutos:} los tres puntos donde el monolítico dejó de cerrar en el
+estudio 08, más la instancia exacta del test de stress 04, con el mismo tope que la suite.
+\item {\bf Puntos previos:} T2 (estudio 04, 5×5 con 4 lotes) y M0 (estudio 05, la instancia
+exacta del test de stress 04).
+\item {\bf Todos los puntos son pares:} la misma instancia se resuelve primero con el split y
+después con el monolítico. Los dos modelos comparten el óptimo, así que el del split es la
+referencia contra la que se mide al monolítico: cuándo encontró una solución cercana, cuándo
+llegó al óptimo y cuánto le faltaba a su cota dual.
+\item {\bf Datos:} \type{experiments/opp_v5/studies/08_mono_frontier/},
+\type{09_shared_with_split/}, \type{10_mono_scale_axes/} y \type{11_mono_long_cap/}.
+\stopitemize
+\stopsection
+
+\startsection[title={Cómo leer los números}]
+\startitemize
+\item {\bf La máquina estaba ocupada.} Los estudios 08 y 09 corrieron mientras la suite de
+stress del split ocupaba unos dos núcleos. Los tiempos absolutos están inflados. Dentro de cada
+par, split y monolítico corrieron uno después del otro con la misma carga de fondo, así que la
+proporción entre los dos es comparable.
+\item {\bf Con un tope fijo, la carga también afecta el resultado del monolítico:} procesa menos
+nodos en el mismo tiempo, así que su brecha al corte sale algo peor que con la máquina sola.
+\item {\bf Los nodos siguen siendo deterministas} y son la medida justa para comparar
+dificultad (ver el documento del split).
+\stopitemize
+\stopsection
+
+\startsection[title={El modelo monolítico}]
+El monolítico resuelve en un solo MIP lo que el split resuelve en dos etapas: las rutas de todos
+los lotes, la asignación a pickers y la secuencia, con la misma función objetivo. La diferencia
+estructural está en el tiempo de ruta de cada lote, $R_b$. En el split es un dato: la Etapa 1
+lo fija en el mínimo antes de programar. En el monolítico es una variable, definida por los
+arcos elegidos, que entra en las restricciones big-M de duración y de no superposición.
+
+La equivalencia de los dos modelos se apoya en que la ruta más corta domina a cualquier otra.
+El split usa ese hecho de entrada; el monolítico tiene que descubrirlo durante la búsqueda, y
+puede explorar combinaciones de rutas que nunca pueden mejorar el objetivo.
+
+El split no usa ningún ajuste propio: los parámetros de SCIP, la función objetivo y las
+constantes big-M ($M$ y $M_{seq}$) son las mismas en los dos modelos. Lo que cambia son dos
+simplificaciones que la división habilita, porque con la ruta ya conocida el tiempo de ejecución
+de cada lote en cada picker es un número:
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH \eTH \bTH Split \eTH \bTH Monolítico \eTH \eTR
+\bTR \bTD Ruteo \eTD \bTD Etapa 1, un problema por lote \eTD \bTD dentro del mismo MIP \eTD \eTR
+\bTR \bTD Tiempo de ejecución ($t_{exec}$) \eTD \bTD dato \eTD \bTD variable, con dos restricciones big-M por par picker-lote \eTD \eTR
+\bTR \bTD Cadena de frío \eTD \bTD los pares no elegibles no existen \eTD \bTD cota sobre una variable \eTD \eTR
+\bTR \bTD Paralelismo \eTD \bTD opcional, con más de 4 lotes \eTD \bTD -- \eTD \eTR
+\eTABLE
+\blank[medium]
+
+Las dos filas del medio no son agregados: son consecuencia directa de dividir. El paralelismo
+no interviene en casi nada de lo medido acá: los puntos de 1 a 4 lotes no pasan el umbral, y con
+6 lotes en 7×7 la Etapa 1 dura segundos y el tiempo se va en la Etapa 2, que no se paraleliza.
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Instancia \eTH \bTH Split, Etapa 2 \eTH \bTH Monolítico \eTH \eTR
+\bTR \bTD 3 lotes, 7×7 \eTD \bTD 174 variables \eTD \bTD 1.191 variables, 1.725 restricciones \eTD \eTR
+\bTR \bTD 6 lotes, 5×5 \eTD \bTD 369 variables \eTD \bTD 1.353 variables, 2.460 restricciones \eTD \eTR
+\bTR \bTD 6 lotes, 7×7 \eTD \bTD 357 variables \eTD \bTD 2.391 variables, 3.486 restricciones \eTD \eTR
+\bTR \bTD 6 lotes, 10×10 \eTD \bTD 357 variables \eTD \bTD 4.695 variables, 6.474 restricciones \eTD \eTR
+\eTABLE
+\blank[medium]
+
+El split resuelve además una Etapa 1 por lote, que no está en la tabla.
+
+{\bf Control de equivalencia.} En los 40 puntos de los estudios 08 y 10 donde los dos modelos
+probaron el óptimo, 39 dieron exactamente el mismo objetivo. En el restante (3 lotes, 6×6) el monolítico
+reportó 26.709,36 contra 26.709,60 del split, un 0,0009\% menos, con los dos declarando
+optimalidad. La hipótesis, sin verificar, es numérica: con $M = 10^6$, un binario apenas
+fraccionario dentro de la tolerancia de integralidad afloja una restricción big-M en cerca de una
+unidad. Es la misma clase de problema de precisión que ya tienen los tests de OPP\_v2 y OPP\_v3.
+\stopsection
+
+\startsection[title={Estudio 08: la frontera del monolítico}]
+\placefigure[force][fig:frontera]{Resultado del monolítico en cada punto de la frontera. Azul: probó el óptimo (tiempo total); rojo: cortado a los 10 minutos (brecha al corte).}
+{%%FIG:frontera%%}
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Lotes \eTH \bTH Mayor grilla resuelta \eTH \bTH Primera grilla sin cerrar \eTH \bTH Split en ese punto \eTH \eTR
+\bTR \bTD 1 y 2 \eTD \bTD 7×7 \eTD \bTD -- \eTD \bTD -- \eTD \eTR
+\bTR \bTD 3 \eTD \bTD 6×6 (139 s) \eTD \bTD 7×7, brecha 11,4\% \eTD \bTD óptimo en 9,7 s \eTD \eTR
+\bTR \bTD 4 \eTD \bTD 5×5 (47 s) \eTD \bTD 6×6, brecha 13,2\% \eTD \bTD óptimo en 8,4 s \eTD \eTR
+\bTR \bTD 6 \eTD \bTD 3×3 (192 s) \eTD \bTD 5×5, brecha 3,0\% \eTD \bTD óptimo en 3,6 min \eTD \eTR
+\eTABLE
+\blank[medium]
+
+Las celdas \quote{infactible} son instancias sin solución en los dos modelos: en 4×4 un lote de
+26 órdenes pasa por casi todas las ubicaciones, y la restricción de un arco por vértice impide
+el camino (ver el documento del split).
+
+\placefigure[force][fig:ratio]{Cuántas veces más lento es el monolítico que el split sobre la misma instancia (escala logarítmica). Los círculos abiertos son cotas inferiores: el monolítico no terminó.}
+{%%FIG:ratio%%}
+
+\startitemize
+\item {\bf Con un lote, el monolítico es igual o más rápido.} No hay nada que coordinar entre
+lotes, y el split paga la preparación de dos etapas.
+\item {\bf Con dos o más lotes, la desventaja crece con la grilla.} Con 2 lotes, desde 5×5,
+el monolítico tarda entre 11 y 15 veces más; con 3 y 4 lotes llega a 27 veces antes de dejar de
+cerrar, y en los puntos cortados es al menos 59 y 68 veces.
+\item {\bf Con 6 lotes en una grilla chica, los dos modelos empatan} (177 s y 192 s en 3×3):
+casi todo el costo es secuenciar, y eso lo pagan los dos. Pero con la misma cantidad de lotes en
+5×5 el split sigue cerrando (3,6 min) y el monolítico no.
+\stopitemize
+\stopsection
+
+\startsection[title={Encontrar no es el problema; demostrar sí}]
+\placefigure[force][fig:trayectoria]{Evolución de la mejor solución del monolítico, como porcentaje sobre el óptimo, en los tres puntos donde no cerró.}
+{%%FIG:trayectoria%%}
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Punto \eTH \bTH A menos del 1\% \eTH \bTH Llegó al óptimo \eTH \bTH Cota dual al corte \eTH \bTH Nodos \eTH \eTR
+\bTR \bTD 3 lotes, 7×7 \eTD \bTD 41 s \eTD \bTD no \eTD \bTD 90,1\% del óptimo \eTD \bTD 45.924 \eTD \eTR
+\bTR \bTD 4 lotes, 6×6 \eTD \bTD 29 s \eTD \bTD no \eTD \bTD 88,5\% \eTD \bTD 90.695 \eTD \eTR
+\bTR \bTD 6 lotes, 5×5 \eTD \bTD 75 s \eTD \bTD 85 s \eTD \bTD 97,1\% \eTD \bTD 102.612 \eTD \eTR
+\eTABLE
+\blank[medium]
+
+En los tres casos el monolítico tenía una solución a menos del 1\% del óptimo antes de los
+75 segundos; con 6 lotes en 5×5 llegó al óptimo exacto a los 85 s. El resto de los 10 minutos
+lo pasó sin poder demostrarlo: su cota dual quedó entre el 88\% y el 97\% del óptimo. En esas
+mismas instancias, la Etapa 2 del split cerró con 27, 165 y 359.557 nodos.
+
+Tampoco es que la relajación del monolítico arranque peor. En casi todas las instancias, su
+cota en el nodo raíz es parecida a la de la Etapa 2 del split:
+
+\placefigure[force][fig:raiz]{Cota dual en el nodo raíz, como porcentaje del óptimo: Etapa 2 del split contra monolítico, sobre la misma instancia.}
+{%%FIG:raiz%%}
+
+La debilidad de la relajación es común: viene del secuenciamiento con big-M, que los dos modelos
+comparten. Lo que cambia es el costo de cerrarla. El monolítico tiene entre 2 y 13 veces más
+variables que la Etapa 2 del split, cada nodo le cuesta más, y además de secuenciar tiene que ramificar sobre las rutas.
+Hay tres excepciones claras, donde su cota raíz es mucho peor: la grilla 10×10 (39\% contra 81\%),
+las velocidades en bandas (41\%–53\% contra 76\%–87\%) y 6 lotes en 5×5 (48\% contra 87\%). En
+esos casos pesa justo el término que distingue a los dos modelos: en el monolítico, el tiempo de
+ejecución (parte fija más ruta dividida por la velocidad del picker) es una variable atada con
+big-M; en el split es un dato. Con grillas grandes la ruta es larga, con velocidades distintas
+el término cambia por picker, y con muchos lotes hay más pares picker-lote. Es una explicación
+consistente con los datos, pero no está verificada.
+\stopsection
+
+\startsection[title={Estudio 09: las mismas instancias que el split}]
+Las 15 instancias de los estudios 01, 02 y 03 del split, con el mismo límite de 300 s. El split
+obtuvo exactamente los mismos óptimos que en esos estudios, lo que confirma que son las mismas
+instancias.
+
+\placefigure[force][fig:compartidos]{Tiempo del split y del monolítico en los casos compartidos (escala logarítmica). o: órdenes por lote; p: pickers; g10: grilla 10×10; w: pesos 2/6 con esas órdenes por lote; vd: velocidades distintas; b2 y b3: dos y tres bandas. Sobre la barra del monolítico, su brecha al corte, o s/sol. si no encontró ninguna solución.}
+{%%FIG:compartidos%%}
+
+\startitemize
+\item {\bf El split resolvió las 15, entre 13 y 167 s. El monolítico no demostró ninguna.}
+\item {\bf En 7 de las 15, el monolítico no encontró ni una solución factible en 5 minutos:}
+22 y 26 órdenes por lote, la grilla 10×10, pesos 2/6 con 18 órdenes, velocidades distintas y
+las dos configuraciones en bandas. Con 6 lotes en 7×7, empieza a costarle también encontrar.
+\item {\bf Cuando encuentra, encuentra bien:} en los otros 8 casos su mejor solución quedó entre
+0,3\% y 1,9\% sobre el óptimo (4,9\% en uno).
+\item {\bf Las brechas grandes son de la cota, no de la solución:} con 3 a 5 pickers la cota
+dual queda entre el 49\% y el 59\% del óptimo, y la brecha reportada llega al 105\% aunque la solución
+esté a menos del 1\%.
+\stopitemize
+
+\placefigure[force][fig:cotas]{Dónde terminan las dos cotas del monolítico al cabo de 300 s, como proporción del óptimo del split.}
+{%%FIG:cotas%%}
+\stopsection
+
+\startsection[title={Estudio 10: qué factor le pega más al monolítico}]
+Las preguntas de los estudios 01, 02, 03 y 07 del split, a una escala que el monolítico
+resuelve: base de 4 lotes, 2 pickers, 26 órdenes por lote, grilla 5×5, pesos 4/4 y velocidades
+uniformes, moviendo un factor por vez. Tope de 10 minutos por modelo. En la base, el split
+tarda 7 s y el monolítico 17 s (2,4 veces). Corrió en paralelo con la suite de stress del split
+primero y con la del monolítico después.
+
+\placefigure[force][fig:m10_grilla]{Tiempo de los dos modelos según la grilla (escala logarítmica).}
+{%%FIG:m10_grilla%%}
+
+\placefigure[force][fig:m10_velocidades]{Tiempo de los dos modelos según las velocidades de la cuadrilla (escala logarítmica). 2P, 3P y 4P: cantidad de pickers.}
+{%%FIG:m10_velocidades%%}
+
+\placefigure[force][fig:m10_ordenes]{Tiempo de los dos modelos según las órdenes por lote, con pesos 4/4 y 2/6 (escala logarítmica).}
+{%%FIG:m10_ordenes%%}
+
+\placefigure[force][fig:m10_lotes]{Tiempo de los dos modelos según la cantidad de lotes (escala logarítmica).}
+{%%FIG:m10_lotes%%}
+
+\placefigure[force][fig:m10_pickers]{Tiempo de los dos modelos según la cantidad de pickers (escala logarítmica).}
+{%%FIG:m10_pickers%%}
+
+\placefigure[force][fig:m10_le1]{Tiempo de los dos modelos con y sin el límite de un arco por vértice (escala logarítmica).}
+{%%FIG:m10_le1%%}
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Factor \eTH \bTH Rango \eTH \bTH Monolítico / split \eTH \eTR
+\bTR \bTD Grilla \eTD \bTD 3×3 a 7×7 \eTD \bTD de 1,1 a 33 veces; en 7×7 no cierra (brecha 15,3\%) \eTD \eTR
+\bTR \bTD Velocidades \eTD \bTD 3 pickers, 2 y 3 bandas \eTD \bTD 52 veces; con 3 bandas no cierra (brecha 1,7\%) \eTD \eTR
+\bTR \bTD Órdenes por lote \eTD \bTD 10 a 50 \eTD \bTD 188 veces con 10, 64 con 14, entre 4 y 10 desde 18 \eTD \eTR
+\bTR \bTD Lotes \eTD \bTD 2 a 6 \eTD \bTD de 1,2 a 8 veces \eTD \eTR
+\bTR \bTD Pickers \eTD \bTD 1 a 4 \eTD \bTD entre 2,4 y 6,5 veces \eTD \eTR
+\bTR \bTD Pesos 2/6 \eTD \bTD 10, 26 y 50 órdenes \eTD \bTD sin efecto sistemático sobre el monolítico \eTD \eTR
+\bTR \bTD Sin $\leq 1$ \eTD \bTD 5×5 y 6×6 \eTD \bTD el monolítico tarda el doble en 5×5 y la mitad en 6×6 \eTD \eTR
+\eTABLE
+\blank[medium]
+
+\startitemize
+\item {\bf La grilla es el factor principal.} En 3×3 los dos modelos empatan; en 6×6 el
+monolítico ya es 33 veces más lento y en 7×7 no cierra, mientras el split tarda 14 s. Es el
+mismo eje que limita a la Etapa 1 del split, pero el monolítico lo sufre mucho antes.
+\item {\bf Las velocidades en bandas golpean al monolítico, no al split, a esta escala.} Con 3
+pickers, el split tarda lo mismo con o sin bandas (3 a 4 s); el monolítico pasa de 18 s a 146 s
+con 2 bandas y no cierra con 3. Con 4 pickers para 4 lotes (un lote por picker, sin
+secuenciamiento) el efecto casi desaparece. Con velocidades todas distintas y 2 pickers, apenas
+2,9 veces.
+\item {\bf Pocas órdenes por lote lo hunden.} Con 10 órdenes por lote el monolítico tarda 413 s
+contra 2 s del split. Es el efecto de objetivo aplanado que en el split encarecía la Etapa 2,
+mucho más fuerte en el monolítico.
+\item {\bf Lotes y pickers pesan menos}, y los pesos 2/6 no cambian nada de forma sistemática.
+\item {\bf Quitar el límite de un arco por vértice no es una palanca,} igual que en el split:
+en 5×5 el monolítico tarda el doble, en 6×6 la mitad, siempre con el mismo óptimo que el split.
+\stopitemize
+\stopsection
+
+\startsection[title={Tamaño y memoria no son el límite}]
+\placefigure[force][fig:tamano]{Tiempo del monolítico contra la cantidad de variables del modelo (escala logarítmica en los dos ejes).}
+{%%FIG:tamano%%}
+
+Los modelos son chicos: el mayor cortado tiene 4.695 variables. Con 10 minutos la memoria pico
+no pasó de 302 MB; con 40 minutos (estudio 11) llegó a 636 MB, porque el árbol de búsqueda sigue
+creciendo. La compilación con ZIMPL tardó menos de un segundo en todos los puntos. Hay modelos de
+1.191 variables que no cierran y de 2.199 que encuentran buenas soluciones: lo que decide es la
+estructura, no el tamaño. La única excepción posible son los escenarios heredados de 100×100
+de la suite de stress, donde el monolítico terminó sin resultado o con error; su memoria no se
+midió.
+\stopsection
+
+\startsection[title={Estudio 11: con 40 minutos}]
+Los tres puntos donde el monolítico dejó de cerrar a los 10 minutos, más la instancia exacta del
+test de stress 04, con el tope de la suite: 40 minutos.
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Punto \eTH \bTH Split \eTH \bTH Monolítico, 10 min \eTH \bTH Monolítico, 40 min \eTH \eTR
+\bTR \bTD 3 lotes, 7×7 \eTD \bTD óptimo en 8 s \eTD \bTD brecha 11,4\% \eTD \bTD brecha 11,0\% \eTD \eTR
+\bTR \bTD 4 lotes, 6×6 \eTD \bTD óptimo en 10 s \eTD \bTD brecha 13,2\% \eTD \bTD brecha 10,4\% \eTD \eTR
+\bTR \bTD 6 lotes, 5×5 \eTD \bTD óptimo en 3,9 min \eTD \bTD brecha 3,0\% \eTD \bTD óptimo en 32 min \eTD \eTR
+\bTR \bTD test 04 (6 lotes, 7×7) \eTD \bTD óptimo en 3,0 min \eTD \bTD -- \eTD \bTD brecha 143,5\% \eTD \eTR
+\eTABLE
+\blank[medium]
+
+\placefigure[force][fig:m11_cotas]{Cota dual del monolítico como porcentaje del óptimo: en el nodo raíz, a los 10 minutos y a los 40.}
+{%%FIG:m11_cotas%%}
+
+\placefigure[force][fig:m11_trayectoria]{Evolución de la mejor solución del monolítico durante los 40 minutos, como porcentaje sobre el óptimo (escala logarítmica en el tiempo).}
+{%%FIG:m11_trayectoria%%}
+
+\startitemize
+\item {\bf Cuadruplicar el tiempo casi no mueve la cota.} En 3 lotes en 7×7 y 4 lotes en 6×6
+quedó en el 90\% del óptimo, igual que a los 10 minutos, aunque el monolítico recorrió seis y
+cuatro veces más nodos. Las brechas bajaron poco: de 11,4\% a 11,0\% y de 13,2\% a 10,4\%.
+\item {\bf Las soluciones ya estaban.} En 3 lotes en 7×7 la mejor solución quedó a 0,05\% del
+óptimo; en 4 lotes en 6×6 encontró el óptimo exacto a los 972 s y no pudo demostrarlo en los 24
+minutos que le quedaban.
+\item {\bf Solo 6 lotes en 5×5 cerró}: el monolítico demostró el óptimo a los 32 minutos, 8 veces
+lo que tardó el split. Ahí la cota raíz era la más débil (48\%), pero la búsqueda sí la subió.
+\item {\bf Test 04: una solución casi óptima y una brecha del 143,5\%.} A los 511 s ya tenía una
+solución a menos del 1\% del óptimo, y terminó a 0,66\%. Pero su cota dual apenas pasó del 39\%
+en la raíz al 41\% a los 40 minutos. Es el mismo resultado que M0 a los 25 minutos (144,3\%): con
+esta instancia, el tiempo extra no cambia nada.
+\stopitemize
+\stopsection
+
+\startsection[title={Predicción y resultados de la suite}]
+Esta predicción se escribió con la suite de stress del monolítico corriendo y sin conocer sus
+resultados.
+
+\startitemize
+\item {\bf Test 04 (6 lotes, 7×7, perfil realista):} es la misma instancia que M0. En 25
+minutos, con otros tres puntos corriendo en paralelo, M0 terminó con una solución a menos del
+1\% del óptimo (79.822,91 contra 79.046,86) y una brecha del 144\%. Predicción: {\bf no termina en 40 minutos}, probablemente con una buena
+solución y una brecha grande.
+\item {\bf Tests 05 a 19:} todos tienen 6 o más lotes en grillas de 7×7 o mayores, o cuadrillas
+más grandes. El monolítico ya no cierra 6 lotes en 5×5 y, en la mitad de los casos con 6 lotes en
+7×7, no encuentra solución en 5 minutos. Predicción: {\bf ninguno termina}, y en varios puede no
+haber ni una solución que reportar.
+\item {\bf Tests heredados 01 a 03:} quedaron fuera de la predicción. Del 01 (100×100), la
+corrida anterior del monolítico terminó sin resultado.
+\stopitemize
+
+{\bf Lo que confirmó el estudio 11:} sobre la instancia exacta del test 04, el monolítico llega a
+los 40 minutos con una solución a 0,66\% del óptimo y una brecha del 143,5\%. La suite no registra
+brechas, solo el timeout, así que ese número es la predicción cuantitativa para el test 04.
+
+{\bf Resultados de la suite:} el monolítico terminó %%NUM:stress_mono_ok%% de los
+%%NUM:stress_total%% tests en 40 minutos; el split resolvió %%NUM:stress_split_ok%%, ninguno en
+más de %%NUM:stress_split_max%% minutos. Los tiempos del split son la duración completa del test
+(compilación, Etapa 1 con seis procesos y Etapa 2) y son un techo: la máquina entró en suspensión
+durante parte de esa corrida, y el tiempo suspendido cuenta en la duración pero no en el tope.
+
+%%TABLE:stress%%
+
+Los tests que el split tampoco termina son los del perfil realista con 8 lotes o más (12 a 14 y
+16 a 19), la grilla de 16×16 (08) y dos de los heredados (01 y 03). En esos casos los dos modelos llegan al
+tope; en todos los demás, la diferencia es la que ya mostraban los estudios: el split cierra en
+minutos instancias donde el monolítico no demuestra el óptimo en 40.
+\stopsection
+
+\startsection[title={Síntesis}]
+\startitemize[n]
+\item {\bf El monolítico deja de cerrar mucho antes que el split:} con el perfil realista, a
+los 10 minutos llega hasta 3 lotes en 6×6, 4 lotes en 5×5 y 6 lotes en 3×3. El split cierra
+todos esos puntos en segundos o pocos minutos.
+\item {\bf Su desventaja crece con la grilla y con los lotes:} de igual a 15 veces más lento con
+1 y 2 lotes; con 3 y 4, hasta 27 veces cuando todavía cierra y al menos 59 a 68 cuando no.
+\item {\bf Encuentra buenas soluciones rápido y no las puede demostrar:} a menos del 1\% del
+óptimo en segundos, con la cota dual estancada entre el 39\% y el 97\%.
+\item {\bf La cota raíz es parecida a la del split}, salvo con velocidades en bandas, grillas
+grandes o muchos lotes. La diferencia está en cuánto le cuesta cerrarla: más variables por nodo
+y rutas que el split ya fijó.
+\item {\bf Lo que más lo castiga es la grilla, las velocidades en bandas y las pocas órdenes por
+lote.} Lotes y pickers pesan menos, y ni los pesos asimétricos ni quitar el límite de un arco
+por vértice lo ayudan de forma sistemática.
+\item {\bf Más tiempo casi no ayuda:} de 10 a 40 minutos la cota dual no se movió en dos de los
+tres puntos que no cerraban, y en el test 04 pasó del 39\% al 41\%. La brecha de una corrida corta
+predice bien la de una larga.
+\item {\bf No es un problema de tamaño ni de memoria:} los modelos tienen pocos miles de
+variables y usan menos de 650 MB aun a los 40 minutos.
+\item {\bf En la suite de stress:} el monolítico termina %%NUM:stress_mono_ok%% de
+%%NUM:stress_total%% tests en 40 minutos, contra %%NUM:stress_split_ok%% del split.
+\stopitemize
+\stopsection
+
+\stoptext

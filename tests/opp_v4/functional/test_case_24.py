@@ -87,7 +87,7 @@ class TestOPPModelBridgeZIMPL(OPPTestCaseV4):
         )
         return status, var_values, location_graph, B, V
 
-    def test_bridge_disconnected_required_location(self):
+    def test_bridge_disconnected_required_location_with_capacities(self):
         V, _, B, _, _, _, _, _, _, _ = bridge_graph_disconnected()
         N = {f"O{i}" for i in range(1, 13)}
         a = {(n, v): 0 for n in N for v in V}

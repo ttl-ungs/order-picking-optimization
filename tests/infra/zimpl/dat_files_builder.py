@@ -1,5 +1,10 @@
 import os
 
+# Cold-chain limit written when a scenario does not define one: large enough
+# that no batch is ever excluded (same value the opp_v5_2_split migrated tests use to
+# neutralize the cold chain for the v4 baseline).
+DEFAULT_T_FRIO_MAX = 1_000_000_000.0
+
 
 def write_set_dat(path, elements):
     """Escribe un set de strings, uno por linea, entre comillas (formato ZIMPL)."""
@@ -48,6 +53,32 @@ def write_indexed_dat(path, data):
             f.write(f"{keys_str} {val}\n")
 
 
+def _compute_m_seq(scenario_data):
+    """Upper bound on max completion time: safe Big-M for non-overlap constraints.
+
+    M_seq must exceed the latest possible v_pb.  In the worst case every batch
+    is assigned to one picker sequentially, so v_pb_max ≈ Σ_b t_exec_pb_max.
+    We approximate max route time per batch as |V|*max(d_ij)*B_time (every
+    location visited) and use min(V_p) for the slowest picker.
+    """
+    B, N, V = scenario_data["B"], scenario_data["N"], scenario_data["V"]
+    C_n, Bn = scenario_data["C_n"], scenario_data["Bn"]
+    B_setup, B_picking, B_time = scenario_data["B_setup"], scenario_data["B_picking"], scenario_data["B_time"]
+    d_ij = scenario_data["d_ij"]
+    speeds = scenario_data.get("V_p") or {p: 1.0 for p in scenario_data["P"]}
+    min_speed = min(speeds.values())
+    max_dist = max(d_ij.values()) if d_ij else 1.0
+    max_service = max(scenario_data["S_i"].values()) if scenario_data["S_i"] else 0.0
+    max_route_time = B_time * len(V) * max_dist + len(V) * max_service
+
+    total = 0.0
+    for b in B:
+        fijo = B_setup + B_picking * sum(C_n[n] * Bn[(n, b)] for n in N)
+        total += fijo + max_route_time / min_speed
+
+    return max(500.0, round(total + 1.0))
+
+
 def build_dat_files(tmpdir, scenario_data):
     """
     Recibe un dict con todos los datos del escenario y escribe los .dat
@@ -62,6 +93,8 @@ def build_dat_files(tmpdir, scenario_data):
     write_scalar_dat(os.path.join(tmpdir, "depot.dat"), scenario_data["depot"])
     write_scalar_dat(os.path.join(tmpdir, "final.dat"), scenario_data["final"])
 
+    m_seq = _compute_m_seq(scenario_data)
+
     write_scalar_params(
         os.path.join(tmpdir, "params.dat"),
         W_full    = scenario_data["W_full"],
@@ -73,6 +106,7 @@ def build_dat_files(tmpdir, scenario_data):
         B_picking = scenario_data["B_picking"],
         C_v       = scenario_data["C_v"],
         M         = scenario_data["M"],
+        M_seq     = m_seq,
     )
 
     write_indexed_dat(os.path.join(tmpdir, "cap_n.dat"),       scenario_data["C_n"])
@@ -83,5 +117,15 @@ def build_dat_files(tmpdir, scenario_data):
     write_indexed_dat(os.path.join(tmpdir, "Bn.dat"),          scenario_data["Bn"])
     if "X_pb" in scenario_data:
         write_indexed_dat(os.path.join(tmpdir, "x_pb.dat"), scenario_data["X_pb"])
+
+    # Heterogeneous picker speed and cold-chain limit (read by opp_v5_1_mono and
+    # opp_v5_2_split's stage 2). Scenarios that predate them get V_p = 1.0 for
+    # every picker and no binding cold-chain limit, i.e. the original problem.
+    speeds = scenario_data.get("V_p") or {p: 1.0 for p in scenario_data["P"]}
+    write_indexed_dat(os.path.join(tmpdir, "velocities.dat"), speeds)
+    write_scalar_dat(
+        os.path.join(tmpdir, "frio.dat"),
+        scenario_data.get("T_frio_max", DEFAULT_T_FRIO_MAX),
+    )
 
     return tmpdir

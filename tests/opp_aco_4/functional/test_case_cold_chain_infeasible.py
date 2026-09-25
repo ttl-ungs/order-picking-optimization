@@ -20,7 +20,7 @@ class TestOPPAntColonyOptimization4Model3ColdChainInfeasible(OPPTestCase):
     Test ACO4-3: Cold chain infeasibility. Same batch/graph as ACO4-2, but
     with a single (slow) picker and a cold-chain deadline no picker can
     meet.
-    Purpose: mirrors opp_v5's B_sin_picker_elegible short-circuit - when
+    Purpose: mirrors opp_v5_2_split's B_sin_picker_elegible short-circuit - when
     every (picker, batch) pair violates T_frio_max, solve() must return
     "infeasible" up front instead of running ACO on an unsatisfiable
     instance.

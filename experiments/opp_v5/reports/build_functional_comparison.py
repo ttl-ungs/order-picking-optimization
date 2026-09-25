@@ -1,0 +1,262 @@
+"""Build docs/thesis/opp_v5_1_mono_vs_opp_v5_2_split_comparison.tex from the functional
+and stress runs.
+
+    python -m experiments.opp_v5.reports.build_functional_comparison
+
+Pairs every functional test the two models share (same test_case number and
+method), classifies the pairs, and fills the %%TABLE:id%%, %%FIG:id%% and
+%%NUM:id%% markers of functional_comparison_template.tex. Pairs that time out
+in both models (test_case_30's feasible variant) are listed but kept out of the
+statistics.
+Compile the output with `context` from docs/thesis/.
+"""
+import csv
+import math
+import os
+import re
+import statistics
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+
+from experiments.opp_v5.reports.charts import Chart, ROOT, es
+from experiments.opp_v5.reports.stress_suite import counts as stress_counts, stress_table
+
+TEMPLATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "functional_comparison_template.tex")
+OUT = os.path.join(ROOT, "docs", "thesis", "opp_v5_1_mono_vs_opp_v5_2_split_comparison.tex")
+SPLIT_RUN = "results/opp_v5_2_split/functional/output_opp_v5_2_split_functional_tests.csv"
+MONO_RUN = "results/opp_v5_1_mono/functional/output_opp_v5_1_mono_functional_tests.csv"
+
+# (test_case, fragment of the method name, short Spanish label for the tables)
+LABELS = [
+    ("01", "", "Capacidad básica"), ("02", "", "Dos pasillos"), ("03", "", "Dos pasillos (variante)"),
+    ("04", "", "Un punto por orden"), ("05", "", "Un pasillo"), ("06", "", "Dos rutas posibles"),
+    ("07", "", "Ubicaciones repetidas"), ("08", "", "Ubicaciones repetidas 2"),
+    ("09", "", "Dos ubicaciones"), ("10", "", "Dos misiones"), ("11", "", "Cuatro órdenes"),
+    ("13", "", "Dos períodos, grilla"), ("14", "", "Un período, grilla"),
+    ("15", "", "Tres órdenes, un picker"), ("16", "", "Seis órdenes, dos pickers"),
+    ("17", "", "Ruta ramificada"), ("18", "", "Ruta con desvío"),
+    ("19", "duplicate", "Ruta extendida, ubicación dup."), ("19", "penalties", "Ruta extendida, penalizaciones"),
+    ("19", "route", "Ruta extendida"), ("20", "", "Grilla multiubicación"), ("21", "", "Puente desconectado"),
+    ("22", "earliness", "Adelanto"), ("22", "tardiness", "Atraso"),
+    ("23", "longer_route", "Ruta larga al picker rápido"), ("23", "exported", "Rutas exportadas"),
+    ("24", "cold_chain", "Frío excluye al picker lento"), ("24", "preflight", "Chequeo previo de frío"),
+    ("25", "batch_infeasible", "Grilla: tamaño infactible"), ("25", "duplicate", "Grilla: ubicación dup."),
+    ("25", "multi_location", "Grilla multiubicación"), ("25", "bigger_than_cart", "Grilla: orden mayor al carro"),
+    ("25", "penalties_due_date", "Grilla: penalización por fecha"),
+    ("25", "equal_to_cart", "Grilla: orden igual al carro"), ("25", "shared", "Grilla: ubic. compartidas"),
+    ("26", "disconnected", "Puente desconectado"), ("26", "earliness", "Puente: adelanto"),
+    ("26", "shared", "Puente: ubic. compartidas"), ("26", "tardiness", "Puente: atraso"),
+    ("27", "", "Pesos distintos"), ("28", "", "Fechas ajustadas y holgadas"),
+    ("29", "", "Lote vacío permitido"), ("30", "infeasible", "Capacidades fraccionarias (infact.)"),
+    ("30", "feasible", "Capacidades fraccionarias"),
+    ("31", "multiple", "Orden en varios lotes"), ("31", "single", "Orden en un lote"),
+    ("32", "", "Orden excede el vehículo"),
+    ("33", "mixed", "Servicio mixto"), ("33", "one", "Servicio unitario"), ("33", "zero", "Servicio cero"),
+    ("34", "no_eligible", "Ningún picker elegible"), ("34", "exactly", "Frío justo en el límite"),
+    ("34", "formula", "Fórmula de velocidad"),
+    ("35", "each_batch", "Frío por lote, no por turno"), ("35", "tolerance", "Tolerancia de frío"),
+    ("35", "fixed_time", "La parte fija cuenta para el frío"),
+    ("36", "twice", "Rápido 2×: reparte los lotes"), ("36", "four_times", "Rápido 4×: hace los dos"),
+    ("36", "non_positive", "Velocidad no positiva"), ("36", "tardiness", "Atraso con velocidad 0,5"),
+    ("37", "delayed_while", "Demora a propósito"), ("37", "not_delayed", "Sin demora"),
+    ("38", "", "Pasillos sin salida ($\\leq 1$)"),
+]
+
+
+def label(num, method):
+    for n, fragment, text in LABELS:
+        if n == num and fragment in method:
+            return text
+    return method
+
+
+def load(path):
+    csv.field_size_limit(10**9)
+    with open(os.path.join(ROOT, path), encoding="utf-8", errors="replace") as fh:
+        rows = {}
+        for r in csv.DictReader(fh):
+            num, _, method = r["test"].split(".")
+            rows[(num.replace("test_case_", ""), method)] = r
+        return rows
+
+
+def num(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def case_ids(keys):
+    """'19a', '19b'... for test cases with several methods, in method order."""
+    ids, by_case = {}, {}
+    for key in sorted(keys):
+        by_case.setdefault(key[0], []).append(key)
+    for case, members in by_case.items():
+        for i, key in enumerate(members):
+            ids[key] = case + ("abcdefgh"[i] if len(members) > 1 else "")
+    return ids
+
+
+def table(header, rows, width="fit"):
+    lines = ["\\blank[medium]", f"\\bTABLE[split=yes, align=middle, frame=on, width={width}]",
+             "\\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]",
+             "\\bTR " + " ".join(f"\\bTH {h} \\eTH" for h in header) + " \\eTR"]
+    for r in rows:
+        lines.append("\\bTR " + " ".join(f"\\bTD {c} \\eTD" for c in r) + " \\eTR")
+    lines += ["\\eTABLE", "\\blank[medium]"]
+    return "\n".join(lines)
+
+
+def build():
+    split, mono = load(SPLIT_RUN), load(MONO_RUN)
+    shared = sorted(set(split) & set(mono))
+    ids = case_ids(set(split) | set(mono))
+
+    feasible, infeasible, validation, mono_failed, timed_out = [], [], [], [], []
+    for key in shared:
+        s, m = split[key], mono[key]
+        if s["status"] == "timeout" and m["status"] == "timeout":
+            timed_out.append(key)
+        elif s["status"] != "ok" or m["status"] != "ok":
+            if s["status"] == "ok":
+                mono_failed.append(key)
+        elif "non_positive" in key[1]:
+            validation.append(key)
+        elif num(m["obj_val"]) is None:
+            # Split records Stage 1's objective when its cold-chain pre-check stops
+            # before Stage 2 (test_case_34/35): infeasible in both all the same.
+            infeasible.append(key)
+        else:
+            feasible.append(key)
+    split_only = sorted(set(split) - set(mono))
+
+    t_m = [num(mono[k]["total_time"]) for k in feasible]
+    t_s = [num(split[k]["total_time"]) for k in feasible]
+    m_m = [num(mono[k]["model_time"]) for k in feasible]
+    m_s = [num(split[k]["model_time"]) for k in feasible]
+    ratios = {k: num(mono[k]["total_time"]) / num(split[k]["total_time"]) for k in feasible}
+    diffs = {k: abs(num(mono[k]["obj_val"]) - num(split[k]["obj_val"])) for k in feasible}
+    faster_mono = [k for k in feasible if ratios[k] < 1]
+    top = max(ratios, key=ratios.get)
+    mantissa, exponent = f"{max(diffs.values()):.2e}".split("e")
+    max_diff = f"{mantissa.replace('.', '{,}')} \\times 10^{{{int(exponent)}}}"
+
+    NUM = {
+        "pairs": str(len(shared)), "split_tests": str(len(split)), "mono_tests": str(len(mono)),
+        "feasible": str(len(feasible)), "infeasible": str(len(infeasible)),
+        "max_diff": max_diff,
+        "diff_cases": ", ".join(sorted({ids[k] for k, d in diffs.items() if d > 1e-9})),
+        "same_obj": str(sum(1 for d in diffs.values() if d <= 1e-4)),
+        "sum_ratio": es(sum(t_m) / sum(t_s), 1), "median_mono": es(statistics.median(t_m), 3),
+        "median_split": es(statistics.median(t_s), 3), "mono_faster": str(len(faster_mono)),
+        "mono_faster_min": es(min(ratios[k] for k in faster_mono), 2),
+        "mono_faster_max": es(max(ratios[k] for k in faster_mono), 2),
+        "top_ratio": es(ratios[top], 1), "top_case": ids[top],
+        "model_sum_ratio": es(sum(m_m) / sum(m_s), 0),
+        "model_median_ratio": es(statistics.median(m_m) / statistics.median(m_s), 1),
+    }
+
+    def stat_row(name, f_m, f_s, ratio=True, dec=3):
+        return [name, es(f_m, dec), es(f_s, dec), (es(f_m / f_s, 2) + "×") if ratio else "--"]
+
+    TABLE = {}
+    TABLE["coverage"] = table(["Métrica", "Mono", "Split"], [
+        ["Tests ejecutados", len(mono), len(split)],
+        ["Pares equivalentes", len(shared), len(shared)],
+        ["Factibles, con objetivo en ambos", len(feasible), len(feasible)],
+        ["Infactibles en ambos", len(infeasible), len(infeasible)],
+        ["Validación sin resolver", len(validation), len(validation)],
+        ["Timeout en ambos", len(timed_out), len(timed_out)],
+        ["Falla solo en mono", len(mono_failed), 0],
+        ["Solo en split", "--", len(split_only)],
+    ])
+    TABLE["times"] = table(["Métrica", "Mono (s)", "Split (s)", "Mono / split"], [
+        stat_row("\\type{total_time} suma", sum(t_m), sum(t_s), dec=1),
+        stat_row("\\type{total_time} promedio", statistics.mean(t_m), statistics.mean(t_s)),
+        stat_row("\\type{total_time} mediana", statistics.median(t_m), statistics.median(t_s)),
+        stat_row("\\type{total_time} desvío", statistics.stdev(t_m), statistics.stdev(t_s), ratio=False),
+        stat_row("\\type{total_time} mínimo", min(t_m), min(t_s)),
+        stat_row("\\type{total_time} máximo", max(t_m), max(t_s)),
+        stat_row("\\type{model_time} suma", sum(m_m), sum(m_s), dec=2),
+        stat_row("\\type{model_time} mediana", statistics.median(m_m), statistics.median(m_s)),
+    ])
+    TABLE["detail"] = table(["Caso", "Test", "Mono (s)", "Split (s)", "Mono / split", "Objetivo"], [
+        [ids[k], label(*k), es(num(mono[k]["total_time"]), 3), es(num(split[k]["total_time"]), 3),
+         es(ratios[k], 2) + "×", es(num(split[k]["obj_val"]), 1)] for k in feasible
+    ])
+    TABLE["infeasible"] = table(["Caso", "Test", "Mono (s)", "Split (s)", "Mono / split"], [
+        [ids[k], label(*k), es(num(mono[k]["total_time"]), 3), es(num(split[k]["total_time"]), 3),
+         es(num(mono[k]["total_time"]) / num(split[k]["total_time"]), 2) + "×"] for k in infeasible
+    ])
+    excluded = [[ids[k], label(*k), "falla", "ok", "Empate de rutas; ver sección siguiente"] for k in mono_failed]
+    excluded += [[ids[k], label(*k), "--", "ok", "La Etapa 1 sola; mono no tiene etapas"] for k in split_only]
+    excluded += [[ids[k], label(*k), "ok", "ok", "Rechaza la velocidad antes de resolver"] for k in validation]
+    excluded += [[ids[k], label(*k), "timeout", "timeout", "No termina en 25 min"] for k in timed_out]
+    TABLE["excluded"] = table(["Caso", "Test", "Mono", "Split", "Motivo"], excluded)
+
+    FIG = {}
+    # Scatter of total_time, log-log, with the y = x diagonal.
+    lo, hi = -1, 2
+    c = Chart(lo, hi, lo, hi, w=8, h=8)
+    ticks = [(e, lab) for e, lab in ((-1, "0,1"), (0, "1"), (1, "10"), (2, "100"))]
+    c.axes(ticks, ticks, "Split, tiempo total (s, escala log.)", "Mono, tiempo total (s, escala log.)")
+    c.line([(lo, lo), (hi, hi)], "blueline", dashed=True, markers=False)
+    for k in feasible:
+        c.dot(math.log10(num(split[k]["total_time"])), math.log10(num(mono[k]["total_time"])), "darkblue")
+    c.legend([("darkblue", "par factible", "dot"), ("blueline", "igual tiempo", "dashed")], x=0.3, top=7.85)
+    FIG["scatter"] = c.code()
+
+    # Ratio per pair, sorted, log scale.
+    order = sorted(feasible, key=ratios.get)
+    c = Chart(0, len(order), 0.4, 50, logy=True, w=14, h=6)
+    c.cat_axes([], [(0.5, "0,5"), (1, "1"), (2, "2"), (5, "5"), (10, "10"), (50, "50")], "Mono / split (tiempo total)")
+    c.hline(1, "igual", at="right")
+    for i, k in enumerate(order):
+        r = ratios[k]
+        lo_v, hi_v = (1, r) if r >= 1 else (r, 1)
+        c.bar(i + 0.15, 0.7, lo_v, hi_v, "darkblue" if r >= 1 else "redline")
+        if r >= 10:
+            c.note(i + 0.5, r, ids[k], "top", dy=0.03)
+    c.legend([("darkblue", "split más rápido", "box"), ("redline", "mono más rápido", "box")], x=0.3, top=5.85)
+    FIG["ratio"] = c.code()
+
+    # Solver time vs instance size (batches x locations), where the CSV records it.
+    sized = [k for k in feasible if num(split[k].get("B")) and num(split[k].get("V"))]
+    c = Chart(0, math.log10(200), -4, 2, h=6)
+    c.axes([(math.log10(v), str(v)) for v in (1, 2, 5, 10, 20, 50, 100, 200)],
+           [(e, lab) for e, lab in ((-4, "$10^{-4}$"), (-3, "$10^{-3}$"), (-2, "0,01"), (-1, "0,1"),
+                                    (0, "1"), (1, "10"), (2, "100"))],
+           "Lotes × ubicaciones (escala log.)", "Tiempo del solver (s, escala log.)")
+    for k in sized:
+        size = math.log10(num(split[k]["B"]) * num(split[k]["V"]))
+        for model, color in ((mono, "redline"), (split, "darkblue")):
+            c.dot(size, math.log10(max(num(model[k]["model_time"]), 1e-4)), color)
+    c.legend([("redline", "mono", "dot"), ("darkblue", "split (Etapa 2)", "dot")], x=0.3)
+    FIG["size"] = c.code()
+    NUM["sized"] = str(len(sized))
+
+    TABLE["stress"] = stress_table()
+    NUM.update(stress_counts())
+    return TABLE, FIG, NUM
+
+
+def main():
+    TABLE, FIG, NUM = build()
+    with open(TEMPLATE, encoding="utf-8") as fh:
+        text = fh.read()
+    for kind, values in (("TABLE", TABLE), ("FIG", FIG), ("NUM", NUM)):
+        used = set(re.findall(rf"%%{kind}:(\w+)%%", text))
+        missing = used - set(values)
+        assert not missing, (kind, missing)
+        for key, value in values.items():
+            text = text.replace(f"%%{kind}:{key}%%", str(value))
+    with open(OUT, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(text)
+    print(f"wrote {OUT}")
+    print({k: v for k, v in NUM.items()})
+
+
+if __name__ == "__main__":
+    main()

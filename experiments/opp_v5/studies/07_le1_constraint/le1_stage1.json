@@ -1,0 +1,8 @@
+[
+  {"label": "L25", "batches": 6, "pickers": 3, "orders_per_batch": 12, "side": 25, "weights": [4, 5], "closure": "0", "stage1_only": true, "hard_cap_s": 900},
+  {"label": "L25r", "batches": 6, "pickers": 3, "orders_per_batch": 12, "side": 25, "weights": [4, 5], "closure": "0", "stage1_only": true, "relax_le1": true, "hard_cap_s": 900},
+  {"label": "L13", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 13, "weights": [4, 5], "closure": "0", "stage1_only": true, "hard_cap_s": 900},
+  {"label": "L13r", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 13, "weights": [4, 5], "closure": "0", "stage1_only": true, "relax_le1": true, "hard_cap_s": 900},
+  {"label": "L7", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 7, "weights": [4, 5], "closure": "0", "stage1_only": true, "hard_cap_s": 900},
+  {"label": "L7r", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 7, "weights": [4, 5], "closure": "0", "stage1_only": true, "relax_le1": true, "hard_cap_s": 900}
+]

@@ -1,6 +1,7 @@
 import csv
 import multiprocessing
 import os
+import subprocess
 import sys
 import time
 import unittest
@@ -20,7 +21,7 @@ def _peak_rss_mb():
     AND native allocations like PySCIPOpt's C-level SCIP state) of the
     CURRENT process since it started, in MB. Read from the OS, not
     tracemalloc: tracemalloc only sees Python-level allocations, which would
-    badly UNDERSTATE memory for exact-model tests (opp_v2/v3/v4/v5), whose
+    badly UNDERSTATE memory for exact-model tests (opp_v2/v3/v4/v5_1_mono/v5_2_split), whose
     actual RAM cost is dominated by SCIP's native branch-and-bound state.
 
     Unix: getrusage's ru_maxrss (bytes on macOS/BSD, KB on Linux), normalized
@@ -32,33 +33,64 @@ def _peak_rss_mb():
         divisor = (1024 * 1024) if sys.platform == "darwin" else 1024
         return raw / divisor
     if sys.platform == "win32":
-        import ctypes
-        from ctypes import wintypes
+        # Guarded because this runs in _run_test_child BEFORE the result is
+        # queued: any exception here (e.g. `from ctypes import wintypes`
+        # failing under memory pressure) would kill the child silently and
+        # the parent would report "no_result", discarding the test's real
+        # outcome. A missing memory figure must never cost us the result.
+        try:
+            import ctypes
+            from ctypes import wintypes
 
-        class _ProcessMemoryCounters(ctypes.Structure):
-            _fields_ = [
-                ("cb", wintypes.DWORD),
-                ("PageFaultCount", wintypes.DWORD),
-                ("PeakWorkingSetSize", ctypes.c_size_t),
-                ("WorkingSetSize", ctypes.c_size_t),
-                ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
-                ("QuotaPagedPoolUsage", ctypes.c_size_t),
-                ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
-                ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
-                ("PagefileUsage", ctypes.c_size_t),
-                ("PeakPagefileUsage", ctypes.c_size_t),
-            ]
+            class _ProcessMemoryCounters(ctypes.Structure):
+                _fields_ = [
+                    ("cb", wintypes.DWORD),
+                    ("PageFaultCount", wintypes.DWORD),
+                    ("PeakWorkingSetSize", ctypes.c_size_t),
+                    ("WorkingSetSize", ctypes.c_size_t),
+                    ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                    ("PagefileUsage", ctypes.c_size_t),
+                    ("PeakPagefileUsage", ctypes.c_size_t),
+                ]
 
-        counters = _ProcessMemoryCounters()
-        counters.cb = ctypes.sizeof(counters)
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-        psapi = ctypes.WinDLL("psapi", use_last_error=True)
-        kernel32.GetCurrentProcess.restype = wintypes.HANDLE
-        psapi.GetProcessMemoryInfo.argtypes = [wintypes.HANDLE, ctypes.POINTER(_ProcessMemoryCounters), wintypes.DWORD]
-        psapi.GetProcessMemoryInfo.restype = wintypes.BOOL
-        if psapi.GetProcessMemoryInfo(kernel32.GetCurrentProcess(), ctypes.byref(counters), counters.cb):
-            return counters.PeakWorkingSetSize / (1024 * 1024)
+            counters = _ProcessMemoryCounters()
+            counters.cb = ctypes.sizeof(counters)
+            kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            psapi = ctypes.WinDLL("psapi", use_last_error=True)
+            kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+            psapi.GetProcessMemoryInfo.argtypes = [wintypes.HANDLE, ctypes.POINTER(_ProcessMemoryCounters), wintypes.DWORD]
+            psapi.GetProcessMemoryInfo.restype = wintypes.BOOL
+            if psapi.GetProcessMemoryInfo(kernel32.GetCurrentProcess(), ctypes.byref(counters), counters.cb):
+                return counters.PeakWorkingSetSize / (1024 * 1024)
+        except Exception:
+            return None
     return None
+
+
+def _kill_process_tree(pid):
+    """Kill `pid` and every descendant (best effort).
+
+    multiprocessing's terminate() kills only the direct child. A test that
+    spawned worker processes of its own -- opp_v5_2_split's Stage 1 runs a
+    ProcessPoolExecutor -- leaves them orphaned when a timeout terminates
+    that child: SCIP keeps optimizing in each worker with nobody left to
+    collect the result, holding RAM and burning CPU against every test that
+    runs afterwards, so one timeout silently corrupts the timings of all
+    the tests behind it.
+    """
+    if sys.platform == "win32":
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)], capture_output=True)
+        return
+    try:
+        import psutil
+
+        for child in psutil.Process(pid).children(recursive=True):
+            child.kill()
+    except Exception:
+        pass
 
 
 def _run_test_child(test_name, q):
@@ -150,6 +182,7 @@ class TestRunner:
                 print(
                     f"Test {test_id} exceeded timeout ({self.timeout_minutes} min). Terminating."
                 )
+                _kill_process_tree(p.pid)
                 p.terminate()
                 p.join()
                 results.append(

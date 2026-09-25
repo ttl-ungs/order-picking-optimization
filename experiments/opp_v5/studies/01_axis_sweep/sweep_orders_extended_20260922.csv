@@ -1,0 +1,4 @@
+orders_per_batch,orders,batch_locations_min,batch_locations_max,stage1_s,stage2_s,status,obj,bb_nodes,sla_pct,route_min,route_max
+32,192,22,25,22.67,12.36,optimal,128919.36,4325,64.6,64.0,72.0
+40,240,25,28,30.81,14.07,optimal,179952.32,4381,61.7,68.0,76.0
+50,300,29,33,46.46,14.05,optimal,253384.42,4477,59.3,72.0,84.0

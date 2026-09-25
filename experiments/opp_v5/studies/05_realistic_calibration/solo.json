@@ -1,0 +1,5 @@
+[
+  {"label": "R0nc", "model": "split", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 7, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "closure": "0", "hard_cap_s": 1500},
+  {"label": "A1nc", "model": "split", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 13, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "closure": "0", "hard_cap_s": 1500},
+  {"label": "A2nc", "model": "split", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 15, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "closure": "0", "hard_cap_s": 1500}
+]

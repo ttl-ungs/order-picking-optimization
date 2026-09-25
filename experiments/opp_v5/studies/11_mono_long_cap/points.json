@@ -1,0 +1,6 @@
+[
+  {"model": "pair", "orders_per_batch": 26, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 2430, "label": "B3S7", "batches": 3, "pickers": 2, "side": 7},
+  {"model": "pair", "orders_per_batch": 26, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 2430, "label": "B4S6", "batches": 4, "pickers": 2, "side": 6},
+  {"model": "pair", "orders_per_batch": 26, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 2430, "label": "B6S5", "batches": 6, "pickers": 3, "side": 5},
+  {"model": "pair", "orders_per_batch": 26, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 2430, "label": "test04", "batches": 6, "pickers": 3, "side": 7}
+]

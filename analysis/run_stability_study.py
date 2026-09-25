@@ -4,7 +4,7 @@ Seed-stability study: for each of the 6 Hill Climbing/ACO models
 instances (tests/shared_scenarios/instances.py) N_SEEDS times each,
 varying ONLY params.Seed, to measure how much a heuristic's own
 randomness moves its objective value around for the EXACT SAME problem --
-distinct from the optimality gap vs opp_v4/opp_v5 (analysis.metrics.
+distinct from the optimality gap vs opp_v4/opp_v5_2_split (analysis.metrics.
 quality_gap_table), which measures accuracy against a ground truth, not
 repeatability. A good algorithm should have low dispersion across seeds;
 Hill Climbing (steepest-descent from a single random-ish initial

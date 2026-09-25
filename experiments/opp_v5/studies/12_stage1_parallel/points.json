@@ -1,0 +1,10 @@
+[
+  {"model": "split", "stage1_only": true, "pickers": 3, "batches": 6, "orders_per_batch": 26, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500, "label": "S13-seq-1", "side": 13, "stage1_workers": 1},
+  {"model": "split", "stage1_only": true, "pickers": 3, "batches": 6, "orders_per_batch": 26, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500, "label": "S13-par-2", "side": 13, "stage1_workers": 6},
+  {"model": "split", "stage1_only": true, "pickers": 3, "batches": 6, "orders_per_batch": 26, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500, "label": "S13-par-3", "side": 13, "stage1_workers": 6},
+  {"model": "split", "stage1_only": true, "pickers": 3, "batches": 6, "orders_per_batch": 26, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500, "label": "S13-seq-4", "side": 13, "stage1_workers": 1},
+  {"model": "split", "stage1_only": true, "pickers": 3, "batches": 6, "orders_per_batch": 26, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500, "label": "S14-seq-1", "side": 14, "stage1_workers": 1},
+  {"model": "split", "stage1_only": true, "pickers": 3, "batches": 6, "orders_per_batch": 26, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500, "label": "S14-par-2", "side": 14, "stage1_workers": 6},
+  {"model": "split", "stage1_only": true, "pickers": 3, "batches": 6, "orders_per_batch": 26, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500, "label": "S14-par-3", "side": 14, "stage1_workers": 6},
+  {"model": "split", "stage1_only": true, "pickers": 3, "batches": 6, "orders_per_batch": 26, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500, "label": "S14-seq-4", "side": 14, "stage1_workers": 1}
+]

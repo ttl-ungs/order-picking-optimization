@@ -1,0 +1,1194 @@
+\setupcolors[state=start]
+\setupcolor[hex]
+\definecolor[darkblue][h=003366]
+\definecolor[darkgray][h=e6e6e6]
+\definecolor[redline][h=d9534f]
+\definecolor[blueline][h=5bc0de]
+\definecolor[greenline][h=5cb85c]
+
+\setuphead[section][style=\bfa, color=darkblue, before=\blank, after=\blank]
+\setuphead[subsection][style=\bf, color=black, before=\blank, after=\blank]
+\setuppapersize[A4][A4]
+\setupbodyfont[11pt]
+\setuplayout[width=middle, height=middle, topspace=2cm, bottomspace=2cm]
+\mainlanguage[es]
+
+\starttext
+\title{\bf Exploración de OPP\_v5\_1\_mono: dónde deja de cerrar el modelo monolítico}
+\blank[big]
+
+Este documento es el par de la exploración de OPP\_v5\_2\_split
+(\type{docs/thesis/opp_v5_2_split_exploration.tex}). Las preguntas son las mismas, pero
+aplicadas al modelo monolítico: dónde deja de probar el óptimo, qué lo encarece y cuánto más
+lento es que el split sobre la misma instancia. Reúne los estudios 08 a 11 y cierra con la suite
+de stress de los dos modelos.
+
+\blank
+
+\startsection[title={Alcance y fuentes}]
+\startitemize
+\item {\bf Estudio 08, frontera:} una grilla de lotes (1, 2, 3, 4 y 6) por lado de la grilla
+del depósito (3×3 a 7×7), con el perfil realista de los tests de stress: 26 órdenes por lote,
+pesos 4/5, dos bandas de velocidad (0,8 y 1,2) y dos lotes por picker. Tope de 10 minutos por
+modelo. Cuando el monolítico no prueba el óptimo en un lado, ese lado y los mayores se saltean
+para los lotes siguientes.
+\item {\bf Estudio 09, casos compartidos:} 15 instancias idénticas a las de los estudios 01,
+02 y 03 del split, con el mismo límite de SCIP (300 s). Todas tienen 6 lotes, en 7×7 salvo
+una en 10×10.
+\item {\bf Estudio 10, factores:} las preguntas de los estudios 01, 02, 03 y 07 del split a una
+escala que el monolítico resuelve (4 lotes, 2 pickers, 5×5), moviendo un factor por vez.
+\item {\bf Estudio 11, 40 minutos:} los tres puntos donde el monolítico dejó de cerrar en el
+estudio 08, más la instancia exacta del test de stress 04, con el mismo tope que la suite.
+\item {\bf Puntos previos:} T2 (estudio 04, 5×5 con 4 lotes) y M0 (estudio 05, la instancia
+exacta del test de stress 04).
+\item {\bf Todos los puntos son pares:} la misma instancia se resuelve primero con el split y
+después con el monolítico. Los dos modelos comparten el óptimo, así que el del split es la
+referencia contra la que se mide al monolítico: cuándo encontró una solución cercana, cuándo
+llegó al óptimo y cuánto le faltaba a su cota dual.
+\item {\bf Datos:} \type{experiments/opp_v5/studies/08_mono_frontier/},
+\type{09_shared_with_split/}, \type{10_mono_scale_axes/} y \type{11_mono_long_cap/}.
+\stopitemize
+\stopsection
+
+\startsection[title={Cómo leer los números}]
+\startitemize
+\item {\bf La máquina estaba ocupada.} Los estudios 08 y 09 corrieron mientras la suite de
+stress del split ocupaba unos dos núcleos. Los tiempos absolutos están inflados. Dentro de cada
+par, split y monolítico corrieron uno después del otro con la misma carga de fondo, así que la
+proporción entre los dos es comparable.
+\item {\bf Con un tope fijo, la carga también afecta el resultado del monolítico:} procesa menos
+nodos en el mismo tiempo, así que su brecha al corte sale algo peor que con la máquina sola.
+\item {\bf Los nodos siguen siendo deterministas} y son la medida justa para comparar
+dificultad (ver el documento del split).
+\stopitemize
+\stopsection
+
+\startsection[title={El modelo monolítico}]
+El monolítico resuelve en un solo MIP lo que el split resuelve en dos etapas: las rutas de todos
+los lotes, la asignación a pickers y la secuencia, con la misma función objetivo. La diferencia
+estructural está en el tiempo de ruta de cada lote, $R_b$. En el split es un dato: la Etapa 1
+lo fija en el mínimo antes de programar. En el monolítico es una variable, definida por los
+arcos elegidos, que entra en las restricciones big-M de duración y de no superposición.
+
+La equivalencia de los dos modelos se apoya en que la ruta más corta domina a cualquier otra.
+El split usa ese hecho de entrada; el monolítico tiene que descubrirlo durante la búsqueda, y
+puede explorar combinaciones de rutas que nunca pueden mejorar el objetivo.
+
+El split no usa ningún ajuste propio: los parámetros de SCIP, la función objetivo y las
+constantes big-M ($M$ y $M_{seq}$) son las mismas en los dos modelos. Lo que cambia son dos
+simplificaciones que la división habilita, porque con la ruta ya conocida el tiempo de ejecución
+de cada lote en cada picker es un número:
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH \eTH \bTH Split \eTH \bTH Monolítico \eTH \eTR
+\bTR \bTD Ruteo \eTD \bTD Etapa 1, un problema por lote \eTD \bTD dentro del mismo MIP \eTD \eTR
+\bTR \bTD Tiempo de ejecución ($t_{exec}$) \eTD \bTD dato \eTD \bTD variable, con dos restricciones big-M por par picker-lote \eTD \eTR
+\bTR \bTD Cadena de frío \eTD \bTD los pares no elegibles no existen \eTD \bTD cota sobre una variable \eTD \eTR
+\bTR \bTD Paralelismo \eTD \bTD opcional, con más de 4 lotes \eTD \bTD -- \eTD \eTR
+\eTABLE
+\blank[medium]
+
+Las dos filas del medio no son agregados: son consecuencia directa de dividir. El paralelismo
+no interviene en casi nada de lo medido acá: los puntos de 1 a 4 lotes no pasan el umbral, y con
+6 lotes en 7×7 la Etapa 1 dura segundos y el tiempo se va en la Etapa 2, que no se paraleliza.
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Instancia \eTH \bTH Split, Etapa 2 \eTH \bTH Monolítico \eTH \eTR
+\bTR \bTD 3 lotes, 7×7 \eTD \bTD 174 variables \eTD \bTD 1.191 variables, 1.725 restricciones \eTD \eTR
+\bTR \bTD 6 lotes, 5×5 \eTD \bTD 369 variables \eTD \bTD 1.353 variables, 2.460 restricciones \eTD \eTR
+\bTR \bTD 6 lotes, 7×7 \eTD \bTD 357 variables \eTD \bTD 2.391 variables, 3.486 restricciones \eTD \eTR
+\bTR \bTD 6 lotes, 10×10 \eTD \bTD 357 variables \eTD \bTD 4.695 variables, 6.474 restricciones \eTD \eTR
+\eTABLE
+\blank[medium]
+
+El split resuelve además una Etapa 1 por lote, que no está en la tabla.
+
+{\bf Control de equivalencia.} En los 40 puntos de los estudios 08 y 10 donde los dos modelos
+probaron el óptimo, 39 dieron exactamente el mismo objetivo. En el restante (3 lotes, 6×6) el monolítico
+reportó 26.709,36 contra 26.709,60 del split, un 0,0009\% menos, con los dos declarando
+optimalidad. La hipótesis, sin verificar, es numérica: con $M = 10^6$, un binario apenas
+fraccionario dentro de la tolerancia de integralidad afloja una restricción big-M en cerca de una
+unidad. Es la misma clase de problema de precisión que ya tienen los tests de OPP\_v2 y OPP\_v3.
+\stopsection
+
+\startsection[title={Estudio 08: la frontera del monolítico}]
+\placefigure[force][fig:frontera]{Resultado del monolítico en cada punto de la frontera. Azul: probó el óptimo (tiempo total); rojo: cortado a los 10 minutos (brecha al corte).}
+{\startMPcode
+numeric cw, ch; cw := 2.35cm; ch := 0.9cm;
+label.lft(textext("\tfx 1 lote"), (-0.1cm,4.050cm));
+fill (0.050cm,3.650cm)--(2.300cm,3.650cm)--(2.300cm,4.450cm)--(0.050cm,4.450cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 0,2 s") shifted (1.175cm,4.050cm) withcolor white;
+fill (2.400cm,3.650cm)--(4.650cm,3.650cm)--(4.650cm,4.450cm)--(2.400cm,4.450cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 0,2 s") shifted (3.525cm,4.050cm) withcolor white;
+fill (4.750cm,3.650cm)--(7.000cm,3.650cm)--(7.000cm,4.450cm)--(4.750cm,4.450cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 0,2 s") shifted (5.875cm,4.050cm) withcolor white;
+fill (7.100cm,3.650cm)--(9.350cm,3.650cm)--(9.350cm,4.450cm)--(7.100cm,4.450cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 0,2 s") shifted (8.225cm,4.050cm) withcolor white;
+fill (9.450cm,3.650cm)--(11.700cm,3.650cm)--(11.700cm,4.450cm)--(9.450cm,4.450cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 0,3 s") shifted (10.575cm,4.050cm) withcolor white;
+label.lft(textext("\tfx 2 lotes"), (-0.1cm,3.150cm));
+fill (0.050cm,2.750cm)--(2.300cm,2.750cm)--(2.300cm,3.550cm)--(0.050cm,3.550cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 0,3 s") shifted (1.175cm,3.150cm) withcolor white;
+draw (2.400cm,2.750cm)--(4.650cm,2.750cm)--(4.650cm,3.550cm)--(2.400cm,3.550cm)--cycle withpen pencircle scaled .8pt withcolor \MPcolor{blueline};
+draw textext("\tfx infactible") shifted (3.525cm,3.150cm) withcolor \MPcolor{blueline};
+fill (4.750cm,2.750cm)--(7.000cm,2.750cm)--(7.000cm,3.550cm)--(4.750cm,3.550cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 3,3 s") shifted (5.875cm,3.150cm) withcolor white;
+fill (7.100cm,2.750cm)--(9.350cm,2.750cm)--(9.350cm,3.550cm)--(7.100cm,3.550cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 13,5 s") shifted (8.225cm,3.150cm) withcolor white;
+fill (9.450cm,2.750cm)--(11.700cm,2.750cm)--(11.700cm,3.550cm)--(9.450cm,3.550cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 17,9 s") shifted (10.575cm,3.150cm) withcolor white;
+label.lft(textext("\tfx 3 lotes"), (-0.1cm,2.250cm));
+fill (0.050cm,1.850cm)--(2.300cm,1.850cm)--(2.300cm,2.650cm)--(0.050cm,2.650cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 4,7 s") shifted (1.175cm,2.250cm) withcolor white;
+draw (2.400cm,1.850cm)--(4.650cm,1.850cm)--(4.650cm,2.650cm)--(2.400cm,2.650cm)--cycle withpen pencircle scaled .8pt withcolor \MPcolor{blueline};
+draw textext("\tfx infactible") shifted (3.525cm,2.250cm) withcolor \MPcolor{blueline};
+fill (4.750cm,1.850cm)--(7.000cm,1.850cm)--(7.000cm,2.650cm)--(4.750cm,2.650cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 8,6 s") shifted (5.875cm,2.250cm) withcolor white;
+fill (7.100cm,1.850cm)--(9.350cm,1.850cm)--(9.350cm,2.650cm)--(7.100cm,2.650cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 138,8 s") shifted (8.225cm,2.250cm) withcolor white;
+fill (9.450cm,1.850cm)--(11.700cm,1.850cm)--(11.700cm,2.650cm)--(9.450cm,2.650cm)--cycle withcolor \MPcolor{redline};
+draw textext("\tfx brecha 11,3\%") shifted (10.575cm,2.250cm) withcolor white;
+label.lft(textext("\tfx 4 lotes"), (-0.1cm,1.350cm));
+fill (0.050cm,0.950cm)--(2.300cm,0.950cm)--(2.300cm,1.750cm)--(0.050cm,1.750cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 6,6 s") shifted (1.175cm,1.350cm) withcolor white;
+draw (2.400cm,0.950cm)--(4.650cm,0.950cm)--(4.650cm,1.750cm)--(2.400cm,1.750cm)--cycle withpen pencircle scaled .8pt withcolor \MPcolor{blueline};
+draw textext("\tfx infactible") shifted (3.525cm,1.350cm) withcolor \MPcolor{blueline};
+fill (4.750cm,0.950cm)--(7.000cm,0.950cm)--(7.000cm,1.750cm)--(4.750cm,1.750cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 47,1 s") shifted (5.875cm,1.350cm) withcolor white;
+fill (7.100cm,0.950cm)--(9.350cm,0.950cm)--(9.350cm,1.750cm)--(7.100cm,1.750cm)--cycle withcolor \MPcolor{redline};
+draw textext("\tfx brecha 13,2\%") shifted (8.225cm,1.350cm) withcolor white;
+draw (9.450cm,0.950cm)--(11.700cm,0.950cm)--(11.700cm,1.750cm)--(9.450cm,1.750cm)--cycle withpen pencircle scaled .5pt dashed evenly;
+draw textext("\tfx no se corrió") shifted (10.575cm,1.350cm);
+label.lft(textext("\tfx 6 lotes"), (-0.1cm,0.450cm));
+fill (0.050cm,0.050cm)--(2.300cm,0.050cm)--(2.300cm,0.850cm)--(0.050cm,0.850cm)--cycle withcolor \MPcolor{darkblue};
+draw textext("\tfx 192,1 s") shifted (1.175cm,0.450cm) withcolor white;
+draw (2.400cm,0.050cm)--(4.650cm,0.050cm)--(4.650cm,0.850cm)--(2.400cm,0.850cm)--cycle withpen pencircle scaled .8pt withcolor \MPcolor{blueline};
+draw textext("\tfx infactible") shifted (3.525cm,0.450cm) withcolor \MPcolor{blueline};
+fill (4.750cm,0.050cm)--(7.000cm,0.050cm)--(7.000cm,0.850cm)--(4.750cm,0.850cm)--cycle withcolor \MPcolor{redline};
+draw textext("\tfx brecha 3,0\%") shifted (5.875cm,0.450cm) withcolor white;
+draw (7.100cm,0.050cm)--(9.350cm,0.050cm)--(9.350cm,0.850cm)--(7.100cm,0.850cm)--cycle withpen pencircle scaled .5pt dashed evenly;
+draw textext("\tfx no se corrió") shifted (8.225cm,0.450cm);
+draw (9.450cm,0.050cm)--(11.700cm,0.050cm)--(11.700cm,0.850cm)--(9.450cm,0.850cm)--cycle withpen pencircle scaled .5pt dashed evenly;
+draw textext("\tfx no se corrió") shifted (10.575cm,0.450cm);
+label.bot(textext("\tfx 3×3"), (1.175cm,-0.05cm));
+label.bot(textext("\tfx 4×4"), (3.525cm,-0.05cm));
+label.bot(textext("\tfx 5×5"), (5.875cm,-0.05cm));
+label.bot(textext("\tfx 6×6"), (8.225cm,-0.05cm));
+label.bot(textext("\tfx 7×7"), (10.575cm,-0.05cm));
+\stopMPcode}
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Lotes \eTH \bTH Mayor grilla resuelta \eTH \bTH Primera grilla sin cerrar \eTH \bTH Split en ese punto \eTH \eTR
+\bTR \bTD 1 y 2 \eTD \bTD 7×7 \eTD \bTD -- \eTD \bTD -- \eTD \eTR
+\bTR \bTD 3 \eTD \bTD 6×6 (139 s) \eTD \bTD 7×7, brecha 11,4\% \eTD \bTD óptimo en 9,7 s \eTD \eTR
+\bTR \bTD 4 \eTD \bTD 5×5 (47 s) \eTD \bTD 6×6, brecha 13,2\% \eTD \bTD óptimo en 8,4 s \eTD \eTR
+\bTR \bTD 6 \eTD \bTD 3×3 (192 s) \eTD \bTD 5×5, brecha 3,0\% \eTD \bTD óptimo en 3,6 min \eTD \eTR
+\eTABLE
+\blank[medium]
+
+Las celdas \quote{infactible} son instancias sin solución en los dos modelos: en 4×4 un lote de
+26 órdenes pasa por casi todas las ubicaciones, y la restricción de un arco por vértice impide
+el camino (ver el documento del split).
+
+\placefigure[force][fig:ratio]{Cuántas veces más lento es el monolítico que el split sobre la misma instancia (escala logarítmica). Los círculos abiertos son cotas inferiores: el monolítico no terminó.}
+{\startMPcode
+numeric w, h; w := 11.0cm; h := 6cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+draw (1.100cm,0.000cm)--(1.100cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 3×3"), (1.100cm,-0.120cm));
+draw (3.300cm,0.000cm)--(3.300cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 4×4"), (3.300cm,-0.120cm));
+draw (5.500cm,0.000cm)--(5.500cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 5×5"), (5.500cm,-0.120cm));
+draw (7.700cm,0.000cm)--(7.700cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 6×6"), (7.700cm,-0.120cm));
+draw (9.900cm,0.000cm)--(9.900cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 7×7"), (9.900cm,-0.120cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,1"), (-0.120cm,0.000cm));
+draw (0.000cm,1.500cm)--(-0.120cm,1.500cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1"), (-0.120cm,1.500cm));
+draw (0.000cm,3.000cm)--(-0.120cm,3.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10"), (-0.120cm,3.000cm));
+draw (0.000cm,4.500cm)--(-0.120cm,4.500cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100"), (-0.120cm,4.500cm));
+draw (0.000cm,6.000cm)--(-0.120cm,6.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1.000"), (-0.120cm,6.000cm));
+label.bot(textext("Grilla"), (w/2,-0.85cm));
+label.lft(textext("Tiempo de mono / tiempo de split") rotated 90, (-1.25cm,h/2));
+draw (0.000cm,1.500cm)--(11.000cm,1.500cm) withpen pencircle scaled .5pt dashed evenly;
+label.lft(textext("\tfxx igual tiempo"), (10.900cm,1.300cm));
+draw (1.100cm,1.764cm)--(5.500cm,3.062cm)--(7.700cm,3.133cm)--(9.900cm,3.261cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.100cm,1.764cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (5.500cm,3.062cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (7.700cm,3.133cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (9.900cm,3.261cm) withcolor \MPcolor{darkblue};
+draw (1.100cm,1.750cm)--(5.500cm,2.032cm)--(7.700cm,3.652cm)--(9.900cm,4.154cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (1.100cm,1.750cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (5.500cm,2.032cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.700cm,3.652cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (9.900cm,4.154cm) withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (9.900cm,4.154cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.rt(textext("\tfxx $\geq$"), (10.000cm,4.154cm));
+draw (1.100cm,1.694cm)--(5.500cm,2.761cm)--(7.700cm,4.247cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{blueline};
+fill fullcircle scaled 4pt shifted (1.100cm,1.694cm) withcolor \MPcolor{blueline};
+fill fullcircle scaled 4pt shifted (5.500cm,2.761cm) withcolor \MPcolor{blueline};
+fill fullcircle scaled 4pt shifted (7.700cm,4.247cm) withcolor \MPcolor{blueline};
+draw fullcircle scaled 6pt shifted (7.700cm,4.247cm) withpen pencircle scaled 1pt withcolor \MPcolor{blueline};
+label.rt(textext("\tfxx $\geq$"), (7.800cm,4.247cm));
+draw (0.350cm,5.850cm)--(0.950cm,5.850cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx 2 lotes"), (1.050cm,5.850cm));
+draw (0.350cm,5.430cm)--(0.950cm,5.430cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline};
+label.rt(textext("\tfx 3 lotes"), (1.050cm,5.430cm));
+draw (0.350cm,5.010cm)--(0.950cm,5.010cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{blueline};
+label.rt(textext("\tfx 4 lotes"), (1.050cm,5.010cm));
+draw fullcircle scaled 6pt shifted (0.650cm,4.590cm) withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx mono cortado a los 10 min (cota inferior)"), (1.050cm,4.590cm));
+\stopMPcode}
+
+\startitemize
+\item {\bf Con un lote, el monolítico es igual o más rápido.} No hay nada que coordinar entre
+lotes, y el split paga la preparación de dos etapas.
+\item {\bf Con dos o más lotes, la desventaja crece con la grilla.} Con 2 lotes, desde 5×5,
+el monolítico tarda entre 11 y 15 veces más; con 3 y 4 lotes llega a 27 veces antes de dejar de
+cerrar, y en los puntos cortados es al menos 59 y 68 veces.
+\item {\bf Con 6 lotes en una grilla chica, los dos modelos empatan} (177 s y 192 s en 3×3):
+casi todo el costo es secuenciar, y eso lo pagan los dos. Pero con la misma cantidad de lotes en
+5×5 el split sigue cerrando (3,6 min) y el monolítico no.
+\stopitemize
+\stopsection
+
+\startsection[title={Encontrar no es el problema; demostrar sí}]
+\placefigure[force][fig:trayectoria]{Evolución de la mejor solución del monolítico, como porcentaje sobre el óptimo, en los tres puntos donde no cerró.}
+{\startMPcode
+numeric w, h; w := 11.0cm; h := 5.5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+draw (0.000cm,0.000cm)--(0.000cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 1"), (0.000cm,-0.120cm));
+draw (3.959cm,0.000cm)--(3.959cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 10"), (3.959cm,-0.120cm));
+draw (7.919cm,0.000cm)--(7.919cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 100"), (7.919cm,-0.120cm));
+draw (11.000cm,0.000cm)--(11.000cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 600"), (11.000cm,-0.120cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0\%"), (-0.120cm,0.000cm));
+draw (0.000cm,1.375cm)--(-0.120cm,1.375cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 5\%"), (-0.120cm,1.375cm));
+draw (0.000cm,2.750cm)--(-0.120cm,2.750cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10\%"), (-0.120cm,2.750cm));
+draw (0.000cm,4.125cm)--(-0.120cm,4.125cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 15\%"), (-0.120cm,4.125cm));
+draw (0.000cm,5.500cm)--(-0.120cm,5.500cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 20\%"), (-0.120cm,5.500cm));
+label.bot(textext("Segundos (escala logarítmica)"), (w/2,-0.85cm));
+label.lft(textext("Mejor solución sobre el óptimo") rotated 90, (-1.25cm,h/2));
+draw (0.000cm,4.181cm)--(6.162cm,4.181cm)--(6.162cm,4.095cm)--(6.255cm,4.095cm)--(6.255cm,3.912cm)--(6.255cm,3.912cm)--(6.255cm,0.417cm)--(6.255cm,0.417cm)--(6.255cm,0.369cm)--(6.386cm,0.369cm)--(6.386cm,0.119cm)--(6.546cm,0.119cm)--(6.546cm,0.119cm)--(10.787cm,0.119cm)--(10.787cm,0.076cm)--(10.912cm,0.076cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (0.000cm,4.181cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.162cm,4.095cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.255cm,3.912cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.255cm,0.417cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.255cm,0.369cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.386cm,0.119cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.546cm,0.119cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (10.787cm,0.076cm) withcolor \MPcolor{darkblue};
+draw (0.000cm,4.827cm)--(5.730cm,4.827cm)--(5.730cm,4.679cm)--(5.790cm,4.679cm)--(5.790cm,1.639cm)--(5.790cm,1.639cm)--(5.790cm,1.323cm)--(5.790cm,1.323cm)--(5.790cm,0.238cm)--(6.013cm,0.238cm)--(6.013cm,0.145cm)--(6.013cm,0.145cm)--(6.013cm,0.115cm)--(7.514cm,0.115cm)--(7.514cm,0.095cm)--(7.514cm,0.095cm)--(7.514cm,0.095cm)--(7.719cm,0.095cm)--(7.719cm,0.088cm)--(7.776cm,0.088cm)--(7.776cm,0.078cm)--(10.494cm,0.078cm)--(10.494cm,0.046cm)--(10.911cm,0.046cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (0.000cm,4.827cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (5.730cm,4.679cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (5.790cm,1.639cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (5.790cm,1.323cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (5.790cm,0.238cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (6.013cm,0.145cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (6.013cm,0.115cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.514cm,0.095cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.514cm,0.095cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.719cm,0.088cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.776cm,0.078cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (10.494cm,0.046cm) withcolor \MPcolor{redline};
+draw (7.306cm,1.907cm)--(7.330cm,1.907cm)--(7.330cm,1.020cm)--(7.330cm,1.020cm)--(7.330cm,0.611cm)--(7.424cm,0.611cm)--(7.424cm,0.237cm)--(7.639cm,0.237cm)--(7.639cm,0.000cm)--(8.831cm,0.000cm)--(8.831cm,0.000cm)--(10.210cm,0.000cm)--(10.210cm,-0.000cm)--(10.913cm,-0.000cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{blueline};
+fill fullcircle scaled 4pt shifted (7.306cm,1.907cm) withcolor \MPcolor{blueline};
+fill fullcircle scaled 4pt shifted (7.330cm,1.020cm) withcolor \MPcolor{blueline};
+fill fullcircle scaled 4pt shifted (7.330cm,0.611cm) withcolor \MPcolor{blueline};
+fill fullcircle scaled 4pt shifted (7.424cm,0.237cm) withcolor \MPcolor{blueline};
+fill fullcircle scaled 4pt shifted (7.639cm,0.000cm) withcolor \MPcolor{blueline};
+fill fullcircle scaled 4pt shifted (8.831cm,0.000cm) withcolor \MPcolor{blueline};
+fill fullcircle scaled 4pt shifted (10.210cm,-0.000cm) withcolor \MPcolor{blueline};
+draw (6.500cm,5.350cm)--(7.100cm,5.350cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx 3 lotes, 7×7"), (7.200cm,5.350cm));
+draw (6.500cm,4.930cm)--(7.100cm,4.930cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline};
+label.rt(textext("\tfx 4 lotes, 6×6"), (7.200cm,4.930cm));
+draw (6.500cm,4.510cm)--(7.100cm,4.510cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{blueline};
+label.rt(textext("\tfx 6 lotes, 5×5"), (7.200cm,4.510cm));
+\stopMPcode}
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Punto \eTH \bTH A menos del 1\% \eTH \bTH Llegó al óptimo \eTH \bTH Cota dual al corte \eTH \bTH Nodos \eTH \eTR
+\bTR \bTD 3 lotes, 7×7 \eTD \bTD 41 s \eTD \bTD no \eTD \bTD 90,1\% del óptimo \eTD \bTD 45.924 \eTD \eTR
+\bTR \bTD 4 lotes, 6×6 \eTD \bTD 29 s \eTD \bTD no \eTD \bTD 88,5\% \eTD \bTD 90.695 \eTD \eTR
+\bTR \bTD 6 lotes, 5×5 \eTD \bTD 75 s \eTD \bTD 85 s \eTD \bTD 97,1\% \eTD \bTD 102.612 \eTD \eTR
+\eTABLE
+\blank[medium]
+
+En los tres casos el monolítico tenía una solución a menos del 1\% del óptimo antes de los
+75 segundos; con 6 lotes en 5×5 llegó al óptimo exacto a los 85 s. El resto de los 10 minutos
+lo pasó sin poder demostrarlo: su cota dual quedó entre el 88\% y el 97\% del óptimo. En esas
+mismas instancias, la Etapa 2 del split cerró con 27, 165 y 359.557 nodos.
+
+Tampoco es que la relajación del monolítico arranque peor. En casi todas las instancias, su
+cota en el nodo raíz es parecida a la de la Etapa 2 del split:
+
+\placefigure[force][fig:raiz]{Cota dual en el nodo raíz, como porcentaje del óptimo: Etapa 2 del split contra monolítico, sobre la misma instancia.}
+{\startMPcode
+numeric w, h; w := 8cm; h := 8cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+draw (0.000cm,0.000cm)--(0.000cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 30\%"), (0.000cm,-0.120cm));
+draw (2.286cm,0.000cm)--(2.286cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 50\%"), (2.286cm,-0.120cm));
+draw (4.571cm,0.000cm)--(4.571cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 70\%"), (4.571cm,-0.120cm));
+draw (6.857cm,0.000cm)--(6.857cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 90\%"), (6.857cm,-0.120cm));
+draw (8.000cm,0.000cm)--(8.000cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 100\%"), (8.000cm,-0.120cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 30\%"), (-0.120cm,0.000cm));
+draw (0.000cm,2.286cm)--(-0.120cm,2.286cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 50\%"), (-0.120cm,2.286cm));
+draw (0.000cm,4.571cm)--(-0.120cm,4.571cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 70\%"), (-0.120cm,4.571cm));
+draw (0.000cm,6.857cm)--(-0.120cm,6.857cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 90\%"), (-0.120cm,6.857cm));
+draw (0.000cm,8.000cm)--(-0.120cm,8.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100\%"), (-0.120cm,8.000cm));
+label.bot(textext("Cota raíz de split (Etapa 2)"), (w/2,-0.85cm));
+label.lft(textext("Cota raíz de mono") rotated 90, (-1.25cm,h/2));
+draw (0.000cm,0.000cm)--(8.000cm,8.000cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{blueline} dashed evenly;
+fill fullcircle scaled 4pt shifted (7.954cm,7.863cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (7.966cm,7.954cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.623cm,6.720cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.499cm,5.920cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.396cm,6.891cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.577cm,6.594cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.274cm,6.560cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.731cm,7.280cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.376cm,6.526cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (5.239cm,5.794cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.533cm,2.023cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (7.834cm,7.337cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (6.957cm,6.640cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (6.646cm,6.560cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (6.135cm,4.937cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (5.847cm,5.520cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (2.681cm,2.743cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (2.185cm,2.194cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (1.947cm,2.103cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (5.858cm,1.040cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.414cm,7.189cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (6.615cm,6.034cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (6.022cm,6.011cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (6.128cm,6.114cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (6.528cm,2.640cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (5.302cm,1.234cm) withcolor \MPcolor{redline};
+label.rt(textext("\tfxx 10×10"), (5.958cm,1.040cm));
+label.rt(textext("\tfxx 3 bandas"), (5.402cm,1.234cm));
+label.rt(textext("\tfxx 2 bandas"), (6.628cm,2.640cm));
+label.rt(textext("\tfxx 6 lotes, 5×5"), (6.633cm,2.023cm));
+fill fullcircle scaled 4pt shifted (0.600cm,7.850cm) withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx estudio 08"), (1.000cm,7.850cm));
+fill fullcircle scaled 4pt shifted (0.600cm,7.430cm) withcolor \MPcolor{redline};
+label.rt(textext("\tfx estudio 09"), (1.000cm,7.430cm));
+draw (0.300cm,7.010cm)--(0.900cm,7.010cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{blueline} dashed evenly;
+label.rt(textext("\tfx igual cota"), (1.000cm,7.010cm));
+\stopMPcode}
+
+La debilidad de la relajación es común: viene del secuenciamiento con big-M, que los dos modelos
+comparten. Lo que cambia es el costo de cerrarla. El monolítico tiene entre 2 y 13 veces más
+variables que la Etapa 2 del split, cada nodo le cuesta más, y además de secuenciar tiene que ramificar sobre las rutas.
+Hay tres excepciones claras, donde su cota raíz es mucho peor: la grilla 10×10 (39\% contra 81\%),
+las velocidades en bandas (41\%–53\% contra 76\%–87\%) y 6 lotes en 5×5 (48\% contra 87\%). En
+esos casos pesa justo el término que distingue a los dos modelos: en el monolítico, el tiempo de
+ejecución (parte fija más ruta dividida por la velocidad del picker) es una variable atada con
+big-M; en el split es un dato. Con grillas grandes la ruta es larga, con velocidades distintas
+el término cambia por picker, y con muchos lotes hay más pares picker-lote. Es una explicación
+consistente con los datos, pero no está verificada.
+\stopsection
+
+\startsection[title={Estudio 09: las mismas instancias que el split}]
+Las 15 instancias de los estudios 01, 02 y 03 del split, con el mismo límite de 300 s. El split
+obtuvo exactamente los mismos óptimos que en esos estudios, lo que confirma que son las mismas
+instancias.
+
+\placefigure[force][fig:compartidos]{Tiempo del split y del monolítico en los casos compartidos (escala logarítmica). o: órdenes por lote; p: pickers; g10: grilla 10×10; w: pesos 2/6 con esas órdenes por lote; vd: velocidades distintas; b2 y b3: dos y tres bandas. Sobre la barra del monolítico, su brecha al corte, o s/sol. si no encontró ninguna solución.}
+{\startMPcode
+numeric w, h; w := 14cm; h := 6cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+label.bot(textext("\tfx o10"), (0.467cm,-0.100cm));
+label.bot(textext("\tfx o14"), (1.400cm,-0.100cm));
+label.bot(textext("\tfx o18"), (2.333cm,-0.100cm));
+label.bot(textext("\tfx o22"), (3.267cm,-0.100cm));
+label.bot(textext("\tfx o26"), (4.200cm,-0.100cm));
+label.bot(textext("\tfx p3"), (5.133cm,-0.100cm));
+label.bot(textext("\tfx p4"), (6.067cm,-0.100cm));
+label.bot(textext("\tfx p5"), (7.000cm,-0.100cm));
+label.bot(textext("\tfx g10"), (7.933cm,-0.100cm));
+label.bot(textext("\tfx w10"), (8.867cm,-0.100cm));
+label.bot(textext("\tfx w18"), (9.800cm,-0.100cm));
+label.bot(textext("\tfx w26"), (10.733cm,-0.100cm));
+label.bot(textext("\tfx vd"), (11.667cm,-0.100cm));
+label.bot(textext("\tfx b2"), (12.600cm,-0.100cm));
+label.bot(textext("\tfx b3"), (13.533cm,-0.100cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1"), (-0.120cm,0.000cm));
+draw (0.000cm,2.000cm)--(-0.120cm,2.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10"), (-0.120cm,2.000cm));
+draw (0.000cm,4.000cm)--(-0.120cm,4.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100"), (-0.120cm,4.000cm));
+draw (0.000cm,6.000cm)--(-0.120cm,6.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1.000"), (-0.120cm,6.000cm));
+label.lft(textext("Tiempo (s)") rotated 90, (-1.25cm,h/2));
+fill (0.112cm,0.000cm)--(0.448cm,0.000cm)--(0.448cm,3.533cm)--(0.112cm,3.533cm)--cycle withcolor \MPcolor{darkblue};
+draw (0.485cm,0.000cm)--(0.821cm,0.000cm)--(0.821cm,4.953cm)--(0.485cm,4.953cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 6\%"), (0.653cm,4.973cm));
+fill (1.045cm,0.000cm)--(1.381cm,0.000cm)--(1.381cm,2.539cm)--(1.045cm,2.539cm)--cycle withcolor \MPcolor{darkblue};
+draw (1.419cm,0.000cm)--(1.755cm,0.000cm)--(1.755cm,4.953cm)--(1.419cm,4.953cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 13\%"), (1.587cm,4.973cm));
+fill (1.979cm,0.000cm)--(2.315cm,0.000cm)--(2.315cm,2.267cm)--(1.979cm,2.267cm)--cycle withcolor \MPcolor{darkblue};
+draw (2.352cm,0.000cm)--(2.688cm,0.000cm)--(2.688cm,4.954cm)--(2.352cm,4.954cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 15\%"), (2.520cm,4.974cm));
+fill (2.912cm,0.000cm)--(3.248cm,0.000cm)--(3.248cm,2.292cm)--(2.912cm,2.292cm)--cycle withcolor \MPcolor{darkblue};
+draw (3.285cm,0.000cm)--(3.621cm,0.000cm)--(3.621cm,4.955cm)--(3.285cm,4.955cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx s/sol."), (3.453cm,4.975cm));
+fill (3.845cm,0.000cm)--(4.181cm,0.000cm)--(4.181cm,2.553cm)--(3.845cm,2.553cm)--cycle withcolor \MPcolor{darkblue};
+draw (4.219cm,0.000cm)--(4.555cm,0.000cm)--(4.555cm,4.955cm)--(4.219cm,4.955cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx s/sol."), (4.387cm,4.975cm));
+fill (4.779cm,0.000cm)--(5.115cm,0.000cm)--(5.115cm,2.782cm)--(4.779cm,2.782cm)--cycle withcolor \MPcolor{darkblue};
+draw (5.152cm,0.000cm)--(5.488cm,0.000cm)--(5.488cm,4.954cm)--(5.152cm,4.954cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 81\%"), (5.320cm,4.974cm));
+fill (5.712cm,0.000cm)--(6.048cm,0.000cm)--(6.048cm,3.191cm)--(5.712cm,3.191cm)--cycle withcolor \MPcolor{darkblue};
+draw (6.085cm,0.000cm)--(6.421cm,0.000cm)--(6.421cm,4.954cm)--(6.085cm,4.954cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 105\%"), (6.253cm,4.974cm));
+fill (6.645cm,0.000cm)--(6.981cm,0.000cm)--(6.981cm,2.311cm)--(6.645cm,2.311cm)--cycle withcolor \MPcolor{darkblue};
+draw (7.019cm,0.000cm)--(7.355cm,0.000cm)--(7.355cm,4.955cm)--(7.019cm,4.955cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 79\%"), (7.187cm,4.975cm));
+fill (7.579cm,0.000cm)--(7.915cm,0.000cm)--(7.915cm,3.306cm)--(7.579cm,3.306cm)--cycle withcolor \MPcolor{darkblue};
+draw (7.952cm,0.000cm)--(8.288cm,0.000cm)--(8.288cm,4.956cm)--(7.952cm,4.956cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx s/sol."), (8.120cm,4.976cm));
+fill (8.512cm,0.000cm)--(8.848cm,0.000cm)--(8.848cm,2.796cm)--(8.512cm,2.796cm)--cycle withcolor \MPcolor{darkblue};
+draw (8.885cm,0.000cm)--(9.221cm,0.000cm)--(9.221cm,4.953cm)--(8.885cm,4.953cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 4\%"), (9.053cm,4.973cm));
+fill (9.445cm,0.000cm)--(9.781cm,0.000cm)--(9.781cm,2.491cm)--(9.445cm,2.491cm)--cycle withcolor \MPcolor{darkblue};
+draw (9.819cm,0.000cm)--(10.155cm,0.000cm)--(10.155cm,4.954cm)--(9.819cm,4.954cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx s/sol."), (9.987cm,4.974cm));
+fill (10.379cm,0.000cm)--(10.715cm,0.000cm)--(10.715cm,2.235cm)--(10.379cm,2.235cm)--cycle withcolor \MPcolor{darkblue};
+draw (10.752cm,0.000cm)--(11.088cm,0.000cm)--(11.088cm,4.955cm)--(10.752cm,4.955cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 23\%"), (10.920cm,4.975cm));
+fill (11.312cm,0.000cm)--(11.648cm,0.000cm)--(11.648cm,2.451cm)--(11.312cm,2.451cm)--cycle withcolor \MPcolor{darkblue};
+draw (11.685cm,0.000cm)--(12.021cm,0.000cm)--(12.021cm,4.953cm)--(11.685cm,4.953cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx s/sol."), (11.853cm,4.973cm));
+fill (12.245cm,0.000cm)--(12.581cm,0.000cm)--(12.581cm,4.445cm)--(12.245cm,4.445cm)--cycle withcolor \MPcolor{darkblue};
+draw (12.619cm,0.000cm)--(12.955cm,0.000cm)--(12.955cm,4.955cm)--(12.619cm,4.955cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx s/sol."), (12.787cm,4.975cm));
+fill (13.179cm,0.000cm)--(13.515cm,0.000cm)--(13.515cm,4.320cm)--(13.179cm,4.320cm)--cycle withcolor \MPcolor{darkblue};
+draw (13.552cm,0.000cm)--(13.888cm,0.000cm)--(13.888cm,4.954cm)--(13.552cm,4.954cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx s/sol."), (13.720cm,4.974cm));
+fill (0.300cm,6.880cm)--(0.700cm,6.880cm)--(0.700cm,7.120cm)--(0.300cm,7.120cm)--cycle withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx split: óptimo"), (0.900cm,7.000cm));
+draw (0.300cm,6.460cm)--(0.700cm,6.460cm)--(0.700cm,6.700cm)--(0.300cm,6.700cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.rt(textext("\tfx mono: cortado a los 300 s (etiqueta: brecha)"), (0.900cm,6.580cm));
+\stopMPcode}
+
+\startitemize
+\item {\bf El split resolvió las 15, entre 13 y 167 s. El monolítico no demostró ninguna.}
+\item {\bf En 7 de las 15, el monolítico no encontró ni una solución factible en 5 minutos:}
+22 y 26 órdenes por lote, la grilla 10×10, pesos 2/6 con 18 órdenes, velocidades distintas y
+las dos configuraciones en bandas. Con 6 lotes en 7×7, empieza a costarle también encontrar.
+\item {\bf Cuando encuentra, encuentra bien:} en los otros 8 casos su mejor solución quedó entre
+0,3\% y 1,9\% sobre el óptimo (4,9\% en uno).
+\item {\bf Las brechas grandes son de la cota, no de la solución:} con 3 a 5 pickers la cota
+dual queda entre el 49\% y el 59\% del óptimo, y la brecha reportada llega al 105\% aunque la solución
+esté a menos del 1\%.
+\stopitemize
+
+\placefigure[force][fig:cotas]{Dónde terminan las dos cotas del monolítico al cabo de 300 s, como proporción del óptimo del split.}
+{\startMPcode
+numeric w, h; w := 14cm; h := 6cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+label.bot(textext("\tfx o10"), (0.467cm,-0.100cm));
+label.bot(textext("\tfx o14"), (1.400cm,-0.100cm));
+label.bot(textext("\tfx o18"), (2.333cm,-0.100cm));
+label.bot(textext("\tfx o22"), (3.267cm,-0.100cm));
+label.bot(textext("\tfx o26"), (4.200cm,-0.100cm));
+label.bot(textext("\tfx p3"), (5.133cm,-0.100cm));
+label.bot(textext("\tfx p4"), (6.067cm,-0.100cm));
+label.bot(textext("\tfx p5"), (7.000cm,-0.100cm));
+label.bot(textext("\tfx g10"), (7.933cm,-0.100cm));
+label.bot(textext("\tfx w10"), (8.867cm,-0.100cm));
+label.bot(textext("\tfx w18"), (9.800cm,-0.100cm));
+label.bot(textext("\tfx w26"), (10.733cm,-0.100cm));
+label.bot(textext("\tfx vd"), (11.667cm,-0.100cm));
+label.bot(textext("\tfx b2"), (12.600cm,-0.100cm));
+label.bot(textext("\tfx b3"), (13.533cm,-0.100cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 30\%"), (-0.120cm,0.000cm));
+draw (0.000cm,1.500cm)--(-0.120cm,1.500cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 50\%"), (-0.120cm,1.500cm));
+draw (0.000cm,3.000cm)--(-0.120cm,3.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 70\%"), (-0.120cm,3.000cm));
+draw (0.000cm,4.500cm)--(-0.120cm,4.500cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 90\%"), (-0.120cm,4.500cm));
+draw (0.000cm,5.250cm)--(-0.120cm,5.250cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100\%"), (-0.120cm,5.250cm));
+draw (0.000cm,6.000cm)--(-0.120cm,6.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 110\%"), (-0.120cm,6.000cm));
+label.lft(textext("Proporción del óptimo") rotated 90, (-1.25cm,h/2));
+draw (0.000cm,5.250cm)--(14.000cm,5.250cm) withpen pencircle scaled .5pt dashed evenly;
+label.lft(textext("\tfxx óptimo (split)"), (13.900cm,5.050cm));
+draw (0.467cm,4.853cm)--(0.467cm,5.303cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (0.467cm,5.303cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (0.467cm,4.853cm) withcolor \MPcolor{darkblue};
+draw (1.400cm,4.440cm)--(1.400cm,5.306cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.400cm,5.306cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (1.400cm,4.440cm) withcolor \MPcolor{darkblue};
+draw (2.333cm,4.320cm)--(2.333cm,5.312cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (2.333cm,5.312cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (2.333cm,4.320cm) withcolor \MPcolor{darkblue};
+label.bot(textext("\tfxx s/sol."), (3.267cm,3.530cm));
+fill fullcircle scaled 4pt shifted (3.267cm,3.630cm) withcolor \MPcolor{darkblue};
+label.bot(textext("\tfxx s/sol."), (4.200cm,3.628cm));
+fill fullcircle scaled 4pt shifted (4.200cm,3.728cm) withcolor \MPcolor{darkblue};
+draw (5.133cm,1.928cm)--(5.133cm,5.316cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (5.133cm,5.316cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (5.133cm,1.928cm) withcolor \MPcolor{darkblue};
+draw (6.067cm,1.440cm)--(6.067cm,5.305cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.067cm,5.305cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (6.067cm,1.440cm) withcolor \MPcolor{darkblue};
+draw (7.000cm,2.145cm)--(7.000cm,5.617cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (7.000cm,5.617cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.000cm,2.145cm) withcolor \MPcolor{darkblue};
+label.bot(textext("\tfxx s/sol."), (7.933cm,0.583cm));
+fill fullcircle scaled 4pt shifted (7.933cm,0.683cm) withcolor \MPcolor{darkblue};
+draw (8.867cm,4.988cm)--(8.867cm,5.271cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (8.867cm,5.271cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (8.867cm,4.988cm) withcolor \MPcolor{darkblue};
+label.bot(textext("\tfxx s/sol."), (9.800cm,4.093cm));
+fill fullcircle scaled 4pt shifted (9.800cm,4.193cm) withcolor \MPcolor{darkblue};
+draw (10.733cm,3.945cm)--(10.733cm,5.391cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (10.733cm,5.391cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (10.733cm,3.945cm) withcolor \MPcolor{darkblue};
+label.bot(textext("\tfxx s/sol."), (11.667cm,3.920cm));
+fill fullcircle scaled 4pt shifted (11.667cm,4.020cm) withcolor \MPcolor{darkblue};
+label.bot(textext("\tfxx s/sol."), (12.600cm,2.142cm));
+fill fullcircle scaled 4pt shifted (12.600cm,2.242cm) withcolor \MPcolor{darkblue};
+label.bot(textext("\tfxx s/sol."), (13.533cm,1.460cm));
+fill fullcircle scaled 4pt shifted (13.533cm,1.560cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (0.500cm,1.400cm) withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx cota dual de mono"), (0.900cm,1.400cm));
+fill fullcircle scaled 4pt shifted (0.500cm,0.980cm) withcolor \MPcolor{redline};
+label.rt(textext("\tfx mejor solución de mono"), (0.900cm,0.980cm));
+\stopMPcode}
+\stopsection
+
+\startsection[title={Estudio 10: qué factor le pega más al monolítico}]
+Las preguntas de los estudios 01, 02, 03 y 07 del split, a una escala que el monolítico
+resuelve: base de 4 lotes, 2 pickers, 26 órdenes por lote, grilla 5×5, pesos 4/4 y velocidades
+uniformes, moviendo un factor por vez. Tope de 10 minutos por modelo. En la base, el split
+tarda 7 s y el monolítico 17 s (2,4 veces). Corrió en paralelo con la suite de stress del split
+primero y con la del monolítico después.
+
+\placefigure[force][fig:m10_grilla]{Tiempo de los dos modelos según la grilla (escala logarítmica).}
+{\startMPcode
+numeric w, h; w := 11.0cm; h := 5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+draw (1.100cm,0.000cm)--(1.100cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 3×3"), (1.100cm,-0.120cm));
+draw (5.500cm,0.000cm)--(5.500cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 5×5"), (5.500cm,-0.120cm));
+draw (7.700cm,0.000cm)--(7.700cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 6×6"), (7.700cm,-0.120cm));
+draw (9.900cm,0.000cm)--(9.900cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 7×7"), (9.900cm,-0.120cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1"), (-0.120cm,0.000cm));
+draw (0.000cm,1.667cm)--(-0.120cm,1.667cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10"), (-0.120cm,1.667cm));
+draw (0.000cm,3.333cm)--(-0.120cm,3.333cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100"), (-0.120cm,3.333cm));
+draw (0.000cm,5.000cm)--(-0.120cm,5.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1.000"), (-0.120cm,5.000cm));
+label.bot(textext("Grilla"), (w/2,-0.85cm));
+label.lft(textext("Tiempo (s)") rotated 90, (-1.25cm,h/2));
+draw (1.100cm,1.272cm)--(5.500cm,1.419cm)--(7.700cm,1.487cm)--(9.900cm,1.884cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.100cm,1.272cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (5.500cm,1.419cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (7.700cm,1.487cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (9.900cm,1.884cm) withcolor \MPcolor{darkblue};
+draw (1.100cm,1.321cm)--(5.500cm,2.038cm)--(7.700cm,4.014cm)--(9.900cm,4.630cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (1.100cm,1.321cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (5.500cm,2.038cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.700cm,4.014cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (9.900cm,4.630cm) withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (9.900cm,4.630cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.lft(textext("\tfxx brecha 15,3\%"), (9.800cm,4.630cm));
+draw (0.350cm,4.850cm)--(0.950cm,4.850cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx split"), (1.050cm,4.850cm));
+draw (0.350cm,4.430cm)--(0.950cm,4.430cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline};
+label.rt(textext("\tfx mono"), (1.050cm,4.430cm));
+\stopMPcode}
+
+\placefigure[force][fig:m10_velocidades]{Tiempo de los dos modelos según las velocidades de la cuadrilla (escala logarítmica). 2P, 3P y 4P: cantidad de pickers.}
+{\startMPcode
+numeric w, h; w := 13cm; h := 5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+label.bot(textext("\tfx 2P unif."), (0.929cm,-0.100cm));
+label.bot(textext("\tfx 2P distintas"), (2.786cm,-0.100cm));
+label.bot(textext("\tfx 3P unif."), (4.643cm,-0.100cm));
+label.bot(textext("\tfx 3P 2 bandas"), (6.500cm,-0.100cm));
+label.bot(textext("\tfx 3P 3 bandas"), (8.357cm,-0.100cm));
+label.bot(textext("\tfx 4P unif."), (10.214cm,-0.100cm));
+label.bot(textext("\tfx 4P 2 bandas"), (12.071cm,-0.100cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1"), (-0.120cm,0.000cm));
+draw (0.000cm,1.667cm)--(-0.120cm,1.667cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10"), (-0.120cm,1.667cm));
+draw (0.000cm,3.333cm)--(-0.120cm,3.333cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100"), (-0.120cm,3.333cm));
+draw (0.000cm,5.000cm)--(-0.120cm,5.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1.000"), (-0.120cm,5.000cm));
+label.lft(textext("Tiempo (s)") rotated 90, (-1.25cm,h/2));
+fill (0.223cm,0.000cm)--(0.891cm,0.000cm)--(0.891cm,1.419cm)--(0.223cm,1.419cm)--cycle withcolor \MPcolor{darkblue};
+fill (0.966cm,0.000cm)--(1.634cm,0.000cm)--(1.634cm,2.038cm)--(0.966cm,2.038cm)--cycle withcolor \MPcolor{redline};
+fill (2.080cm,0.000cm)--(2.749cm,0.000cm)--(2.749cm,1.574cm)--(2.080cm,1.574cm)--cycle withcolor \MPcolor{darkblue};
+fill (2.823cm,0.000cm)--(3.491cm,0.000cm)--(3.491cm,2.344cm)--(2.823cm,2.344cm)--cycle withcolor \MPcolor{redline};
+fill (3.937cm,0.000cm)--(4.606cm,0.000cm)--(4.606cm,0.745cm)--(3.937cm,0.745cm)--cycle withcolor \MPcolor{darkblue};
+fill (4.680cm,0.000cm)--(5.349cm,0.000cm)--(5.349cm,2.096cm)--(4.680cm,2.096cm)--cycle withcolor \MPcolor{redline};
+fill (5.794cm,0.000cm)--(6.463cm,0.000cm)--(6.463cm,0.745cm)--(5.794cm,0.745cm)--cycle withcolor \MPcolor{darkblue};
+fill (6.537cm,0.000cm)--(7.206cm,0.000cm)--(7.206cm,3.608cm)--(6.537cm,3.608cm)--cycle withcolor \MPcolor{redline};
+fill (7.651cm,0.000cm)--(8.320cm,0.000cm)--(8.320cm,1.021cm)--(7.651cm,1.021cm)--cycle withcolor \MPcolor{darkblue};
+draw (8.394cm,0.000cm)--(9.063cm,0.000cm)--(9.063cm,4.630cm)--(8.394cm,4.630cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx tope"), (8.729cm,4.650cm));
+fill (9.509cm,0.000cm)--(10.177cm,0.000cm)--(10.177cm,1.221cm)--(9.509cm,1.221cm)--cycle withcolor \MPcolor{darkblue};
+fill (10.251cm,0.000cm)--(10.920cm,0.000cm)--(10.920cm,1.931cm)--(10.251cm,1.931cm)--cycle withcolor \MPcolor{redline};
+fill (11.366cm,0.000cm)--(12.034cm,0.000cm)--(12.034cm,1.003cm)--(11.366cm,1.003cm)--cycle withcolor \MPcolor{darkblue};
+fill (12.109cm,0.000cm)--(12.777cm,0.000cm)--(12.777cm,2.321cm)--(12.109cm,2.321cm)--cycle withcolor \MPcolor{redline};
+fill (0.300cm,4.730cm)--(0.700cm,4.730cm)--(0.700cm,4.970cm)--(0.300cm,4.970cm)--cycle withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx split"), (0.900cm,4.850cm));
+fill (0.300cm,4.310cm)--(0.700cm,4.310cm)--(0.700cm,4.550cm)--(0.300cm,4.550cm)--cycle withcolor \MPcolor{redline};
+label.rt(textext("\tfx mono (contorno: no cerró)"), (0.900cm,4.430cm));
+\stopMPcode}
+
+\placefigure[force][fig:m10_ordenes]{Tiempo de los dos modelos según las órdenes por lote, con pesos 4/4 y 2/6 (escala logarítmica).}
+{\startMPcode
+numeric w, h; w := 11.0cm; h := 5.5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+draw (0.500cm,0.000cm)--(0.500cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 10"), (0.500cm,-0.120cm));
+draw (3.000cm,0.000cm)--(3.000cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 20"), (3.000cm,-0.120cm));
+draw (5.500cm,0.000cm)--(5.500cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 30"), (5.500cm,-0.120cm));
+draw (8.000cm,0.000cm)--(8.000cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 40"), (8.000cm,-0.120cm));
+draw (10.500cm,0.000cm)--(10.500cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 50"), (10.500cm,-0.120cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1"), (-0.120cm,0.000cm));
+draw (0.000cm,1.833cm)--(-0.120cm,1.833cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10"), (-0.120cm,1.833cm));
+draw (0.000cm,3.667cm)--(-0.120cm,3.667cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100"), (-0.120cm,3.667cm));
+draw (0.000cm,5.500cm)--(-0.120cm,5.500cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1.000"), (-0.120cm,5.500cm));
+label.bot(textext("Órdenes por lote"), (w/2,-0.85cm));
+label.lft(textext("Tiempo (s)") rotated 90, (-1.25cm,h/2));
+draw (0.500cm,0.628cm)--(1.500cm,0.791cm)--(2.500cm,0.875cm)--(3.500cm,1.413cm)--(4.500cm,1.561cm)--(6.000cm,1.792cm)--(8.000cm,1.161cm)--(10.500cm,1.490cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (0.500cm,0.628cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.500cm,0.791cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (2.500cm,0.875cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (3.500cm,1.413cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (4.500cm,1.561cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.000cm,1.792cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (8.000cm,1.161cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (10.500cm,1.490cm) withcolor \MPcolor{darkblue};
+draw (0.500cm,4.796cm)--(1.500cm,4.105cm)--(2.500cm,2.664cm)--(3.500cm,3.084cm)--(4.500cm,2.242cm)--(6.000cm,3.052cm)--(8.000cm,2.645cm)--(10.500cm,2.647cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (0.500cm,4.796cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (1.500cm,4.105cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (2.500cm,2.664cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (3.500cm,3.084cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (4.500cm,2.242cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (6.000cm,3.052cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (8.000cm,2.645cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (10.500cm,2.647cm) withcolor \MPcolor{redline};
+draw (0.500cm,0.209cm)--(4.500cm,1.453cm)--(10.500cm,1.123cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue} dashed evenly;
+fill fullcircle scaled 4pt shifted (0.500cm,0.209cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (4.500cm,1.453cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (10.500cm,1.123cm) withcolor \MPcolor{darkblue};
+draw (0.500cm,4.685cm)--(4.500cm,2.862cm)--(10.500cm,2.726cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline} dashed evenly;
+fill fullcircle scaled 4pt shifted (0.500cm,4.685cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (4.500cm,2.862cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (10.500cm,2.726cm) withcolor \MPcolor{redline};
+draw (6.500cm,5.350cm)--(7.100cm,5.350cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx split, pesos 4/4"), (7.200cm,5.350cm));
+draw (6.500cm,4.930cm)--(7.100cm,4.930cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline};
+label.rt(textext("\tfx mono, pesos 4/4"), (7.200cm,4.930cm));
+draw (6.500cm,4.510cm)--(7.100cm,4.510cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue} dashed evenly;
+label.rt(textext("\tfx split, pesos 2/6"), (7.200cm,4.510cm));
+draw (6.500cm,4.090cm)--(7.100cm,4.090cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline} dashed evenly;
+label.rt(textext("\tfx mono, pesos 2/6"), (7.200cm,4.090cm));
+\stopMPcode}
+
+\placefigure[force][fig:m10_lotes]{Tiempo de los dos modelos según la cantidad de lotes (escala logarítmica).}
+{\startMPcode
+numeric w, h; w := 11.0cm; h := 5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+draw (1.100cm,0.000cm)--(1.100cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 2"), (1.100cm,-0.120cm));
+draw (3.300cm,0.000cm)--(3.300cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 3"), (3.300cm,-0.120cm));
+draw (5.500cm,0.000cm)--(5.500cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 4"), (5.500cm,-0.120cm));
+draw (7.700cm,0.000cm)--(7.700cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 5"), (7.700cm,-0.120cm));
+draw (9.900cm,0.000cm)--(9.900cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 6"), (9.900cm,-0.120cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1"), (-0.120cm,0.000cm));
+draw (0.000cm,1.667cm)--(-0.120cm,1.667cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10"), (-0.120cm,1.667cm));
+draw (0.000cm,3.333cm)--(-0.120cm,3.333cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100"), (-0.120cm,3.333cm));
+draw (0.000cm,5.000cm)--(-0.120cm,5.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1.000"), (-0.120cm,5.000cm));
+label.bot(textext("Lotes (2 pickers, 5×5)"), (w/2,-0.85cm));
+label.lft(textext("Tiempo (s)") rotated 90, (-1.25cm,h/2));
+draw (1.100cm,0.603cm)--(3.300cm,1.056cm)--(5.500cm,1.419cm)--(7.700cm,1.622cm)--(9.900cm,2.297cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.100cm,0.603cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (3.300cm,1.056cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (5.500cm,1.419cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (7.700cm,1.622cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (9.900cm,2.297cm) withcolor \MPcolor{darkblue};
+draw (1.100cm,0.719cm)--(3.300cm,2.224cm)--(5.500cm,2.038cm)--(7.700cm,2.364cm)--(9.900cm,3.816cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (1.100cm,0.719cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (3.300cm,2.224cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (5.500cm,2.038cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.700cm,2.364cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (9.900cm,3.816cm) withcolor \MPcolor{redline};
+draw (0.350cm,4.850cm)--(0.950cm,4.850cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx split"), (1.050cm,4.850cm));
+draw (0.350cm,4.430cm)--(0.950cm,4.430cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline};
+label.rt(textext("\tfx mono"), (1.050cm,4.430cm));
+\stopMPcode}
+
+\placefigure[force][fig:m10_pickers]{Tiempo de los dos modelos según la cantidad de pickers (escala logarítmica).}
+{\startMPcode
+numeric w, h; w := 11.0cm; h := 5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+draw (1.375cm,0.000cm)--(1.375cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 1"), (1.375cm,-0.120cm));
+draw (4.125cm,0.000cm)--(4.125cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 2"), (4.125cm,-0.120cm));
+draw (6.875cm,0.000cm)--(6.875cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 3"), (6.875cm,-0.120cm));
+draw (9.625cm,0.000cm)--(9.625cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 4"), (9.625cm,-0.120cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1"), (-0.120cm,0.000cm));
+draw (0.000cm,1.667cm)--(-0.120cm,1.667cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10"), (-0.120cm,1.667cm));
+draw (0.000cm,3.333cm)--(-0.120cm,3.333cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100"), (-0.120cm,3.333cm));
+draw (0.000cm,5.000cm)--(-0.120cm,5.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1.000"), (-0.120cm,5.000cm));
+label.bot(textext("Pickers (4 lotes, 5×5)"), (w/2,-0.85cm));
+label.lft(textext("Tiempo (s)") rotated 90, (-1.25cm,h/2));
+draw (1.375cm,0.244cm)--(4.125cm,1.419cm)--(6.875cm,0.745cm)--(9.625cm,1.221cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.375cm,0.244cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (4.125cm,1.419cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (6.875cm,0.745cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (9.625cm,1.221cm) withcolor \MPcolor{darkblue};
+draw (1.375cm,1.574cm)--(4.125cm,2.038cm)--(6.875cm,2.096cm)--(9.625cm,1.931cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (1.375cm,1.574cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (4.125cm,2.038cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (6.875cm,2.096cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (9.625cm,1.931cm) withcolor \MPcolor{redline};
+draw (0.350cm,4.850cm)--(0.950cm,4.850cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx split"), (1.050cm,4.850cm));
+draw (0.350cm,4.430cm)--(0.950cm,4.430cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline};
+label.rt(textext("\tfx mono"), (1.050cm,4.430cm));
+\stopMPcode}
+
+\placefigure[force][fig:m10_le1]{Tiempo de los dos modelos con y sin el límite de un arco por vértice (escala logarítmica).}
+{\startMPcode
+numeric w, h; w := 11.0cm; h := 5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+label.bot(textext("\tfx 5×5"), (2.750cm,-0.100cm));
+label.bot(textext("\tfx 6×6"), (8.250cm,-0.100cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1"), (-0.120cm,0.000cm));
+draw (0.000cm,1.667cm)--(-0.120cm,1.667cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10"), (-0.120cm,1.667cm));
+draw (0.000cm,3.333cm)--(-0.120cm,3.333cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100"), (-0.120cm,3.333cm));
+draw (0.000cm,5.000cm)--(-0.120cm,5.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1.000"), (-0.120cm,5.000cm));
+label.lft(textext("Tiempo (s)") rotated 90, (-1.25cm,h/2));
+fill (0.440cm,0.000cm)--(1.485cm,0.000cm)--(1.485cm,1.419cm)--(0.440cm,1.419cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 7 s"), (0.962cm,1.439cm));
+draw (1.595cm,0.000cm)--(2.640cm,0.000cm)--(2.640cm,1.523cm)--(1.595cm,1.523cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 8 s"), (2.118cm,1.543cm));
+fill (2.750cm,0.000cm)--(3.795cm,0.000cm)--(3.795cm,2.038cm)--(2.750cm,2.038cm)--cycle withcolor \MPcolor{redline};
+label.top(textext("\tfxx 17 s"), (3.272cm,2.058cm));
+draw (3.905cm,0.000cm)--(4.950cm,0.000cm)--(4.950cm,2.531cm)--(3.905cm,2.531cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 33 s"), (4.427cm,2.551cm));
+fill (5.940cm,0.000cm)--(6.985cm,0.000cm)--(6.985cm,1.487cm)--(5.940cm,1.487cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 8 s"), (6.463cm,1.507cm));
+draw (7.095cm,0.000cm)--(8.140cm,0.000cm)--(8.140cm,1.755cm)--(7.095cm,1.755cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 11 s"), (7.617cm,1.775cm));
+fill (8.250cm,0.000cm)--(9.295cm,0.000cm)--(9.295cm,4.014cm)--(8.250cm,4.014cm)--cycle withcolor \MPcolor{redline};
+label.top(textext("\tfxx 256 s"), (8.772cm,4.034cm));
+draw (9.405cm,0.000cm)--(10.450cm,0.000cm)--(10.450cm,3.374cm)--(9.405cm,3.374cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 106 s"), (9.928cm,3.394cm));
+fill (0.300cm,4.730cm)--(0.700cm,4.730cm)--(0.700cm,4.970cm)--(0.300cm,4.970cm)--cycle withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx split con $\leq 1$"), (0.900cm,4.850cm));
+draw (0.300cm,4.310cm)--(0.700cm,4.310cm)--(0.700cm,4.550cm)--(0.300cm,4.550cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx split sin $\leq 1$"), (0.900cm,4.430cm));
+fill (0.300cm,3.890cm)--(0.700cm,3.890cm)--(0.700cm,4.130cm)--(0.300cm,4.130cm)--cycle withcolor \MPcolor{redline};
+label.rt(textext("\tfx mono con $\leq 1$"), (0.900cm,4.010cm));
+draw (0.300cm,3.470cm)--(0.700cm,3.470cm)--(0.700cm,3.710cm)--(0.300cm,3.710cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.rt(textext("\tfx mono sin $\leq 1$"), (0.900cm,3.590cm));
+\stopMPcode}
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Factor \eTH \bTH Rango \eTH \bTH Monolítico / split \eTH \eTR
+\bTR \bTD Grilla \eTD \bTD 3×3 a 7×7 \eTD \bTD de 1,1 a 33 veces; en 7×7 no cierra (brecha 15,3\%) \eTD \eTR
+\bTR \bTD Velocidades \eTD \bTD 3 pickers, 2 y 3 bandas \eTD \bTD 52 veces; con 3 bandas no cierra (brecha 1,7\%) \eTD \eTR
+\bTR \bTD Órdenes por lote \eTD \bTD 10 a 50 \eTD \bTD 188 veces con 10, 64 con 14, entre 4 y 10 desde 18 \eTD \eTR
+\bTR \bTD Lotes \eTD \bTD 2 a 6 \eTD \bTD de 1,2 a 8 veces \eTD \eTR
+\bTR \bTD Pickers \eTD \bTD 1 a 4 \eTD \bTD entre 2,4 y 6,5 veces \eTD \eTR
+\bTR \bTD Pesos 2/6 \eTD \bTD 10, 26 y 50 órdenes \eTD \bTD sin efecto sistemático sobre el monolítico \eTD \eTR
+\bTR \bTD Sin $\leq 1$ \eTD \bTD 5×5 y 6×6 \eTD \bTD el monolítico tarda el doble en 5×5 y la mitad en 6×6 \eTD \eTR
+\eTABLE
+\blank[medium]
+
+\startitemize
+\item {\bf La grilla es el factor principal.} En 3×3 los dos modelos empatan; en 6×6 el
+monolítico ya es 33 veces más lento y en 7×7 no cierra, mientras el split tarda 14 s. Es el
+mismo eje que limita a la Etapa 1 del split, pero el monolítico lo sufre mucho antes.
+\item {\bf Las velocidades en bandas golpean al monolítico, no al split, a esta escala.} Con 3
+pickers, el split tarda lo mismo con o sin bandas (3 a 4 s); el monolítico pasa de 18 s a 146 s
+con 2 bandas y no cierra con 3. Con 4 pickers para 4 lotes (un lote por picker, sin
+secuenciamiento) el efecto casi desaparece. Con velocidades todas distintas y 2 pickers, apenas
+2,9 veces.
+\item {\bf Pocas órdenes por lote lo hunden.} Con 10 órdenes por lote el monolítico tarda 413 s
+contra 2 s del split. Es el efecto de objetivo aplanado que en el split encarecía la Etapa 2,
+mucho más fuerte en el monolítico.
+\item {\bf Lotes y pickers pesan menos}, y los pesos 2/6 no cambian nada de forma sistemática.
+\item {\bf Quitar el límite de un arco por vértice no es una palanca,} igual que en el split:
+en 5×5 el monolítico tarda el doble, en 6×6 la mitad, siempre con el mismo óptimo que el split.
+\stopitemize
+\stopsection
+
+\startsection[title={Tamaño y memoria no son el límite}]
+\placefigure[force][fig:tamano]{Tiempo del monolítico contra la cantidad de variables del modelo (escala logarítmica en los dos ejes).}
+{\startMPcode
+numeric w, h; w := 11.0cm; h := 5.5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+draw (0.000cm,0.000cm)--(0.000cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 100"), (0.000cm,-0.120cm));
+draw (2.952cm,0.000cm)--(2.952cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 300"), (2.952cm,-0.120cm));
+draw (6.186cm,0.000cm)--(6.186cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 1.000"), (6.186cm,-0.120cm));
+draw (9.138cm,0.000cm)--(9.138cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 3.000"), (9.138cm,-0.120cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,1"), (-0.120cm,0.000cm));
+draw (0.000cm,1.375cm)--(-0.120cm,1.375cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1"), (-0.120cm,1.375cm));
+draw (0.000cm,2.750cm)--(-0.120cm,2.750cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10"), (-0.120cm,2.750cm));
+draw (0.000cm,4.125cm)--(-0.120cm,4.125cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100"), (-0.120cm,4.125cm));
+draw (0.000cm,5.500cm)--(-0.120cm,5.500cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1.000"), (-0.120cm,5.500cm));
+label.bot(textext("Variables del modelo monolítico (escala log.)"), (w/2,-0.85cm));
+label.lft(textext("Tiempo de mono (s, escala log.)") rotated 90, (-1.25cm,h/2));
+fill fullcircle scaled 4pt shifted (0.131cm,0.414cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.143cm,0.414cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (2.081cm,0.414cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (2.925cm,0.414cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (3.677cm,0.656cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (2.006cm,0.656cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (3.950cm,2.088cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (4.791cm,2.929cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (5.543cm,3.098cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (3.183cm,2.299cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (5.082cm,2.660cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (5.912cm,4.321cm) withcolor \MPcolor{darkblue};
+draw fullcircle scaled 6pt shifted (6.656cm,5.165cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (3.968cm,2.502cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (5.861cm,3.675cm) withcolor \MPcolor{darkblue};
+draw fullcircle scaled 6pt shifted (6.689cm,5.164cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (5.154cm,4.515cm) withcolor \MPcolor{darkblue};
+draw fullcircle scaled 6pt shifted (6.998cm,5.165cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (8.303cm,4.780cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (8.361cm,4.780cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (8.418cm,4.781cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (8.474cm,4.782cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (8.528cm,4.782cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (8.548cm,4.781cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (8.568cm,4.781cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (8.588cm,4.781cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (10.341cm,4.782cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (8.303cm,4.780cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (8.418cm,4.781cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (8.528cm,4.782cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (8.528cm,4.780cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (8.548cm,4.782cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+draw fullcircle scaled 6pt shifted (8.548cm,4.781cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (0.650cm,5.350cm) withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx llegó al óptimo"), (1.050cm,5.350cm));
+draw fullcircle scaled 6pt shifted (0.650cm,4.930cm) withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.rt(textext("\tfx cortado por tiempo"), (1.050cm,4.930cm));
+\stopMPcode}
+
+Los modelos son chicos: el mayor cortado tiene 4.695 variables. Con 10 minutos la memoria pico
+no pasó de 302 MB; con 40 minutos (estudio 11) llegó a 636 MB, porque el árbol de búsqueda sigue
+creciendo. La compilación con ZIMPL tardó menos de un segundo en todos los puntos. Hay modelos de
+1.191 variables que no cierran y de 2.199 que encuentran buenas soluciones: lo que decide es la
+estructura, no el tamaño. La única excepción posible son los escenarios heredados de 100×100
+de la suite de stress, donde el monolítico terminó sin resultado o con error; su memoria no se
+midió.
+\stopsection
+
+\startsection[title={Estudio 11: con 40 minutos}]
+Los tres puntos donde el monolítico dejó de cerrar a los 10 minutos, más la instancia exacta del
+test de stress 04, con el tope de la suite: 40 minutos.
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Punto \eTH \bTH Split \eTH \bTH Monolítico, 10 min \eTH \bTH Monolítico, 40 min \eTH \eTR
+\bTR \bTD 3 lotes, 7×7 \eTD \bTD óptimo en 8 s \eTD \bTD brecha 11,4\% \eTD \bTD brecha 11,0\% \eTD \eTR
+\bTR \bTD 4 lotes, 6×6 \eTD \bTD óptimo en 10 s \eTD \bTD brecha 13,2\% \eTD \bTD brecha 10,4\% \eTD \eTR
+\bTR \bTD 6 lotes, 5×5 \eTD \bTD óptimo en 3,9 min \eTD \bTD brecha 3,0\% \eTD \bTD óptimo en 32 min \eTD \eTR
+\bTR \bTD test 04 (6 lotes, 7×7) \eTD \bTD óptimo en 3,0 min \eTD \bTD -- \eTD \bTD brecha 143,5\% \eTD \eTR
+\eTABLE
+\blank[medium]
+
+\placefigure[force][fig:m11_cotas]{Cota dual del monolítico como porcentaje del óptimo: en el nodo raíz, a los 10 minutos y a los 40.}
+{\startMPcode
+numeric w, h; w := 12cm; h := 5.5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+label.bot(textext("\tfx 3 lotes, 7×7"), (1.500cm,-0.100cm));
+label.bot(textext("\tfx 4 lotes, 6×6"), (4.500cm,-0.100cm));
+label.bot(textext("\tfx 6 lotes, 5×5"), (7.500cm,-0.100cm));
+label.bot(textext("\tfx test 04"), (10.500cm,-0.100cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0\%"), (-0.120cm,0.000cm));
+draw (0.000cm,1.375cm)--(-0.120cm,1.375cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 25\%"), (-0.120cm,1.375cm));
+draw (0.000cm,2.750cm)--(-0.120cm,2.750cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 50\%"), (-0.120cm,2.750cm));
+draw (0.000cm,4.125cm)--(-0.120cm,4.125cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 75\%"), (-0.120cm,4.125cm));
+draw (0.000cm,5.500cm)--(-0.120cm,5.500cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100\%"), (-0.120cm,5.500cm));
+label.lft(textext("Cota dual / óptimo") rotated 90, (-1.25cm,h/2));
+draw (0.300cm,0.000cm)--(1.050cm,0.000cm)--(1.050cm,4.824cm)--(0.300cm,4.824cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 88\%"), (0.675cm,4.854cm));
+fill (1.110cm,0.000cm)--(1.860cm,0.000cm)--(1.860cm,4.955cm)--(1.110cm,4.955cm)--cycle withcolor \MPcolor{blueline};
+label.top(textext("\tfxx 90\%"), (1.485cm,4.986cm));
+fill (1.920cm,0.000cm)--(2.670cm,0.000cm)--(2.670cm,4.955cm)--(1.920cm,4.955cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 90\%"), (2.295cm,4.986cm));
+draw (3.300cm,0.000cm)--(4.050cm,0.000cm)--(4.050cm,4.790cm)--(3.300cm,4.790cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 87\%"), (3.675cm,4.821cm));
+fill (4.110cm,0.000cm)--(4.860cm,0.000cm)--(4.860cm,4.867cm)--(4.110cm,4.867cm)--cycle withcolor \MPcolor{blueline};
+label.top(textext("\tfxx 88\%"), (4.485cm,4.897cm));
+fill (4.920cm,0.000cm)--(5.670cm,0.000cm)--(5.670cm,4.983cm)--(4.920cm,4.983cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 91\%"), (5.295cm,5.013cm));
+draw (6.300cm,0.000cm)--(7.050cm,0.000cm)--(7.050cm,2.624cm)--(6.300cm,2.624cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 48\%"), (6.675cm,2.654cm));
+fill (7.110cm,0.000cm)--(7.860cm,0.000cm)--(7.860cm,5.340cm)--(7.110cm,5.340cm)--cycle withcolor \MPcolor{blueline};
+label.top(textext("\tfxx 97\%"), (7.485cm,5.370cm));
+fill (7.920cm,0.000cm)--(8.670cm,0.000cm)--(8.670cm,5.500cm)--(7.920cm,5.500cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 100\%"), (8.295cm,5.530cm));
+draw (9.300cm,0.000cm)--(10.050cm,0.000cm)--(10.050cm,2.151cm)--(9.300cm,2.151cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.top(textext("\tfxx 39\%"), (9.675cm,2.180cm));
+fill (10.110cm,0.000cm)--(10.860cm,0.000cm)--(10.860cm,2.273cm)--(10.110cm,2.273cm)--cycle withcolor \MPcolor{blueline};
+label.top(textext("\tfxx 41\%"), (10.485cm,2.303cm));
+fill (10.920cm,0.000cm)--(11.670cm,0.000cm)--(11.670cm,2.272cm)--(10.920cm,2.272cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 41\%"), (11.295cm,2.301cm));
+draw (0.300cm,6.980cm)--(0.700cm,6.980cm)--(0.700cm,7.220cm)--(0.300cm,7.220cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{redline};
+label.rt(textext("\tfx nodo raíz"), (0.900cm,7.100cm));
+fill (0.300cm,6.560cm)--(0.700cm,6.560cm)--(0.700cm,6.800cm)--(0.300cm,6.800cm)--cycle withcolor \MPcolor{blueline};
+label.rt(textext("\tfx a los 10 min (test 04: a los 25)"), (0.900cm,6.680cm));
+fill (0.300cm,6.140cm)--(0.700cm,6.140cm)--(0.700cm,6.380cm)--(0.300cm,6.380cm)--cycle withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx a los 40 min"), (0.900cm,6.260cm));
+\stopMPcode}
+
+\placefigure[force][fig:m11_trayectoria]{Evolución de la mejor solución del monolítico durante los 40 minutos, como porcentaje sobre el óptimo (escala logarítmica en el tiempo).}
+{\startMPcode
+numeric w, h; w := 11.0cm; h := 5.5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+draw (0.000cm,0.000cm)--(0.000cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 1"), (0.000cm,-0.120cm));
+draw (3.254cm,0.000cm)--(3.254cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 10"), (3.254cm,-0.120cm));
+draw (6.508cm,0.000cm)--(6.508cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 100"), (6.508cm,-0.120cm));
+draw (9.763cm,0.000cm)--(9.763cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 1.000"), (9.763cm,-0.120cm));
+draw (11.000cm,0.000cm)--(11.000cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 2.400"), (11.000cm,-0.120cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0\%"), (-0.120cm,0.000cm));
+draw (0.000cm,1.375cm)--(-0.120cm,1.375cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 5\%"), (-0.120cm,1.375cm));
+draw (0.000cm,2.750cm)--(-0.120cm,2.750cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10\%"), (-0.120cm,2.750cm));
+draw (0.000cm,4.125cm)--(-0.120cm,4.125cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 15\%"), (-0.120cm,4.125cm));
+draw (0.000cm,5.500cm)--(-0.120cm,5.500cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 20\%"), (-0.120cm,5.500cm));
+label.bot(textext("Segundos (escala logarítmica)"), (w/2,-0.85cm));
+label.lft(textext("Mejor solución sobre el óptimo") rotated 90, (-1.25cm,h/2));
+draw (0.000cm,4.181cm)--(4.942cm,4.181cm)--(4.942cm,4.095cm)--(4.984cm,4.095cm)--(4.984cm,3.912cm)--(4.984cm,3.912cm)--(4.984cm,0.417cm)--(4.984cm,0.417cm)--(4.984cm,0.369cm)--(5.103cm,0.369cm)--(5.103cm,0.119cm)--(5.248cm,0.119cm)--(5.248cm,0.119cm)--(9.073cm,0.119cm)--(9.073cm,0.076cm)--(9.203cm,0.076cm)--(9.203cm,0.015cm)--(10.906cm,0.015cm)--(10.906cm,0.015cm)--(11.000cm,0.015cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+draw (0.000cm,4.827cm)--(4.898cm,4.827cm)--(4.898cm,4.679cm)--(4.898cm,4.679cm)--(4.898cm,1.639cm)--(4.898cm,1.639cm)--(4.898cm,1.323cm)--(4.898cm,1.323cm)--(4.898cm,0.238cm)--(5.103cm,0.238cm)--(5.103cm,0.145cm)--(5.103cm,0.145cm)--(5.103cm,0.115cm)--(6.344cm,0.115cm)--(6.344cm,0.095cm)--(6.360cm,0.095cm)--(6.360cm,0.095cm)--(6.523cm,0.095cm)--(6.523cm,0.088cm)--(6.564cm,0.088cm)--(6.564cm,0.078cm)--(8.625cm,0.078cm)--(8.625cm,0.046cm)--(9.192cm,0.046cm)--(9.192cm,0.032cm)--(9.287cm,0.032cm)--(9.287cm,0.020cm)--(9.461cm,0.020cm)--(9.461cm,0.003cm)--(9.723cm,0.003cm)--(9.723cm,0.000cm)--(10.722cm,0.000cm)--(10.722cm,0.000cm)--(10.952cm,0.000cm)--(10.952cm,0.000cm)--(11.000cm,0.000cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline};
+draw (6.044cm,1.907cm)--(6.064cm,1.907cm)--(6.064cm,1.020cm)--(6.064cm,1.020cm)--(6.064cm,0.611cm)--(6.139cm,0.611cm)--(6.139cm,0.237cm)--(6.312cm,0.237cm)--(6.312cm,0.000cm)--(7.370cm,0.000cm)--(7.370cm,0.000cm)--(8.461cm,0.000cm)--(8.461cm,-0.000cm)--(10.683cm,-0.000cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{blueline};
+draw (0.000cm,2.870cm)--(5.411cm,2.870cm)--(5.411cm,0.349cm)--(8.563cm,0.349cm)--(8.563cm,0.337cm)--(8.814cm,0.337cm)--(8.814cm,0.270cm)--(10.007cm,0.270cm)--(10.007cm,0.242cm)--(10.064cm,0.242cm)--(10.064cm,0.233cm)--(10.076cm,0.233cm)--(10.076cm,0.190cm)--(10.115cm,0.190cm)--(10.115cm,0.182cm)--(11.000cm,0.182cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue} dashed evenly;
+draw (6.400cm,5.350cm)--(7.000cm,5.350cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx 3 lotes, 7×7"), (7.100cm,5.350cm));
+draw (6.400cm,4.930cm)--(7.000cm,4.930cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{redline};
+label.rt(textext("\tfx 4 lotes, 6×6"), (7.100cm,4.930cm));
+draw (6.400cm,4.510cm)--(7.000cm,4.510cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{blueline};
+label.rt(textext("\tfx 6 lotes, 5×5 (demostró el óptimo a los 32 min)"), (7.100cm,4.510cm));
+draw (6.400cm,4.090cm)--(7.000cm,4.090cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue} dashed evenly;
+label.rt(textext("\tfx test 04 (6 lotes, 7×7)"), (7.100cm,4.090cm));
+\stopMPcode}
+
+\startitemize
+\item {\bf Cuadruplicar el tiempo casi no mueve la cota.} En 3 lotes en 7×7 y 4 lotes en 6×6
+quedó en el 90\% del óptimo, igual que a los 10 minutos, aunque el monolítico recorrió seis y
+cuatro veces más nodos. Las brechas bajaron poco: de 11,4\% a 11,0\% y de 13,2\% a 10,4\%.
+\item {\bf Las soluciones ya estaban.} En 3 lotes en 7×7 la mejor solución quedó a 0,05\% del
+óptimo; en 4 lotes en 6×6 encontró el óptimo exacto a los 972 s y no pudo demostrarlo en los 24
+minutos que le quedaban.
+\item {\bf Solo 6 lotes en 5×5 cerró}: el monolítico demostró el óptimo a los 32 minutos, 8 veces
+lo que tardó el split. Ahí la cota raíz era la más débil (48\%), pero la búsqueda sí la subió.
+\item {\bf Test 04: una solución casi óptima y una brecha del 143,5\%.} A los 511 s ya tenía una
+solución a menos del 1\% del óptimo, y terminó a 0,66\%. Pero su cota dual apenas pasó del 39\%
+en la raíz al 41\% a los 40 minutos. Es el mismo resultado que M0 a los 25 minutos (144,3\%): con
+esta instancia, el tiempo extra no cambia nada.
+\stopitemize
+\stopsection
+
+\startsection[title={Predicción y resultados de la suite}]
+Esta predicción se escribió con la suite de stress del monolítico corriendo y sin conocer sus
+resultados.
+
+\startitemize
+\item {\bf Test 04 (6 lotes, 7×7, perfil realista):} es la misma instancia que M0. En 25
+minutos, con otros tres puntos corriendo en paralelo, M0 terminó con una solución a menos del
+1\% del óptimo (79.822,91 contra 79.046,86) y una brecha del 144\%. Predicción: {\bf no termina en 40 minutos}, probablemente con una buena
+solución y una brecha grande.
+\item {\bf Tests 05 a 19:} todos tienen 6 o más lotes en grillas de 7×7 o mayores, o cuadrillas
+más grandes. El monolítico ya no cierra 6 lotes en 5×5 y, en la mitad de los casos con 6 lotes en
+7×7, no encuentra solución en 5 minutos. Predicción: {\bf ninguno termina}, y en varios puede no
+haber ni una solución que reportar.
+\item {\bf Tests heredados 01 a 03:} quedaron fuera de la predicción. Del 01 (100×100), la
+corrida anterior del monolítico terminó sin resultado.
+\stopitemize
+
+{\bf Lo que confirmó el estudio 11:} sobre la instancia exacta del test 04, el monolítico llega a
+los 40 minutos con una solución a 0,66\% del óptimo y una brecha del 143,5\%. La suite no registra
+brechas, solo el timeout, así que ese número es la predicción cuantitativa para el test 04.
+
+{\bf Resultados de la suite:} el monolítico terminó 0 de los
+19 tests en 40 minutos; el split resolvió 9, ninguno en
+más de 23,4 minutos. Los tiempos del split son la duración completa del test
+(compilación, Etapa 1 con seis procesos y Etapa 2) y son un techo: la máquina entró en suspensión
+durante parte de esa corrida, y el tiempo suspendido cuenta en la duración pero no en el tope.
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Caso \eTH \bTH Instancia \eTH \bTH Lotes \eTH \bTH Grilla \eTH \bTH Split \eTH \bTH Mono \eTH \eTR
+\bTR \bTD 01 \eTD \bTD heredado, 30 pickers, 750 órdenes \eTD \bTD 30 \eTD \bTD 100×100 \eTD \bTD timeout \eTD \bTD sin resultado \eTD \eTR
+\bTR \bTD 02 \eTD \bTD heredado, 10 pickers, 100 órdenes \eTD \bTD 10 \eTD \bTD 10×10 \eTD \bTD 0,9 min \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 03 \eTD \bTD heredado, 1 picker, 320 órdenes \eTD \bTD 40 \eTD \bTD 7×7 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 04 \eTD \bTD realista \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 3,4 min \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 05 \eTD \bTD realista \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 5,1 min \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 06 \eTD \bTD realista \eTD \bTD 6 \eTD \bTD 14×14 \eTD \bTD 6,5 min \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 07 \eTD \bTD realista \eTD \bTD 6 \eTD \bTD 15×15 \eTD \bTD 23,4 min \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 08 \eTD \bTD realista \eTD \bTD 6 \eTD \bTD 16×16 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 09 \eTD \bTD realista, depósito rectangular \eTD \bTD 6 \eTD \bTD 8×21 \eTD \bTD 5,5 min \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 10 \eTD \bTD realista, 4 pickers \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 13,0 min \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 11 \eTD \bTD realista, 4 pickers, cadena de frío \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 2,4 min \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 12 \eTD \bTD cuadrilla de 4 pickers \eTD \bTD 8 \eTD \bTD 7×7 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 13 \eTD \bTD cuadrilla de 5 pickers \eTD \bTD 10 \eTD \bTD 7×7 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 14 \eTD \bTD cuadrilla de 6 pickers \eTD \bTD 12 \eTD \bTD 7×7 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 15 \eTD \bTD 9 pickers para 6 lotes \eTD \bTD 6 \eTD \bTD 10×10 \eTD \bTD 12,4 min \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 16 \eTD \bTD 12 pickers, una ola \eTD \bTD 12 \eTD \bTD 10×10 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 17 \eTD \bTD 12 pickers \eTD \bTD 15 \eTD \bTD 10×10 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 18 \eTD \bTD 12 pickers \eTD \bTD 18 \eTD \bTD 10×10 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 19 \eTD \bTD 12 pickers, dos lotes cada uno \eTD \bTD 24 \eTD \bTD 10×10 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
+\eTABLE
+\blank[medium]
+
+Los tests que el split tampoco termina son los del perfil realista con 8 lotes o más (12 a 14 y
+16 a 19), la grilla de 16×16 (08) y dos de los heredados (01 y 03). En esos casos los dos modelos llegan al
+tope; en todos los demás, la diferencia es la que ya mostraban los estudios: el split cierra en
+minutos instancias donde el monolítico no demuestra el óptimo en 40.
+\stopsection
+
+\startsection[title={Síntesis}]
+\startitemize[n]
+\item {\bf El monolítico deja de cerrar mucho antes que el split:} con el perfil realista, a
+los 10 minutos llega hasta 3 lotes en 6×6, 4 lotes en 5×5 y 6 lotes en 3×3. El split cierra
+todos esos puntos en segundos o pocos minutos.
+\item {\bf Su desventaja crece con la grilla y con los lotes:} de igual a 15 veces más lento con
+1 y 2 lotes; con 3 y 4, hasta 27 veces cuando todavía cierra y al menos 59 a 68 cuando no.
+\item {\bf Encuentra buenas soluciones rápido y no las puede demostrar:} a menos del 1\% del
+óptimo en segundos, con la cota dual estancada entre el 39\% y el 97\%.
+\item {\bf La cota raíz es parecida a la del split}, salvo con velocidades en bandas, grillas
+grandes o muchos lotes. La diferencia está en cuánto le cuesta cerrarla: más variables por nodo
+y rutas que el split ya fijó.
+\item {\bf Lo que más lo castiga es la grilla, las velocidades en bandas y las pocas órdenes por
+lote.} Lotes y pickers pesan menos, y ni los pesos asimétricos ni quitar el límite de un arco
+por vértice lo ayudan de forma sistemática.
+\item {\bf Más tiempo casi no ayuda:} de 10 a 40 minutos la cota dual no se movió en dos de los
+tres puntos que no cerraban, y en el test 04 pasó del 39\% al 41\%. La brecha de una corrida corta
+predice bien la de una larga.
+\item {\bf No es un problema de tamaño ni de memoria:} los modelos tienen pocos miles de
+variables y usan menos de 650 MB aun a los 40 minutos.
+\item {\bf En la suite de stress:} el monolítico termina 0 de
+19 tests en 40 minutos, contra 9 del split.
+\stopitemize
+\stopsection
+
+\stoptext

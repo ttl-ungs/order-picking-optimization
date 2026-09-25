@@ -12,8 +12,8 @@ Same problem as opp_aco_2 (multi-picker, all constraints validated):
 - Output: compatible with build_output
 
 Added on top of opp_aco_2 - picker speed and cold chain, the ACO
-counterpart of opp_hc_4 (itself the Hill Climbing counterpart of opp_v5's
-stage2_scheduling.zpl additions over opp_v4):
+counterpart of opp_hc_4 (itself the Hill Climbing counterpart of opp_v5_2_split's
+opp_model_v5_2_split_stage2_scheduling.zpl additions over opp_v4):
 
 - Picker speed (V_p): a batch's execution time is no longer a single
   t_exec_b fixed for every picker. Instead t_exec_pb[p, b] = fixed_time(b)
@@ -64,7 +64,7 @@ additions over opp_aco_2, and this model only needs the latter. opp_aco_3's
 incremental CongestionTracker reservation and multi-pheromone (m-ACO4)
 architecture are NOT adopted here, matching how opp_hc_4 leaves opp_hc_3's
 congestion pricing out - kept focused on the speed/cold-chain trade-off,
-matching opp_v5 itself, which also has no congestion (see analysis/config.py).
+matching opp_v5_2_split itself, which also has no congestion (see analysis/config.py).
 """
 
 import time
@@ -83,7 +83,7 @@ from models.opp_aco_2.utils.route_solution import RouteSolution
 from models.opp_aco_4.utils.route_evaluator import RouteEvaluator
 from models.opp_aco_4.utils.constraints_validator import ConstraintsValidator
 from models.opp_aco_4.utils import exec_time
-from models.opp_v5.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
+from models.opp_v5_2_split.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
 from models.utils.sla import sla_on_time_pct
 
 
@@ -101,7 +101,7 @@ class OPPAntColonyOptimization(Model):
     # usually single-to-low-double digits) without using an arbitrarily
     # huge Big-M-style constant -- this is a continuous heuristic penalty,
     # not a MIP constraint, so there's no SCIP-presolve-numerics failure
-    # mode to worry about the way there was with opp_v5's M_seq.
+    # mode to worry about the way there was with opp_v5_2_split's M_seq.
     _COLD_CHAIN_PENALTY_WEIGHT = 1000.0
 
     def __init__(self, dto: ModelDTO):
@@ -427,7 +427,7 @@ class OPPAntColonyOptimization(Model):
         self, route: List[str], params: SolveAco4ModelDTO, distance: Optional[float] = None
     ) -> float:
         """
-        Travel time (B_time * distance) + service time -- opp_v5's
+        Travel time (B_time * distance) + service time -- opp_v5_2_split's
         R_b_time, the part scaled by V_p. Pass `distance` when the caller
         already computed it, to avoid recomputing it again here (2026-09-10
         audit finding: _eligible_pickers_for_batch used to call this once

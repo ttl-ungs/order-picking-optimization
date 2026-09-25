@@ -1,0 +1,4 @@
+axis,batches,pickers,orders_per_batch,grid,vertices,weights,speed_spread,batch_locations_min,batch_locations_max,stage1_s,stage2_s,status,obj,bb_nodes,sla_pct,route_min,route_max,estimated_finish
+warehouse,6,2,26,7x7,49,2/6,0.0,18,22,7.24,11.32,optimal,94823.13,4263,67.9,46.0,54.0,551.0
+warehouse,6,2,26,10x10,100,2/6,0.0,21,26,24.29,18.57,optimal,120561.01,13183,67.9,70.0,92.0,657.0
+warehouse,6,2,26,15x15,225,2/6,0.0,24,26,520.2,,stage1_slow,,,,120.0,144.0,811.0

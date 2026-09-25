@@ -1,4 +1,0 @@
-test,status,total_time,model_time,obj_val
-test_opp_v5_model_01.TestOPPV5Stress01.test_25_orders_per_batch_30_batches_25x25,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25
-test_opp_v5_model_02.TestOPPV5Stress02.test_25_orders_per_batch_30_batches_100x100,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25
-test_opp_v5_model_03.TestOPPV5Stress03.test_30_orders_per_batch_20_batches_100x100,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25

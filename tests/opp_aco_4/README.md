@@ -2,7 +2,7 @@
 
 Test suite for the ACO heuristic solver `models.opp_aco_4` - the ACO
 counterpart of `models.opp_hc_4` (itself the Hill Climbing counterpart of
-`opp_v5`'s two-stage ZIMPL model), built on top of `opp_aco_2`
+`opp_v5_2_split`'s two-stage ZIMPL model), built on top of `opp_aco_2`
 (multi-picker ACO, no congestion).
 
 ## What's different vs. opp_aco_2
@@ -25,7 +25,7 @@ route_time(b)   = B_time * travel_distance + service_time          # scaled by s
   filtered to that ant's OWN just-built route's eligible pickers (exact,
   not an approximation). A globally infeasible batch (no eligible picker
   under ANY achievable route) makes the instance `"infeasible"` up front,
-  short-circuited via `models/opp_v5/utils/cold_chain_validation.py::
+  short-circuited via `models/opp_v5_2_split/utils/cold_chain_validation.py::
   batches_without_eligible_picker`, fed a greedy nearest-neighbor
   route-time ESTIMATE (built from the same all-pairs shortest-path table
   `opp_aco_2` already precomputes) since ACO has no single deterministic
@@ -62,7 +62,7 @@ The ported files (both normal and stress) are literal copies of their
 -- with `V_p` unset and `T_frio_max` left at its default (`+inf`), giving
 `analysis/`'s `quality_gap_table`/cross-model comparisons the same-named,
 same-shaped instances it needs to join `opp_aco_4` against
-`opp_aco_2`/`opp_aco_3`/`opp_v4` (same pattern `opp_v5` and `opp_hc_4`
+`opp_aco_2`/`opp_aco_3`/`opp_v4` (same pattern `opp_v5_2_split` and `opp_hc_4`
 use). `opp_aco_2` only has 20 stress instances (vs. `opp_hc_2`'s 43), so
 all 20 were ported for full parity (`opp_aco_3` also has all 20).
 

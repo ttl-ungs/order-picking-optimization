@@ -98,3 +98,144 @@ def heterogeneous_speed_precise():
     which is also the cost-minimizing assignment (7.0+9.0=16.0, cheaper
     than the 20.5 the reversed assignment would cost)."""
     return two_batches_two_routes()
+
+
+# The builders below reuse the same graph (route via A costs R_b_time=5.0,
+# route via B costs 14.0) and tiempo_fijo = B_setup + B_picking * sum(C_n)
+# = 1.0 + 1.0 * (orders in the batch). Every expected value in the tests is
+# derived by hand from those numbers.
+
+
+def cold_limit_between_route_and_total():
+    """T_frio_max = 8.0 sits between P_fast's route share (14.0/2.0 = 7.0)
+    and its whole execution time (2.0 + 7.0 = 9.0). An implementation that
+    compared only the route against the limit would accept the batch; the
+    documented one compares the whole t_exec_pb and must reject it."""
+    return one_cold_batch(cold_limit=8.0)
+
+
+def cold_limit_within_tolerance():
+    """T_frio_max = 9.0 - 5e-10: P_fast's t_exec_pb (9.0) exceeds it by less
+    than the documented 1e-9 tolerance, so the pair must stay eligible --
+    otherwise rounding noise in a derived time could drop a valid picker."""
+    return one_cold_batch(cold_limit=9.0 - 5e-10)
+
+
+def two_batches_same_route(fast_speed=2.0, cold_limit=100.0):
+    """Two one-order batches that both need location B (R_b_time = 14.0).
+
+    t_exec_pb = 2.0 + 14.0 / V_p: 16.0 for P_slow (V_p = 1.0) and
+    2.0 + 14.0 / fast_speed for P_fast. Due dates are far and earliness /
+    tardiness are off (W_ea_ta = 0), so the objective is the sum of the two
+    completion times: the model picks between queueing both batches on the
+    fast picker and giving one to the slow picker.
+    """
+    data = two_batches_two_routes()
+    data.update(
+        A_ni={
+            ("O1", "D"): 0, ("O1", "A"): 0, ("O1", "B"): 1, ("O1", "F"): 0,
+            ("O2", "D"): 0, ("O2", "A"): 0, ("O2", "B"): 1, ("O2", "F"): 0,
+        },
+        V_p={"P_slow": 1.0, "P_fast": fast_speed},
+        T_frio_max=cold_limit,
+    )
+    return data
+
+
+def two_cold_batches():
+    """Both batches of two_batches_same_route under T_frio_max = 10.0: only
+    P_fast is eligible for either (9.0 <= 10.0 < 16.0), so it has to run both
+    back to back. The second one completes at 18.0, past the limit -- which
+    is correct, because the limit bounds each batch's execution time, not
+    the waiting before it or the picker's cumulative time."""
+    return two_batches_same_route(fast_speed=2.0, cold_limit=10.0)
+
+
+def slow_picker_late_order(speed=0.5, due_date=20.0):
+    """One order at B, a single picker slower than 1.0, and a due date the
+    picker cannot meet: t_exec = 2.0 + 14.0 / 0.5 = 30.0, so the order is
+    10.0 late. W_full = 10 outweighs the single order's earliness, so there
+    is no reason to delay: completion 30.0, objective 10*30 + 10 = 310."""
+    data = one_cold_batch(cold_limit=100.0)
+    data.update(
+        P={"P_only"},
+        V_p={"P_only": speed},
+        Dd={"O1": due_date},
+        W_full=10.0,
+        W_ea_ta=1.0,
+        W_ea=1.0,
+        W_ta=1.0,
+    )
+    return data
+
+
+def three_orders_one_batch(w_full):
+    """Three orders at location A in one batch, one picker at speed 1.0.
+
+    Earliest completion: tiempo_fijo (1.0 + 1.0 * 3) + R_b_time (5.0) = 9.0.
+    Every due date is 20.0 and W_ea = W_ta = W_ea_ta = 1. Delaying the batch
+    one unit costs W_full and saves one unit of earliness per order still
+    early, so with three orders the model delays while W_full < 3:
+      - w_full = 1: completes at 20.0, no earliness, objective 20.0.
+      - w_full = 5: completes at 9.0, earliness 11.0 per order,
+        objective 5 * 9 + 3 * 11 = 78.0.
+    """
+    data = two_batches_two_routes()
+    data.update(
+        N={"O1", "O2", "O3"},
+        P={"P_only"},
+        B={"B1"},
+        A_ni={
+            (order, location): int(location == "A")
+            for order in ("O1", "O2", "O3") for location in ("D", "A", "B", "F")
+        },
+        Bn={("O1", "B1"): 1, ("O2", "B1"): 1, ("O3", "B1"): 1},
+        C_n={"O1": 1.0, "O2": 1.0, "O3": 1.0},
+        Dd={"O1": 20.0, "O2": 20.0, "O3": 20.0},
+        W_full=w_full,
+        W_ea_ta=1.0,
+        W_ea=1.0,
+        W_ta=1.0,
+        V_p={"P_only": 1.0},
+    )
+    return data
+
+
+def two_dead_end_aisles():
+    """A central hub H with two dead-end aisles, L1 and L2, one order in each.
+
+    Any walk that picks both has to pass through H three times
+    (D -> H -> L1 -> H -> L2 -> H -> F). The routing constraints allow at
+    most one arc into and one out of each vertex, so the model has no
+    feasible route, even though a picker could walk it.
+    """
+    return {
+        "N": {"O1", "O2"},
+        "P": {"P1"},
+        "B": {"B1"},
+        "V": {"D", "H", "L1", "L2", "F"},
+        "E": {("D", "H"), ("H", "L1"), ("L1", "H"), ("H", "L2"), ("L2", "H"), ("H", "F")},
+        "depot": "D",
+        "final": "F",
+        "d_ij": {("D", "H"): 1.0, ("H", "L1"): 1.0, ("L1", "H"): 1.0,
+                 ("H", "L2"): 1.0, ("L2", "H"): 1.0, ("H", "F"): 1.0},
+        "S_i": {"D": 0.0, "H": 0.0, "L1": 0.0, "L2": 0.0, "F": 0.0},
+        "A_ni": {
+            (order, location): int((order, location) in {("O1", "L1"), ("O2", "L2")})
+            for order in ("O1", "O2") for location in ("D", "H", "L1", "L2", "F")
+        },
+        "Bn": {("O1", "B1"): 1, ("O2", "B1"): 1},
+        "C_n": {"O1": 1.0, "O2": 1.0},
+        "Dd": {"O1": 100.0, "O2": 100.0},
+        "W_full": 1.0,
+        "W_ea_ta": 0.0,
+        "W_ea": 1.0,
+        "W_ta": 1.0,
+        "B_time": 1.0,
+        "B_setup": 1.0,
+        "B_picking": 1.0,
+        "C_v": 10.0,
+        "M": 10000.0,
+        "V_p": {"P1": 1.0},
+        "T_frio_max": 100.0,
+    }

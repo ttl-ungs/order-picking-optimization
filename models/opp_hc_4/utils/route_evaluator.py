@@ -5,7 +5,7 @@ congestion).
 Identical to opp_hc_2's RouteEvaluator, except a batch's execution time now
 depends on WHICH picker runs it: the travel+service portion is divided by
 that picker's speed (V_p), while setup/picking time stays fixed (same split
-as stage2_scheduling.zpl's t_exec_pb -- see models/opp_hc_4/opp_hc_4.py
+as opp_model_v5_2_split_stage2_scheduling.zpl's t_exec_pb -- see models/opp_hc_4/opp_hc_4.py
 header). Batches on the same picker still run sequentially; batches on
 different pickers still run in parallel.
 """
@@ -95,7 +95,7 @@ class RouteEvaluator:
 
     def picker_speed(self, picker: str) -> float:
         """Speed of `picker`; defaults to 1.0 when unset (no-op, matches
-        opp_v5's migrated-baseline default)."""
+        opp_v5_2_split's migrated-baseline default)."""
         return self.V_p.get(picker, 1.0)
 
     def evaluate(self, solution) -> float:

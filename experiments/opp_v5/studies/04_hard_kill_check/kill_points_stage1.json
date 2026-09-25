@@ -1,0 +1,3 @@
+[
+  {"label": "T4", "model": "split", "batches": 6, "pickers": 2, "orders_per_batch": 26, "side": 15, "hard_cap_s": 45}
+]

@@ -229,7 +229,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
         self._last_total_violation = sum(self._last_overrun_by_batch.values())
 
     def t_exec_pb(self, batch: str, route: list, picker: str) -> float:
-        """Same formula as stage2_scheduling.zpl's t_exec_pb: fixed setup/
+        """Same formula as opp_model_v5_2_split_stage2_scheduling.zpl's t_exec_pb: fixed setup/
         picking time (speed-independent) plus travel+service time divided
         by the picker's speed."""
         fixed_time = self.B_setup + self.B_picking * sum(
@@ -240,7 +240,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
 
     def _route_time(self, route: list) -> float:
         """Travel time (B_time * distance) + service time -- the part of
-        t_exec that scales with picker speed (opp_v5's R_b_time)."""
+        t_exec that scales with picker speed (opp_v5_2_split's R_b_time)."""
         if not route:
             return 0.0
 

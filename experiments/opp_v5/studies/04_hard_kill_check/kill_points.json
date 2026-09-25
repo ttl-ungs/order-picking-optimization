@@ -1,0 +1,5 @@
+[
+  {"label": "T1", "model": "split", "batches": 4, "pickers": 2, "orders_per_batch": 10, "side": 5, "hard_cap_s": 120},
+  {"label": "T2", "model": "mono", "batches": 4, "pickers": 2, "orders_per_batch": 10, "side": 5, "hard_cap_s": 120},
+  {"label": "T3", "model": "split", "batches": 6, "pickers": 4, "orders_per_batch": 26, "side": 7, "speed_spread": 0.3, "speed_tiers": 2, "hard_cap_s": 40}
+]

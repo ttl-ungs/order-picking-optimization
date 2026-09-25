@@ -1,0 +1,20 @@
+test,status,total_time,model_time,obj_val,peak_rss_mb
+test_case_01.TestOPPMonoStress01.test_25_orders_per_batch_30_batches_100x100,no_result,,,,
+test_case_02.TestOPPMonoStress02.test_10_orders_per_batch,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_03.TestOPPMonoStress03.test_8_orders_per_batch_7x7_320_orders,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_04.TestOPPMonoStress04.test_realistic_crew_7x7_warehouse,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_05.TestOPPMonoStress05.test_realistic_crew_13x13_warehouse,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_06.TestOPPMonoStress06.test_realistic_crew_14x14_warehouse,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_07.TestOPPMonoStress07.test_realistic_crew_15x15_warehouse,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_08.TestOPPMonoStress08.test_realistic_crew_16x16_warehouse,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_09.TestOPPMonoStress09.test_realistic_crew_rectangular_warehouse,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_10.TestOPPMonoStress10.test_realistic_crew_scheduling_heavy,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_11.TestOPPMonoStress11.test_realistic_crew_cold_chain,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_12.TestOPPMonoStress12.test_larger_crew_8_batches_4_pickers,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_13.TestOPPMonoStress13.test_larger_crew_10_batches_5_pickers,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_14.TestOPPMonoStress14.test_larger_crew_12_batches_6_pickers,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_15.TestOPPMonoStress15.test_over_staffed_wave_6_batches_9_pickers,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_16.TestOPPMonoStress16.test_large_crew_single_wave,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_17.TestOPPMonoStress17.test_large_crew_three_second_batches,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_18.TestOPPMonoStress18.test_large_crew_half_second_batches,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40
+test_case_19.TestOPPMonoStress19.test_large_crew_two_batches_each,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40

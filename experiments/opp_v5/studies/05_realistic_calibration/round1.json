@@ -1,0 +1,11 @@
+[
+  {"label": "A3", "model": "split", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 17, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500},
+  {"label": "B2", "model": "split", "batches": 8, "pickers": 3, "orders_per_batch": 26, "side": 7, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500},
+  {"label": "B1", "model": "split", "batches": 6, "pickers": 4, "orders_per_batch": 26, "side": 7, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500},
+  {"label": "M0", "model": "mono", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 7, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500},
+  {"label": "A2", "model": "split", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 15, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500},
+  {"label": "A2t3", "model": "split", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 15, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 3, "hard_cap_s": 1500},
+  {"label": "A1", "model": "split", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 13, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500},
+  {"label": "B3", "model": "split", "batches": 7, "pickers": 3, "orders_per_batch": 26, "side": 7, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500},
+  {"label": "R0", "model": "split", "batches": 6, "pickers": 3, "orders_per_batch": 26, "side": 7, "weights": [4, 5], "speed_spread": 0.2, "speed_tiers": 2, "hard_cap_s": 1500}
+]

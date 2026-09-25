@@ -5,8 +5,8 @@ class SolveAco4ModelDTO(SolveAcoModelDTO):
     """
     DTO for opp_aco_4: adds picker speed and cold-chain hyperparameters on
     top of opp_aco_2's (SolveAcoModelDTO) fields - the ACO counterpart of
-    opp_hc_4 (itself the Hill Climbing counterpart of opp_v5's
-    stage2_scheduling.zpl additions over opp_v4).
+    opp_hc_4 (itself the Hill Climbing counterpart of opp_v5_2_split's
+    opp_model_v5_2_split_stage2_scheduling.zpl additions over opp_v4).
 
     Unlike opp_aco_3, congestion between concurrent pickers is intentionally
     left out here (see models/opp_aco_4/opp_aco_4.py header for why) - the
@@ -31,7 +31,7 @@ class SolveAco4ModelDTO(SolveAcoModelDTO):
     @property
     def V_p(self) -> dict:
         """dict {picker: speed}. A picker missing from this dict defaults to
-        speed 1.0 (see opp_aco_4's _picker_speed) - the same default opp_v5's
+        speed 1.0 (see opp_aco_4's _picker_speed) - the same default opp_v5_2_split's
         migrated_case.py uses to make the cold-chain/speed extensions a no-op
         for scenarios that don't care about them."""
         return self._V_p
@@ -45,7 +45,7 @@ class SolveAco4ModelDTO(SolveAcoModelDTO):
         """Cold-chain deadline (seconds): the max allowed t_exec_pb[p, b]
         for a (picker, batch) pair to remain eligible for that assignment.
         Default +inf disables cold-chain entirely (every picker is eligible
-        for every batch), matching opp_v5's migrated-baseline behavior."""
+        for every batch), matching opp_v5_2_split's migrated-baseline behavior."""
         return self._T_frio_max
 
     @T_frio_max.setter

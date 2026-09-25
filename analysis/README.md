@@ -10,8 +10,8 @@ Generaliza `docs/specs/model_analysis.md` (escrito originalmente para
 | `opp_aco_2` | ACO, pickers en paralelo, **sin** congestión                   |
 | `opp_hc_3`  | Hill Climbing, congestion-aware                                |
 | `opp_aco_3` | ACO, congestion-aware, multi-pheromone (m-ACO4)                |
-| `opp_hc_4`  | Hill Climbing, velocidad de picker + cadena de frío (como `opp_v5`), **sin** congestión |
-| `opp_aco_4` | ACO, velocidad de picker + cadena de frío (como `opp_v5`), **sin** congestión |
+| `opp_hc_4`  | Hill Climbing, velocidad de picker + cadena de frío (como `opp_v5_2_split`), **sin** congestión |
+| `opp_aco_4` | ACO, velocidad de picker + cadena de frío (como `opp_v5_2_split`), **sin** congestión |
 
 ## 1. Generar los datos
 
@@ -438,7 +438,13 @@ las 3 colisiones reales mencionadas arriba en cada corrida del pipeline.
 menor prioridad): renombrar los métodos de test colisionados en
 `opp_v4`/`opp_hc_2` para que dejen de compartir nombre -- mientras tanto,
 esas instancias específicas quedan excluidas de las tablas comparativas
-en vez de corromperlas.
+en vez de corromperlas. **Hecho para `opp_v4` (2026-09-24)**: en
+`test_case_23` y `test_case_24` los dos métodos pasan a
+`test_grid_multi_location_orders_with_capacities` y
+`test_bridge_disconnected_required_location_with_capacities` (el cuerpo es
+idéntico al de `test_case_20`/`21`; solo registran además las capacidades,
+que es lo que los hacía colisionar). Los opp_v5 que los heredan
+(`test_case_25`/`26`) toman el nombre nuevo. Queda el de `opp_hc_2` en estrés.
 
 ### Cierre de la auditoría (2026-08-30): las 4 baterías de estrés
    re-corridas y consolidadas -- estado final
@@ -481,39 +487,39 @@ Lecturas clave:
 secciones (1, 2, 5, 6) y su lista de pendientes quedó cerrada -- no falta
 ninguna corrida más antes de pasar a redactar el texto de la tesina.
 
-### Tests de `opp_v5` (2026-08-31): cobertura completa + validación de sus
+### Tests de `opp_v5_2_split` (2026-08-31): cobertura completa + validación de sus
    capacidades propias -- y un bug real encontrado
 
-Se completó la cobertura de tests normales de `opp_v5`
+Se completó la cobertura de tests normales de `opp_v5_2_split`
 (antes solo llegaba a `model_21`, sin los 9 casos que `opp_v4` tiene en
 `model_20/21/24-30`) y se agregaron tests nuevos que validan, no solo
-comparan, las dos capacidades propias de `opp_v5` (velocidad heterogénea de
+comparan, las dos capacidades propias de `opp_v5_2_split` (velocidad heterogénea de
 pickers, cadena de frío):
 
-- **Cobertura**: `tests/opp_v5/functional/test_opp_v5_model_{22,...,30}.py`
+- **Cobertura**: `tests/opp_v5_2_split/functional/test_opp_v5_model_{22,...,30}.py`
   -- una línea cada uno, usando el adaptador genérico `migrated_case()` que
   ya existía en `migrated_case.py` (creado para portar `model_01-19`, nunca
-  extendido). `opp_v5` reusó los números 20/21 para sus propios tests de
+  extendido). `opp_v5_2_split` reusó los números 20/21 para sus propios tests de
   velocidad/frío, así que los 9 casos que faltaban de `opp_v4`
   (`model_20`=grilla, `model_21`=puente, `model_24-30`=pesos distintos,
   vencimientos extremos, lote vacío, capacidades fraccionarias/cero, orden
   en múltiples lotes, orden que excede el vehículo, tiempos de servicio) se
   agregaron como `model_22-30`. También se agregó el test de estrés #08 que
-  faltaba (`tests/opp_v5/stress/test_case_08.py`, el único de
-  los 8 de `opp_v4` que `opp_v5` no tenía).
-- **Validación de funcionalidad** (`tests/opp_v5/functional/test_case_34.py`,
+  faltaba (`tests/opp_v5_2_split/stress/test_case_08.py`, el único de
+  los 8 de `opp_v4` que `opp_v5_2_split` no tenía).
+- **Validación de funcionalidad** (`tests/opp_v5_2_split/functional/test_case_34.py`,
   nuevo): más allá de los 4 tests básicos que ya existían (`model_20`/`21`,
   "¿qué picker lo hace?"), se agregaron 3 tests que verifican la fórmula y
   los casos límite exactos:
   - Verifica numéricamente la fórmula documentada en
-    `stage2_scheduling.zpl` (`t_exec_pb = tiempo_fijo + R_b_time / V_p`,
+    `opp_model_v5_2_split_stage2_scheduling.zpl` (`t_exec_pb = tiempo_fijo + R_b_time / V_p`,
     donde `tiempo_fijo` NO se escala por velocidad) contra valores exactos
     calculados a mano, no solo "qué picker ganó".
   - Verifica el límite exacto de `T_frio_max` (`<=`, no `<`) -- un picker
     cuyo `t_exec_pb` coincide exactamente con el límite debe seguir siendo
     elegible.
   - **Encontró un bug real**: cuando ningún picker es elegible para un
-    lote por cadena de frío, el comentario de `stage2_scheduling.zpl`
+    lote por cadena de frío, el comentario de `opp_model_v5_2_split_stage2_scheduling.zpl`
     sobre `B_sin_picker_elegible` dice que "el modelo va a dar infactible
     seguro" -- pero no es así. La restricción `assign_exactly_one_picker`
     queda con una suma vacía (`0 == 1`), y **ZIMPL la rechaza en tiempo de
@@ -523,7 +529,7 @@ pickers, cadena de frío):
     cualquier llamador esperaría según el propio comentario del modelo. El
     test documenta el comportamiento real (`assertRaises`), no lo
     enmascara -- **pendiente reportar** como bug de
-    `models/opp_v5/stage2_scheduling.zpl` (el chequeo `eligible_pairs()`
+    `models/opp_v5_2_split/opp_model_v5_2_split_stage2_scheduling.zpl` (el chequeo `eligible_pairs()`
     del lado Python es, hoy, lo único que evita este crash).
 
 Verificado con la suite normal completa: 53 tests, 52 ok, 1 timeout
@@ -531,11 +537,11 @@ Verificado con la suite normal completa: 53 tests, 52 ok, 1 timeout
 ya se conocía de `opp_v4` -- coherente, no es nuevo), 0 errores tras el fix
 del test de infeasibilidad.
 
-### Estrés de `opp_v5` (2026-08-31): batería completa -- 0% de éxito, y un
+### Estrés de `opp_v5_2_split` (2026-08-31): batería completa -- 0% de éxito, y un
    hallazgo nuevo a investigar
 
 Con las 8 baterías de estrés corridas de punta a punta (incluido el
-`model_08` que se agregó en la ronda anterior), `opp_v5` da **0/8 (0%)**:
+`model_08` que se agregó en la ronda anterior), `opp_v5_2_split` da **0/8 (0%)**:
 7 timeouts (a los 25 min) y **1 falla real, no por timeout**
 (`model_05`, `test_10_orders_per_batch`, instancia de 10 lotes/100
 órdenes/grilla 10x10).
@@ -554,7 +560,7 @@ requeridas), la eliminación de subtours vía flujo Gavish-Graves de la
 Etapa 1 podría estar dejando pasar arcos "de sobra" (ciclos u otras
 estructuras desconectadas del camino depósito-final) sin que la
 función objetivo los penalice lo suficiente como para descartarlos --
-sería la contraparte, del lado exacto/`opp_v5`, del mismo tipo de
+sería la contraparte, del lado exacto/`opp_v5_2_split`, del mismo tipo de
 problema de construcción de rutas que ya se investigó y corrigió del
 lado heurístico.
 
@@ -577,14 +583,14 @@ instancia**. Inspeccionando el `.lp` crudo:
 
 Esto excede lo que se puede diagnosticar sin entrar a las entrañas del
 compilador de ZIMPL (no es un bug de este repositorio ni de
-`stage1_routing.zpl` en un sentido que se pueda arreglar en Python).
+`opp_model_v5_2_split_stage1_routing.zpl` en un sentido que se pueda arreglar en Python).
 Parece un problema de generación/truncamiento de nombres de ZIMPL
 específico de instancias con muchos lotes y grafos grandes. 
 Puede requerir ayuda de alguien con más experiencia en ZIMPL
 o revisar su documentación/changelog sobre límites de nombres de
 variable.
 
-Con esto, `opp_v5` en estrés queda confirmado como **no competitivo a
+Con esto, `opp_v5_2_split` en estrés queda confirmado como **no competitivo a
 esta escala** (0% contra el 12.5% de `opp_v4`, que además solo pierde
 por timeout, no por soluciones mal formadas) -- se mantiene excluido de
 las comparaciones de escalabilidad en `docs/thesis/results_outline.md`, ahora
@@ -594,18 +600,18 @@ con el dato completo (no parcial) respaldando esa decisión.
 
 Se corrigió el bug documentado arriba (`B_sin_picker_elegible` crashea en
 vez de dar `infeasible` limpio): se agregó
-`models/opp_v5/utils/cold_chain_validation.py::batches_without_eligible_picker`,
+`models/opp_v5_2_split/utils/cold_chain_validation.py::batches_without_eligible_picker`,
 una réplica en Python de `PB_elig`/`t_exec_pb` (mismo patrón que
 `models/utils/input_validation.py` usa para `opp_v4`), y se la conectó en
-`OPPTestCaseV5.run_pipeline` para cortocircuitar a `status="infeasible"`
+`OPPTestCaseSplit.run_pipeline` para cortocircuitar a `status="infeasible"`
 **antes** de invocar ZIMPL para la Etapa 2, en vez de dejar que el error
 de compilación se propague como excepción sin manejar. El test que
 documentaba el bug (`test_case_34.py`) se actualizó para verificar
 el comportamiento corregido (antes esperaba la excepción con
 `assertRaises`; ahora espera `status == "infeasible"` limpio).
 
-Este fix vive en el harness de tests (`OPPTestCaseV5`), no en
-`stage2_scheduling.zpl` en sí, porque `opp_v5` todavía no tiene un punto
+Este fix vive en el harness de tests (`OPPTestCaseSplit`), no en
+`opp_model_v5_2_split_stage2_scheduling.zpl` en sí, porque `opp_v5_2_split` todavía no tiene un punto
 de entrada de "producción" fuera de los tests -- si en algún momento lo
 tiene, este mismo chequeo debería moverse ahí (o agregarse directamente
 al `.zpl`, si ZIMPL ofrece una forma limpia de expresar "sum vacía ==

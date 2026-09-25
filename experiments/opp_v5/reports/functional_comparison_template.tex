@@ -1,0 +1,190 @@
+\setupcolors[state=start]
+\setupcolor[hex]
+\definecolor[darkblue][h=003366]
+\definecolor[darkgray][h=e6e6e6]
+\definecolor[redline][h=d9534f]
+\definecolor[blueline][h=5bc0de]
+\definecolor[greenline][h=5cb85c]
+
+\setuphead[section][style=\bfa, color=darkblue, before=\blank, after=\blank]
+\setuphead[subsection][style=\bf, color=black, before=\blank, after=\blank]
+\setuppapersize[A4][A4]
+\setupbodyfont[11pt]
+\setuplayout[width=middle, height=middle, topspace=2cm, bottomspace=2cm]
+\mainlanguage[es]
+
+\starttext
+\title{\bf Comparación de OPP\_v5\_1\_mono\crlf y OPP\_v5\_2\_split en pruebas funcionales y de stress}
+\blank[big]
+
+\startsection[title={Objetivo y alcance}]
+Este documento compara las ejecuciones de los tests funcionales y de stress de OPP\_v5\_1\_mono
+(formulación monolítica) y OPP\_v5\_2\_split (formulación en dos etapas) sobre los mismos
+escenarios. Los dos modelos definen el mismo problema de optimización (ruteo, asignación y
+secuenciación, con velocidades heterogéneas de pickers y cadena de frío) y tienen el mismo valor
+óptimo.
+
+Se usan las corridas del 24 de septiembre de 2026, que ya incluyen los tests 35 a 38 (cadena de
+frío, velocidad, demora a propósito y el límite de un arco por vértice):
+\startitemize
+\item \type{results/opp_v5_2_split/functional/} — %%NUM:split_tests%% tests, corrida sola.
+\item \type{results/opp_v5_1_mono/functional/} — %%NUM:mono_tests%% tests, corrida mientras se
+ejecutaba aparte el test\_case\_30 de los dos modelos, así que sus tiempos pueden estar algo
+inflados.
+\stopitemize
+
+El test\_case\_30 se corrió por separado y sus filas se agregaron a cada CSV. Su variante
+factible no termina en los 25 minutos de tope en ninguno de los dos modelos y queda fuera de la
+estadística; la infactible figura con los demás infactibles.
+
+La suite de stress (sección \in[sec:stress]) usa \type{results/opp_v5_2_split/stress/} y
+\type{results/opp_v5_1_mono/stress/}: los mismos %%NUM:stress_total%% escenarios en los dos
+modelos, con un tope de 40 minutos por test. Los estudios que explican esos resultados están en
+los documentos de exploración de cada modelo.
+\stopsection
+
+\startsection[title={Criterio de equivalencia}]
+Los dos modelos resuelven la misma definición: misma región factible, misma función objetivo,
+mismo valor óptimo. El argumento es que la ruta más corta domina a cualquier otra (el objetivo no
+tiene un término de tiempo de ruta, y una ruta más corta solo afloja las restricciones de
+duración y de cadena de frío), y los lotes no interactúan en el ruteo.
+
+Lo que difiere es el {\em conjunto} de soluciones óptimas: el monolítico puede devolver una ruta
+no mínima con el mismo valor objetivo. En el split, la Etapa 1 siempre produce la ruta mínima,
+porque su objetivo es minimizar el tiempo de ruta.
+
+Los tests de los dos modelos se corresponden uno a uno, salvo
+\hyphenatedurl{test_preflight_detects_when_no_picker_is_eligible} (test\_case\_24): resuelve solo la
+Etapa 1, que el monolítico no tiene. Los escenarios heredados de OPP\_v4 neutralizan las
+capacidades de v5 con $V_p = 1$ y un límite de frío que no restringe.
+\stopsection
+
+\startsection[title={Cobertura y resultado de la ejecución}]
+%%TABLE:coverage%%
+
+Los infactibles incluyen los tests 34 y 35 de cadena de frío. En el CSV del split figuran con un
+objetivo porque su chequeo previo corta antes de la Etapa 2 y queda registrado el objetivo de la
+Etapa 1; los dos modelos los declaran infactibles.
+\stopsection
+
+\startsection[title={Equivalencia del valor objetivo}]
+De los %%NUM:feasible%% pares factibles, {\bf %%NUM:same_obj%% tienen el mismo valor objetivo}. La
+diferencia máxima es $%%NUM:max_diff%%$ (casos %%NUM:diff_cases%%), dentro de la tolerancia de
+SCIP.
+
+Esto confirma empíricamente que las dos formulaciones tienen el mismo valor óptimo, también en
+los tests nuevos de cadena de frío, velocidad y demora a propósito.
+\stopsection
+
+\startsection[title={Tiempos de los pares factibles}]
+Sobre los %%NUM:feasible%% pares factibles. \type{total_time} es la ejecución completa del test,
+incluida la compilación de ZIMPL; \type{model_time} es solo el solver (en el split, la Etapa 2).
+
+%%TABLE:times%%
+
+En total, el monolítico tardó %%NUM:sum_ratio%% veces más que el split, pero en la mediana la
+diferencia se invierte: %%NUM:median_mono%%~s contra %%NUM:median_split%%~s. En %%NUM:mono_faster%%
+de los %%NUM:feasible%% pares el monolítico fue {\bf más rápido} (entre %%NUM:mono_faster_min%%× y
+%%NUM:mono_faster_max%%×): son instancias chicas, donde compilar y resolver un solo modelo cuesta
+menos que compilar dos. La suma la dominan las instancias de grilla, donde el monolítico llega a
+tardar %%NUM:top_ratio%% veces más (caso %%NUM:top_case%%).
+
+En \type{model_time} la diferencia es mayor (%%NUM:model_sum_ratio%% veces en la suma,
+%%NUM:model_median_ratio%% en la mediana), porque el monolítico resuelve un MIP con más variables y
+restricciones que cualquiera de las dos etapas.
+\stopsection
+
+\startsection[title={Visualización comparativa}]
+
+\startsubsection[title={Tiempo total: monolítico contra dos etapas}]
+Cada punto es un par factible. Los puntos por encima de la diagonal son instancias donde el
+monolítico fue más lento.
+
+\placefigure[force][fig:scatter]{Tiempo total de cada par factible: monolítico contra split (escala logarítmica en los dos ejes).}
+{%%FIG:scatter%%}
+\stopsubsection
+
+\startsubsection[title={Cociente de tiempos por par}]
+Barras ordenadas por el cociente mono / split. Las que quedan por debajo de 1 son instancias
+donde el monolítico fue más rápido. Se identifican los casos en que el monolítico tarda más de
+10 veces.
+
+\placefigure[force][fig:ratio]{Tiempo total del monolítico dividido el del split, por par factible (escala logarítmica).}
+{%%FIG:ratio%%}
+\stopsubsection
+
+\startsubsection[title={Tiempo del solver según el tamaño}]
+Tiempo del solver contra el tamaño de la instancia, medido como lotes × ubicaciones, para los
+%%NUM:sized%% pares cuyo CSV registra ese tamaño. La separación entre las dos nubes crece con el
+tamaño: la descomposición escala mejor.
+
+\placefigure[force][fig:size]{Tiempo del solver contra el tamaño de la instancia (escala logarítmica en los dos ejes).}
+{%%FIG:size%%}
+\stopsubsection
+\stopsection
+
+\startsection[title={Detalle de los pares factibles}]
+%%TABLE:detail%%
+\stopsection
+
+\startsection[title={Tests infactibles}]
+Los %%NUM:infeasible%% pares que los dos modelos declaran infactibles.
+
+%%TABLE:infeasible%%
+\stopsection
+
+\startsection[title={Tests fuera de la estadística}]
+%%TABLE:excluded%%
+\stopsection
+
+\startsection[title={Análisis de la falla del test\_case\_06}]
+El escenario del test\_case\_06 (\type{test_two_possible_routes}) tiene dos rutas que producen el
+mismo valor objetivo (30,0): L1→L2→L4→L5, con un tiempo de ruta de 7,5, y L1→L4→L5, con 4,0. Las
+dos son factibles y alcanzan el mismo objetivo porque la fecha de entrega de 15,0 da margen para
+cualquiera.
+
+El split siempre devuelve la ruta mínima (4,0), porque la Etapa 1 minimiza el tiempo de ruta. El
+monolítico puede elegir la más larga (7,5), porque su objetivo no incluye el tiempo de ruta y las
+dos rutas dan el mismo valor.
+
+El test falla porque su aserción verifica el grafo de arcos de la ruta mínima. El monolítico no
+está en error: devuelve una solución óptima válida. Es una muestra de que los conjuntos de
+soluciones óptimas difieren entre las formulaciones. La falla está registrada como
+\type{known_failures} en \type{scripts/baseline_counts.json}.
+\stopsection
+
+\startsection[title={Suite de stress},reference=sec:stress]
+Los tests de stress llevan los dos modelos a instancias de tamaño real: el perfil realista (26
+órdenes por lote, dos bandas de velocidad, pesos 4/5) en grillas de 7×7 a 16×16 y cuadrillas de
+hasta 24 lotes, más tres escenarios heredados de OPP\_v4. El split corre la Etapa 1 con seis
+procesos. Su tiempo es la duración completa del test y es un techo: la máquina entró en
+suspensión durante parte de esa corrida, y el tiempo suspendido cuenta en la duración pero no en
+el tope.
+
+%%TABLE:stress%%
+
+El monolítico termina %%NUM:stress_mono_ok%% de los %%NUM:stress_total%% tests; el split,
+%%NUM:stress_split_ok%%, ninguno en más de %%NUM:stress_split_max%% minutos. En los tests
+funcionales las dos formulaciones son intercambiables salvo en las grillas; a este tamaño, solo
+el split da una respuesta. Los tests que tampoco termina el split son los del perfil realista
+con 8 lotes o más (12 a 14 y 16 a 19), la grilla de 16×16 (08) y dos de los heredados (01 y
+03).
+\stopsection
+
+\startsection[title={Conclusiones}]
+\startitemize[n]
+\item {\bf Equivalencia del valor objetivo:} confirmada en los %%NUM:feasible%% pares factibles,
+incluidos los tests nuevos. La diferencia máxima, $%%NUM:max_diff%%$, es de redondeo del solver.
+\item {\bf Instancias chicas:} el monolítico es comparable o algo más rápido, porque evita
+compilar dos modelos ZIMPL; el split paga un costo fijo por la segunda etapa.
+\item {\bf Instancias de grilla:} el monolítico es entre 10 y %%NUM:top_ratio%% veces más lento. El
+MIP combinado tiene bastantes más variables y restricciones que cualquiera de las dos etapas.
+\item {\bf Diferencia de conjuntos de soluciones:} el test\_case\_06 muestra que el monolítico
+puede devolver rutas no mínimas con el mismo objetivo.
+\item {\bf Escalabilidad:} la ventaja del split crece con el tamaño de la instancia. En la suite
+de stress el monolítico termina %%NUM:stress_mono_ok%% de %%NUM:stress_total%% tests en 40
+minutos y el split %%NUM:stress_split_ok%%.
+\stopitemize
+\stopsection
+
+\stoptext

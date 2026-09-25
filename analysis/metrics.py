@@ -274,9 +274,9 @@ def quality_gap_table(
 
     heuristic_models: optional iterable restricting which non-exact models are
     compared (default: every model in df other than exact_model). Used e.g.
-    to compare opp_hc_4/opp_aco_4 against opp_v5 specifically -- they're the
-    only heuristics sharing opp_v5's extra features (picker speed, cold
-    chain), so comparing the rest (opp_hc_2/3, opp_aco_2/3) against opp_v5
+    to compare opp_hc_4/opp_aco_4 against opp_v5_2_split specifically -- they're the
+    only heuristics sharing opp_v5_2_split's extra features (picker speed, cold
+    chain), so comparing the rest (opp_hc_2/3, opp_aco_2/3) against opp_v5_2_split
     would silently mix in instances that were never solved under the same
     problem definition.
     """

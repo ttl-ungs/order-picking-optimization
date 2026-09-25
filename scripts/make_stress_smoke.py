@@ -7,7 +7,7 @@ A stress test qualifies when, in the latest recorded run of its model (results/<
 read through analysis.load), it finished OK within --max-seconds. Tests are matched by unittest
 method name -- the same key the analysis pipeline joins on -- and a test module is included only
 if every test method in it qualifies and no method name is ambiguous within the model. Only the
-Hill Climbing / ACO models are listed: opp_v4/opp_v5 need the zimpl binary and never converge at
+Hill Climbing / ACO models are listed: opp_v4/opp_v5_2_split need the zimpl binary and never converge at
 stress scale.
 
 `python -m scripts.run_all --tier stress --smoke` then runs just those files through
