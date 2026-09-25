@@ -26,7 +26,7 @@ python -m scripts.run_all --tier stress --models opp_hc_2 --stress-timeout-minut
 - the functional suites of the HC/ACO models (`opp_hc_1..4`, `opp_aco_1..4`), retrying a failing suite once (ACO tests without a `Seed` are stochastic; a suite that needs the retry is flagged as flaky).
 - the fast stress subset (`--smoke`), with a 60 s cap per test.
 
-`.github/workflows/nightly.yml` (daily, or by hand from the Actions tab): every stress test of the HC/ACO models with a per-test cap (a test that reaches it is reported as a timeout, not a failure) and the functional suites of `opp_v1..v3` (SCIP only). `opp_v4`/`opp_v5_2_split` are never executed in CI: they need the `zimpl` binary, which the runner does not have (their test counts are still checked).
+`.github/workflows/nightly.yml` (daily, or by hand from the Actions tab): every stress test of the HC/ACO models with a per-test cap (a test that reaches it is reported as a timeout, not a failure) and the functional suites of `opp_v1..v3` (SCIP only). The functional suites of `opp_v4`/`opp_v5_1_mono`/`opp_v5_2_split` run in its `exact-zimpl` job, which installs `zimpl` from conda-forge; their stress suites never run in CI (most tests hit the cap). `ci.yml` has no `zimpl`, so there these models are only collected (test counts).
 
 `run_all` never writes result CSVs (it sets `WRITE_RESULTS_CSV=0` for the runs); use
 `python -m tests.run_suite <model> <tier>` with `WRITE_RESULTS_CSV=1` to produce data for `analysis/`.
