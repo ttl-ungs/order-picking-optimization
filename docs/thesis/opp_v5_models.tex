@@ -77,8 +77,8 @@ Los archivos fuente de las formulaciones son:
     \NC B_{time} \NC = \text{Tiempo por unidad de distancia (velocidad de referencia)} \NR
     \NC B_{setup} \NC = \text{Tiempo de preparación por lote (independiente de la ruta)} \NR
     \NC B_{picking} \NC = \text{Tiempo de picking por unidad de capacidad (independiente de la ruta)} \NR
-    \NC M \NC = \text{Constante Big-M general} \NR
-    \NC M_{seq} \NC = \text{Big-M para restricciones de secuenciación (fijo en 500)} \NR
+    \NC M \NC = \text{Constante Big-M general (dato del escenario)} \NR
+    \NC M_{seq} \NC = \text{Big-M para restricciones de secuenciación (calculado por instancia, ver abajo)} \NR
     \NC C_n \NC = \text{Capacidad requerida por la orden } n \in \mathcal{N} \NR
     \NC Dd_n \NC = \text{Due date de la orden } n \in \mathcal{N} \NR
     \NC d_{ij} \NC = \text{Distancia entre } i \text{ y } j, \quad (i,j) \in \mathcal{E} \NR
@@ -107,6 +107,17 @@ Los archivos fuente de las formulaciones son:
 \startalign
     \NC R_b \NC = \left| \left\{ i \in \mathcal{V} \setminus \{v_1,v_f\} : \sum_{n \in \mathcal{N}} A_{ni} \cdot Bn_{nb} \ge 1 \right\} \right| \quad \text{(locaciones requeridas por el lote } b \text{)} \NR
     \NC F_b \NC = B_{setup} + B_{picking} \cdot \sum_{n \in \mathcal{N}} C_n \cdot Bn_{nb} \quad \text{(tiempo fijo del lote, independiente de la ruta y del picker)} \NR
+\stopalign
+\stopformula
+
+$M_{seq}$ no es una constante del modelo: se lee de los datos, y el armado de los
+archivos \type{.dat} lo calcula para cada instancia como el horizonte en que un solo
+picker, el más lento, ejecuta todos los lotes seguidos con una ruta de peor caso, redondeado
+al entero y con un piso de 500:
+\startformula
+\startalign
+    \NC M_{seq} \NC = \max\left(500,\; \sum_{b \in \mathcal{B}} \left( F_b + \frac{Rt^{max}}{\min_{p} V_p} \right) + 1 \right) \NR
+    \NC Rt^{max} \NC = B_{time} \cdot |\mathcal{V}| \cdot \max_{(i,j) \in \mathcal{E}} d_{ij} \;+\; |\mathcal{V}| \cdot \max_{i \in \mathcal{V}} S_i \NR
 \stopalign
 \stopformula
 \stopsubsection
