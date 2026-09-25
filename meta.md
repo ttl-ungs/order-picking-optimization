@@ -617,6 +617,7 @@ Las dos primeras son de rendimiento puro y están medidas. Las otras cuatro son 
   - [experiments/opp_v5/reports/stress_suite.py](experiments/opp_v5/reports/stress_suite.py) (nuevo), los generadores de exploración y de comparación
   - [analysis/config.py](analysis/config.py) (`LATEST_FILE_OVERRIDES`)
 - Qué se hizo:
+  - Stress 02 del split vuelto a correr con 6 procesos: 54,6 s (antes 98,9 s en secuencia, corrida del 22-09), mismo objetivo (29.034); su fila reemplaza la vieja.
   - Stress 16–19 del split (Etapa 1 con 6 procesos): los cuatro dan timeout a 40 min. El CSV del split tiene los 19 tests: 9 resueltos (02, 04–07, 09–11, 15) y 10 timeouts.
   - Stress del mono: medidos 01 (sin resultado), 02 (timeout: la corrida se canceló pasados los 40 min sin terminar; la fila se cargó a mano) y 03–07 (timeout). 08–19 figuran como timeout sin haberse corrido todavía: el test más chico de la suite (04) ya no cierra en 40 min y el resto lo domina en tamaño (estudios 08 y 11). Si la corrida real de 08–19 da otro resultado, se reemplazan esas filas y se regeneran los documentos. Las etiquetas de timeout de los dos CSV de stress quedaron unificadas en "- 40".
   - Los CSV de opp_v5 pasan a nombre fijo, sin fecha: son la versión que cuenta. `_parallel` marca la corrida de stress del split con la Etapa 1 en paralelo. `LATEST_FILE_OVERRIDES` los fija para que el análisis no elija una corrida nueva que se escriba al lado.
