@@ -14,10 +14,6 @@ SPLIT_STRESS = os.path.join(ROOT, "results", "opp_v5_2_split", "stress",
 MONO_STRESS = os.path.join(ROOT, "results", "opp_v5_1_mono", "stress",
                            "output_opp_v5_1_mono_stress_tests.csv")
 
-# Mono test cases still running when the docs were written, reported as timeouts.
-# Drop a case from here once its row is in MONO_STRESS.
-MONO_ASSUMED_TIMEOUT = ("test_case_02",)
-
 # (short description, lots, grid) per test case, in Spanish for the docs.
 SUITE = {
     "01": ("heredado, 30 pickers, 750 órdenes", "30", "100×100"),
@@ -50,15 +46,12 @@ def _load(path):
 def results():
     """[(case, desc, lots, grid, split_status, split_minutes, mono_status)] for tests 01-19."""
     split, mono = _load(SPLIT_STRESS), _load(MONO_STRESS)
-    for case in MONO_ASSUMED_TIMEOUT:
-        assert case not in mono, f"{case} is in {MONO_STRESS}: drop it from MONO_ASSUMED_TIMEOUT"
     out = []
     for n, (desc, lots, grid) in SUITE.items():
         case = f"test_case_{n}"
         s = split[case]
-        m_status = "timeout" if case in MONO_ASSUMED_TIMEOUT else mono[case]["status"]
         minutes = float(s["total_time"]) / 60 if s["status"] == "ok" else None
-        out.append((n, desc, lots, grid, s["status"], minutes, m_status))
+        out.append((n, desc, lots, grid, s["status"], minutes, mono[case]["status"]))
     return out
 
 
