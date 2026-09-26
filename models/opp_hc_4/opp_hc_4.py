@@ -710,7 +710,28 @@ class OPPHillClimbing(Model):
 
         return current
 
-    _MAX_BFF_EXPANSIONS = 200_000
+    # Raised from 200_000 (2026-09-26 audit finding): v5's realistic_crew_scenario
+    # stress profile (26 orders/batch, ~19-22 required locations on a 49-node
+    # grid) needs ~3.7M expansions to find a route that DOES exist -- v5's
+    # own solver (SCIP/ZIMPL) finds one for the same instance in ~2 minutes,
+    # so reporting "infeasible" here at 200_000 was a false negative, not a
+    # genuine capacity limit for THAT batch. Measured cost at this new cap:
+    # ~3.1 GB peak, ~30s, for that one batch's construction.
+    #
+    # NOT a general fix, though: finding a simple path through ~20 specific
+    # required vertices is a partial-Hamiltonian-path search, NP-hard in
+    # general, so the expansions needed can jump by an order of magnitude
+    # from one batch to the next depending on the graph/required-set
+    # geometry -- confirmed 2026-09-26 on the SAME scenario (realistic_crew_
+    # scenario(7)), where a DIFFERENT batch (B4, not B1) still exhausted
+    # this 10M cap after ~8 minutes and reported infeasible. Raising the cap
+    # further chases a moving target rather than closing the gap; this is a
+    # known, real scalability limit of opp_hc_4's route construction on
+    # batches with many required locations, not something this constant can
+    # fix outright. See _bff_search's docstring for why an unbounded search
+    # is not an option either (observed 3+ min / 3+ GB with no cap at all on
+    # a ~100-node grid).
+    _MAX_BFF_EXPANSIONS = 10_000_000
 
     def _generate_feasible_route_bff(self, required_locations: Set) -> Optional[List]:
         """Last-resort exhaustive route search (see opp_hc_2's twin method's docstring)."""
