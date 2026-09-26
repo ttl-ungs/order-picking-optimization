@@ -44,6 +44,7 @@ from models.opp_aco_2.utils.constraints_validator import (
     ConstraintsValidator as BaseConstraintsValidator,
 )
 from models.opp_aco_4.utils import exec_time
+from models.opp_v5_2_split.utils.cold_chain_validation import COLD_CHAIN_TOLERANCE
 
 
 class ConstraintsValidator(BaseConstraintsValidator):
@@ -102,7 +103,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
                 return False
 
             route = solution.get_batch_route(batch)
-            if self.t_exec_pb(batch, route, picker) > self.T_frio_max + 1e-9:
+            if self.t_exec_pb(batch, route, picker) > self.T_frio_max + COLD_CHAIN_TOLERANCE:
                 return False
 
         return True
@@ -110,12 +111,17 @@ class ConstraintsValidator(BaseConstraintsValidator):
     def cold_chain_violation(self, solution) -> float:
         """
         Total cold-chain overrun across every batch with orders: sum of
-        max(0, t_exec_pb[assigned_picker, b] - T_frio_max). Zero exactly
-        when validate_cold_chain_strict() would return True. Consumed by
-        RouteEvaluator as a large objective penalty, so the search is
-        biased toward (and, once it reaches zero, satisfies) cold chain
-        without needing to hard-reject every ant that hasn't gotten there
-        yet.
+        max(0, t_exec_pb[assigned_picker, b] - T_frio_max - COLD_CHAIN_TOLERANCE).
+        Zero exactly when validate_cold_chain_strict() would return True --
+        the tolerance is subtracted here too (2026-09-26 audit finding: it
+        used to be omitted, so a t_exec_pb within tolerance of T_frio_max
+        still had overrun > 0, kept it out of feasible_ant_solutions in
+        opp_aco_4.py's main loop, and could make the whole run report
+        "infeasible" despite validate_cold_chain_strict considering it
+        compliant). Consumed by RouteEvaluator as a large objective
+        penalty, so the search is biased toward (and, once it reaches
+        zero, satisfies) cold chain without needing to hard-reject every
+        ant that hasn't gotten there yet.
         """
         total = 0.0
         for batch in self.B:
@@ -131,7 +137,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
                 continue
 
             route = solution.get_batch_route(batch)
-            overrun = self.t_exec_pb(batch, route, picker) - self.T_frio_max
+            overrun = self.t_exec_pb(batch, route, picker) - self.T_frio_max - COLD_CHAIN_TOLERANCE
             if overrun > 0:
                 total += overrun
 
