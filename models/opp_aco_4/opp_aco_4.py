@@ -153,13 +153,15 @@ class OPPAntColonyOptimization(Model):
         self.B = sorted(dto.B)
         self.T_0 = dto.start_time
         self.P = sorted(dto.P) if getattr(dto, "P", None) else ["P1"]
-        self._sp_dist = self._precompute_shortest_paths()
         self._fallback_cache: Dict[frozenset, Optional[List[str]]] = {}
         self._fallback_calls = 0
         self._required_by_batch: Dict[str, Set[str]] = {}
         # Underlying UNDIRECTED adjacency, for the completability check in
         # route_construction.stitch_route (see keeps_route_completable).
         self._undirected_adjacency = route_construction.undirected_adjacency(self.location_graph)
+        # Same warehouse with edges reversed, for backwards construction
+        # (see route_construction.stitch_route_either_way).
+        self._reversed_graph = route_construction.reversed_graph(self.location_graph)
 
     def solve(self, params: SolveAco4ModelDTO):
         """
@@ -183,6 +185,7 @@ class OPPAntColonyOptimization(Model):
 
         num_ants = getattr(params, "_A_ants", 15)
         max_it = getattr(params, "_Max_it", 60)
+        max_time = getattr(params, "_Max_time", None) or float("inf")
         alpha = getattr(params, "_Alpha", 1.0)
         beta = getattr(params, "_Beta", 2.5)
         evaporation_rate = getattr(params, "_E", 0.15)
@@ -289,9 +292,10 @@ class OPPAntColonyOptimization(Model):
         # Exact (not estimated) reachability pre-check: if a required
         # location can't be reached from the depot, or can't reach `final`,
         # NO route -- built by any ant, in any iteration -- could ever
-        # visit it. This is a static graph-topology fact, already available
-        # from _sp_dist (Dijkstra, precomputed once in __init__), so it
-        # costs nothing to check upfront instead of letting every ant of
+        # visit it. This is a static graph-topology fact -- two linear-time
+        # searches (_reachable_from: forwards from the depot, and over the
+        # reversed graph from `final`) -- so it costs almost nothing to
+        # check upfront instead of letting every ant of
         # every iteration exhaust _MAX_ROUTE_ATTEMPTS_PER_BATCH on a batch
         # that was never solvable in the first place (same "honest
         # infeasibility, no shortcut before trying" philosophy as the
@@ -299,11 +303,13 @@ class OPPAntColonyOptimization(Model):
         # it, not a substitute for the search on batches that pass it).
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
+        from_depot = self._reachable_from(self.location_graph, depot)
+        to_final = self._reachable_from(self._reversed_graph, final)
         unreachable_batches = {
             batch
             for batch, required in required_locations_by_batch.items()
             for req in required
-            if self._sp_dist[(depot, req)] == float("inf") or self._sp_dist[(req, final)] == float("inf")
+            if req not in from_depot or req not in to_final
         }
         if unreachable_batches:
             print(
@@ -326,13 +332,23 @@ class OPPAntColonyOptimization(Model):
         # _recombine_shortest_routes).
         shortest_route_by_batch: Dict[str, Tuple[float, List[str]]] = {}
 
-        while iteration < max_it:
+        timed_out = False
+        while iteration < max_it and not timed_out:
             iteration += 1
             ant_solutions = []
             feasible_ant_solutions = []
             iteration_best_route_by_batch: Dict[str, Tuple[float, List[str]]] = {}
 
             for ant in range(num_ants):
+                # Wall-clock budget (params.Max_time): checked per ant, so a
+                # very large instance can stop mid-iteration -- but only
+                # once a cold-chain-compliant solution exists (this
+                # iteration's or an earlier one's), so the budget can never
+                # produce a false "infeasible" (same honesty rule as the
+                # pre-checks above).
+                if time.time() - start_time > max_time and (best_global_solution is not None or feasible_ant_solutions):
+                    timed_out = True
+                    break
                 ant_solution = self._build_ant_solution(
                     batch_assignments, pheromones, picker_pheromones, params, alpha, beta,
                     required_locations_by_batch,
@@ -478,6 +494,8 @@ class OPPAntColonyOptimization(Model):
                 "Beta": beta,
                 "Max_route_attempts_per_batch": self._MAX_ROUTE_ATTEMPTS_PER_BATCH,
                 "iterations_run": iteration,
+                "Max_time": max_time,
+                "timed_out": timed_out,
                 "best_found_at_iteration": best_found_at_iteration,
             },
         )
@@ -563,33 +581,34 @@ class OPPAntColonyOptimization(Model):
         ]
 
     # NOTE: this model used to have a route-time ESTIMATE (greedy nearest-
-    # neighbor over _sp_dist, 2-opt-tightened) here, feeding a pre-check
+    # neighbor over shortest-path distances, 2-opt-tightened) here, feeding a pre-check
     # that could declare a genuinely feasible instance "infeasible" before
     # a single ant ever ran (2026-09-09/10 audit findings -- see header).
     # Removed: the only pre-check left is the exact, estimate-free one in
     # solve() (route_time = 0.0 for every batch), and every batch that
     # survives it gets a real, full run of the ACO loop instead.
 
-    def _precompute_shortest_paths(self) -> Dict[Tuple[str, str], float]:
-        """Dijkstra from every node to get shortest-path distances."""
-        vertices = self.location_graph.get_vertices()
-        dist = {}
-        for src in vertices:
-            d = {src: 0.0}
-            heap = [(0.0, src)]
-            while heap:
-                cost, node = heapq.heappop(heap)
-                if cost > d.get(node, float("inf")):
-                    continue
-                for nbr in vertices:
-                    if self.location_graph.has_edge(node, nbr):
-                        new_cost = cost + self.location_graph.get_distance(node, nbr)
-                        if new_cost < d.get(nbr, float("inf")):
-                            d[nbr] = new_cost
-                            heapq.heappush(heap, (new_cost, nbr))
-            for dst in vertices:
-                dist[(src, dst)] = d.get(dst, float("inf"))
-        return dist
+    @staticmethod
+    def _reachable_from(location_graph, source: str) -> Set[str]:
+        """
+        Every vertex reachable from `source` along `location_graph`'s edges
+        (BFS). Replaces an all-pairs Dijkstra precomputation (_sp_dist)
+        whose only remaining use was solve()'s reachability pre-check: it
+        scanned every vertex per settled node, O(V^3) overall, which never
+        finished on the 100x100 migrated stress grid (V = 10,000 -- ACO
+        timed out at 40 min there, 2026-09-27) while this is O(V + E).
+        """
+        seen = {source}
+        frontier = [source]
+        while frontier:
+            next_frontier = []
+            for u in frontier:
+                for v in location_graph.get_neighbors(u):
+                    if v not in seen:
+                        seen.add(v)
+                        next_frontier.append(v)
+            frontier = next_frontier
+        return seen
 
     def _initialize_pheromones(self, required_locations_by_batch: Dict[str, Set[str]]) -> Dict[Tuple[str, str], float]:
         """
@@ -644,8 +663,13 @@ class OPPAntColonyOptimization(Model):
 
             if required_locations:
                 route = None
-                for _ in range(self._MAX_ROUTE_ATTEMPTS_PER_BATCH):
-                    candidate = self._build_batch_route(required_locations, pheromones, alpha, beta)
+                # Alternate construction direction between attempts, from a
+                # random side (see route_construction.stitch_route_either_way
+                # for why both are needed).
+                first_backwards = random.random() < 0.5
+                for attempt in range(self._MAX_ROUTE_ATTEMPTS_PER_BATCH):
+                    backwards = first_backwards != (attempt % 2 == 1)
+                    candidate = self._build_batch_route(required_locations, pheromones, alpha, beta, backwards)
                     if candidate is not None and len(candidate) == len(set(candidate)):
                         route = candidate
                         break
@@ -734,6 +758,7 @@ class OPPAntColonyOptimization(Model):
         pheromones: Dict[Tuple[str, str], float],
         alpha: float,
         beta: float,
+        backwards: bool = False,
     ) -> Optional[List[str]]:
         """
         Probabilistically constructs a batch route (depot ... final, a
@@ -794,12 +819,19 @@ class OPPAntColonyOptimization(Model):
         Stage 1.
         """
         # Chen et al. (2013), Eq. 2: tau^alpha * eta^beta, eta = 1/d, with
-        # pheromone indexed by (previous pick, candidate pick).
-        route = route_construction.stitch_route(
-            self.location_graph,
-            required_locations,
-            lambda current, r, d: (pheromones.get((current, r), self._tau_min) ** alpha) * ((1.0 / d) ** beta),
-            self._undirected_adjacency,
+        # pheromone indexed by (previous pick, next pick) in the route's
+        # depot -> final direction -- so when building backwards (from the
+        # final node, see stitch_route_either_way) the construction's
+        # current -> r step is the route's r -> current pair.
+        if backwards:
+            def weight(current, r, d):
+                return (pheromones.get((r, current), self._tau_min) ** alpha) * ((1.0 / d) ** beta)
+        else:
+            def weight(current, r, d):
+                return (pheromones.get((current, r), self._tau_min) ** alpha) * ((1.0 / d) ** beta)
+        route = route_construction.stitch_route_either_way(
+            self.location_graph, self._reversed_graph, required_locations, weight,
+            self._undirected_adjacency, backwards,
         )
         if route is None:
             return None
@@ -948,21 +980,41 @@ class OPPAntColonyOptimization(Model):
 
     def _fallback_route(self, required_locations: Set[str]) -> Optional[List[str]]:
         """
-        Exhaustive best-first route (see _build_batch_route's docstring),
-        as a full depot ... final list, or None if no simple route exists
-        within _MAX_BFF_EXPANSIONS. Cached per required-location set:
-        best_first_route is deterministic, and without the cache a batch
-        that needs it would pay for the full search once per ant.
+        Deterministic route for a batch whose ant constructions all failed:
+        the farthest-insertion order (route_construction.insertion_route,
+        Rosenkrantz, Stearns & Lewis 1977) realized forwards, else on the
+        reversed graph, else the exhaustive best-first search
+        (best_first_route, within _MAX_BFF_EXPANSIONS) -- polished with
+        route_construction.polish_route. A full depot ... final list, or
+        None if none of them finds a simple route.
+
+        Insertion first because it's cheap and, when it realizes, gives a
+        short route (measured 2026-09-27: e.g. realistic_crew_scenario(14)
+        B2 = 154.5 route-time units, v5's exact Stage 1 optimum), while
+        best_first_route's first feasible route can be much longer -- too
+        long to be cold-chain-eligible in realistic_crew_cold_chain, where
+        that made every ant non-compliant. Cached per required-location
+        set: all of this is deterministic, and without the cache a batch
+        that needs it would pay for it once per ant.
         """
         key = frozenset(required_locations)
         if key not in self._fallback_cache:
-            stops = route_construction.best_first_route(
-                self.location_graph, required_locations, self._MAX_BFF_EXPANSIONS
-            )
-            self._fallback_cache[key] = (
-                None if stops is None
-                else [self.location_graph.get_depot()] + stops + [self.location_graph.get_final()]
-            )
+            depot = self.location_graph.get_depot()
+            final = self.location_graph.get_final()
+            full = route_construction.insertion_route(self.location_graph, required_locations)
+            if full is None:
+                backwards = route_construction.insertion_route(self._reversed_graph, required_locations)
+                full = backwards[::-1] if backwards is not None else None
+            if full is None:
+                stops = route_construction.best_first_route(
+                    self.location_graph, required_locations, self._MAX_BFF_EXPANSIONS
+                )
+                full = [depot] + stops + [final] if stops is not None else None
+            if full is not None:
+                full = [depot] + route_construction.polish_route(
+                    self.location_graph, full[1:-1], required_locations
+                ) + [final]
+            self._fallback_cache[key] = full
         self._fallback_calls += 1
         cached = self._fallback_cache[key]
         return list(cached) if cached is not None else None
