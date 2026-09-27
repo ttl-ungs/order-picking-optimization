@@ -18,6 +18,20 @@ import itertools
 import random
 from typing import Dict, List, Optional, Set, Tuple
 
+# Backtracks allowed per stitch_route construction (see its docstring):
+# each costs about one construction step (a Dijkstra + a Tarjan pass).
+# Measured 2026-09-27 on realistic_crew_scenario(13) and (16), 20
+# constructions per batch per setting: 0 -> 30 backtracks raised most
+# batches' success rate noticeably (e.g. 13x13 B1 forwards 55% -> 80%)
+# for ~2x the time per construction; 30 -> 200 helped a few batches
+# further (13x13 B5 forwards 10% -> 50%) but cost another ~3x and left
+# others flat or lower (16x16 B6 forwards 50% -> 20%, within noise).
+# With both directions tried (stitch_route_either_way), 30 already gives
+# every measured batch >= 45% success in at least one direction, so the
+# extra time is better spent on the other direction than on deeper
+# backtracking.
+STITCH_MAX_BACKTRACKS = 30
+
 
 def dijkstra(location_graph, source, forbidden: Set = frozenset(), targets: Optional[Set] = None) -> Tuple[Dict, Dict]:
     """
@@ -708,13 +722,16 @@ def simple_path_component(undirected: Dict, s, t, blocked: Set) -> Set:
 
 
 
-def stitch_route(location_graph, required_locations: Set, weight, undirected: Dict, rng=random) -> Optional[List]:
+def stitch_route(
+    location_graph, required_locations: Set, weight, undirected: Dict, rng=random,
+    max_backtracks: int = STITCH_MAX_BACKTRACKS,
+) -> Optional[List]:
     """
     Randomized pick-to-pick route construction (full depot ... final
-    vertex list, a simple path), or None if it paints itself into a
-    corner. From the current pick, every still-required location r
-    reachable without revisiting gets weight(current, r, d) -- d the
-    shortest non-revisiting distance -- and one is drawn by roulette
+    vertex list, a simple path), or None if it can't finish within
+    `max_backtracks`. From the current pick, every still-required
+    location r reachable without revisiting gets weight(current, r, d) --
+    d the shortest non-revisiting distance -- and one is drawn by roulette
     among those passing keeps_route_completable (lazy rejection: draw,
     check, drop and redraw on failure -- the same distribution restricted
     to the picks that pass, at one Tarjan pass per draw instead of one
@@ -727,6 +744,20 @@ def stitch_route(location_graph, required_locations: Set, weight, undirected: Di
     full rationale and the deviations (no revisits, the completability
     check). opp_hc_4 uses it with weight = (1/d)^beta as a randomized
     multi-start construction.
+
+    Backtracking (our own addition, not from the papers): when no
+    candidate passes the check, undo the last pick (its whole corridor)
+    and draw another candidate at that step instead of giving up --
+    a randomized depth-first search with keeps_route_completable as the
+    pruning rule, bounded by `max_backtracks`. keeps_route_completable is
+    necessary but not sufficient, so without this some batches almost
+    never finished: measured 2026-09-27 on realistic_crew_scenario(13),
+    batch B6 succeeded in 0/100 constructions (B5 in 15/100), which made
+    opp_hc_4 report "infeasible" and left opp_aco_4 with only the long
+    best-first fallback route -- too long for T_frio_max = 280 in
+    realistic_crew_cold_chain, so no ant ever came out compliant.
+    Candidates already tried at a step stay removed after backtracking
+    to it, so the search never repeats a branch.
     """
     depot = location_graph.get_depot()
     final = location_graph.get_final()
@@ -734,37 +765,163 @@ def stitch_route(location_graph, required_locations: Set, weight, undirected: Di
     route = [depot]
     visited = {depot}
     remaining = set(required_locations)
-    current = depot
+
+    def open_step(current):
+        dist, prev = dijkstra(location_graph, current, forbidden=(visited | {final}) - {current}, targets=remaining)
+        weights = {}
+        for r in remaining:
+            if r in dist:
+                weights[r] = weight(current, r, dist[r] if dist[r] > 0 else 0.01)
+        return {"current": current, "prev": prev, "weights": weights}
+
+    committed = []  # stack of (step, corridor, picks it covered)
+    step = open_step(depot) if remaining else None
+    backtracks = 0
 
     while remaining:
-        dist, prev = dijkstra(location_graph, current, forbidden=(visited | {final}) - {current}, targets=remaining)
-        candidates = [r for r in remaining if r in dist]
-        if not candidates:
-            return None
-
-        weights = {}
-        for r in candidates:
-            d = dist[r] if dist[r] > 0 else 0.01
-            weights[r] = weight(current, r, d)
-
-        next_pick = path = None
+        weights = step["weights"]
+        advanced = False
         while weights:
             r = roulette(weights, rng)
-            candidate_path = reconstruct_path(prev, current, r)[1:]
-            if keeps_route_completable(undirected, r, visited.union(candidate_path), remaining, final):
-                next_pick, path = r, candidate_path
+            del weights[r]  # tried: never redrawn at this step, even after a backtrack
+            corridor = reconstruct_path(step["prev"], step["current"], r)[1:]
+            if keeps_route_completable(undirected, r, visited.union(corridor), remaining, final):
+                picked = remaining.intersection(corridor)
+                committed.append((step, corridor, picked))
+                route.extend(corridor)
+                visited.update(corridor)
+                remaining -= picked
+                advanced = True
                 break
-            del weights[r]
-        if next_pick is None:
+        if advanced:
+            if remaining:
+                step = open_step(route[-1])
+            continue
+
+        if not committed or backtracks >= max_backtracks:
             return None
+        backtracks += 1
+        step, corridor, picked = committed.pop()
+        del route[len(route) - len(corridor):]
+        visited.difference_update(corridor)
+        remaining |= picked
 
-        route.extend(path)
-        visited.update(path)
-        remaining.difference_update(path)
-        current = next_pick
-
-    dist, prev = dijkstra(location_graph, current, forbidden=visited - {current}, targets={final})
+    dist, prev = dijkstra(location_graph, route[-1], forbidden=visited - {route[-1]}, targets={final})
     if final not in dist:
         return None
-    route.extend(reconstruct_path(prev, current, final)[1:])
+    route.extend(reconstruct_path(prev, route[-1], final)[1:])
     return route
+
+
+def insertion_route(location_graph, required_locations: Set, rng=None) -> Optional[List]:
+    """
+    Pick order by farthest insertion (Rosenkrantz, Stearns & Lewis 1977,
+    "An analysis of several heuristics for the traveling salesman
+    problem"): start from depot -> final, repeatedly take the pick
+    farthest from the current sequence and insert it where it adds the
+    least distance. Distances between picks are plain shortest paths
+    (the Steiner-TSP distances of Chen et al. 2013, p.79 / Coruzzolo et
+    al. 2023, pp.6-9), ignoring the no-revisit rule; the order is then
+    realized with no-revisit corridors by _realize_pick_order. With `rng`,
+    the insertion order is randomized instead (random insertion), for
+    multi-start diversity. Returns the full depot ... final route or None
+    if the corridors can't be realized.
+
+    Why (our own use of it, measured 2026-09-27): stitch_route's
+    distance-greedy choice leaves far picks for last, and on
+    realistic_crew_scenario(13)'s B6 the route crossed the grid's right
+    column early and cut off the three picks left on it -- 0/100
+    constructions finished, even with 200 backtracks, because the fatal
+    move is many steps before the dead end. Insertion places every pick
+    in a globally coherent order from the start.
+    """
+    depot = location_graph.get_depot()
+    final = location_graph.get_final()
+    picks = list(required_locations)
+    if not picks:
+        return [depot, final]
+
+    nodes = [depot] + picks
+    targets = set(picks) | {final}
+    dist = {}
+    for u in nodes:
+        d, _ = dijkstra(location_graph, u, frozenset(), targets=targets)
+        for v in targets:
+            dist[(u, v)] = d.get(v, float("inf"))
+
+    sequence = [depot, final]
+    left = set(picks)
+
+    def gap(a, b):
+        return dist.get((a, b), float("inf"))
+
+    while left:
+        if rng is None:
+            chosen = max(
+                sorted(left),
+                key=lambda p: min(gap(s, p) for s in sequence if s != final),
+            )
+        else:
+            chosen = rng.choice(sorted(left))
+        best_pos, best_delta = None, float("inf")
+        for k in range(len(sequence) - 1):
+            a, b = sequence[k], sequence[k + 1]
+            delta = gap(a, chosen) + gap(chosen, b) - gap(a, b)
+            if delta < best_delta:
+                best_pos, best_delta = k + 1, delta
+        if best_pos is None:
+            return None  # `chosen` unreachable from/to the sequence: no route at all
+        sequence.insert(best_pos, chosen)
+        left.discard(chosen)
+
+    return _realize_pick_order(location_graph, [depot], sequence[1:-1], [final], required_locations)
+
+
+def reversed_graph(location_graph):
+    """
+    The same warehouse with every edge reversed and depot/final swapped:
+    a depot ... final route of it, read backwards, is a depot ... final
+    route of the original graph with the same length (edge weights are
+    carried over per direction). Lets any construction here run "from
+    the final node backwards" unchanged -- see stitch_route_either_way.
+    """
+    from models.base.opp_location_graph import OPPLocationGraph
+
+    depot = location_graph.get_depot()
+    final = location_graph.get_final()
+    reverse = OPPLocationGraph(depot_node=final, final_node=depot)
+    for v in location_graph.get_vertices():
+        if v not in (depot, final):
+            reverse.add_vertex(v, "picking")
+    for u in location_graph.get_vertices():
+        for v in location_graph.get_neighbors(u):
+            reverse.add_edge(v, u, location_graph.get_distance(u, v))
+    return reverse
+
+
+def stitch_route_either_way(
+    location_graph, reverse_graph, required_locations: Set, weight, undirected: Dict,
+    backwards: bool, rng=random, max_backtracks: int = STITCH_MAX_BACKTRACKS,
+) -> Optional[List]:
+    """
+    stitch_route from the depot forwards, or (backwards=True) from the
+    final node backwards over `reverse_graph` (see reversed_graph),
+    returned in the original depot ... final direction either way.
+    `weight(current, r, d)` always receives the pair in the direction the
+    construction moves (current -> r in the reversed graph means r ->
+    current in the original).
+
+    Our own addition (not from the papers). Why (measured 2026-09-27):
+    stitch_route's distance-greedy choice leaves the picks far from where
+    it STARTS for last, and some batches have a cluster of those that an
+    early move cuts off -- realistic_crew_scenario(13)'s B6 has three
+    picks on the grid's right column near the final node, and forward
+    construction finished 0-5% of the time even with backtracking;
+    backwards (starting next to them) it finished 75%. Other batches
+    show the opposite pattern (16x16's B4: forwards ~0-15%, backwards
+    100%), so callers alternate between the two directions.
+    """
+    if not backwards:
+        return stitch_route(location_graph, required_locations, weight, undirected, rng, max_backtracks)
+    route = stitch_route(reverse_graph, required_locations, weight, undirected, rng, max_backtracks)
+    return route[::-1] if route is not None else None

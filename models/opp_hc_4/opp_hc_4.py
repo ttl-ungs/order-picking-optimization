@@ -98,6 +98,7 @@ class OPPHillClimbing(Model):
         self.T_0 = dto.start_time
         self.P = sorted(dto.P) if getattr(dto, "P", None) else ["P1"]
         self._undirected_adjacency = route_construction.undirected_adjacency(self.location_graph)
+        self._reversed_graph = route_construction.reversed_graph(self.location_graph)
         # Per-solve() caches for values that are invariant for the whole
         # search (batch_assignments never changes once a run starts -- only
         # picker/route/sequence do): reset at the top of solve(), read-only
@@ -480,10 +481,13 @@ class OPPHillClimbing(Model):
     def _initial_route(self, required_locations: Set) -> Optional[List]:
         """
         Initial route for one batch: the shortest of the deterministic
-        nearest-neighbor construction (_generate_feasible_route) and
-        _MULTI_START_CONSTRUCTIONS randomized pick-to-pick constructions
-        (route_construction.stitch_route with weight (1/d)^beta, each
-        tightened by improve_route), then polished with the elite-route
+        nearest-neighbor construction (_generate_feasible_route), the
+        farthest-insertion order realized forwards and backwards
+        (route_construction.insertion_route; Rosenkrantz, Stearns & Lewis
+        1977) and _MULTI_START_CONSTRUCTIONS randomized pick-to-pick
+        constructions alternating forwards/backwards
+        (route_construction.stitch_route_either_way with weight
+        (1/d)^beta, each tightened by improve_route), then polished with the elite-route
         local search (route_construction.polish_route: pick-level 2-opt,
         or-opt relocation, vertex 2-opt, segment re-routing). The
         exhaustive best-first search (_generate_feasible_route_bff) only
@@ -505,12 +509,21 @@ class OPPHillClimbing(Model):
         greedy = self._generate_feasible_route(required_locations)
         if greedy is not None:
             candidates.append(greedy)
+        # Farthest-insertion order, forwards and on the reversed graph (see
+        # route_construction.insertion_route / reversed_graph).
+        for graph, flip in ((self.location_graph, False), (self._reversed_graph, True)):
+            full = route_construction.insertion_route(graph, required_locations)
+            if full is not None:
+                full = full[::-1] if flip else full
+                candidates.append(full[1:-1])
         beta = self._MULTI_START_BETA
-        for _ in range(self._MULTI_START_CONSTRUCTIONS):
-            full = route_construction.stitch_route(
-                self.location_graph, required_locations,
+        for attempt in range(self._MULTI_START_CONSTRUCTIONS):
+            # Alternate forwards / backwards construction (see
+            # route_construction.stitch_route_either_way for why).
+            full = route_construction.stitch_route_either_way(
+                self.location_graph, self._reversed_graph, required_locations,
                 lambda current, r, d: (1.0 / d) ** beta,
-                self._undirected_adjacency,
+                self._undirected_adjacency, attempt % 2 == 1,
             )
             if full is not None:
                 candidates.append(
