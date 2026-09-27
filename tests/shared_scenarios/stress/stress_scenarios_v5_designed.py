@@ -172,6 +172,19 @@ def designed_stress_scenario(
         for i, order in enumerate(order_ids)
     }
 
+    # W_full must exceed the largest batch's order count (times W_ea_ta * W_ea,
+    # both 1 here), or v5 gains by voluntary waiting: v_pb >= t_exec_pb lets it
+    # report a batch LATER than it physically finishes, and a delay of d costs
+    # W_full * d while cutting earliness by up to (orders in the batch) * d.
+    # With the previous W_full = 9 and 26 orders per batch that paid ~17 per
+    # unit of delay, so v5's optimum waited and no heuristic -- which reports
+    # real completion times -- could match it (measured 2026-09-26: 7x7 v5_2
+    # 79,047 vs ACO 104,565, gap almost entirely earliness). Above the bound a
+    # delay never pays and earliness still counts in the objective.
+    w_ea_ta, w_ea = 1.0, 1.0
+    max_orders_per_batch = -(-orders // batches)  # round-robin: ceil(orders / batches)
+    w_full = max_orders_per_batch * w_ea_ta * w_ea + 1.0
+
     return {
         "N": set(order_ids),
         "P": set(picker_ids),
@@ -186,9 +199,9 @@ def designed_stress_scenario(
         "Bn": bn,
         "C_n": {order: order_weight for order in order_ids},
         "Dd": due_dates,
-        "W_full": 9.0,
-        "W_ea_ta": 1.0,
-        "W_ea": 1.0,
+        "W_full": w_full,
+        "W_ea_ta": w_ea_ta,
+        "W_ea": w_ea,
         "W_ta": 1.0,
         "B_time": beta_time,
         "B_setup": beta_setup,
