@@ -30,9 +30,19 @@ restricciones, verificado por un validador explícito en cada uno.
 
 Búsqueda local: parte de una solución inicial factible y explora vecinos
 mediante movimientos que preservan factibilidad, aceptando solo mejoras
-(sin annealing ni tabú). Es determinístico salvo por la elección aleatoria
-de \emph{qué} movimiento probar en cada paso. No hay ningún mecanismo
+(sin annealing ni tabú). Es un \emph{hill climbing} estocástico de primera
+mejora (Hoos y Stützle, 2004; Talbi, 2009): en cada iteración elige al azar
+un movimiento y un vecino, y lo acepta si mejora el costo actual, sin
+recorrer antes todo el vecindario (no es \emph{steepest descent}). La única
+excepción está dentro del movimiento 2-opt (Croes, 1958), que en la ruta
+del lote elegido toma la mejor inversión posible. No hay ningún mecanismo
 probabilístico en la evaluación en sí.
+
+La ruta inicial por vecino más cercano sigue el paso de ruteo de Coruzzolo
+et al. (2023), y los movimientos de reasignación e intercambio cumplen el
+papel de los movimientos \emph{swap}/\emph{insert} de su búsqueda local.
+Ninguno de los trabajos de referencia usa \emph{hill climbing} como método:
+la estructura general proviene de la literatura de búsqueda local.
 
 \startsubsection[title={Algoritmo base (\type{opp\_hc\_2})}]
 
@@ -52,7 +62,7 @@ ALGORITMO Solve(params)
             estancamiento <- estancamiento + 1 ; continuar
 
         costo' <- Evaluar(S')
-        si costo' < costo:                    # steepest descent, sin annealing
+        si costo' < costo:                    # primera mejora, sin annealing
             S, costo <- S', costo'
             estancamiento <- 0
         si_no:

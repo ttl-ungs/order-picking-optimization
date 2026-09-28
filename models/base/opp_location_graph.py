@@ -58,6 +58,9 @@ class OPPLocationGraph:
         # total runtime on a 100-node stress instance (has_edge: 87M calls).
         # get_neighbors() is O(1) amortized after the first call per graph.
         self._adjacency = None
+        # (neighbor, distance) pairs per vertex, same order as get_neighbors;
+        # built lazily, invalidated by add_edge (see get_weighted_neighbors).
+        self._weighted_adjacency = None
 
     def add_vertex(self, vertex, type="picking"):
         """Add a vertex to the graph."""
@@ -81,6 +84,7 @@ class OPPLocationGraph:
         self.distances[(OPPLocation(from_vertex), OPPLocation(to_vertex))] = distance
         self._distance_by_id[(from_vertex, to_vertex)] = distance
         self._adjacency = None  # invalidate cache
+        self._weighted_adjacency = None
 
     def get_neighbors(self, vertex):
         """
@@ -104,6 +108,22 @@ class OPPLocationGraph:
                 neighbors.sort()
             self._adjacency = adjacency
         return self._adjacency.get(vertex, [])
+
+    def get_weighted_neighbors(self, vertex):
+        """
+        [(neighbor, distance), ...] for `vertex`, in get_neighbors() order.
+        Saves Dijkstra-style loops one get_distance() call (a method call
+        plus a tuple-keyed dict lookup) per edge relaxation -- the shortest-
+        path loops in models/utils/route_construction.py run tens of
+        thousands of times per ACO solve (2026-09-26 profiling: Dijkstra was
+        ~40% of opp_aco_4's runtime).
+        """
+        if self._weighted_adjacency is None:
+            self._weighted_adjacency = {
+                u: [(v, self._distance_by_id[(u, v)]) for v in self.get_neighbors(u)]
+                for u in self._vertices_sorted
+            }
+        return self._weighted_adjacency.get(vertex, [])
 
     def get_distance(self, from_vertex, to_vertex):
         """Get distance between two vertices using location IDs."""

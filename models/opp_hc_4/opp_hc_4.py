@@ -46,6 +46,22 @@ solution) is only ever set when every batch is fully cold-chain-compliant
 "infeasible" reflects an honest, exhausted search budget -- not a
 shortcut that gave up before trying.
 
+Search scheme and sources. The main loop is stochastic, first-improvement
+hill climbing (Hoos & Stuetzle 2004, "Stochastic Local Search:
+Foundations and Applications"; see also Talbi 2009, "Metaheuristics: From
+Design to Implementation", ch. 2): each iteration draws ONE random move
+and ONE random neighbor and accepts it iff it lowers the current cost --
+it does not scan the whole neighborhood first (not steepest descent). The
+one exception is inside the route move, which takes the best 2-opt
+reversal of the chosen batch's route (Croes 1958, "A method for solving
+traveling-salesman problems"). The neighborhoods -- reassign a batch to
+another picker, swap two batches in a picker's sequence -- play the role
+of the swap/insert moves Coruzzolo et al. (2023), Logistics 7:61, use in
+their local search for order batching/sequencing; the nearest-neighbor
+initial routing follows their routing step (p.9). None of the papers in
+the thesis bibliography uses Hill Climbing itself; the initial-route
+portfolio (_initial_route) cites its own sources.
+
 Deliberately WITHOUT congestion between concurrent pickers (unlike
 opp_hc_3): congestion and picker-speed/cold-chain are orthogonal additions
 over opp_hc_2, and this model only needs the latter. Adding congestion on
@@ -59,13 +75,12 @@ congestion (see analysis/config.py).
 
 import time
 import random
-import heapq
-from collections import deque
 from typing import Dict, List, Set, Optional, Tuple
 
 from dtos.hc.solve_hc_4_model_dto import SolveHC4ModelDTO
 from dtos.opp.solve_result import SolveResult
 import models.utils.solve_registry as solve_registry
+import models.utils.route_construction as route_construction
 from models.base.model import Model
 from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.model_dto import ModelDTO
@@ -98,6 +113,8 @@ class OPPHillClimbing(Model):
         self.B = sorted(dto.B)
         self.T_0 = dto.start_time
         self.P = sorted(dto.P) if getattr(dto, "P", None) else ["P1"]
+        self._undirected_adjacency = route_construction.undirected_adjacency(self.location_graph)
+        self._reversed_graph = route_construction.reversed_graph(self.location_graph)
         # Per-solve() caches for values that are invariant for the whole
         # search (batch_assignments never changes once a run starts -- only
         # picker/route/sequence do): reset at the top of solve(), read-only
@@ -267,6 +284,8 @@ class OPPHillClimbing(Model):
                 neighbor_solution, evaluator, validator
             )
 
+            # First-improvement acceptance of one random neighbor
+            # (stochastic hill climbing, Hoos & Stuetzle 2004 -- see header).
             if neighbor_cost < current_cost:
                 current_solution = neighbor_solution
                 current_cost = neighbor_cost
@@ -455,19 +474,10 @@ class OPPHillClimbing(Model):
                 route_time[batch] = 0.0
                 continue
 
-            route = self._generate_feasible_route(required_locations)
-            if route is None:
-                route = self._generate_feasible_route_bff(required_locations)
-
+            route = self._initial_route(required_locations)
             if route is None:
                 print(f"WARNING: Could not generate feasible route for batch {batch}")
                 return None
-
-            # Tighten with a standalone (picker/cold-chain-agnostic) 2-opt
-            # pass -- gives Hill Climbing a better starting point than the
-            # raw nearest-neighbor/BFS construction, regardless of cold
-            # chain (cheap: one more O(n^2) pass, done once here).
-            route = self._two_opt_tighten_route(route)
 
             solution.set_batch_route(batch, route)
             route_time[batch] = self._route_time(route, params)
@@ -478,6 +488,73 @@ class OPPHillClimbing(Model):
             return None
 
         return solution
+
+    # Randomized pick-to-pick constructions tried per batch on top of the
+    # deterministic nearest-neighbor one (see _initial_route), and the
+    # distance exponent of their roulette -- the same beta = 2.5 opp_aco_4
+    # uses by default (SolveAco4ModelDTO's _Beta).
+    _MULTI_START_CONSTRUCTIONS = 20
+    _MULTI_START_BETA = 2.5
+
+    def _initial_route(self, required_locations: Set) -> Optional[List]:
+        """
+        Initial route for one batch: the shortest of the deterministic
+        nearest-neighbor construction (_generate_feasible_route), the
+        farthest-insertion order realized forwards and backwards
+        (route_construction.insertion_route; Rosenkrantz, Stearns & Lewis
+        1977) and _MULTI_START_CONSTRUCTIONS randomized pick-to-pick
+        constructions alternating forwards/backwards
+        (route_construction.stitch_route_either_way with weight
+        (1/d)^beta, each tightened by improve_route), then polished with the elite-route
+        local search (route_construction.polish_route: pick-level 2-opt,
+        or-opt relocation, vertex 2-opt, segment re-routing). The
+        exhaustive best-first search (_generate_feasible_route_bff) only
+        runs if every construction fails.
+
+        Multi-start construction + local search is a standard way to
+        diversify a Hill Climbing start (e.g. the multi-start local search
+        Coruzzolo et al. 2023 use for batching, Logistics 7:61); the pick-
+        to-pick construction itself is Chen et al. (2013)'s (see
+        stitch_route). Our own choice to use them here, measured
+        2026-09-26: with the nearest-neighbor start + vertex 2-opt alone,
+        HC's routes summed 490 route-time units on realistic_crew_
+        scenario(7) vs 425 for v5's exact Stage 1, and on
+        realistic_crew_scenario(14) batch B1 got no route at all
+        (nearest-neighbor stuck, best-first search out of budget), which
+        made the whole solve "infeasible" although v5 solves it.
+        """
+        candidates = []
+        greedy = self._generate_feasible_route(required_locations)
+        if greedy is not None:
+            candidates.append(greedy)
+        # Farthest-insertion order, forwards and on the reversed graph (see
+        # route_construction.insertion_route / reversed_graph).
+        for graph, flip in ((self.location_graph, False), (self._reversed_graph, True)):
+            full = route_construction.insertion_route(graph, required_locations)
+            if full is not None:
+                full = full[::-1] if flip else full
+                candidates.append(full[1:-1])
+        beta = self._MULTI_START_BETA
+        for attempt in range(self._MULTI_START_CONSTRUCTIONS):
+            # Alternate forwards / backwards construction (see
+            # route_construction.stitch_route_either_way for why).
+            full = route_construction.stitch_route_either_way(
+                self.location_graph, self._reversed_graph, required_locations,
+                lambda current, r, d: (1.0 / d) ** beta,
+                self._undirected_adjacency, attempt % 2 == 1,
+            )
+            if full is not None:
+                candidates.append(
+                    route_construction.improve_route(self.location_graph, full[1:-1], required_locations)
+                )
+        if not candidates:
+            fallback = self._generate_feasible_route_bff(required_locations)
+            if fallback is None:
+                return None
+            candidates.append(fallback)
+
+        best = min(candidates, key=self._calculate_route_distance)
+        return route_construction.polish_route(self.location_graph, best, required_locations)
 
     def _assign_batches_to_pickers(
         self,
@@ -524,43 +601,20 @@ class OPPHillClimbing(Model):
         return required
 
     def _dijkstra(self, source, forbidden: Set = frozenset()) -> Tuple[Dict, Dict]:
-        """Shortest-path distances/predecessors from `source` (see opp_hc_2's twin method)."""
-        dist = {source: 0.0}
-        prev: Dict = {}
-        visited: Set = set()
-        heap = [(0.0, source)]
-
-        while heap:
-            d, u = heapq.heappop(heap)
-            if u in visited:
-                continue
-            visited.add(u)
-
-            for v in self.location_graph.get_neighbors(u):
-                if v == u or (v in forbidden and v != source):
-                    continue
-                nd = d + self.location_graph.get_distance(u, v)
-                if nd < dist.get(v, float("inf")):
-                    dist[v] = nd
-                    prev[v] = u
-                    heapq.heappush(heap, (nd, v))
-
-        return dist, prev
+        """Shortest-path distances/predecessors from `source` (see models/utils/route_construction.py)."""
+        return route_construction.dijkstra(self.location_graph, source, forbidden)
 
     def _reconstruct_path(self, prev: Dict, source, target) -> List:
         """Rebuild the path source -> target (inclusive) from a `prev` map."""
-        if target == source:
-            return [source]
-        path = [target]
-        node = target
-        while node != source:
-            node = prev[node]
-            path.append(node)
-        path.reverse()
-        return path
+        return route_construction.reconstruct_path(prev, source, target)
 
     def _generate_feasible_route(self, required_locations: Set) -> Optional[List]:
-        """Dijkstra-based nearest-neighbor route construction (see opp_hc_2's twin method)."""
+        """
+        Dijkstra-based nearest-neighbor route construction (see opp_hc_2's
+        twin method) -- the nearest-neighbor TSP heuristic over shortest-
+        path distances that Coruzzolo et al. (2023), Logistics 7:61, p.9,
+        use for routing, here with no-revisit paths (v5's constraint).
+        """
         if not required_locations:
             return []
 
@@ -601,175 +655,52 @@ class OPPHillClimbing(Model):
         return route
 
     def _build_reversal_prefix_arrays(self, route: List) -> Tuple[List[float], List[float], List[int]]:
-        """
-        fwd_prefix[k]/rev_prefix[k]: cumulative distance of route[0..k]
-        traversed forward / in reverse. rev_broken_count[k]: how many of
-        the reverse-direction edges among route[0..k] don't exist -- a
-        2-opt reversal of route[i:j+1] is only feasible if this is the
-        same at both ends of the segment (i.e. zero reverse edges are
-        missing inside it). Shared by _two_opt_tighten_route and
-        _generate_route_neighbor -- see _two_opt_tighten_route's
-        docstring for why get_distance/has_edge are NOT assumed
-        symmetric here.
-        """
-        n = len(route)
-        get_distance = self.location_graph.get_distance
-        has_edge = self.location_graph.has_edge
-
-        fwd_prefix = [0.0] * n
-        rev_prefix = [0.0] * n
-        rev_broken_count = [0] * n
-        for t in range(n - 1):
-            # route[t] -> route[t + 1] is one of the route's own edges,
-            # which is always feasible for a route this is called on
-            # (topology-valid, or the current sweep state in
-            # _two_opt_tighten_route), so get_distance here is always
-            # finite. The reverse direction may not exist at all
-            # (get_distance returns float("inf")): rev_broken_count
-            # tracks that separately (used to reject any candidate whose
-            # reversed segment would need this edge) so a 0.0 placeholder
-            # is used for rev_prefix's running sum instead -- letting an
-            # "inf" into the cumulative sum would poison every later
-            # prefix value (inf - inf = nan), including for ranges that
-            # never touch this broken edge.
-            fwd_prefix[t + 1] = fwd_prefix[t] + get_distance(route[t], route[t + 1])
-            edge_ok = has_edge(route[t + 1], route[t])
-            rev_prefix[t + 1] = rev_prefix[t] + (
-                get_distance(route[t + 1], route[t]) if edge_ok else 0.0
-            )
-            rev_broken_count[t + 1] = rev_broken_count[t] + (0 if edge_ok else 1)
-
-        return fwd_prefix, rev_prefix, rev_broken_count
+        """See models/utils/route_construction.py's build_reversal_prefix_arrays."""
+        return route_construction.build_reversal_prefix_arrays(self.location_graph, route)
 
     def _two_opt_tighten_route(self, route: List) -> List:
         """
-        Standalone distance-minimizing 2-opt local search over `route`
-        (topology only -- no picker, no cold chain): repeatedly applies the
-        best improving reversal until none is left. Used to tighten the
+        Distance-minimizing 2-opt over `route` (see models/utils/
+        route_construction.py's two_opt_tighten_route). Used to tighten the
         nearest-neighbor/BFS construction's route BEFORE it's used for the
         cold-chain eligibility pre-check or as the Hill Climbing search's
         starting point (see _generate_initial_feasible_solution's call
-        site for why this matters). Bounded to len(route) sweeps as a
-        safety valve -- in practice 2-opt converges in far fewer.
-
-        Each candidate reversal is scored via a distance DELTA (the 2 edges
-        leaving/entering the reversed segment, plus the segment's own
-        distance re-summed in reverse) instead of rebuilding the whole
-        candidate route and re-validating/re-summing it from scratch --
-        O(1) per candidate (after an O(n) prefix pass per sweep) instead of
-        O(n). This graph can be directed/asymmetric (see e.g.
-        tests/shared_scenarios/functional/scenario_05_v4.py, where L1->L2
-        and L2->L1 have different weights), so get_distance/has_edge are
-        NOT assumed symmetric: reversing route[i:j+1] also reverses the
-        direction every edge inside it is traversed in, so the reverse-
-        direction prefix sums/broken-edge counts below are tracked
-        separately from the forward ones, not derived by just negating or
-        reusing them.
+        site for why this matters).
         """
-        if len(route) <= 1:
-            return route
+        return route_construction.two_opt_tighten_route(self.location_graph, route)
 
-        depot = self.location_graph.get_depot()
-        final = self.location_graph.get_final()
-        get_distance = self.location_graph.get_distance
-        has_edge = self.location_graph.has_edge
-
-        current = route
-        for _ in range(len(route)):
-            n = len(current)
-            fwd_prefix, rev_prefix, rev_broken_count = self._build_reversal_prefix_arrays(current)
-
-            best_i = best_j = None
-            best_delta = -1e-9
-
-            for i in range(n - 1):
-                prev_node = current[i - 1] if i > 0 else depot
-                removed_head = get_distance(prev_node, current[i])
-
-                for j in range(i + 1, n):
-                    if rev_broken_count[j] - rev_broken_count[i] != 0:
-                        continue  # a reverse-direction edge inside [i, j] is missing
-
-                    next_node = current[j + 1] if j + 1 < n else final
-
-                    if not has_edge(prev_node, current[j]) or not has_edge(current[i], next_node):
-                        continue
-
-                    removed = removed_head + (fwd_prefix[j] - fwd_prefix[i]) + get_distance(current[j], next_node)
-                    added = get_distance(prev_node, current[j]) + (rev_prefix[j] - rev_prefix[i]) + get_distance(current[i], next_node)
-                    delta = added - removed
-
-                    if delta < best_delta:
-                        best_delta = delta
-                        best_i, best_j = i, j
-
-            if best_i is None:
-                break
-
-            current = current[:best_i] + current[best_i:best_j + 1][::-1] + current[best_j + 1:]
-
-        return current
-
-    _MAX_BFF_EXPANSIONS = 200_000
+    # 2026-09-26 audit finding: raising this cap alone (tried up to 10M) was
+    # the wrong fix for v5's realistic_crew_scenario stress profile (26
+    # orders/batch, ~19-26 required locations) reporting false "infeasible"
+    # -- a batch that exhausted even a 10M-expansion cap after ~8 minutes
+    # was actually found in well under a second once _bff_search was
+    # reordered into a best-first search (by locations still required, then
+    # graph distance to the nearest one -- see its docstring) instead of
+    # plain FIFO BFS: the real problem was blind BFS wasting almost its
+    # whole budget on partial paths still far from finished, not that
+    # 200_000 was too small a number.
+    #
+    # That reordering resolves the vast majority of batches at this size
+    # (~20-26 required locations on a ~50-256-node grid) in well under a
+    # second. A minority still take 20-70s even with the better ordering
+    # (measured on 14x14/16x16 grids specifically) -- kept at 2M rather
+    # than 200_000 so those still resolve rather than false-negative,
+    # accepting that cost for the ones that need it. Still a hard safety
+    # valve, not a knob this class of scenario should need to push further;
+    # if a batch still exhausts THIS cap, that is a genuine, larger
+    # instance than anything measured so far, worth a fresh look rather
+    # than raising the constant again.
+    _MAX_BFF_EXPANSIONS = 2_000_000
 
     def _generate_feasible_route_bff(self, required_locations: Set) -> Optional[List]:
-        """Last-resort exhaustive route search (see opp_hc_2's twin method's docstring)."""
-        if not required_locations:
-            return []
-
-        depot = self.location_graph.get_depot()
-        final = self.location_graph.get_final()
-        initial_remaining = frozenset(required_locations)
-
-        route = self._bff_search(depot, final, initial_remaining, memoize=True)
-        if route is None:
-            route = self._bff_search(depot, final, initial_remaining, memoize=False)
-        return route
-
-    def _bff_search(
-        self, depot, final, initial_remaining: frozenset, memoize: bool
-    ) -> Optional[List]:
-        """BFS over states (current_node, remaining_required, path_so_far).
-
-        The _MAX_BFF_EXPANSIONS safety valve applies regardless of `memoize`
-        -- it used to only fire in the memoize=False pass (a bug: since
-        _generate_feasible_route_bff always tries memoize=True FIRST, that
-        pass had no bound at all on either time or memory, the `seen` set
-        growing unboundedly for any batch with enough required locations
-        that the state space doesn't collapse quickly. Observed in practice:
-        a single batch with 25 required locations on a ~100-node grid ran
-        for 3+ minutes and 3+ GB of RAM without terminating).
         """
-        queue: deque = deque([(depot, initial_remaining, [depot])])
-        seen: Set = {(depot, initial_remaining)} if memoize else None
-        expansions = 0
-
-        while queue:
-            expansions += 1
-            if expansions > self._MAX_BFF_EXPANSIONS:
-                return None
-
-            node, remaining, path = queue.popleft()
-            visited = set(path)
-
-            for vertex in self.location_graph.get_neighbors(node):
-                if vertex in visited:
-                    continue
-
-                if vertex == final:
-                    if not remaining:
-                        return path[1:]
-                    continue
-
-                new_remaining = remaining - {vertex}
-                if memoize:
-                    new_state = (vertex, new_remaining)
-                    if new_state in seen:
-                        continue
-                    seen.add(new_state)
-                queue.append((vertex, new_remaining, path + [vertex]))
-
-        return None
+        Last-resort exhaustive route search: best-first search ordered by
+        (locations still required, distance to the nearest one) -- see
+        models/utils/route_construction.py's _best_first_search.
+        """
+        return route_construction.best_first_route(
+            self.location_graph, required_locations, self._MAX_BFF_EXPANSIONS
+        )
 
     def _search_cost(
         self, solution: RouteSolution, evaluator: "RouteEvaluator", validator: "ConstraintsValidator"

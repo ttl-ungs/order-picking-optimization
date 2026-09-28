@@ -49,6 +49,7 @@ decompose, so it never gets the same treatment).
 import os
 import shutil
 import tempfile
+import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from tests.infra.zimpl.dat_files_builder import write_set_dat, write_indexed_dat
@@ -103,7 +104,7 @@ def _write_file(path, content):
         f.write(content)
 
 
-def solve_stage1_decomposed(dat_dir, max_workers=None):
+def solve_stage1_decomposed(dat_dir, max_workers=None, time_budget_seconds=None):
     """
     Call AFTER the full scenario's .dat files have already been written
     to `dat_dir` (however the caller normally does that -- build_dat_files(),
@@ -130,12 +131,23 @@ def solve_stage1_decomposed(dat_dir, max_workers=None):
     batch's solved variable dict -- safe to merge as-is, since every
     variable name embeds its own batch id (e.g. "z_ijb$i$j$b"), so
     different batches' entries never collide.
+
+    time_budget_seconds (optional, sequential only): a total wall-clock
+    budget for Stage 1, split evenly over the batches still to solve
+    (each batch's SCIP limits/time = remaining budget / batches left), for
+    analysis/run_equal_time_study.py. A batch cut by its limit still counts
+    if SCIP had an incumbent route for it; the overall status is then
+    "timelimit" instead of "optimal". A batch with no route at all within
+    its share ends Stage 1 with that status and no complete solution.
     """
     data_B_path = os.path.join(dat_dir, "data_B.dat")
     bn_path = os.path.join(dat_dir, "Bn.dat")
 
     batches = _read_set_dat(data_B_path)
     bn = _read_indexed_dat_pairs(bn_path)
+
+    if time_budget_seconds is not None:
+        return _solve_sequential(dat_dir, batches, bn, data_B_path, bn_path, time_budget_seconds)
 
     if max_workers is None:
         max_workers = _default_workers(len(batches))
@@ -148,22 +160,32 @@ def solve_stage1_decomposed(dat_dir, max_workers=None):
     return _solve_parallel(dat_dir, batches, bn, max_workers)
 
 
-def _solve_sequential(dat_dir, batches, bn, data_B_path, bn_path):
+def _solve_sequential(dat_dir, batches, bn, data_B_path, bn_path, time_budget_seconds=None):
     original_data_B = _read_file(data_B_path)
     original_bn = _read_file(bn_path)
     merged_values = {}
+    overall = "optimal"
+    deadline = time.time() + time_budget_seconds if time_budget_seconds is not None else None
     try:
-        for batch in sorted(batches):
+        ordered = sorted(batches)
+        for index, batch in enumerate(ordered):
+            limit = None
+            if deadline is not None:
+                limit = max(deadline - time.time(), 0.0) / (len(ordered) - index)
+                if limit <= 0.0:
+                    return "timelimit", merged_values
             write_set_dat(data_B_path, {batch})
             write_indexed_dat(bn_path, {k: v for k, v in bn.items() if k[1] == batch})
-            status, values = solve_zpl(STAGE1_ZPL_PATH, dat_dir=dat_dir)
-            if status not in ("optimal", "feasible"):
+            status, values = solve_zpl(STAGE1_ZPL_PATH, dat_dir=dat_dir, time_limit_seconds=limit)
+            if status == "timelimit" and values:
+                overall = "timelimit"
+            elif status not in ("optimal", "feasible"):
                 return status, merged_values
             merged_values.update(values)
     finally:
         _write_file(data_B_path, original_data_B)
         _write_file(bn_path, original_bn)
-    return "optimal", merged_values
+    return overall, merged_values
 
 
 def _solve_parallel(dat_dir, batches, bn, max_workers):
