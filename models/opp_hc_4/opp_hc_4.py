@@ -46,6 +46,22 @@ solution) is only ever set when every batch is fully cold-chain-compliant
 "infeasible" reflects an honest, exhausted search budget -- not a
 shortcut that gave up before trying.
 
+Search scheme and sources. The main loop is stochastic, first-improvement
+hill climbing (Hoos & Stuetzle 2004, "Stochastic Local Search:
+Foundations and Applications"; see also Talbi 2009, "Metaheuristics: From
+Design to Implementation", ch. 2): each iteration draws ONE random move
+and ONE random neighbor and accepts it iff it lowers the current cost --
+it does not scan the whole neighborhood first (not steepest descent). The
+one exception is inside the route move, which takes the best 2-opt
+reversal of the chosen batch's route (Croes 1958, "A method for solving
+traveling-salesman problems"). The neighborhoods -- reassign a batch to
+another picker, swap two batches in a picker's sequence -- play the role
+of the swap/insert moves Coruzzolo et al. (2023), Logistics 7:61, use in
+their local search for order batching/sequencing; the nearest-neighbor
+initial routing follows their routing step (p.9). None of the papers in
+the thesis bibliography uses Hill Climbing itself; the initial-route
+portfolio (_initial_route) cites its own sources.
+
 Deliberately WITHOUT congestion between concurrent pickers (unlike
 opp_hc_3): congestion and picker-speed/cold-chain are orthogonal additions
 over opp_hc_2, and this model only needs the latter. Adding congestion on
@@ -268,6 +284,8 @@ class OPPHillClimbing(Model):
                 neighbor_solution, evaluator, validator
             )
 
+            # First-improvement acceptance of one random neighbor
+            # (stochastic hill climbing, Hoos & Stuetzle 2004 -- see header).
             if neighbor_cost < current_cost:
                 current_solution = neighbor_solution
                 current_cost = neighbor_cost
@@ -591,7 +609,12 @@ class OPPHillClimbing(Model):
         return route_construction.reconstruct_path(prev, source, target)
 
     def _generate_feasible_route(self, required_locations: Set) -> Optional[List]:
-        """Dijkstra-based nearest-neighbor route construction (see opp_hc_2's twin method)."""
+        """
+        Dijkstra-based nearest-neighbor route construction (see opp_hc_2's
+        twin method) -- the nearest-neighbor TSP heuristic over shortest-
+        path distances that Coruzzolo et al. (2023), Logistics 7:61, p.9,
+        use for routing, here with no-revisit paths (v5's constraint).
+        """
         if not required_locations:
             return []
 
