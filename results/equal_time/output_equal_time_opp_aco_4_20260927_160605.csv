@@ -1,0 +1,3 @@
+id,scenario,model,budget_from,budget_s,heuristic_obj,status,obj_val,dual_bound,mip_gap_pct,elapsed_s,heuristic_vs_model_pct
+04,test_realistic_crew_7x7_warehouse,opp_v5_2_split,opp_aco_4,15.112,149221.0,timelimit,149218.91666666814,148567.9999999992,0.43812709780634496,15.145,0.0013961589980662989
+04,test_realistic_crew_7x7_warehouse,opp_v5_1_mono,opp_aco_4,15.112,149221.0,timelimit,157569.68333332977,33922.13471615563,364.5040315174688,15.357,-5.298407128018783
