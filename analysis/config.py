@@ -151,6 +151,14 @@ LATEST_FILE_OVERRIDES = {
         ("output_opp_v5_1_mono_stress_tests.csv", MIGRATED_STRESS_INSTANCES),
     ],
     ("opp_v5_2_split", "functional"): "output_opp_v5_2_split_functional_tests.csv",
+    # 2026-09-28: opp_aco_4's 100x100 migrated scenario was re-run alone
+    # after the Max_time budget started covering post-processing (commit
+    # "Bound ACO post-processing by Max_time"): take that row from the
+    # single-test run and every other scenario from the full stress run.
+    ("opp_aco_4", "stress"): [
+        ("output_opp_aco_4_stress_tests_20260928_113625.csv", ("test_25_orders_per_batch_30_batches_100x100",)),
+        "output_opp_aco_4_stress_tests_20260927_135419.csv",
+    ],
     ("opp_v5_2_split", "stress"): [
         "output_opp_v5_2_split_stress_tests_20260926_225549.csv",
         ("output_opp_v5_2_split_stress_tests_parallel.csv", MIGRATED_STRESS_INSTANCES),
