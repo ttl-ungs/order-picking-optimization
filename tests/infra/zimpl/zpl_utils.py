@@ -6,6 +6,10 @@ from dtos.opp.solve_result import SolveResult
 import models.utils.solve_registry as solve_registry
 from models.utils.input_validation import overloaded_batches, orders_without_exactly_one_batch
 
+# SCIP statuses meaning "stopped on a limit, not concluded".
+_LIMIT_STATUSES = ("timelimit", "gaplimit", "sollimit", "nodelimit", "totalnodelimit", "stallnodelimit", "memlimit", "userinterrupt")
+
+
 def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
     """
     Compila el .zpl a .lp usando el binario `zimpl` y lo resuelve con SCIP.
@@ -90,7 +94,20 @@ def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
     var_values = {}
     debug_string = ""
 
-    if status in ("optimal", "feasible"):
+    # A limit-cut solve ("timelimit" etc., only possible when
+    # time_limit_seconds was given) may still hold a feasible incumbent:
+    # read it too, so a time-budgeted run reports its best solution found
+    # instead of nothing (analysis/run_equal_time_study.py). The returned
+    # status stays "timelimit" -- callers that require a proven
+    # "optimal"/"feasible" answer are unaffected.
+    has_incumbent = status in ("optimal", "feasible") or (
+        status in _LIMIT_STATUSES and model.getNSols() > 0
+    )
+    if status in _LIMIT_STATUSES or time_limit_seconds is not None:
+        params["dual_bound"] = model.getDualbound()
+        params["mip_gap"] = model.getGap() if has_incumbent else None
+
+    if has_incumbent:
         debug_list = []
         for var in model.getVars():
             val = model.getVal(var)
@@ -112,7 +129,7 @@ def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
     if ta_values:
         params["sla_on_time_pct"] = sum(1 for t in ta_values if t <= 1e-6) / len(ta_values) * 100
 
-    obj_val = model.getObjVal() if status in ("optimal", "feasible") else None
+    obj_val = model.getObjVal() if has_incumbent else None
 
     solve_result = SolveResult(
         status=status,
