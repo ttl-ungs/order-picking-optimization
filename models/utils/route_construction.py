@@ -16,6 +16,7 @@ tests/*/functional/test_case_forced_revisit_is_infeasible.py).
 import heapq
 import itertools
 import random
+import time
 from typing import Dict, List, Optional, Set, Tuple
 
 # Backtracks allowed per stitch_route construction (see its docstring):
@@ -399,7 +400,7 @@ def _corridor(location_graph, source, target, forbidden: Set) -> Optional[List]:
     return reconstruct_path(prev, source, target)
 
 
-def relocate_picks(location_graph, route: List, required_locations: Set) -> List:
+def relocate_picks(location_graph, route: List, required_locations: Set, deadline: Optional[float] = None) -> List:
     """
     Or-opt style relocation over the pick ORDER (Or 1976; the classic
     TSP "move one node elsewhere in the tour" neighborhood): take one
@@ -433,6 +434,8 @@ def relocate_picks(location_graph, route: List, required_locations: Set) -> List
         anchors = [0] + [k for k in range(1, len(full) - 1) if full[k] in required_locations] + [len(full) - 1]
 
         for i in range(1, len(anchors) - 1):
+            if _past(deadline):
+                return full[1:-1]
             a_idx, p_idx, b_idx = anchors[i - 1], anchors[i], anchors[i + 1]
             a, p, b = full[a_idx], full[p_idx], full[b_idx]
 
@@ -488,6 +491,10 @@ def relocate_picks(location_graph, route: List, required_locations: Set) -> List
     return full[1:-1]
 
 
+def _past(deadline: Optional[float]) -> bool:
+    return deadline is not None and time.time() > deadline
+
+
 def _realize_pick_order(location_graph, prefix: List, picks: List, suffix: List, required_locations: Set) -> Optional[List]:
     """
     Connect prefix[-1] -> picks[0] -> ... -> picks[-1] -> suffix[0] by
@@ -513,7 +520,9 @@ def _realize_pick_order(location_graph, prefix: List, picks: List, suffix: List,
     return path + list(suffix[1:])
 
 
-def reverse_pick_segments(location_graph, route: List, required_locations: Set, max_segment: int = 8) -> List:
+def reverse_pick_segments(
+    location_graph, route: List, required_locations: Set, max_segment: int = 8, deadline: Optional[float] = None,
+) -> List:
     """
     2-opt over the PICK ORDER (Croes 1958 / Lin 1965's 2-opt, applied to
     the sequence of required locations rather than to raw vertices):
@@ -545,6 +554,8 @@ def reverse_pick_segments(location_graph, route: List, required_locations: Set, 
         improved = False
         anchors = [0] + [k for k in range(1, len(full) - 1) if full[k] in required_locations] + [len(full) - 1]
         for i in range(1, len(anchors) - 2):
+            if _past(deadline):
+                return full[1:-1]
             for j in range(i + 1, min(i + max_segment, len(anchors) - 1)):
                 prefix = full[:anchors[i - 1] + 1]
                 suffix = full[anchors[j + 1]:]
@@ -564,17 +575,25 @@ def reverse_pick_segments(location_graph, route: List, required_locations: Set, 
     return full[1:-1]
 
 
-def polish_route(location_graph, route: List, required_locations: Set) -> List:
+def polish_route(location_graph, route: List, required_locations: Set, deadline: Optional[float] = None) -> List:
     """
     Expensive route improvement for ELITE routes: alternate pick-level
     2-opt (reverse_pick_segments), or-opt relocation (relocate_picks) and
     the cheap improve_route until none shortens the route (bounded).
+
+    `deadline` (absolute time.time(), optional): stop improving once it
+    passes and return the best route so far -- never worse than the input.
+    Needed because one call scales with graph size: measured 2026-09-27 on
+    the 100x100 migrated grid (10,000 nodes), ~34 s per call, 30 calls =
+    1007 s of a 1141 s opp_aco_4 run whose Max_time was 1 s.
     """
     best = list(route)
     best_length = _path_length(location_graph, [location_graph.get_depot()] + best + [location_graph.get_final()])
     for _ in range(5):
-        candidate = reverse_pick_segments(location_graph, best, required_locations)
-        candidate = relocate_picks(location_graph, candidate, required_locations)
+        if _past(deadline):
+            break
+        candidate = reverse_pick_segments(location_graph, best, required_locations, deadline=deadline)
+        candidate = relocate_picks(location_graph, candidate, required_locations, deadline=deadline)
         candidate = improve_route(location_graph, candidate, required_locations)
         length = _path_length(location_graph, [location_graph.get_depot()] + candidate + [location_graph.get_final()])
         if length >= best_length - 1e-9:
@@ -911,7 +930,13 @@ def stitch_route_either_way(
     construction moves (current -> r in the reversed graph means r ->
     current in the original).
 
-    Our own addition (not from the papers). Why (measured 2026-09-27):
+    Our own addition. Closest precedent: Lesch et al. (2023), Applied
+    Intelligence 53:18605-18629, also evaluate every ACO pick route
+    reversed ("the reverse pick route is calculated by reversing the
+    market sequence", p.18617) and run their S-shape baseline on reversed
+    routes too (p.18620) -- but they reverse a finished route, while this
+    BUILDS the route from the other end, which changes which picks the
+    greedy choice leaves for last. Why (measured 2026-09-27):
     stitch_route's distance-greedy choice leaves the picks far from where
     it STARTS for last, and some batches have a cluster of those that an
     early move cuts off -- realistic_crew_scenario(13)'s B6 has three

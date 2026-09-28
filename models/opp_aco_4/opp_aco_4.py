@@ -111,6 +111,18 @@ class OPPAntColonyOptimization(Model):
     # _build_batch_route's docstring.
     _IMPROVE_ANT_ROUTES = True
 
+    # The other hybrid (ACO + local search) components, each switchable on
+    # its own so their contribution can be measured separately
+    # (analysis/run_aco_ablation_study.py). All on by default:
+    # - elite-route polishing of each batch's record route
+    #   (route_construction.polish_route, in solve() and _fallback_route);
+    _POLISH_ELITE_ROUTES = True
+    # - swapping each batch's shortest-known route into the best solution
+    #   (_recombine_shortest_routes);
+    _RECOMBINE_SHORTEST_ROUTES = True
+    # - schedule local search on the best solution (_schedule_local_search).
+    _SCHEDULE_LOCAL_SEARCH = True
+
     # Route pheromone bounds, MAX-MIN Ant System style (Stuetzle & Hoos
     # 2000; the variant described in Alaya & Solnon, "Ant Colony
     # Optimization for Multi-objective Optimization Problems", pp.3-4):
@@ -121,7 +133,12 @@ class OPPAntColonyOptimization(Model):
     # tau <- (1 - rho) tau + 2 is 2 / rho: tau_max = 2 / rho. tau_min =
     # tau_max / 50 keeps every pick pair choosable (the ratio is our
     # choice; Stuetzle & Hoos derive it from n and a target
-    # probability, of the same order for n ~ 20-26 picks).
+    # probability, of the same order for n ~ 20-26 picks). MAX-MIN bounds
+    # are also what Lesch et al. (2023), "Optimizing storage assignment,
+    # order picking, and their interaction in mezzanine warehouses",
+    # Applied Intelligence 53:18605-18629, use for ACO picker routing
+    # (tau in [1, 25], alpha = 1, beta = 2, rho = 0.02, p.18620), with
+    # the same 1/d visibility core (their Eq. 6, p.18617).
     #
     # Why not the previous scheme (every ant deposits Q / cost on the
     # route, floor 0.01, init 1.0): with Q = 100 and costs ~1.5e5 a
@@ -133,6 +150,16 @@ class OPPAntColonyOptimization(Model):
     # route length only, per batch, and the full objective still drives
     # picker pheromone and the best-so-far solution.
     _MMAS_TAU_MIN_RATIO = 1.0 / 50.0
+
+    # Share of params.Max_time that ant construction may use before
+    # stopping (once a compliant solution exists); the rest is reserved for
+    # the end-of-iteration elite-route polishing and schedule local search.
+    # Only matters on instances that hit the budget at all. Measured
+    # 2026-09-27 on the 100x100 migrated grid with Max_time = 600 s: letting
+    # ants use the whole budget left polishing 11 s and the schedule search
+    # none, objective 1,403,120 -- vs 917,328 when post-processing ran in
+    # full (1878 s, before the budget covered it).
+    _ANT_BUDGET_SHARE = 0.5
 
     # Multiplier applied to ConstraintsValidator.cold_chain_violation() (a
     # time-unit overrun) before adding it to an ant solution's cost -- see
@@ -186,6 +213,11 @@ class OPPAntColonyOptimization(Model):
         num_ants = getattr(params, "_A_ants", 15)
         max_it = getattr(params, "_Max_it", 60)
         max_time = getattr(params, "_Max_time", None) or float("inf")
+        # Absolute deadline for the expensive post-processing too (elite
+        # route polishing, schedule local search), not just ant building:
+        # on the 100x100 migrated grid those took ~1090 s of a run whose
+        # Max_time was 1 s (2026-09-27 phase timing). None = no budget.
+        self._deadline = start_time + max_time if max_time != float("inf") else None
         alpha = getattr(params, "_Alpha", 1.0)
         beta = getattr(params, "_Beta", 2.5)
         evaporation_rate = getattr(params, "_E", 0.15)
@@ -345,8 +377,13 @@ class OPPAntColonyOptimization(Model):
                 # once a cold-chain-compliant solution exists (this
                 # iteration's or an earlier one's), so the budget can never
                 # produce a false "infeasible" (same honesty rule as the
-                # pre-checks above).
-                if time.time() - start_time > max_time and (best_global_solution is not None or feasible_ant_solutions):
+                # pre-checks above). Ants stop at _ANT_BUDGET_SHARE of the
+                # budget, leaving the rest for polishing the best routes and
+                # schedule (which honor the full deadline, see _deadline).
+                if (
+                    time.time() - start_time > max_time * self._ANT_BUDGET_SHARE
+                    and (best_global_solution is not None or feasible_ant_solutions)
+                ):
                     timed_out = True
                     break
                 ant_solution = self._build_ant_solution(
@@ -391,12 +428,27 @@ class OPPAntColonyOptimization(Model):
             # iteration: at 14x14 one polish costs ~120-260 ms (measured
             # 2026-09-26), too much for 6 batches x 60 iterations, while
             # records are comparatively rare.
-            for batch, (length, route) in list(iteration_best_route_by_batch.items()):
-                if length >= shortest_route_by_batch.get(batch, (float("inf"), None))[0] - 1e-9:
-                    continue
-                polished = route_construction.polish_route(
-                    self.location_graph, route, required_locations_by_batch[batch]
-                )
+            records = [
+                (batch, route)
+                for batch, (length, route) in iteration_best_route_by_batch.items()
+                if length < shortest_route_by_batch.get(batch, (float("inf"), None))[0] - 1e-9
+            ]
+            for index, (batch, route) in enumerate(records):
+                # Under a budget, each record gets an equal share of what's
+                # left, keeping one more share for the schedule local search
+                # below -- otherwise the first few polishes on a huge grid
+                # eat all of it (2026-09-27, 100x100: 284 s of polishing,
+                # schedule search 0 s).
+                polish_deadline = None
+                if self._deadline is not None:
+                    left = max(self._deadline - time.time(), 0.0)
+                    polish_deadline = time.time() + left / (len(records) - index + 1)
+                if self._POLISH_ELITE_ROUTES:
+                    polished = route_construction.polish_route(
+                        self.location_graph, route, required_locations_by_batch[batch], deadline=polish_deadline,
+                    )
+                else:
+                    polished = route
                 polished_length = self._calculate_route_distance(polished)
                 iteration_best_route_by_batch[batch] = (polished_length, polished)
                 shortest_route_by_batch[batch] = (polished_length, polished)
@@ -420,7 +472,7 @@ class OPPAntColonyOptimization(Model):
                     best_found_at_iteration = iteration
                     best_improved = True
 
-            if best_global_solution is not None:
+            if best_global_solution is not None and self._RECOMBINE_SHORTEST_ROUTES:
                 recombined = self._recombine_shortest_routes(
                     best_global_solution, best_global_cost, shortest_route_by_batch, validator, evaluator,
                 )
@@ -429,7 +481,7 @@ class OPPAntColonyOptimization(Model):
                     best_found_at_iteration = iteration
                     best_improved = True
 
-            if best_improved:
+            if best_improved and self._SCHEDULE_LOCAL_SEARCH:
                 best_global_solution, best_global_cost = self._schedule_local_search(
                     best_global_solution, best_global_cost, validator, evaluator,
                 )
@@ -918,6 +970,11 @@ class OPPAntColonyOptimization(Model):
         O(B^2 * P) evaluations -- cheap next to a full ant colony
         iteration at these sizes).
         """
+        deadline = self._deadline
+
+        def out_of_time():
+            return deadline is not None and time.time() > deadline
+
         def accept(candidate):
             if not validator.validate_solution(candidate):
                 return None
@@ -929,8 +986,12 @@ class OPPAntColonyOptimization(Model):
         batches = [b for b in self.B if solution.get_batch_picker(b) is not None]
         for _ in range(10 * max(len(batches), 1)):
             improved = False
+            if out_of_time():
+                break  # Max_time (see solve()): keep the best schedule so far
 
             for batch in batches:
+                if out_of_time():
+                    return solution, cost
                 source = solution.get_batch_picker(batch)
                 for target in self.P:
                     target_len = len(solution.get_picker_sequence(target)) - (1 if target == source else 0)
@@ -951,6 +1012,8 @@ class OPPAntColonyOptimization(Model):
                 continue
 
             for i, first in enumerate(batches):
+                if out_of_time():
+                    return solution, cost
                 for second in batches[i + 1:]:
                     p_first, p_second = solution.get_batch_picker(first), solution.get_batch_picker(second)
                     candidate = solution.copy()
@@ -1010,9 +1073,9 @@ class OPPAntColonyOptimization(Model):
                     self.location_graph, required_locations, self._MAX_BFF_EXPANSIONS
                 )
                 full = [depot] + stops + [final] if stops is not None else None
-            if full is not None:
+            if full is not None and self._POLISH_ELITE_ROUTES:
                 full = [depot] + route_construction.polish_route(
-                    self.location_graph, full[1:-1], required_locations
+                    self.location_graph, full[1:-1], required_locations, deadline=self._deadline,
                 ) + [final]
             self._fallback_cache[key] = full
         self._fallback_calls += 1

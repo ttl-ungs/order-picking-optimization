@@ -27,7 +27,7 @@ class SolveAco4ModelDTO(SolveAcoModelDTO):
         super().__init__()
         self._V_p: dict = {}
         self._T_frio_max: float = float("inf")
-        self._Max_time: float = 600.0
+        self._Max_time: float = 1800.0
 
     @property
     def Max_time(self) -> float:
@@ -37,10 +37,13 @@ class SolveAco4ModelDTO(SolveAcoModelDTO):
         best solution, and the run ends. It never ends a run that has no
         cold-chain-compliant solution yet (see opp_aco_4's solve()), so it
         can't turn a solvable instance into a false "infeasible". Default
-        600 s: above every realistic_crew stress run measured on
-        2026-09-27 (<= ~390 s), so it only bounds the very large instances
-        -- e.g. the 100x100 migrated grid, where one iteration alone takes
-        ~5 min and the full 60 would take ~5 h."""
+        1800 s: above every realistic_crew stress run measured on
+        2026-09-27 (<= ~410 s), so it only bounds the very large instances
+        -- e.g. the 100x100 migrated grid, where the full 60 iterations
+        would take ~5 h -- while staying under the stress runner's 40-min
+        timeout. Measured there with 600 s: objective 1,061,148, vs 917,328
+        when ACO ran ~1878 s (before the budget also covered the
+        post-processing); 1800 s gives it about that same time back."""
         return self._Max_time
 
     @Max_time.setter
