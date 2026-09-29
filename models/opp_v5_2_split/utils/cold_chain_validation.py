@@ -1,6 +1,6 @@
 """
 Pre-solve input validation for opp_v5_2_split's Etapa 2 (opp_model_v5_2_split_stage2_scheduling.zpl).
-Bug: opp_model_v5_2_split_stage2_scheduling.zpl restricts X_pb's domain to PB_elig = {(p,b) : t_exec_pb[p,b] <= T_frio_max},
+Bug: opp_model_v5_2_split_stage2_scheduling.zpl restricts x_pb's domain to PB_elig = {(p,b) : t_exec_pb[p,b] <= T_frio_max},
 so that`assign_exactly_one_picker` becomes a sum over an EMPTY set for that batch, and ZIMPL rejects that at
 COMPILE time.
 This mirrors models/utils/input_validation.py's role for opp_v4.
@@ -39,7 +39,7 @@ def invalid_speeds(V_p: dict) -> set:
 
 def batches_without_eligible_picker(
     P, B, N, C_n: dict, Bn: dict, B_setup: float, B_picking: float,
-    R_b_time: dict, V_p: dict, T_frio_max: float,
+    R_b: dict, V_p: dict, T_frio_max: float,
 ) -> set:
     """
     Returns the set of batch ids in B that have zero (picker, batch) pair satisfying t_exec_pb <= T_frio_max
@@ -64,12 +64,12 @@ def batches_without_eligible_picker(
 
     without_picker = set()
     for b in B:
-        if b not in R_b_time:
+        if b not in R_b:
             # Stage 1 never exported a route time for this batch.
             without_picker.add(b)
             continue
         has_eligible = any(
-            fixed_time[b] + R_b_time[b] / V_p[p] <= T_frio_max + COLD_CHAIN_TOLERANCE
+            fixed_time[b] + R_b[b] / V_p[p] <= T_frio_max + COLD_CHAIN_TOLERANCE
             for p in P
             if V_p.get(p, 0.0) > 0
         )

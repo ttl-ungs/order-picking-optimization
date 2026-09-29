@@ -69,7 +69,7 @@ def measure(batches, pickers, orders_per_batch, side, phase):
 
     routes = {
         k.split("$")[-1]: v for k, v in values.items()
-        if k.lower().startswith("r_b_time$")
+        if k.lower().startswith("r_b$")
     }
     row["route_min"], row["route_max"] = round(min(routes.values()), 1), round(max(routes.values()), 1)
     fixed = scenario["B_setup"] + scenario["B_picking"] * orders_per_batch * scenario["C_n"][

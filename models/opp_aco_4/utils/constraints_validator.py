@@ -48,7 +48,7 @@ from models.opp_v5_2_split.utils.cold_chain_validation import COLD_CHAIN_TOLERAN
 
 
 class ConstraintsValidator(BaseConstraintsValidator):
-    """opp_aco_2's validator plus a cold-chain eligibility check on X_pb."""
+    """opp_aco_2's validator plus a cold-chain eligibility check on x_pb."""
 
     def __init__(
         self,
@@ -181,5 +181,5 @@ class ConstraintsValidator(BaseConstraintsValidator):
 
     def _route_time(self, route: list) -> float:
         """Travel time (B_time * distance) + service time -- the part of
-        t_exec that scales with picker speed (opp_v5_2_split's R_b_time)."""
+        t_exec that scales with picker speed (opp_v5_2_split's R_b)."""
         return exec_time.route_time(self.location_graph, route, self.B_time, self.S)

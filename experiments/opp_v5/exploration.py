@@ -224,7 +224,7 @@ def _relax_simple_path(zpl_path):
     Only ever applied to the per-process temp workspace copy that
     tests/opp_v5_2_split/config.py or tests/opp_v5_1_mono/config.py makes --
     never to models/. Subtours stay
-    excluded: connectivity comes from the Gavish-Graves flow `f_ijb`, not from
+    excluded: connectivity comes from the Gavish-Graves flow `q_ijb`, not from
     these two constraints, and depot/final keep their own equality constraints.
     What it permits is a route that passes through an intermediate vertex more
     than once.
@@ -272,7 +272,7 @@ def _split_child(point, q):
 
     routes = {
         key.split("$")[-1]: val for key, val in values.items()
-        if key.lower().startswith("r_b_time$")
+        if key.lower().startswith("r_b$")
     }
     row["route_min"] = round(min(routes.values()), 1)
     row["route_max"] = round(max(routes.values()), 1)

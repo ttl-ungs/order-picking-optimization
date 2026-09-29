@@ -56,8 +56,8 @@ def write_indexed_dat(path, data):
 def _compute_m_seq(scenario_data):
     """Upper bound on max completion time: safe Big-M for non-overlap constraints.
 
-    M_seq must exceed the latest possible v_pb.  In the worst case every batch
-    is assigned to one picker sequentially, so v_pb_max ≈ Σ_b t_exec_pb_max.
+    M_seq must exceed the latest possible c_pb.  In the worst case every batch
+    is assigned to one picker sequentially, so c_pb_max ≈ Σ_b t_exec_pb_max.
     We approximate max route time per batch as |V|*max(d_ij)*B_time (every
     location visited) and use min(V_p) for the slowest picker.
     """

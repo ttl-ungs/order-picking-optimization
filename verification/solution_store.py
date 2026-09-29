@@ -33,7 +33,7 @@ turning an int vertex id into a different key than the same id in a list:
         "routes": [[b, [stops...]], ...],   (stops strictly between depot and final)
         "picker_sequences": [[p, [b...]], ...],   (execution order per picker)
         "batch_times": [[b, t_exec], ...],
-        "batch_completions": [[b, v_b], ...],
+        "batch_completions": [[b, c_b], ...],
         "tardiness": [[n, ta], ...], "earliness": [[n, ea], ...]
       }
     }

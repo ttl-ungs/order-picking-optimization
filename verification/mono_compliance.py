@@ -45,7 +45,7 @@ def _drop_empty_batches(instance, solution, report):
     use either (agreed with the user, 2026-09-28).
 
     Mono forces EVERY batch in B to be routed, assigned and charged in the
-    objective (its v_b), even one with no orders; opp_hc_4/opp_aco_4 skip
+    objective (its c_b), even one with no orders; opp_hc_4/opp_aco_4 skip
     empty batches. Left in, mono prices a correct solution above what the
     heuristic reports (e.g. 14.5 vs 6.25) and, with many of them free, SCIP
     can hit its time limit on an otherwise trivial instance. An empty batch
@@ -137,8 +137,8 @@ class _Evaluation:
         self.paths = {}  # b -> [depot, ..., final]
         self.picker_of = {}  # b -> p
         self.sequences = {}  # p -> [b, ...] (fixed batches only)
-        self.route_time = {}  # b -> R_b_time
-        self.completion = {}  # b -> recomputed v_b
+        self.route_time = {}  # b -> r_b
+        self.completion = {}  # b -> recomputed c_b
         self.max_t_exec = 0.0
 
 
@@ -299,16 +299,16 @@ def _fixings(sc, ev, with_times, reported_completions=None):
             fixes[f"z_ijb${i}${j}${b}"] = (value, value)
         for p in sc["P"]:
             value = 1.0 if p == ev.picker_of[b] else 0.0
-            fixes[f"X_pb${p}${b}"] = (value, value)
+            fixes[f"x_pb${p}${b}"] = (value, value)
     for p, seq in ev.sequences.items():
         for pos, b in enumerate(seq):
             for k in seq[pos + 1:]:
-                # Z_bk[b,k] = 1 <=> k runs after b on a shared picker
+                # y_bk[b,k] = 1 <=> k runs after b on a shared picker
                 # (mono's non_overlap_1); only b < k exists (ZIMPL string order).
                 if b < k:
-                    fixes[f"Z_bk${b}${k}"] = (1.0, 1.0)
+                    fixes[f"y_bk${b}${k}"] = (1.0, 1.0)
                 else:
-                    fixes[f"Z_bk${k}${b}"] = (0.0, 0.0)
+                    fixes[f"y_bk${k}${b}"] = (0.0, 0.0)
         if with_times:
             for b in seq:
                 c = reported_completions.get(b, ev.completion[b])
@@ -316,8 +316,8 @@ def _fixings(sc, ev, with_times, reported_completions=None):
                 # cheaper end and shift the objective it reports; float noise
                 # in the constraints is already absorbed by SCIP's own
                 # feasibility tolerance.
-                fixes[f"v_pb${p}${b}"] = (c, c)
-                fixes[f"v_b${b}"] = (c, c)
+                fixes[f"c_pb${p}${b}"] = (c, c)
+                fixes[f"c_b${b}"] = (c, c)
     return fixes
 
 
@@ -347,8 +347,8 @@ def _diagnose(sc, ev, lp_path, time_limit, report):
     full = _fixings(sc, ev, with_times=False)
     groups = {
         "routes (z_ijb)": lambda n: n.startswith("z_ijb$"),
-        "sequence (Z_bk)": lambda n: n.startswith("Z_bk$"),
-        "assignment + sequence (X_pb, Z_bk)": lambda n: n.startswith(("X_pb$", "Z_bk$")),
+        "sequence (y_bk)": lambda n: n.startswith("y_bk$"),
+        "assignment + sequence (x_pb, y_bk)": lambda n: n.startswith(("x_pb$", "y_bk$")),
     }
     for label, freed in groups.items():
         status, _ = _solve_fixed(lp_path, {n: v for n, v in full.items() if not freed(n)}, time_limit)
@@ -369,7 +369,7 @@ def _restrict_to_solution(sc, ev, report):
     A_ni restricted accordingly.
 
     Exactly equivalent for levels 1 and 2: with every route fixed, an arc
-    no batch uses has z_ijb = 0 (hence f_ijb = 0) in every batch, and a
+    no batch uses has z_ijb = 0 (hence q_ijb = 0) in every batch, and a
     node no route touches has no arcs and is required by no order, so every
     constraint over them holds with or without them. What it saves is
     ZIMPL instantiating z/f over |E| x |B| and the visit constraints over

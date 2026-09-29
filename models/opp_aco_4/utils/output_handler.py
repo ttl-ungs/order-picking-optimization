@@ -54,7 +54,7 @@ class OutputHandler(Observer):
 
             picker_assignments = solution_info.get("picker_assignments", {})
             if picker_assignments:
-                print("Picker Assignments (X_pb):")
+                print("Picker Assignments (x_pb):")
                 for picker in sorted(set(picker_assignments.values())):
                     batches = sorted(b for b, p in picker_assignments.items() if p == picker)
                     print(f"  {picker}: {', '.join(batches) if batches else '(idle)'}")
@@ -69,7 +69,7 @@ class OutputHandler(Observer):
 
             batch_completions = solution_info.get("batch_completions", {})
             if batch_completions:
-                print("Batch Completion Times (v_b):")
+                print("Batch Completion Times (c_b):")
                 for batch, completion_time in sorted(batch_completions.items()):
                     print(f"  v_{batch} (Batch {batch}): {completion_time:.4f}")
                 print("-" * 50)

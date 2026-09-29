@@ -53,7 +53,7 @@ class OutputHandler(Observer):
 
             picker_assignments = solution_info.get("picker_assignments", {})
             if picker_assignments:
-                print("Picker Assignments (X_pb):")
+                print("Picker Assignments (x_pb):")
                 for picker in sorted(set(picker_assignments.values())):
                     batches = sorted(b for b, p in picker_assignments.items() if p == picker)
                     print(f"  {picker}: {', '.join(batches) if batches else '(idle)'}")

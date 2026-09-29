@@ -80,7 +80,7 @@ with open(OUT, "w", newline="", encoding="utf-8") as handle:
 
         routes = {
             k.split("$")[-1]: v for k, v in values.items()
-            if k.lower().startswith("r_b_time$")
+            if k.lower().startswith("r_b$")
         }
         row["route_min"] = round(min(routes.values()), 1)
         row["route_max"] = round(max(routes.values()), 1)

@@ -6,7 +6,7 @@ built on top of `opp_hc_2` (multi-picker, no congestion).
 
 ## What's different vs. opp_hc_2
 
-A batch's execution time is no longer a single `t_exec_b` shared by every
+A batch's execution time is no longer a single `d_b` shared by every
 picker. Instead:
 
 ```
@@ -19,7 +19,7 @@ route_time(b)   = B_time * travel_distance + service_time          # scaled by s
   it defaults to speed `1.0` (no-op).
 - **Cold chain (`T_frio_max`)**: a `(picker, batch)` pair is only eligible
   if `t_exec_pb[p, b] <= T_frio_max`. This restricts which picker a batch
-  can be assigned to (X_pb's domain), mirroring
+  can be assigned to (x_pb's domain), mirroring
   `opp_model_v5_2_split_stage2_scheduling.zpl`'s `PB_elig`. A batch left with zero eligible
   pickers makes the instance `"infeasible"`, short-circuited up front via
   `models/opp_v5_2_split/utils/cold_chain_validation.py::batches_without_eligible_picker`

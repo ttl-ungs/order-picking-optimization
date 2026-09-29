@@ -120,7 +120,7 @@ def run_split(scenario, budget):
     route_times = {
         name.split("$")[-1]: value
         for name, value in stage1_values.items()
-        if name.lower().startswith("r_b_time$") and name.split("$")[-1] in scenario["B"]
+        if name.lower().startswith("r_b$") and name.split("$")[-1] in scenario["B"]
     }
     if set(route_times) != set(scenario["B"]):
         return f"stage1_{stage1_status}", None, None, None, time.time() - start

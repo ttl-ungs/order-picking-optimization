@@ -512,7 +512,7 @@ pickers, cadena de frío):
   "¿qué picker lo hace?"), se agregaron 3 tests que verifican la fórmula y
   los casos límite exactos:
   - Verifica numéricamente la fórmula documentada en
-    `opp_model_v5_2_split_stage2_scheduling.zpl` (`t_exec_pb = tiempo_fijo + R_b_time / V_p`,
+    `opp_model_v5_2_split_stage2_scheduling.zpl` (`t_exec_pb = tiempo_fijo + R_b / V_p`,
     donde `tiempo_fijo` NO se escala por velocidad) contra valores exactos
     calculados a mano, no solo "qué picker ganó".
   - Verifica el límite exacto de `T_frio_max` (`<=`, no `<`) -- un picker

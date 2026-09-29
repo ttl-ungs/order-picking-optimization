@@ -10,7 +10,7 @@ from tests.shared_scenarios.functional.two_stage_scenarios_v5 import (
 )
 from tests.opp_v5_2_split.opp_test_case_v5_2_split import OPPTestCaseSplit
 
-ROUTE_VIA_B = 14.0  # R_b_time of a batch whose only location is B (see the scenario builders)
+ROUTE_VIA_B = 14.0  # R_b of a batch whose only location is B (see the scenario builders)
 
 
 class TestOPPSplitColdChainCoverage(OPPTestCaseSplit):

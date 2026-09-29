@@ -7,7 +7,7 @@
 #   Proporcionalidad : cada termino de la FO y restricciones es lineal en sus vars.
 #   Aditividad       : FO y restricciones son combinaciones lineales (sin productos
 #                      entre variables de decision).
-#   Divisibilidad    : variables continuas (ta, ea, t_exec, u_pb, v_pb, v_b, f)
+#   Divisibilidad    : variables continuas (ta, ea, t_exec, u_pb, c_pb, c_b, f)
 #                      pueden tomar cualquier valor real >= 0.
 #   Certeza          : todos los parametros (distancias, capacidades, pesos,
 #                      fechas) son conocidos y fijos.
@@ -21,7 +21,7 @@
 # N : ordenes de clientes
 set N := { read "../dat_files/data_N.dat" as "<1s>" comment "#" };
 
-# V : locaciones totales del almacen (incluye v_1 y v_f)
+# V : locaciones totales del almacen (incluye v_start y v_end)
 set V := { read "../dat_files/data_V.dat" as "<1s>" comment "#" };
 
 # P : pickers
@@ -39,8 +39,8 @@ set E := { read "../dat_files/data_E.dat" as "<1s,2s>" comment "#" };
 ##############################################################################
 
 # Nodos especiales (leidos de .dat para que el modelo sea independiente del escenario)
-param v_1 := read "../dat_files/depot.dat"  as "1s" comment "#";   # deposito inicial
-param v_f := read "../dat_files/final.dat"  as "1s" comment "#";   # nodo final
+param v_start := read "../dat_files/depot.dat"  as "1s" comment "#";   # deposito inicial
+param v_end := read "../dat_files/final.dat"  as "1s" comment "#";   # nodo final
 
 # Pesos de la funcion objetivo
 param W_full    := read "../dat_files/params.dat" as "1n" skip 0 comment "#";  # peso tiempo cumplimiento
@@ -77,14 +77,14 @@ param A_ni[N * V] := read "../dat_files/a_ni.dat"    as "<1s,2s> 3n" comment "#"
 # Bn[n,b] : 1 si el lote b contiene la orden n, 0 si no
 param Bn[N * B] := read "../dat_files/Bn.dat"        as "<1s,2s> 3n" comment "#";
 
-# R_b[b] : numero de locaciones distintas requeridas por el lote b
-#          (parametro derivado; R_b = |{i in V\{v_1,v_f} : sum_n A_ni[n,i]*Bn[n,b] >= 1}|)
-param R_b[<b> in B] :=
-    sum <i> in V with (i != v_1 and i != v_f and (sum <n> in N : A_ni[n,i] * Bn[n,b]) >= 1) : 1;
+# L_b[b] : numero de locaciones distintas requeridas por el lote b
+#          (parametro derivado; L_b = |{i in V\{v_start,v_end} : sum_n A_ni[n,i]*Bn[n,b] >= 1}|)
+param L_b[<b> in B] :=
+    sum <i> in V with (i != v_start and i != v_end and (sum <n> in N : A_ni[n,i] * Bn[n,b]) >= 1) : 1;
 
 # Parámetro Big-M local para las restricciones de secuenciación sin solapamiento
 # (19)-(20). Antes era 100000: un valor tan grande frente a la escala real de
-# v_pb/t_exec_b (decenas-cientos) infla la fila numéricamente y hace que SCIP
+# c_pb/d_b (decenas-cientos) infla la fila numéricamente y hace que SCIP
 # acepte como "optimal" soluciones que violan la restricción por ~0.1 unidades
 # de tiempo (ver tests_opp_v4_model_10/11: solapamiento de picker detectado por
 # assert_no_time_overlap). 500 ya cubre la escala de las instancias actuales
@@ -101,21 +101,21 @@ var ta_n[N]         >= 0;
 # ea_n[n] : adelanto de la orden n  (continua >= 0)
 var ea_n[N]         >= 0;
 
-# t_exec_b[b] : tiempo de ejecucion del lote b  (continua >= 0)
-var t_exec_b[B]     >= 0;
+# d_b[b] : tiempo de ejecucion del lote b  (continua >= 0)
+var d_b[B]     >= 0;
 
-# v_b[b] : tiempo de completitud del lote b  (continua >= 0)
+# c_b[b] : tiempo de completitud del lote b  (continua >= 0)
 #          [nueva variable de la especificacion; representa el makespan agregado
 #           del lote, independiente del picker]
-var v_b[B]          >= 0;
+var c_b[B]          >= 0;
 
 # u_pb[p,b] : tiempo de procesamiento del lote b asignado al picker p
 #             (variable del modelo v2; se conserva)
 var u_pb[P * B]     >= 0;
 
-# v_pb[p,b] : tiempo de completitud del lote b del picker p
+# c_pb[p,b] : tiempo de completitud del lote b del picker p
 #             (variable del modelo v2; se conserva)
-var v_pb[P * B]     >= 0;
+var c_pb[P * B]     >= 0;
 
 # z_ijb[i,j,b] : 1 si el arco (i,j) esta incluido en el lote b  (binaria)
 #var z_ijb[V * V * B]  binary;
@@ -123,36 +123,36 @@ var v_pb[P * B]     >= 0;
 # z_ijb[i,j,b] : 1 si el arco valido (i,j) esta incluido en el lote b --> redefinimos la variable para que considere solo arcos válidos
 var z_ijb[E * B] binary;
 
-# f_ijb[i,j,b] : unidades que pasan por el arco (i,j) en el lote b  (continua >= 0)
-#var f_ijb[V * V * B]  >= 0;
+# q_ijb[i,j,b] : unidades que pasan por el arco (i,j) en el lote b  (continua >= 0)
+#var q_ijb[V * V * B]  >= 0;
 
-# f_ijb[i,j,b] : unidades que pasan por el arco valido (i,j) en el lote b --> redefinimos la variable para que considere solo arcos válidos
-var f_ijb[E * B] >= 0;
+# q_ijb[i,j,b] : unidades que pasan por el arco valido (i,j) en el lote b --> redefinimos la variable para que considere solo arcos válidos
+var q_ijb[E * B] >= 0;
 
 ##############################################################################
 # NUEVAS VARIABLES
 ##############################################################################
 
-# X_pb[p,b] : 1 si el lote b es asignado al picker p
-var X_pb[P * B] binary;
+# x_pb[p,b] : 1 si el lote b es asignado al picker p
+var x_pb[P * B] binary;
 
 # w_b[b] : tiempo de espera o inactividad del lote b (continua >= 0)
 var w_b[B] >= 0;
 
 # Variable auxiliar para secuenciación (solo definida para pares únicos b < k)
-var Z_bk[<b,k> in B * B with b < k] binary;
+var y_bk[<b,k> in B * B with b < k] binary;
 
 ##############################################################################
 # OBJECTIVE FUNCTION
 #
-# min  W_full * sum_{p,b} v_pb[p,b]
+# min  W_full * sum_{p,b} c_pb[p,b]
 #    + W_ea_ta * ( W_ea * sum_n ea_n[n]  +  W_ta * sum_n ta_n[n] )
 #
-# Nota: v_b se vincula a v_pb mediante las restricciones de completitud (ver abajo).
+# Nota: c_b se vincula a c_pb mediante las restricciones de completitud (ver abajo).
 ##############################################################################
 
 minimize obj:
-      W_full  * (sum <p,b> in P * B: v_pb[p,b])
+      W_full  * (sum <p,b> in P * B: c_pb[p,b])
     + W_ea_ta * (  W_ea * (sum <n> in N: ea_n[n])
                  + W_ta * (sum <n> in N: ta_n[n])
                 );
@@ -167,25 +167,25 @@ minimize obj:
 # (1) Cada lote sale una vez del depósito
 subto start_from_depot:
   forall <b> in B:
-      sum <i, j> in E with i == v_1:
+      sum <i, j> in E with i == v_start:
           z_ijb[i, j, b] == 1;
 
 # (2) Cada lote entra una vez al nodo final
 subto finish_at_end:
    forall <b> in B:
-       sum <i, j> in E with j == v_f:
+       sum <i, j> in E with j == v_end:
            z_ijb[i, j, b] == 1;
 
 # (3) No hay retorno al depósito inicial - Nueva constraint
 subto no_inflow_depot:
     forall <b> in B:
-        sum <i, j> in E with j == v_1 and v_1 != v_f:
+        sum <i, j> in E with j == v_start and v_start != v_end:
             z_ijb[i, j, b] == 0;
 
 # (4) No hay salida desde el nodo final - Nueva constraint
 subto no_outflow_final:
     forall <b> in B:
-        sum <i, j> in E with i == v_f and v_1 != v_f:
+        sum <i, j> in E with i == v_end and v_start != v_end:
             z_ijb[i, j, b] == 0;
 
 ####################### Visita y conservación de flujo #######################
@@ -193,7 +193,7 @@ subto no_outflow_final:
 # (5) Entrada a locaciones requeridas
 subto force_visit_inflow:
    forall <b> in B:
-       forall <j> in V with j != v_1 and j != v_f:
+       forall <j> in V with j != v_start and j != v_end:
            sum <i, j> in E:
                z_ijb[i, j, b]
            >= if (sum <n> in N: A_ni[n,j] * Bn[n,b]) >= 1 then 1 else 0 end;
@@ -201,52 +201,52 @@ subto force_visit_inflow:
 # (6) Salida de locaciones requeridas
 subto force_visit_outflow:
     forall <b> in B:
-        forall <j> in V with j != v_1 and j != v_f:
+        forall <j> in V with j != v_start and j != v_end:
             sum <j, i> in E:
                 z_ijb[j, i, b]
             >= if (sum <n> in N: A_ni[n,j] * Bn[n,b]) >= 1 then 1 else 0 end;
 
 # (7) Conservación en nodos intermedios
-subto flow_conservation:
+subto route_flow_conservation:
     forall <b> in B:
-        forall <i> in V with i != v_1 and i != v_f:
+        forall <i> in V with i != v_start and i != v_end:
             (sum <g, i> in E: z_ijb[g, i, b])
             - (sum <i, j> in E: z_ijb[i, j, b]) == 0;
 
 # (8) A lo sumo un arco de entrada por nodo
 subto one_input_arc_per_node:
     forall <b> in B:
-        forall <i> in V with i != v_1:
+        forall <i> in V with i != v_start:
             sum <j, i> in E:
                 z_ijb[j, i, b] <= 1;
 
 # (9) A lo sumo un arco de salida por nodo
 subto one_output_arc_per_node:
     forall <b> in B:
-        forall <i> in V with i != v_f:
+        forall <i> in V with i != v_end:
             sum <i, j> in E:
                 z_ijb[i, j, b] <= 1;
 
 #################### Subtour elimination y flujo de carga ####################
 
 # (10) Límite MTZ subtours
-subto subtour_elimination_bound:
+subto load_flow_bound:
     forall <b> in B:
         forall <i, j> in E:
-            f_ijb[i, j, b] - R_b[b] * z_ijb[i, j, b] <= 0;
+            q_ijb[i, j, b] - L_b[b] * z_ijb[i, j, b] <= 0;
 
 # (11) Flujo total desde el depósito
-subto f_depot_source:
+subto load_flow_source:
     forall <b> in B:
-        sum <i, j> in E with i == v_1:
-            f_ijb[i, j, b] == R_b[b];
+        sum <i, j> in E with i == v_start:
+            q_ijb[i, j, b] == L_b[b];
 
 # (12) Balance Gavish-Graves
-subto f_flow_conservation:
+subto load_flow_conservation:
     forall <b> in B:
-        forall <i> in V with i != v_1 and i != v_f:
-            (sum <g, i> in E: f_ijb[g, i, b])
-            - (sum <i, j> in E: f_ijb[i, j, b])
+        forall <i> in V with i != v_start and i != v_end:
+            (sum <g, i> in E: q_ijb[g, i, b])
+            - (sum <i, j> in E: q_ijb[i, j, b])
             == if (sum <n> in N: A_ni[n,i] * Bn[n,b]) >= 1 then 1 else 0 end;
 
 ##################### Tiempo de ejecución y completitud ######################
@@ -255,12 +255,12 @@ subto f_flow_conservation:
 # El termino S_i se agrega respecto al modelo v2 original
 subto valid_execution_time:
     forall <b> in B:
-        t_exec_b[b] >=
+        d_b[b] >=
               B_setup
             + B_picking * (sum <n> in N: C_n[n] * Bn[n,b])
-            + B_time    * (sum <i,j> in E with i != v_f and j != v_1:
+            + B_time    * (sum <i,j> in E with i != v_end and j != v_start:
                                d_ij[i,j] * z_ijb[i,j,b])
-            + (sum <i> in V with i != v_1 and i != v_f:
+            + (sum <i> in V with i != v_start and i != v_end:
                    S_i[i] * (sum <i, j> in E: z_ijb[i, j, b]))
             + w_b[b]; # tiempo de espera
 
@@ -269,31 +269,31 @@ subto valid_execution_time:
 # (14) Asignación única por lote a un picker - Nueva constraint
 subto assign_exactly_one_picker:
     forall <b> in B:
-        sum <p> in P: X_pb[p,b] == 1;
+        sum <p> in P: x_pb[p,b] == 1;
 
 # (15) Ejecución acota procesamiento (cota inferior)
-# t_exec_b[b] - M * (1 - X_pb[p,b]) <= u_pb[p,b]
-subto batch_execution_time:
+# d_b[b] - M * (1 - x_pb[p,b]) <= u_pb[p,b]
+subto batch_execution_time_lower:
     forall <p,b> in P * B:
-        t_exec_b[b] - M * (1 - X_pb[p,b]) <= u_pb[p,b];
+        d_b[b] - M * (1 - x_pb[p,b]) <= u_pb[p,b];
 
-# (16) cota superior; fija u_pb = t_exec_b cuando X_pb=1
+# (16) cota superior; fija u_pb = d_b cuando x_pb=1
 subto batch_execution_time_upper:
     forall <p,b> in P * B:
-        u_pb[p,b] <= t_exec_b[b] + M * (1 - X_pb[p,b]);
+        u_pb[p,b] <= d_b[b] + M * (1 - x_pb[p,b]);
 
 # (17) Procesamiento precede a completitud
 subto processing_le_completion:
     forall <p,b> in P * B:
-        u_pb[p,b] <= v_pb[p,b];
+        u_pb[p,b] <= c_pb[p,b];
 
 # (18) Completitud del lote vs picker
-# v_b[b] se define como el maximo de v_pb[p,b] sobre los pickers que tienen
+# c_b[b] se define como el maximo de c_pb[p,b] sobre los pickers que tienen
 # asignado el lote b.  Se linealiza como:
-#   v_pb[p,b] - M * (1 - X_pb[p,b]) <= v_b[b]   forall p, b
-subto v_b_lower_bound:
+#   c_pb[p,b] - M * (1 - x_pb[p,b]) <= c_b[b]   forall p, b
+subto c_b_lower_bound:
     forall <p,b> in P * B:
-        v_pb[p,b] - M * (1 - X_pb[p,b]) <= v_b[b];
+        c_pb[p,b] - M * (1 - x_pb[p,b]) <= c_b[b];
 
 ###################### Secuenciamiento sin solapamiento ######################
 
@@ -302,24 +302,24 @@ subto v_b_lower_bound:
 subto non_overlap_1:
     forall <p> in P:
         forall <b, k> in B * B with b < k:
-            v_pb[p,k] >= v_pb[p,b] + t_exec_b[k] - M_seq * (3 - X_pb[p,b] - X_pb[p,k] - Z_bk[b,k]);
+            c_pb[p,k] >= c_pb[p,b] + d_b[k] - M_seq * (3 - x_pb[p,b] - x_pb[p,k] - y_bk[b,k]);
 
 # (20) Secuenciamiento sin solapamiento (orden 2) - Nueva constraint
 subto non_overlap_2:
     forall <p> in P:
         forall <b, k> in B * B with b < k:
-            v_pb[p,b] >= v_pb[p,k] + t_exec_b[b] - M_seq * (2 - X_pb[p,b] - X_pb[p,k] + Z_bk[b,k]);
+            c_pb[p,b] >= c_pb[p,k] + d_b[b] - M_seq * (2 - x_pb[p,b] - x_pb[p,k] + y_bk[b,k]);
 
 ########################### Earliness y tardiness ############################
 
 # (21) Definición de tardanza
-# v_pb[p,b] - Dd[n] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ta_n[n]
+# c_pb[p,b] - Dd[n] - M * (2 - x_pb[p,b] - Bn[n,b]) <= ta_n[n]
 subto tardiness_definition:
     forall <p,b,n> in P * B * N:
-        v_pb[p,b] - Dd[n] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ta_n[n];
+        c_pb[p,b] - Dd[n] - M * (2 - x_pb[p,b] - Bn[n,b]) <= ta_n[n];
 
 # (22) Definición de adelanto
-# Dd[n] - v_pb[p,b] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ea_n[n]
+# Dd[n] - c_pb[p,b] - M * (2 - x_pb[p,b] - Bn[n,b]) <= ea_n[n]
 subto earliness_definition:
     forall <p,b,n> in P * B * N:
-        Dd[n] - v_pb[p,b] - M * (2 - X_pb[p,b] - Bn[n,b]) <= ea_n[n];
+        Dd[n] - c_pb[p,b] - M * (2 - x_pb[p,b] - Bn[n,b]) <= ea_n[n];

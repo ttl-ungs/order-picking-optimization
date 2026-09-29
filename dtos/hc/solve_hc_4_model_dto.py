@@ -9,7 +9,7 @@ class SolveHC4ModelDTO(SolveHCModelDTO):
 
     Unlike opp_hc_3, congestion between concurrent pickers is intentionally
     left out here (see models/opp_hc_4/opp_hc_4.py header for why) - the two
-    extensions are orthogonal (opp_hc_3 keeps opp_v4's fixed t_exec_b, this
+    extensions are orthogonal (opp_hc_3 keeps opp_v4's fixed d_b, this
     one replaces it with a per-picker t_exec_pb), so they don't need to be
     combined into a single model.
 

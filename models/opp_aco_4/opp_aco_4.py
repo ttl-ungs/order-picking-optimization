@@ -7,7 +7,7 @@ Same problem as opp_aco_2 (multi-picker, all constraints validated):
 - Validates: ALL constraints from opp_aco_2, plus cold-chain eligibility
 - Optimizes: routes within batches (probabilistic pick-to-pick ACO
   construction after Chen et al. 2013, see _build_batch_route) AND
-  the assignment/sequencing of batches to pickers (X_pb), so that batches
+  the assignment/sequencing of batches to pickers (x_pb), so that batches
   on different pickers run in parallel and batches on the same picker are
   sequenced without overlap
 - Output: compatible with build_output
@@ -17,7 +17,7 @@ counterpart of opp_hc_4 (itself the Hill Climbing counterpart of opp_v5_2_split'
 opp_model_v5_2_split_stage2_scheduling.zpl additions over opp_v4):
 
 - Picker speed (V_p): a batch's execution time is no longer a single
-  t_exec_b fixed for every picker. Instead t_exec_pb[p, b] = fixed_time(b)
+  d_b fixed for every picker. Instead t_exec_pb[p, b] = fixed_time(b)
   + route_time(b) / V_p[p], where fixed_time (setup + picking) doesn't
   depend on speed and route_time (travel + service) does. Faster pickers
   finish the same route sooner. This changes _select_picker's roulette:
@@ -621,7 +621,7 @@ class OPPAntColonyOptimization(Model):
     ) -> float:
         """
         Travel time (B_time * distance) + service time -- opp_v5_2_split's
-        R_b_time, the part scaled by V_p. Pass `distance` when the caller
+        R_b, the part scaled by V_p. Pass `distance` when the caller
         already computed it, to avoid recomputing it again here (2026-09-10
         audit finding: _eligible_pickers_for_batch used to call this once
         per picker, recomputing the SAME route's distance every time, even
@@ -708,7 +708,7 @@ class OPPAntColonyOptimization(Model):
         return pheromones
 
     def _initialize_picker_pheromones(self) -> Dict[Tuple[str, str], float]:
-        """Initializes the batch/picker assignment pheromone table (X_pb) with a base value of 1.0."""
+        """Initializes the batch/picker assignment pheromone table (x_pb) with a base value of 1.0."""
         return {(b, p): 1.0 for b in self.B for p in self.P}
 
     def _build_ant_solution(
@@ -723,7 +723,7 @@ class OPPAntColonyOptimization(Model):
     ) -> Optional[RouteSolution]:
         """
         Each ant constructs a feasible route per batch AND assigns every
-        batch that has orders to a COLD-CHAIN-ELIGIBLE picker (X_pb).
+        batch that has orders to a COLD-CHAIN-ELIGIBLE picker (x_pb).
         Returns a RouteSolution, or None if the ant got stuck building a route.
         """
         solution = RouteSolution(self.B, self.location_graph, batch_assignments, self.P)
@@ -1290,11 +1290,11 @@ class OPPAntColonyOptimization(Model):
                 (b for b, orders in batch_assignments.items() if order in orders), None
             )
             if order_batch and order_batch in solution_info["batch_completions"]:
-                v_b = solution_info["batch_completions"][order_batch]
+                c_b = solution_info["batch_completions"][order_batch]
                 due_date = params.Dd.get(order, float("inf"))
 
-                solution_info["tardiness"][order] = max(0, v_b - due_date)
-                solution_info["earliness"][order] = max(0, due_date - v_b)
+                solution_info["tardiness"][order] = max(0, c_b - due_date)
+                solution_info["earliness"][order] = max(0, due_date - c_b)
 
         return solution_info
 

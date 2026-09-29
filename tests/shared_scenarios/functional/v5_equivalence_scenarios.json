@@ -1,6 +1,6 @@
 {
  "excluded": {
-  "test_batch_is_delayed_while_early_orders_outweigh_completion_weight": "el test verifica justamente que v5 espere voluntariamente (v_pb > t_exec_pb), algo que las heur\u00edsticas no modelan a prop\u00f3sito (ver W_full en stress_scenarios_v5_designed.py)"
+  "test_batch_is_delayed_while_early_orders_outweigh_completion_weight": "el test verifica justamente que v5 espere voluntariamente (c_pb > t_exec_pb), algo que las heur\u00edsticas no modelan a prop\u00f3sito (ver W_full en stress_scenarios_v5_designed.py)"
  },
  "instances": [
   {

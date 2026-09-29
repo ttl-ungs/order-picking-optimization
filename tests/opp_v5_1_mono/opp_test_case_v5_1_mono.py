@@ -24,7 +24,7 @@ class OPPTestCaseMono(unittest.TestCase):
         """Solve the monolithic model; returns (values, route_times, status, values).
 
         Kept with opp_v5_2_split's `run_pipeline` name and 4-tuple shape so the ported
-        test bodies stay identical. `route_times` are the R_b_time values the
+        test bodies stay identical. `route_times` are the r_b values the
         model itself chose (opp_v5_2_split obtains them from its stage 1).
         """
         # V_p[p] is a divisor in the model's t_exec_pb; a speed of 0 divides by
@@ -47,7 +47,7 @@ class OPPTestCaseMono(unittest.TestCase):
     def extract_route_times(self, values, batches):
         result = {}
         for name, value in values.items():
-            if name.lower().startswith("r_b_time$"):
+            if name.lower().startswith("r_b$"):
                 batch = name.split("$")[-1]
                 if batch in batches:
                     result[batch] = value
@@ -66,7 +66,7 @@ class OPPTestCaseMono(unittest.TestCase):
     def completion_times(self, values, pickers, batches):
         result = {}
         for name, value in values.items():
-            if name.lower().startswith("v_pb$"):
+            if name.lower().startswith("c_pb$"):
                 _, picker, batch = name.split("$")
                 if picker in pickers and batch in batches:
                     result[(picker, batch)] = value

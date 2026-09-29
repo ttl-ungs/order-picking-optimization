@@ -63,7 +63,7 @@ def one_cold_batch(cold_limit=10.0):
 
 
 # The three scenarios below reuse one_cold_batch's fixed geometry (route B1
-# costs R_b_time=14.0 -- distance 6+6=12 at B_time=1.0, plus S_i["B"]=2.0 --
+# costs R_b=14.0 -- distance 6+6=12 at B_time=1.0, plus S_i["B"]=2.0 --
 # and tiempo_fijo=B_setup+B_picking*C_n["O1"]=1.0+1.0*1.0=2.0), so
 # t_exec_pb(P_fast, B1) = 2.0 + 14.0/2.0 = 9.0 exactly and
 # t_exec_pb(P_slow, B1) = 2.0 + 14.0/1.0 = 16.0 exactly -- precise enough to
@@ -88,9 +88,9 @@ def cold_chain_infeasible_for_every_picker():
 def heterogeneous_speed_precise():
     """Same two-batch, two-speed setup already used for the assignment-
     direction test, kept here to assert the exact completion-time formula:
-    t_exec_pb = tiempo_fijo + R_b_time / V_p -- i.e. that ONLY the route
+    t_exec_pb = tiempo_fijo + R_b / V_p -- i.e. that ONLY the route
     portion is scaled by picker speed, never the fixed setup/picking time.
-    With V_p={P_slow: 1.0, P_fast: 2.0}, R_b_time={B1: 5.0, B2: 14.0} and
+    With V_p={P_slow: 1.0, P_fast: 2.0}, R_b={B1: 5.0, B2: 14.0} and
     tiempo_fijo=2.0 for both batches (B_setup=1.0, B_picking=1.0,
     C_n={"O1": 1.0, "O2": 1.0}):
         t_exec_pb(P_slow, B1) = 2.0 + 5.0/1.0  =  7.0
@@ -100,7 +100,7 @@ def heterogeneous_speed_precise():
     return two_batches_two_routes()
 
 
-# The builders below reuse the same graph (route via A costs R_b_time=5.0,
+# The builders below reuse the same graph (route via A costs R_b=5.0,
 # route via B costs 14.0) and tiempo_fijo = B_setup + B_picking * sum(C_n)
 # = 1.0 + 1.0 * (orders in the batch). Every expected value in the tests is
 # derived by hand from those numbers.
@@ -122,7 +122,7 @@ def cold_limit_within_tolerance():
 
 
 def two_batches_same_route(fast_speed=2.0, cold_limit=100.0):
-    """Two one-order batches that both need location B (R_b_time = 14.0).
+    """Two one-order batches that both need location B (R_b = 14.0).
 
     t_exec_pb = 2.0 + 14.0 / V_p: 16.0 for P_slow (V_p = 1.0) and
     2.0 + 14.0 / fast_speed for P_fast. Due dates are far and earliness /
@@ -172,7 +172,7 @@ def slow_picker_late_order(speed=0.5, due_date=20.0):
 def three_orders_one_batch(w_full):
     """Three orders at location A in one batch, one picker at speed 1.0.
 
-    Earliest completion: tiempo_fijo (1.0 + 1.0 * 3) + R_b_time (5.0) = 9.0.
+    Earliest completion: tiempo_fijo (1.0 + 1.0 * 3) + R_b (5.0) = 9.0.
     Every due date is 20.0 and W_ea = W_ta = W_ea_ta = 1. Delaying the batch
     one unit costs W_full and saves one unit of earliness per order still
     early, so with three orders the model delays while W_full < 3:

@@ -11,7 +11,7 @@ class ZimplSolutionRecordDTO:
     `values` are SCIP's variable values of the solve that produced this
     record. opp_v5_2_split solves in two stages: its record is the Stage 2
     solve, and the split pipelines add the Stage 1 values (the routes,
-    z_ijb, and R_b_time) with add_stage1_values once Stage 2 finished.
+    z_ijb, and r_b) with add_stage1_values once Stage 2 finished.
 
     Holds references only; serialization happens after the test finished,
     and only when the runner was asked to keep solutions (WRITE_SOLUTIONS,

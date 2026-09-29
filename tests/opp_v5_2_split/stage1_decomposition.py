@@ -3,13 +3,13 @@ Per-batch decomposition of opp_v5_2_split's Stage 1 (opp_model_v5_2_split_stage1
 
 opp_model_v5_2_split_stage1_routing.zpl's own header says batches never interact (every
 constraint is `forall <b> in B: ...`, and the objective is a plain sum of
-independent R_b_time[b] terms) -- solving all of them together in one MIP
+independent r_b[b] terms) -- solving all of them together in one MIP
 wastes work a MIP branch-and-bound tree doesn't give back. Measured
 empirically (2026-09-10/11 audit): the joint solve is ~3x SLOWER than the
 sum of solving each batch alone at just 10 batches, and doesn't even
 finish within 14 minutes at 20 batches (where the decomposed sum takes a
 few seconds) -- MIP solve time grows highly non-linearly with the number
-of integer variables (z_ijb/f_ijb, one full set per batch), so keeping
+of integer variables (z_ijb/q_ijb, one full set per batch), so keeping
 every batch's variables in one model multiplies that cost for nothing:
 nothing in the objective or constraints ever links two different batches'
 variables.
@@ -28,7 +28,7 @@ rejects at compile time ("Symbol A_ni not initialised"), not the harmless
 "parameter with zero rows" it looks like. Keeping data_N.dat/a_ni.dat at
 their original (always non-empty, whole-scenario) size sidesteps that
 entirely, and costs nothing that matters: the actual combinatorial
-complexity driver is z_ijb/f_ijb (indexed by E * B), not the N-indexed
+complexity driver is z_ijb/q_ijb (indexed by E * B), not the N-indexed
 sums, so narrowing B alone already captures the decomposition's benefit.
 
 Parallel mode is OPT-IN, via OPP_STAGE1_WORKERS=<n> (default: sequential).

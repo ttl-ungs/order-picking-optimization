@@ -173,7 +173,7 @@ def designed_stress_scenario(
     }
 
     # W_full must exceed the largest batch's order count (times W_ea_ta * W_ea,
-    # both 1 here), or v5 gains by voluntary waiting: v_pb >= t_exec_pb lets it
+    # both 1 here), or v5 gains by voluntary waiting: c_pb >= t_exec_pb lets it
     # report a batch LATER than it physically finishes, and a delay of d costs
     # W_full * d while cutting earliness by up to (orders in the batch) * d.
     # With the previous W_full = 9 and 26 orders per batch that paid ~17 per

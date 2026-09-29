@@ -54,7 +54,7 @@ class TestOPPMonoSpeedCoverage(OPPTestCaseMono):
         _, _, status, values = self.run_pipeline(scenario)
 
         self.assertIn(status, ("optimal", "feasible"))
-        self.assertAlmostEqual(values["v_b$B1"], 30.0, places=5)
+        self.assertAlmostEqual(values["c_b$B1"], 30.0, places=5)
         self.assertAlmostEqual(values.get("ta_n$O1", 0.0), 10.0, places=5)
         self.assertAlmostEqual(values.get("ea_n$O1", 0.0), 0.0, places=5)
         self.assertAlmostEqual(self.objective_value(), 310.0, places=5)

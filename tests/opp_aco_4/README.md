@@ -8,7 +8,7 @@ counterpart of `models.opp_hc_4` (itself the Hill Climbing counterpart of
 ## What's different vs. opp_aco_2
 
 Same extension as `opp_hc_4` over `opp_hc_2` -- a batch's execution time
-is no longer a single `t_exec_b` shared by every picker:
+is no longer a single `d_b` shared by every picker:
 
 ```
 t_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]

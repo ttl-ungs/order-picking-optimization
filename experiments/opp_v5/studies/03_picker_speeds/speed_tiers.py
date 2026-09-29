@@ -80,7 +80,7 @@ with open(OUT, "w", newline="", encoding="utf-8") as handle:
 
         routes = {
             k.split("$")[-1]: v for k, v in values.items()
-            if k.lower().startswith("r_b_time$")
+            if k.lower().startswith("r_b$")
         }
         write_indexed_dat(os.path.join(DAT_DIR, "route_time_b.dat"), routes)
         write_indexed_dat(os.path.join(DAT_DIR, "velocities.dat"), scenario["V_p"])

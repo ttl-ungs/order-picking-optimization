@@ -10,7 +10,7 @@ class SolveAco4ModelDTO(SolveAcoModelDTO):
 
     Unlike opp_aco_3, congestion between concurrent pickers is intentionally
     left out here (see models/opp_aco_4/opp_aco_4.py header for why) - the
-    two extensions are orthogonal (opp_aco_3 keeps opp_v4's fixed t_exec_b,
+    two extensions are orthogonal (opp_aco_3 keeps opp_v4's fixed d_b,
     this one replaces it with a per-picker t_exec_pb), so they don't need
     to be combined into a single model. Field semantics are identical to
     dtos/hc/solve_hc_4_model_dto.py's:

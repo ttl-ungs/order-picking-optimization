@@ -13,7 +13,7 @@ Added on top of opp_hc_2 - picker speed and cold chain, the Hill Climbing
 counterpart of opp_v5_2_split's opp_model_v5_2_split_stage2_scheduling.zpl additions over opp_v4:
 
 - Picker speed (V_p): a batch's execution time is no longer a single
-  t_exec_b fixed for every picker. Instead t_exec_pb[p, b] = fixed_time(b)
+  d_b fixed for every picker. Instead t_exec_pb[p, b] = fixed_time(b)
   + route_time(b) / V_p[p], where fixed_time (setup + picking) doesn't
   depend on speed and route_time (travel + service) does. Faster pickers
   finish the same route sooner.
@@ -425,7 +425,7 @@ class OPPHillClimbing(Model):
     def _route_time(self, route: List, params: SolveHC4ModelDTO, distance: Optional[float] = None) -> float:
         """
         Travel time (B_time * distance) + service time -- opp_v5_2_split's
-        R_b_time, the part scaled by V_p. Pass `distance` when the caller
+        R_b, the part scaled by V_p. Pass `distance` when the caller
         already computed it (e.g. a 2-opt candidate's distance) to avoid
         recomputing it a second time via _calculate_route_distance
         (2026-09-10 audit finding: this and _t_exec_pb used to each

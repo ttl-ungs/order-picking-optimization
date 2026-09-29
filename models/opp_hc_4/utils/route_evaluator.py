@@ -101,7 +101,7 @@ class RouteEvaluator:
     def evaluate(self, solution) -> float:
         """
         Evaluate objective function:
-        W_full * sum(v_b) + W_ea_ta * (W_ea * sum(ea_n) + W_ta * sum(ta_n))
+        W_full * sum(c_b) + W_ea_ta * (W_ea * sum(ea_n) + W_ta * sum(ta_n))
         """
         batch_times = self.compute_batch_completions(solution)
 
@@ -317,7 +317,7 @@ class RouteEvaluator:
 
     def compute_batch_completions(self, solution) -> Dict[str, float]:
         """
-        Compute v_b[b]: the completion time of each batch, given the picker
+        Compute c_b[b]: the completion time of each batch, given the picker
         it is assigned to (which now also determines its speed) and its
         position within that picker's sequence. Pickers process their
         assigned batches sequentially starting from time zero; different

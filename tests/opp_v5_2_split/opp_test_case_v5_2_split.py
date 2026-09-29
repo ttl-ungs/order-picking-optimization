@@ -20,7 +20,7 @@ class OPPTestCaseSplit(unittest.TestCase):
 
     def run_pipeline(self, scenario, solve_stage2=True):
         # V_p[p] is a divisor in opp_model_v5_2_split_stage2_scheduling.zpl's t_exec_pb (t_exec_pb
-        # = tiempo_fijo[b] + R_b_time[b] / V_p[p]), evaluated eagerly by
+        # = tiempo_fijo[b] + R_b[b] / V_p[p]), evaluated eagerly by
         # ZIMPL for every (p, b) pair as soon as the .dat is read -- a speed
         # of exactly 0 divides by zero there (no graceful "infeasible", it's
         # a plain parameter expression, not a constraint); a negative one
@@ -90,7 +90,7 @@ class OPPTestCaseSplit(unittest.TestCase):
     def extract_route_times(self, values, batches):
         result = {}
         for name, value in values.items():
-            if name.lower().startswith("r_b_time$"):
+            if name.lower().startswith("r_b$"):
                 batch = name.split("$")[-1]
                 if batch in batches:
                     result[batch] = value
@@ -109,7 +109,7 @@ class OPPTestCaseSplit(unittest.TestCase):
     def completion_times(self, values, pickers, batches):
         result = {}
         for name, value in values.items():
-            if name.lower().startswith("v_pb$"):
+            if name.lower().startswith("c_pb$"):
                 _, picker, batch = name.split("$")
                 if picker in pickers and batch in batches:
                     result[(picker, batch)] = value

@@ -15,7 +15,7 @@ class TestOPPMonoSpeedFormula(OPPTestCaseMono):
     """
     Deeper validation of opp_v5_2_split.1's own capability (heterogeneous picker
     speed), beyond model_20's "which picker gets which batch" check:
-    asserts the exact t_exec_pb = tiempo_fijo + R_b_time / V_p formula
+    asserts the exact t_exec_pb = tiempo_fijo + R_b / V_p formula
     numerically, confirming ONLY the route-time component is divided by
     speed -- setup/picking stays fixed regardless of which picker runs it,
     per opp_model_v5_1_mono.zpl's documented assumption.

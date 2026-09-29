@@ -24,7 +24,7 @@ class TestOPPMonoJustInTime(OPPTestCaseMono):
         _, _, status, values = self.run_pipeline(scenario)
 
         self.assertIn(status, ("optimal", "feasible"))
-        self.assertAlmostEqual(values["v_b$B1"], 20.0, places=5)
+        self.assertAlmostEqual(values["c_b$B1"], 20.0, places=5)
         for order in scenario["N"]:
             self.assertAlmostEqual(values.get(f"ea_n${order}", 0.0), 0.0, places=5)
             self.assertAlmostEqual(values.get(f"ta_n${order}", 0.0), 0.0, places=5)
@@ -37,7 +37,7 @@ class TestOPPMonoJustInTime(OPPTestCaseMono):
         _, _, status, values = self.run_pipeline(scenario)
 
         self.assertIn(status, ("optimal", "feasible"))
-        self.assertAlmostEqual(values["v_b$B1"], 9.0, places=5)
+        self.assertAlmostEqual(values["c_b$B1"], 9.0, places=5)
         for order in scenario["N"]:
             self.assertAlmostEqual(values.get(f"ea_n${order}", 0.0), 11.0, places=5)
             self.assertAlmostEqual(values.get(f"ta_n${order}", 0.0), 0.0, places=5)

@@ -15,7 +15,7 @@ def _route_times(values, batches):
     return {
         name.split("$")[-1]: value
         for name, value in values.items()
-        if name.lower().startswith("r_b_time$") and name.split("$")[-1] in batches
+        if name.lower().startswith("r_b$") and name.split("$")[-1] in batches
     }
 
 
@@ -89,13 +89,13 @@ def make_split_compat_case(v4_module, v4_case):
         def assert_no_time_overlap(self, var_values, P, B):
             """
             Overrides opp_v4's OPPTestCaseV4.assert_no_time_overlap (which
-            reconstructs a task's duration as v_pb - u_pb): opp_model_v5_2_split_stage2_scheduling.zpl
+            reconstructs a task's duration as c_pb - u_pb): opp_model_v5_2_split_stage2_scheduling.zpl
             has no u_pb variable at all (opp_v5_2_split replaced it with the fixed
             parameter t_exec_pb, see that file's header) -- var_values never
             contains a "u_pb$..." key, so u_pb.get(...) always returned 0
             there, silently turning the whole overlap check into a tautology
-            (duration always came out as 0, so "start" == "end" == v_pb, and
-            the sorted-by-v_pb comparison could never fail regardless of
+            (duration always came out as 0, so "start" == "end" == c_pb, and
+            the sorted-by-c_pb comparison could never fail regardless of
             whether batches actually overlapped). Found 2026-09-09 auditing
             opp_v5_2_split -- this let the migrated test_case_13/11 report
             "ok" without ever checking the very thing they're named for.
@@ -105,7 +105,7 @@ def make_split_compat_case(v4_module, v4_case):
             fixed_time(b) + route_time(b) / V_p[picker]. V_p is fixed to 1.0
             for every picker in this migrated baseline (see
             solve_split_from_v4_data), so this reduces to fixed_time(b) +
-            route_time(b) -- the same t_exec_b formula opp_v4 itself uses,
+            route_time(b) -- the same d_b formula opp_v4 itself uses,
             just computed independently instead of trusting a variable that
             no longer exists.
             """
@@ -121,7 +121,7 @@ def make_split_compat_case(v4_module, v4_case):
                 fixed_time = B_setup + B_picking * sum(C_n.get(n, 0.0) for n in orders_in_batch)
                 return fixed_time + route_times.get(batch, 0.0)
 
-            x_pb, v_pb = {}, {}
+            x_pb, c_pb = {}, {}
             for key, val in var_values.items():
                 k = key.lower()
                 p_match = [p for p in P if p in key]
@@ -130,12 +130,12 @@ def make_split_compat_case(v4_module, v4_case):
                     p, b = p_match[0], b_match[0]
                     if k.startswith("x_pb"):
                         x_pb[(p, b)] = val
-                    elif k.startswith("v_pb"):
-                        v_pb[(p, b)] = val
+                    elif k.startswith("c_pb"):
+                        c_pb[(p, b)] = val
 
             for p in P:
                 tasks = sorted(
-                    (v_pb.get((p, b), 0) - duration(b), v_pb.get((p, b), 0), b)
+                    (c_pb.get((p, b), 0) - duration(b), c_pb.get((p, b), 0), b)
                     for b in B if x_pb.get((p, b), 0) > 0.5
                 )
                 for i in range(len(tasks) - 1):
