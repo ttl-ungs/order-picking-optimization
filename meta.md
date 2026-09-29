@@ -663,6 +663,14 @@ Las dos primeras son de rendimiento puro y están medidas. Las otras cuatro son 
 - Qué se hizo: se volvieron a correr las suites funcionales con el código actual (el PR #16 cambió `stage1_decomposition.py`, `zpl_utils.py` y los escenarios de stress después de las corridas del 24-09), salteando `test_fractional_and_zero_capacities_feasible`, que da timeout (25 min) en los dos modelos. Split en secuencia (`OPP_STAGE1_WORKERS=1`): con 6 procesos tardaba más (51 s contra 46 s) porque en instancias chicas levantar los procesos cuesta más de lo que ahorra. Cada CSV de nombre fijo queda con las filas nuevas más la fila del timeout de la corrida anterior.
 - Resultado: split 62/62 `ok`; mono 60 `ok` y la falla conocida del 06. Ningún test cambió de status ni de objetivo respecto de las corridas del 24-09; solo cambian los tiempos.
 - Validación: comparación fila por fila contra los CSV anteriores; el análisis carga los dos CSV (63 y 62 filas).
+
+### Cambio 2026-09-29 - Stress de opp_v5_2_split corrido de nuevo y unificado
+- Alcance: resultados / análisis
+- Archivos: `results/opp_v5_2_split/stress/output_opp_v5_2_split_stress_tests_parallel.csv`, [analysis/config.py](analysis/config.py)
+- Qué se hizo: se volvieron a correr los 9 stress que resuelven (02, 04–07, 09–11, 15) con el código actual y la Etapa 1 en 6 procesos; los 10 que dan timeout a 40 min no se corrieron. Todo queda en un solo CSV (el `_parallel`, que es el que leen los generadores de `experiments/opp_v5/reports/`): los 9 nuevos, 01 y 03 de la corrida del 24-09 y 08, 12–19 de la del 26-09 (`W_full` = 27). Se borró `…_20260926_225549.csv`; `analysis/config.py` apunta al archivo único.
+- Resultado: los 9 objetivos son idénticos a los anteriores. Los tiempos bajan a cerca de la mitad (15×15: 1.949 s → 888 s), salvo `scheduling_heavy` (86 s → 365 s), probablemente inflado por suspensiones de la notebook durante la corrida (14:26, 14:31–14:36, 14:41).
+- Riesgo / atención: los reportes y documentos generados desde ese CSV se armaron con su contenido anterior (04–19 con `W_full` = 9); si se regeneran, cambian.
+- Validación: el análisis carga 19 filas (9 `ok`, 10 `timeout`); `check_repo` pasa.
 ---
 
 
