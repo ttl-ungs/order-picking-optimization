@@ -45,21 +45,17 @@ tests/opp_hc_4/
 │   ├── test_case_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
 │   └── test_case_NN.py                     # ported 1:1 from opp_hc_2 (V_p unset, T_frio_max=+inf)
 └── stress/
-    ├── test_case_{01..11}.py  # ported 1:1 from opp_hc_2
-    ├── test_case_picker_speed.py   # dedicated: heterogeneous speeds at scale
-    └── test_case_cold_chain.py      # dedicated: binding T_frio_max at scale
+    ├── v5_stress_test_case.py      # base: runs a v5 stress scenario through this model
+    └── test_case_{01..19}.py       # v5's 19 stress scenarios, same numbering and method names as opp_v5_2_split
 ```
 
-The ported files (both normal and stress) are literal copies of their
-`opp_hc_2` counterpart -- same scenario builder, same numeric parameters --
-with `V_p` unset and `T_frio_max` left at its default (`+inf`), so they are
-pure equivalence checks AND, more importantly, give `analysis/`'s
-`quality_gap_table`/cross-model comparisons the same-named, same-shaped
-instances it needs to join `opp_hc_4` against `opp_hc_2`/`opp_hc_3`/`opp_v4`
-(same pattern `opp_v5_2_split` uses via `tests/infra/factories/migrated_case.py`). The
-stress ports were chosen to match `opp_hc_3`'s curated 11-instance stress
-subset (see `analysis/README.md`), so `opp_hc_4` lines up with both
-`opp_hc_2` (full instance) and `opp_hc_3` (curated subset) at once.
+The ported functional files are literal copies of their `opp_hc_2`
+counterpart -- same scenario builder, same numeric parameters -- with `V_p`
+unset and `T_frio_max` left at its default (`+inf`), so they are pure
+equivalence checks. The stress suite runs `opp_v5_2_split`'s 19 stress
+scenarios instead, file-for-file and with the same method names, so
+`analysis/` joins them against v5 by instance name (see
+`docs/specs/comparabilidad_v5_heuristicas.md`).
 
 `opp_hc_4` is registered in `analysis/config.py`'s `MODEL_DIRS` (and
 deliberately left OUT of `CONGESTION_AWARE_MODELS`).

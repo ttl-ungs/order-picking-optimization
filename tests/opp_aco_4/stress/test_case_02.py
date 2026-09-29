@@ -1,14 +1,8 @@
-from tests.infra.factories.family_case import family_case
-from models.opp_aco_4 import OPPAntColonyOptimization
-from dtos.aco.solve_aco_4_model_dto import SolveAco4ModelDTO
-from models.opp_aco_4.utils.output_handler import OutputHandler
+from tests.shared_scenarios.stress.stress_scenarios_v5 import migrated_stress_scenario
+from tests.opp_aco_4.stress.v5_stress_test_case import OPPAco4StressTestCase
 
 
-TestOPPModel = family_case(
-    'tests.opp_aco_2.stress.test_case_02',
-    {
-        'OPPAntColonyOptimization': OPPAntColonyOptimization,
-        'SolveAcoModelDTO': SolveAco4ModelDTO,
-        'OutputHandler': OutputHandler,
-    },
-)
+class TestOPPAco4StressMigrated10x1010batches(OPPAco4StressTestCase):
+    def test_10_orders_per_batch(self):
+        """Same instance as opp_v5_1_mono/v5_2_split stress 02."""
+        self.assert_stress_pipeline(migrated_stress_scenario(10, 10, 100, 10, 10))
