@@ -8,6 +8,7 @@ from tests.infra.zimpl.dat_files_builder import write_indexed_dat, write_scalar_
 from tests.opp_v5_2_split.config import DAT_DIR, STAGE1_ZPL_PATH, STAGE2_ZPL_PATH
 from tests.opp_v5_2_split.stage1_decomposition import solve_stage1_decomposed
 from tests.infra.zimpl.zpl_utils import solve_zpl
+from models.utils.solve_registry import get_last
 
 
 def _route_times(values, batches):
@@ -62,6 +63,11 @@ def solve_split_from_v4_data(_zpl_path, dat_dir=None, params=None):
     _last_call_context["params"] = params or {}
 
     stage2_status, stage2_values = solve_zpl(STAGE2_ZPL_PATH, dat_dir=dat_dir, params=params)
+    # The saved solution (WRITE_SOLUTIONS) needs Stage 1 too: Stage 2 only
+    # sees the routes' times, not the routes themselves.
+    record = getattr(get_last(), "solution_record", None)
+    if record is not None:
+        record.add_stage1_values(stage1_values)
     return stage2_status, {**stage1_values, **stage2_values}
 
 

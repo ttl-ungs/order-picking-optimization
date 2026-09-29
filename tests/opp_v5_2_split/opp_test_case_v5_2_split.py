@@ -66,6 +66,11 @@ class OPPTestCaseSplit(unittest.TestCase):
             return stage1_values, route_times, "infeasible", {}
 
         stage2_status, stage2_values = solve_zpl(STAGE2_ZPL_PATH, dat_dir=DAT_DIR)
+        # The saved solution (WRITE_SOLUTIONS) needs Stage 1 too: Stage 2
+        # only sees the routes' times, not the routes themselves.
+        record = getattr(get_last(), "solution_record", None)
+        if record is not None:
+            record.add_stage1_values(stage1_values)
         return stage1_values, route_times, stage2_status, stage2_values
 
     def extract_route_times(self, values, batches):

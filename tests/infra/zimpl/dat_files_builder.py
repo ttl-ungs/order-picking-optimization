@@ -79,11 +79,26 @@ def _compute_m_seq(scenario_data):
     return max(500.0, round(total + 1.0))
 
 
+# The scenario dict of the most recent build_dat_files() call, kept by
+# reference (no copy) so zpl_utils.solve_zpl can attach the instance to the
+# solve's ZimplSolutionRecordDTO (saved when WRITE_SOLUTIONS is set). Each
+# test runs in its own subprocess, so this never crosses between tests --
+# same pattern as models/utils/solve_registry.py.
+_last_scenario = None
+
+
+def last_scenario():
+    """The scenario dict of the most recent build_dat_files() call, or None."""
+    return _last_scenario
+
+
 def build_dat_files(tmpdir, scenario_data):
     """
     Recibe un dict con todos los datos del escenario y escribe los .dat
     en tmpdir. Devuelve el path del directorio.
     """
+    global _last_scenario
+    _last_scenario = scenario_data
     write_set_dat(os.path.join(tmpdir, "data_N.dat"), scenario_data["N"])
     write_set_dat(os.path.join(tmpdir, "data_V.dat"), scenario_data["V"])
     write_set_dat(os.path.join(tmpdir, "data_P.dat"), scenario_data["P"])
