@@ -7,7 +7,7 @@
 #   Proporcionalidad : cada termino de la FO y restricciones es lineal en sus vars.
 #   Aditividad       : FO y restricciones son combinaciones lineales (sin productos
 #                      entre variables de decision).
-#   Divisibilidad    : variables continuas (ta_n, ea_n, d_b, w_b, u_pb, c_pb, c_b, q_ijb)
+#   Divisibilidad    : variables continuas (ta_n, ea_n, d_b, u_pb, c_pb, c_b, q_ijb)
 #                      pueden tomar cualquier valor real >= 0.
 #   Certeza          : todos los parametros (distancias, capacidades, pesos,
 #                      fechas) son conocidos y fijos.
@@ -52,9 +52,6 @@ param W_t   := read "../dat_files/params.dat" as "1n" skip 3 comment "#";  # pes
 param T_travel := read "../dat_files/params.dat" as "1n" skip 4 comment "#";  # tiempo por unidad de distancia
 param T_setup  := read "../dat_files/params.dat" as "1n" skip 5 comment "#";  # tiempo de setup por lote
 param T_pick   := read "../dat_files/params.dat" as "1n" skip 6 comment "#";  # tiempo de picking por unidad de capacidad
-
-# Capacidades --> NO USADO EN ESTE MODELO.
-# param C_v       := read "../dat_files/params.dat" as "1n" skip 7 comment "#";  # capacidad del vehiculo de picking
 
 # Big-M
 param M         := read "../dat_files/params.dat" as "1n" skip 8 comment "#";  # entero suficientemente grande
@@ -117,17 +114,13 @@ var u_pb[P * B]     >= 0;
 #             (variable del modelo v2; se conserva)
 var c_pb[P * B]     >= 0;
 
-# z_ijb[i,j,b] : 1 si el arco (i,j) esta incluido en el lote b  (binaria)
-#var z_ijb[V * V * B]  binary;
-
-# z_ijb[i,j,b] : 1 si el arco valido (i,j) esta incluido en el lote b --> redefinimos la variable para que considere solo arcos válidos
+# z_ijb[i,j,b] : 1 si el arco valido (i,j) esta incluido en el lote b
 var z_ijb[E * B] binary;
 
 # q_ijb[i,j,b] : flujo de carga de Gavish-Graves: cantidad de locaciones
 #                requeridas del lote b que todavia faltan visitar al recorrer
 #                el arco valido (i,j) (continua >= 0). Solo existe para
 #                eliminar subtours.
-#var q_ijb[V * V * B]  >= 0;
 var q_ijb[E * B] >= 0;
 
 ##############################################################################
@@ -137,9 +130,6 @@ var q_ijb[E * B] >= 0;
 # x_pb[p,b] : 1 si el lote b es asignado al picker p
 var x_pb[P * B] binary;
 
-# w_b[b] : tiempo de espera o inactividad del lote b (continua >= 0)
-var w_b[B] >= 0;
-
 # y_bk[b,k] : 1 si, en el picker que comparten, el lote b va antes que el k
 #             (solo definida para pares b < k)
 var y_bk[<b,k> in B * B with b < k] binary;
@@ -147,14 +137,12 @@ var y_bk[<b,k> in B * B with b < k] binary;
 ##############################################################################
 # OBJECTIVE FUNCTION
 #
-# min  W_c * sum_{p,b} c_pb[p,b]
+# min  W_c * sum_{b} c_b[b]
 #    + W_pen * ( W_e * sum_n ea_n[n]  +  W_t * sum_n ta_n[n] )
-#
-# Nota: c_b se vincula a c_pb mediante las restricciones de completitud (ver abajo).
 ##############################################################################
 
 minimize obj:
-      W_c  * (sum <p,b> in P * B: c_pb[p,b])
+      W_c   * (sum <b> in B: c_b[b])
     + W_pen * (  W_e * (sum <n> in N: ea_n[n])
                  + W_t * (sum <n> in N: ta_n[n])
                 );
@@ -263,8 +251,7 @@ subto valid_execution_time:
             + T_travel * (sum <i,j> in E with i != v_end and j != v_start:
                                D_ij[i,j] * z_ijb[i,j,b])
             + (sum <i> in V with i != v_start and i != v_end:
-                   S_i[i] * (sum <i, j> in E: z_ijb[i, j, b]))
-            + w_b[b]; # tiempo de espera
+                   S_i[i] * (sum <i, j> in E: z_ijb[i, j, b]));
 
 #################### Asignación de lotes y secuenciación #####################
 
@@ -315,13 +302,13 @@ subto non_overlap_2:
 ########################### Earliness y tardiness ############################
 
 # (21) Definición de tardanza
-# c_pb[p,b] - T_due_n[n] - M * (2 - x_pb[p,b] - B_nb[n,b]) <= ta_n[n]
 subto tardiness_definition:
-    forall <p,b,n> in P * B * N:
-        c_pb[p,b] - T_due_n[n] - M * (2 - x_pb[p,b] - B_nb[n,b]) <= ta_n[n];
+    forall <n,b> in N * B with B_nb[n,b] == 1:
+        forall <p> in P:
+            c_pb[p,b] - T_due_n[n] - M * (1 - x_pb[p,b]) <= ta_n[n];
 
 # (22) Definición de adelanto
-# T_due_n[n] - c_pb[p,b] - M * (2 - x_pb[p,b] - B_nb[n,b]) <= ea_n[n]
 subto earliness_definition:
-    forall <p,b,n> in P * B * N:
-        T_due_n[n] - c_pb[p,b] - M * (2 - x_pb[p,b] - B_nb[n,b]) <= ea_n[n];
+    forall <n,b> in N * B with B_nb[n,b] == 1:
+        forall <p> in P:
+            T_due_n[n] - c_pb[p,b] - M * (1 - x_pb[p,b]) <= ea_n[n];

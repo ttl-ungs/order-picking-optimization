@@ -122,8 +122,13 @@ GROUPS = {
                 },
                 VARIABLE_CONSUMERS,
                 # "X_pb" there is a scenario key of the legacy opp_v2 ZIMPL model
-                # (a fixed assignment, not a variable); edited by hand.
-                exclude=["tests/infra/zimpl/dat_files_builder.py"],
+                # (a fixed assignment, not a variable); edited by hand. The
+                # variables they do use were renamed by the first run.
+                exclude=[
+                    "tests/infra/zimpl/dat_files_builder.py",
+                    "tests/shared_scenarios/functional/export_v5_equivalence_scenarios.py",
+                    "verification/solution_store.py",
+                ],
             ),
             # R_b_time is a variable (-> r_b) in the mono model and in split's
             # Stage 1, and in the solutions they wrote. In split's Stage 2 it
@@ -202,6 +207,10 @@ GROUPS = {
                     "docs/specs/*",
                     "docs/tests/*",
                 ],
+                # opp_v2's docstring documents X_pb as its input parameter
+                # (uppercase on purpose); its other names were renamed by the
+                # first run.
+                exclude=["models/opp_v2/opp_model_v2.py"],
             ),
             # Legacy opp_v2 ZIMPL model: same variables and ZIMPL-only names as
             # opp_v4, except X_pb, which is an input parameter there (a fixed
