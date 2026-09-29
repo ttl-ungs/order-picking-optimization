@@ -31,7 +31,7 @@ def single_order_params(due_date_value, start_time, cap_vehicle=100.0):
     params.T_pick = 1.0
     params.T_due_n = {"O1": due_date_value}
     params.M = 1000.0
-    params.x = x
+    params.X = x
     params.B_nb = y
 
     model_dto = ModelDTO()

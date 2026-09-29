@@ -2,118 +2,118 @@ from typing import Dict, Set
 
 class SolveModelDTO:
     def __init__(self):
-        self._w1: float = None
-        self._w2: float = None
-        self._gamma: float = None
-        self._delta: float = None
-        self._cap_n: dict = None
-        self._cap_vehicle: float = None
-        self._a: dict = None
-        self._beta_time: float = None
-        self._beta_setup: float = None
-        self._beta_picking: float = None
-        self._s: dict = None
-        self._due_date: dict = None
+        self._W_c: float = None
+        self._W_pen: float = None
+        self._W_e: float = None
+        self._W_t: float = None
+        self._C_n: dict = None
+        self._C_v: float = None
+        self._A: dict = None
+        self._T_travel: float = None
+        self._T_setup: float = None
+        self._T_pick: float = None
+        self._S: dict = None
+        self._T_due_n: dict = None
         self._M: float = None
-        self._x: dict = None
-        self._y: dict = None
+        self._X: dict = None
+        self._B_nb: dict = None
         self._seed: int = None
 
     @property
     def W_c(self) -> float:
-        return self._w1
+        return self._W_c
 
     @W_c.setter
     def W_c(self, value: float):
-        self._w1 = value
+        self._W_c = value
 
     @property
     def W_pen(self) -> float:
-        return self._w2
+        return self._W_pen
 
     @W_pen.setter
     def W_pen(self, value: float):
-        self._w2 = value
+        self._W_pen = value
 
     @property
     def W_e(self) -> float:
-        return self._gamma
+        return self._W_e
 
     @W_e.setter
     def W_e(self, value: float):
-        self._gamma = value
+        self._W_e = value
 
     @property
     def W_t(self) -> float:
-        return self._delta
+        return self._W_t
 
     @W_t.setter
     def W_t(self, value: float):
-        self._delta = value
+        self._W_t = value
 
     @property
     def C_n(self) -> dict:
-        return self._cap_n
+        return self._C_n
 
     @C_n.setter
     def C_n(self, value: dict):
-        self._cap_n = value
+        self._C_n = value
 
     @property
     def C_v(self) -> float:
-        return self._cap_vehicle
+        return self._C_v
 
     @C_v.setter
     def C_v(self, value: float):
-        self._cap_vehicle = value
+        self._C_v = value
 
     @property
     def A(self) -> dict:
-        return self._a
+        return self._A
 
     @A.setter
     def A(self, value: dict):
-        self._a = value
+        self._A = value
 
     @property
     def T_travel(self) -> float:
-        return self._beta_time
+        return self._T_travel
 
     @T_travel.setter
     def T_travel(self, value: float):
-        self._beta_time = value
+        self._T_travel = value
 
     @property
     def T_setup(self) -> float:
-        return self._beta_setup
+        return self._T_setup
 
     @T_setup.setter
     def T_setup(self, value: float):
-        self._beta_setup = value
+        self._T_setup = value
 
     @property
     def T_pick(self) -> float:
-        return self._beta_picking
+        return self._T_pick
 
     @T_pick.setter
     def T_pick(self, value: float):
-        self._beta_picking = value
+        self._T_pick = value
 
     @property
     def S(self) -> dict:
-        return self._s
+        return self._S
 
     @S.setter
     def S(self, value: dict):
-        self._s = value
+        self._S = value
 
     @property
     def T_due_n(self) -> dict:
-        return self._due_date
+        return self._T_due_n
 
     @T_due_n.setter
     def T_due_n(self, value: dict):
-        self._due_date = value
+        self._T_due_n = value
 
     @property
     def M(self) -> float:
@@ -124,20 +124,20 @@ class SolveModelDTO:
         self._M = value
 
     @property
-    def x(self) -> dict:
-        return self._x
+    def X(self) -> dict:
+        return self._X
 
-    @x.setter
-    def x(self, value: dict):
-        self._x = value
+    @X.setter
+    def X(self, value: dict):
+        self._X = value
 
     @property
     def B_nb(self) -> dict:
-        return self._y
+        return self._B_nb
 
     @B_nb.setter
     def B_nb(self, value: dict):
-        self._y = value
+        self._B_nb = value
 
     @property
     def Seed(self) -> int:
@@ -163,7 +163,7 @@ class SolveModelDTO:
     def is_batch_assignment_valid(self) -> bool:
         # Return False if any order is assigned to more than one batch
         order_batch_count: Dict[str, int] = {}
-        for (order, batch), value in self._y.items():
+        for (order, batch), value in self._B_nb.items():
             if value > 0.5:
                 order_batch_count[order] = order_batch_count.get(order, 0) + 1
         return all(count <= 1 for count in order_batch_count.values())
@@ -172,17 +172,17 @@ class SolveModelDTO:
         # Return False if any batch exceeds the vehicle capacity constraint
         batch_assignments = self.extract_batch_assignments()
         for batch, orders in batch_assignments.items():
-            total = sum(self._cap_n.get(order, 0) for order in orders)
-            if total > self._cap_vehicle:
+            total = sum(self._C_n.get(order, 0) for order in orders)
+            if total > self._C_v:
                 return False
         return True
 
     def extract_batch_assignments(self) -> Dict[str, Set[str]]:
         # Extract which orders belong to each batch from B_nb parameter
-        unique_batches = {batch for (order, batch) in self._y.keys()}
+        unique_batches = {batch for (order, batch) in self._B_nb.keys()}
 
         batch_assignments = {b: set() for b in unique_batches}
-        for (order, batch), value in self._y.items():
+        for (order, batch), value in self._B_nb.items():
             if value > 0.5:  # Treat as binary
                 batch_assignments[batch].add(order)
         return batch_assignments

@@ -125,7 +125,7 @@ class TestOPPModel(OPPTestCase):
         params.T_pick = beta_picking
         params.T_due_n = due_date
         params.M = M
-        params.x = self.x
+        params.X = self.x
         params.B_nb = y
 
         model_dto = ModelDTO()

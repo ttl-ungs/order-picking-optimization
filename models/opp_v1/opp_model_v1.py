@@ -81,7 +81,7 @@ class OPPModel(Model):
         T_pick = params.T_pick
         T_due_n = params.T_due_n
         M = params.M
-        X = params.x
+        X = params.X
         B_nb = params.B_nb
         start_time = self.start_time
 

@@ -61,7 +61,7 @@ class TestOPPModelGrid(OPPTestCase):
         params.T_pick = 1.0
         params.T_due_n = due_date_by_order
         params.M = 1000.0
-        params.x = x
+        params.X = x
         params.B_nb = y
 
         model_dto = ModelDTO()

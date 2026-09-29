@@ -54,7 +54,7 @@ class TestOPPModel(OPPTestCase):
         params.T_pick = 1.0
         params.T_due_n = {n: 20.0 for n in N}
         params.M = 1000.0
-        params.x = x
+        params.X = x
         params.B_nb = y
 
         model_dto = ModelDTO()

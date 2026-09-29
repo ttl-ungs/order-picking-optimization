@@ -80,7 +80,7 @@ class TestOPPModelBridge(OPPTestCase):
         params.T_pick = beta_picking
         params.T_due_n = due_date_by_order
         params.M = 1000.0
-        params.x = x
+        params.X = x
         params.B_nb = y
 
         model_dto = ModelDTO()
