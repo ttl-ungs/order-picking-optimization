@@ -8,7 +8,7 @@ class SolveModelDTO:
         self._W_t: float = None
         self._C_n: dict = None
         self._C_v: float = None
-        self._A: dict = None
+        self._A_ni: dict = None
         self._T_travel: float = None
         self._T_setup: float = None
         self._T_pick: float = None
@@ -69,11 +69,11 @@ class SolveModelDTO:
 
     @property
     def A(self) -> dict:
-        return self._A
+        return self._A_ni
 
     @A.setter
     def A(self, value: dict):
-        self._A = value
+        self._A_ni = value
 
     @property
     def T_travel(self) -> float:
