@@ -1,4 +1,4 @@
-test,status,total_time,model_time,obj_val,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,Max_it,Max_imp
+test,status,total_time,model_time,obj_val,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,P,V,Max_it,Max_imp
 test_opp_hc_2_model_16.TestOPPModel.test_20_orders_per_batch_40_batches_double_50x50,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,,,,,,,,,,,,,,,
 test_opp_hc_2_model_17.TestOPPModel.test_40_orders_per_batch_50_batches_100x100,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,,,,,,,,,,,,,,,
 test_opp_hc_2_model_18.TestOPPModel.test_40_orders_per_batch_50_batches_double_50x50,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,,,,,,,,,,,,,,,

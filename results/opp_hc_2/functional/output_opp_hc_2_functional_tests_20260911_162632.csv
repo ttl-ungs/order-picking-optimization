@@ -1,4 +1,4 @@
-test,status,total_time,model_time,obj_val,peak_rss_mb,sla_on_time_pct,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,Max_it,Max_imp,iterations_run,best_found_at_iteration
+test,status,total_time,model_time,obj_val,peak_rss_mb,sla_on_time_pct,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,P,V,Max_it,Max_imp,iterations_run,best_found_at_iteration
 test_opp_hc_2_model_01.TestOPPHillClimbing2Model1.test_basic_two_orders_capacity_limit,ok,0.005978107452392578,0.0005271434783935547,744.0,22.234375,50.0,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,1,4,500,30,31,1
 test_opp_hc_2_model_02.TestOPPHillClimbing2Model2.test_two_orders_two_aisles,ok,0.0061719417572021484,0.0008199214935302734,1917.0,22.09375,0.0,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,1,8,500,30,31,1
 test_opp_hc_2_model_03.TestOPPHillClimbing2Model3.test_two_orders_two_aisles_one_picking_point_per_order,ok,0.00603795051574707,0.0007138252258300781,1917.0,21.921875,0.0,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,1,8,500,30,31,1

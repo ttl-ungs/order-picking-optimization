@@ -15,8 +15,8 @@ class TestOPPMonoColdChain(OPPTestCaseMono):
         self.assertIn(status, ("optimal", "feasible"))
         assignments = self.assignments(values, scenario["P"], scenario["B"])
         self.assertEqual(assignments, {"B1": "P_fast"})
-        self.assertLessEqual(2.0 + route_times["B1"] / 2.0, scenario["T_frio_max"])
-        self.assertGreater(2.0 + route_times["B1"], scenario["T_frio_max"])
+        self.assertLessEqual(2.0 + route_times["B1"] / 2.0, scenario["T_cold"])
+        self.assertGreater(2.0 + route_times["B1"], scenario["T_cold"])
 
     # opp_v5_2_split's test_preflight_detects_when_no_picker_is_eligible is not ported: it
     # solves stage 1 alone (run_pipeline(solve_stage2=False)) to check the Python

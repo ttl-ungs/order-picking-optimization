@@ -19,21 +19,21 @@ class TestOPPHillClimbing4ColdChainTolerance(OPPTestCaseHC4):
     """
     Ported from opp_v5_1_mono's test_case_35
     (TestOPPMonoColdChainCoverage.test_cold_limit_tolerance_keeps_a_picker_within_rounding_noise):
-    T_frio_max set just BELOW the picker's t_exec_pb, by less than the
+    T_cold set just BELOW the picker's T_exec_pb, by less than the
     documented 1e-9 tolerance (COLD_CHAIN_TOLERANCE, see
     models/opp_v5_2_split/utils/cold_chain_validation.py, shared by
     opp_aco_4 and opp_hc_4). The picker must stay eligible -- rounding
     noise in a derived time must not drop a valid picker.
 
     Regression for a 2026-09-26 finding: ConstraintsValidator.
-    cold_chain_violation()/_batch_overrun() computed `overrun = t_exec_pb
-    - T_frio_max` WITHOUT subtracting the tolerance, so a t_exec_pb within
-    tolerance of T_frio_max still had overrun > 0 and the search could
+    cold_chain_violation()/_batch_overrun() computed `overrun = T_exec_pb
+    - T_cold` WITHOUT subtracting the tolerance, so a T_exec_pb within
+    tolerance of T_cold still had overrun > 0 and the search could
     never reach the zero-violation state validate_cold_chain_strict()
     (which DID apply the tolerance) would have accepted -- the whole run
     reported "infeasible".
 
-    Same geometry as test_case_cold_chain_boundary.py: t_exec_pb(P1) =
+    Same geometry as test_case_cold_chain_boundary.py: T_exec_pb(P1) =
     2.0 + 12.0/1.0 = 14.0 exactly.
     """
 
@@ -52,21 +52,21 @@ class TestOPPHillClimbing4ColdChainTolerance(OPPTestCaseHC4):
         cap_n = {"O1": 1.0}
 
         params = SolveHC4ModelDTO()
-        params.W_full = 1.0
-        params.W_ea_ta = 0.0
-        params.W_ea = 0.0
-        params.W_ta = 0.0
+        params.W_c = 1.0
+        params.W_pen = 0.0
+        params.W_e = 0.0
+        params.W_t = 0.0
         params.C_n = cap_n
         params.C_v = 10.0
         params.A = a
-        params.B_time = 1.0
-        params.B_setup = 1.0
-        params.B_picking = 1.0
-        params.Dd = {"O1": 1000.0}
+        params.T_travel = 1.0
+        params.T_setup = 1.0
+        params.T_pick = 1.0
+        params.T_due_n = {"O1": 1000.0}
         params.M = 1000.0
-        params.Bn = y
+        params.B_nb = y
         params.V_p = {"P1": 1.0}
-        params.T_frio_max = 14.0 - 5e-10
+        params.T_cold = 14.0 - 5e-10
         params.Seed = 1
         params.Max_it = 100
         params.Max_imp = 30

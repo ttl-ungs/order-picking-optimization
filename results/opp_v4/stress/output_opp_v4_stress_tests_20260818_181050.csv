@@ -1,4 +1,4 @@
-test,status,total_time,model_time,obj_val,N,B,V,P,W_full,W_ea_ta,W_ea,W_ta,B_time,B_setup,B_picking,C_v,C_n,Dd,d_ij,S_i,A_ni,Bn,debug_output
+test,status,total_time,model_time,obj_val,N,B,V,P,W_c,W_pen,W_e,W_t,T_travel,T_setup,T_pick,C_v,C_n,T_due_n,D_ij,S_i,A_ni,B_nb,debug_output
 test_opp_v4_model_01.TestOPPModelZIMPL.test_100_locations,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,,,,,
 test_opp_v4_model_02.TestOPPModelZIMPL.test_400_locations,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,,,,,
 test_opp_v4_model_03.TestOPPModelZIMPL.test_625_locations,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,,,,,

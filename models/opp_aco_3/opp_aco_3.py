@@ -96,7 +96,7 @@ class OPPAntColonyOptimization(Model):
 
         start_time = time.time()
 
-        if params.Bn is None:
+        if params.B_nb is None:
             self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
 
@@ -137,18 +137,18 @@ class OPPAntColonyOptimization(Model):
             P=self.P,
             location_graph=self.location_graph,
             batch_assignments=batch_assignments,
-            W_full=params.W_full,
-            W_ea_ta=params.W_ea_ta,
-            W_ea=params.W_ea,
-            W_ta=params.W_ta,
+            W_c=params.W_c,
+            W_pen=params.W_pen,
+            W_e=params.W_e,
+            W_t=params.W_t,
             C_n=params.C_n,
             C_v=params.C_v,
             A=params.A,
-            B_time=params.B_time,
-            B_setup=params.B_setup,
-            B_picking=params.B_picking,
+            T_travel=params.T_travel,
+            T_setup=params.T_setup,
+            T_pick=params.T_pick,
             S=params.S,
-            Dd=params.Dd,
+            T_due_n=params.T_due_n,
             M=params.M,
         )
 
@@ -271,14 +271,14 @@ class OPPAntColonyOptimization(Model):
                 "obj_val_congestion": best_global_congestion_cost,
                 "congestion_collisions": best_global_solution.get_total_collisions(),
                 "sla_on_time_pct": sla_on_time_pct(solution_info["tardiness"]),
-                "W_full": params.W_full,
-                "W_ea_ta": params.W_ea_ta,
-                "W_ea": params.W_ea,
-                "W_ta": params.W_ta,
+                "W_c": params.W_c,
+                "W_pen": params.W_pen,
+                "W_e": params.W_e,
+                "W_t": params.W_t,
                 "C_v": params.C_v,
-                "B_time": params.B_time,
-                "B_setup": params.B_setup,
-                "B_picking": params.B_picking,
+                "T_travel": params.T_travel,
+                "T_setup": params.T_setup,
+                "T_pick": params.T_pick,
                 "M": params.M,
                 "N": len(self.N),
                 "B": len(self.B),
@@ -305,14 +305,14 @@ class OPPAntColonyOptimization(Model):
             output=None,
             elapsed=elapsed,
             params={
-                "W_full": getattr(params, "W_full", None),
-                "W_ea_ta": getattr(params, "W_ea_ta", None),
-                "W_ea": getattr(params, "W_ea", None),
-                "W_ta": getattr(params, "W_ta", None),
+                "W_c": getattr(params, "W_c", None),
+                "W_pen": getattr(params, "W_pen", None),
+                "W_e": getattr(params, "W_e", None),
+                "W_t": getattr(params, "W_t", None),
                 "C_v": getattr(params, "C_v", None),
-                "B_time": getattr(params, "B_time", None),
-                "B_setup": getattr(params, "B_setup", None),
-                "B_picking": getattr(params, "B_picking", None),
+                "T_travel": getattr(params, "T_travel", None),
+                "T_setup": getattr(params, "T_setup", None),
+                "T_pick": getattr(params, "T_pick", None),
                 "M": getattr(params, "M", None),
                 "N": len(self.N),
                 "B": len(self.B),
@@ -410,7 +410,7 @@ class OPPAntColonyOptimization(Model):
         # construction since the queue order here also drives the
         # congestion causal ordering (slot 0 of every picker before slot 1,
         # ...), not just final timing.
-        self._sort_picker_queues_by_due_date(solution, batch_assignments, params.Dd)
+        self._sort_picker_queues_by_due_date(solution, batch_assignments, params.T_due_n)
 
         tracker = CongestionTracker(min_dwell=min_dwell)
         picker_current_time: Dict[str, float] = {p: 0.0 for p in self.P}
@@ -444,7 +444,7 @@ class OPPAntColonyOptimization(Model):
                         tracker,
                         owner=picker,
                         start_time=picker_current_time[picker],
-                        b_time=params.B_time,
+                        b_time=params.T_travel,
                         S=params.S if isinstance(params.S, dict) else {},
                     )
                     if candidate is not None and len(candidate) == len(set(candidate)):
@@ -908,10 +908,10 @@ class OPPAntColonyOptimization(Model):
         """t_exec formula (Constraint 18 replication), excluding congestion wait
         (added separately by the caller, since it is simulated during construction)."""
         picking_capacity = sum(params.C_n.get(o, 0) for o in orders) if isinstance(params.C_n, dict) else 0
-        picking_time = params.B_picking * picking_capacity
-        travel_time = params.B_time * self._calculate_route_distance(route)
+        picking_time = params.T_pick * picking_capacity
+        travel_time = params.T_travel * self._calculate_route_distance(route)
         service_time = sum(params.S.get(loc, 0) for loc in route) if isinstance(params.S, dict) else 0
-        return params.B_setup + picking_time + travel_time + service_time
+        return params.T_setup + picking_time + travel_time + service_time
 
     def _build_solution_info(
         self,
@@ -959,7 +959,7 @@ class OPPAntColonyOptimization(Model):
             )
             if order_batch and order_batch in solution_info["batch_completions"]:
                 v_b = solution_info["batch_completions"][order_batch]
-                due_date = params.Dd.get(order, float("inf"))
+                due_date = params.T_due_n.get(order, float("inf"))
 
                 solution_info["tardiness"][order] = max(0, v_b - due_date)
                 solution_info["earliness"][order] = max(0, due_date - v_b)

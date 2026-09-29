@@ -20,35 +20,35 @@ class SolveModelDTO:
         self._seed: int = None
 
     @property
-    def W_full(self) -> float:
+    def W_c(self) -> float:
         return self._w1
 
-    @W_full.setter
-    def W_full(self, value: float):
+    @W_c.setter
+    def W_c(self, value: float):
         self._w1 = value
 
     @property
-    def W_ea_ta(self) -> float:
+    def W_pen(self) -> float:
         return self._w2
 
-    @W_ea_ta.setter
-    def W_ea_ta(self, value: float):
+    @W_pen.setter
+    def W_pen(self, value: float):
         self._w2 = value
 
     @property
-    def W_ea(self) -> float:
+    def W_e(self) -> float:
         return self._gamma
 
-    @W_ea.setter
-    def W_ea(self, value: float):
+    @W_e.setter
+    def W_e(self, value: float):
         self._gamma = value
 
     @property
-    def W_ta(self) -> float:
+    def W_t(self) -> float:
         return self._delta
 
-    @W_ta.setter
-    def W_ta(self, value: float):
+    @W_t.setter
+    def W_t(self, value: float):
         self._delta = value
 
     @property
@@ -76,27 +76,27 @@ class SolveModelDTO:
         self._a = value
 
     @property
-    def B_time(self) -> float:
+    def T_travel(self) -> float:
         return self._beta_time
 
-    @B_time.setter
-    def B_time(self, value: float):
+    @T_travel.setter
+    def T_travel(self, value: float):
         self._beta_time = value
 
     @property
-    def B_setup(self) -> float:
+    def T_setup(self) -> float:
         return self._beta_setup
 
-    @B_setup.setter
-    def B_setup(self, value: float):
+    @T_setup.setter
+    def T_setup(self, value: float):
         self._beta_setup = value
 
     @property
-    def B_picking(self) -> float:
+    def T_pick(self) -> float:
         return self._beta_picking
 
-    @B_picking.setter
-    def B_picking(self, value: float):
+    @T_pick.setter
+    def T_pick(self, value: float):
         self._beta_picking = value
 
     @property
@@ -108,11 +108,11 @@ class SolveModelDTO:
         self._s = value
 
     @property
-    def Dd(self) -> dict:
+    def T_due_n(self) -> dict:
         return self._due_date
 
-    @Dd.setter
-    def Dd(self, value: dict):
+    @T_due_n.setter
+    def T_due_n(self, value: dict):
         self._due_date = value
 
     @property
@@ -132,11 +132,11 @@ class SolveModelDTO:
         self._x = value
 
     @property
-    def Bn(self) -> dict:
+    def B_nb(self) -> dict:
         return self._y
 
-    @Bn.setter
-    def Bn(self, value: dict):
+    @B_nb.setter
+    def B_nb(self, value: dict):
         self._y = value
 
     @property
@@ -178,7 +178,7 @@ class SolveModelDTO:
         return True
 
     def extract_batch_assignments(self) -> Dict[str, Set[str]]:
-        # Extract which orders belong to each batch from Bn parameter
+        # Extract which orders belong to each batch from B_nb parameter
         unique_batches = {batch for (order, batch) in self._y.keys()}
 
         batch_assignments = {b: set() for b in unique_batches}

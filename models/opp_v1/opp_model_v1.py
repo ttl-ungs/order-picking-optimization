@@ -69,20 +69,20 @@ class OPPModel(Model):
         self.start_time = dto.start_time
 
     def solve(self, params: SolveModelDTO):
-        w1 = params.W_full
-        w2 = params.W_ea_ta
-        gamma = params.W_ea
-        delta = params.W_ta
+        w1 = params.W_c
+        w2 = params.W_pen
+        gamma = params.W_e
+        delta = params.W_t
         cap_n = params.C_n
         cap_vehicle = params.C_v
         a = params.A
-        beta_time = params.B_time
-        beta_setup = params.B_setup
-        beta_picking = params.B_picking
-        due_date = params.Dd
+        beta_time = params.T_travel
+        beta_setup = params.T_setup
+        beta_picking = params.T_pick
+        due_date = params.T_due_n
         M = params.M
         x = params.x
-        y = params.Bn
+        y = params.B_nb
         start_time = self.start_time
 
         model = pyscipopt.Model("OPP Model")

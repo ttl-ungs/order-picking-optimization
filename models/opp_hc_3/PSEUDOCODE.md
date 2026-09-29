@@ -85,7 +85,7 @@ SUBROUTINE EVALUATE(S)                              (RouteEvaluator.evaluate / c
             batch <- S.sequence[picker][slot]
             route <- S.get_batch_route(batch)
 
-            base <- B_setup + B_picking*capacity(batch) + B_time*distance(route) + service_time(route)
+            base <- T_setup + T_pick*capacity(batch) + T_travel*distance(route) + service_time(route)
 
             if route is not empty:
                 _, wait <- SIMULATE_ROUTE_CONGESTION([depot]+route+[final],   (simulate_route_congestion,
@@ -99,15 +99,15 @@ SUBROUTINE EVALUATE(S)                              (RouteEvaluator.evaluate / c
             picker_time[picker] <- picker_time[picker] + base + wait
             completion[batch] <- picker_time[picker]
 
-    earliness, tardiness <- compare completion[batch] vs Dd(order) for every order
-    objective <- W_full * sum(completion) + W_ea_ta * (W_ea*earliness + W_ta*tardiness)
+    earliness, tardiness <- compare completion[batch] vs T_due_n(order) for every order
+    objective <- W_c * sum(completion) + W_pen * (W_e*earliness + W_t*tardiness)
     return objective
 
 
 SUBROUTINE SIMULATE_ROUTE_CONGESTION(full_route, owner, start_time, tracker)  (simulate_route_congestion)
     current <- full_route[0] ; t <- start_time ; wait_total <- 0
     for next_node in full_route[1:]:
-        travel_time <- B_time * distance(current, next_node)
+        travel_time <- T_travel * distance(current, next_node)
         t, edge_wait <- tracker.reserve( edge(current, next_node), at t, duration=travel_time, owner )
         wait_total <- wait_total + edge_wait
         if next_node is depot or final:

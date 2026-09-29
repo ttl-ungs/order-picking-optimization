@@ -1,4 +1,4 @@
-test,status,total_time,model_time,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,V,Max_it,Max_imp
+test,status,total_time,model_time,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,V,Max_it,Max_imp
 test_opp_hc_model_01.TestOPPHillClimbingModel1.test_basic_two_orders_capacity_limit,ok,0.0064182281494140625,1781559226.827853,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,4,500,30
 test_opp_hc_model_02.TestOPPHillClimbingModel2.test_two_orders_two_aisles,ok,0.005670070648193359,1781559226.918396,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,8,500,30
 test_opp_hc_model_03.TestOPPHillClimbingModel3.test_two_orders_two_aisles_one_picking_point_per_order,ok,0.005769968032836914,1781559227.011078,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,8,500,30

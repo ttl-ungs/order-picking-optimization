@@ -112,7 +112,7 @@ For every batch, in round-robin slot order across pickers:
   for real (`CongestionTracker.reserve`), cascading through any pre-existing
   occupancy exactly like the paper's dynamic recalculation. The wait
   actually incurred is accumulated into the batch's `congestion_wait`.
-- `t_exec_b = B_setup + B_picking·Σcap + B_time·distance + Σservice_time + congestion_wait`
+- `t_exec_b = T_setup + T_pick·Σcap + T_travel·distance + Σservice_time + congestion_wait`
   — a strict superset of opp_aco_2's formula (last term is new).
 
 ### 3. Pheromone update — m-ACO4 deposit rule + MAX-MIN bounds

@@ -14,7 +14,7 @@ without modelling anything a warehouse does. Measured 2026-09-22:
    half of the objective never activates.
 3. Every `V_p = 1.0`, so no stress scenario exercises the picker speeds that
    separate v5 from v4.
-4. Order weights of 10.0 make `tiempo_fijo` (101) outweigh the route (64-72),
+4. Order weights of 10.0 make `F_b` (101) outweigh the route (64-72),
    so improving the routing barely moves the objective.
 5. Orders map to locations by `sorted_locations[i % len(V)]` and to batches by
    the same index, so a batch's locations come out striped across the grid at a
@@ -65,14 +65,14 @@ def _picker_speeds(picker_ids, spread, tiers):
 ORDERS_PER_BATCH = 26
 
 
-def realistic_crew_scenario(rows, cols=None, batches=6, pickers=3, t_frio_max=None):
+def realistic_crew_scenario(rows, cols=None, batches=6, pickers=3, t_cold=None):
     """The stress profile calibrated on 2026-09-23: a realistic crew on a warehouse grid.
 
     26 orders per batch (on-time share ~67%, so earliness and tardiness both
     act), aisles slightly longer than cross-aisles (4/5) and two speed bands
     (0.8, 1.2). The default crew is 6 batches over 3 pickers -- two batches per
     picker, so sequencing binds; with realistic speeds, more than two per
-    picker did not solve. `cols` defaults to a square grid. `t_frio_max`
+    picker did not solve. `cols` defaults to a square grid. `t_cold`
     enables the cold-chain limit, which every other stress scenario leaves off.
 
     Split timings with the default crew (sequential, machine alone): 7x7 2.0 min,
@@ -83,8 +83,8 @@ def realistic_crew_scenario(rows, cols=None, batches=6, pickers=3, t_frio_max=No
         speed_spread=0.2, speed_tiers=2,
         vertical_weight=4, horizontal_weight=5,
     )
-    if t_frio_max is not None:
-        scenario["T_frio_max"] = t_frio_max
+    if t_cold is not None:
+        scenario["T_cold"] = t_cold
     return scenario
 
 
@@ -107,7 +107,7 @@ def designed_stress_scenario(
         pickers: number of pickers.
         orders: number of orders; must be >= batches so no batch comes out empty.
         rows, cols: grid dimensions.
-        order_weight: each order's `C_n`. Drives `tiempo_fijo` against the route
+        order_weight: each order's `C_n`. Drives `F_b` against the route
             time -- raise it to make picking dominate, lower it to make routing
             dominate. Worth calibrating per size, since the route's share depends
             on the grid.
@@ -172,11 +172,11 @@ def designed_stress_scenario(
         for i, order in enumerate(order_ids)
     }
 
-    # W_full must exceed the largest batch's order count (times W_ea_ta * W_ea,
-    # both 1 here), or v5 gains by voluntary waiting: c_pb >= t_exec_pb lets it
+    # W_c must exceed the largest batch's order count (times W_pen * W_e,
+    # both 1 here), or v5 gains by voluntary waiting: c_pb >= T_exec_pb lets it
     # report a batch LATER than it physically finishes, and a delay of d costs
-    # W_full * d while cutting earliness by up to (orders in the batch) * d.
-    # With the previous W_full = 9 and 26 orders per batch that paid ~17 per
+    # W_c * d while cutting earliness by up to (orders in the batch) * d.
+    # With the previous W_c = 9 and 26 orders per batch that paid ~17 per
     # unit of delay, so v5's optimum waited and no heuristic -- which reports
     # real completion times -- could match it (measured 2026-09-26: 7x7 v5_2
     # 79,047 vs ACO 104,565, gap almost entirely earliness). Above the bound a
@@ -193,23 +193,23 @@ def designed_stress_scenario(
         "E": edges,
         "depot": depot,
         "final": final,
-        "d_ij": distances,
+        "D_ij": distances,
         "S_i": {vertex: 0.0 for vertex in vertices},
         "A_ni": a_ni,
-        "Bn": bn,
+        "B_nb": bn,
         "C_n": {order: order_weight for order in order_ids},
-        "Dd": due_dates,
-        "W_full": w_full,
-        "W_ea_ta": w_ea_ta,
-        "W_ea": w_ea,
-        "W_ta": 1.0,
-        "B_time": beta_time,
-        "B_setup": beta_setup,
-        "B_picking": beta_picking,
+        "T_due_n": due_dates,
+        "W_c": w_full,
+        "W_pen": w_ea_ta,
+        "W_e": w_ea,
+        "W_t": 1.0,
+        "T_travel": beta_time,
+        "T_setup": beta_setup,
+        "T_pick": beta_picking,
         # Room for a full batch plus margin, so capacity never becomes the
         # binding constraint -- these scenarios are about routing and sequencing.
         "C_v": order_weight * orders_per_batch * 1.5,
         "M": 1_000_000.0,
         "V_p": speeds,
-        "T_frio_max": 1_000_000_000.0,
+        "T_cold": 1_000_000_000.0,
     }

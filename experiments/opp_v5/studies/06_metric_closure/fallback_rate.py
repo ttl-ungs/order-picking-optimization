@@ -33,8 +33,8 @@ for side, orders_per_batch in ((25, 12), (13, 26), (7, 26)):
                                         vertical_weight=4, horizontal_weight=5)
     build_dat_files(DAT_DIR, scenario)
     ctx = s1._closure_context(DAT_DIR)
-    bn = s1._read_indexed_dat_pairs(os.path.join(DAT_DIR, "Bn.dat"))
-    names = ["data_B.dat", "Bn.dat", *s1._CLOSURE_FILES]
+    bn = s1._read_indexed_dat_pairs(os.path.join(DAT_DIR, "B_nb.dat"))
+    names = ["data_B.dat", "B_nb.dat", *s1._CLOSURE_FILES]
     originals = {n: s1._read_file(os.path.join(DAT_DIR, n)) for n in names}
 
     fallbacks, times, reuse = 0, [], []

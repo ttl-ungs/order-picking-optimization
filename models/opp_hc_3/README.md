@@ -75,7 +75,7 @@ line-by-line pseudocode, cross-referenced to the actual method names.
 4. **Accept if better** — unchanged from opp_hc_2: accept the neighbor iff
    its full objective (now congestion-inclusive) improves on the current one.
 
-`t_exec_b = B_setup + B_picking·Σcap + B_time·distance + Σservice_time + congestion_wait`
+`t_exec_b = T_setup + T_pick·Σcap + T_travel·distance + Σservice_time + congestion_wait`
 — a strict superset of opp_hc_2's formula (last term is new).
 
 ## Architecture

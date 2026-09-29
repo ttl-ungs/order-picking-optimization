@@ -46,19 +46,19 @@ class TestOPPHillClimbingModel5(OPPTestCase):
 
         # Different weights from test 1
         params = SolveHCModelDTO()
-        params.W_full = 2.0  # Higher weight on completion time
-        params.W_ea_ta = 0.5  # Lower weight on penalties
-        params.W_ea = 0.1
-        params.W_ta = 0.5
+        params.W_c = 2.0  # Higher weight on completion time
+        params.W_pen = 0.5  # Lower weight on penalties
+        params.W_e = 0.1
+        params.W_t = 0.5
         params.C_n = cap_n
         params.C_v = cap_vehicle
         params.A = a
-        params.B_time = beta_time
-        params.B_setup = beta_setup
-        params.B_picking = beta_picking
-        params.Dd = due_date
+        params.T_travel = beta_time
+        params.T_setup = beta_setup
+        params.T_pick = beta_picking
+        params.T_due_n = due_date
         params.M = M
-        params.Bn = y
+        params.B_nb = y
 
         model_dto = ModelDTO()
         model_dto.N = N

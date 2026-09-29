@@ -1,4 +1,4 @@
-test,status,total_time,model_time,obj_val,obj_val_congestion,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,A_ants,Max_it,Alpha,Beta,Beta2,Min_dwell,Cataclysms_used
+test,status,total_time,model_time,obj_val,obj_val_congestion,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,P,V,A_ants,Max_it,Alpha,Beta,Beta2,Min_dwell,Cataclysms_used
 test_opp_aco_3_congestion_tracker.TestCongestionTracker.test_dwell_uses_min_dwell_floor,ok,0.0011551380157470703,,,,,,,,,,,,,,,,,,,,,,,
 test_opp_aco_3_congestion_tracker.TestCongestionTracker.test_edge_and_node_keys_do_not_collide,ok,0.0011792182922363281,,,,,,,,,,,,,,,,,,,,,,,
 test_opp_aco_3_congestion_tracker.TestCongestionTracker.test_edge_key_is_direction_agnostic,ok,0.0011928081512451172,,,,,,,,,,,,,,,,,,,,,,,

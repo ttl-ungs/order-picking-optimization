@@ -1,4 +1,4 @@
-test,status,total_time,model_time,solver_time,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,V
+test,status,total_time,model_time,solver_time,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,V
 test_opp_v3_model_13.TestOPPModel.test_25_orders_per_batch_30_batches_100x100,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,
 test_opp_v3_model_14.TestOPPModel.test_30_orders_per_batch_20_batches_100x100,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,
 test_opp_v3_model_15.TestOPPModel.test_25_orders_per_batch_30_batches_double_50x50,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,

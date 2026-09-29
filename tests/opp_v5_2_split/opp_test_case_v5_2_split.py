@@ -19,13 +19,13 @@ class OPPTestCaseSplit(unittest.TestCase):
     """Runs both OPP v5 stages and exposes assertions for their contract."""
 
     def run_pipeline(self, scenario, solve_stage2=True):
-        # V_p[p] is a divisor in opp_model_v5_2_split_stage2_scheduling.zpl's t_exec_pb (t_exec_pb
-        # = tiempo_fijo[b] + R_b[b] / V_p[p]), evaluated eagerly by
+        # V_p[p] is a divisor in opp_model_v5_2_split_stage2_scheduling.zpl's T_exec_pb (T_exec_pb
+        # = F_b[b] + R_b[b] / V_p[p]), evaluated eagerly by
         # ZIMPL for every (p, b) pair as soon as the .dat is read -- a speed
         # of exactly 0 divides by zero there (no graceful "infeasible", it's
         # a plain parameter expression, not a constraint); a negative one
-        # silently yields a negative t_exec_pb that would look "eligible"
-        # for any T_frio_max. Reject before ZIMPL ever sees it (2026-09-10
+        # silently yields a negative T_exec_pb that would look "eligible"
+        # for any T_cold. Reject before ZIMPL ever sees it (2026-09-10
         # audit finding), same pattern as the stuck_batches short-circuit below.
         # It has to run before build_dat_files too: its M_seq estimate divides
         # by the slowest speed, so a 0 crashed there first (found 2026-09-24).
@@ -47,7 +47,7 @@ class OPPTestCaseSplit(unittest.TestCase):
 
         write_indexed_dat(os.path.join(DAT_DIR, "route_time_b.dat"), route_times)
         write_indexed_dat(os.path.join(DAT_DIR, "velocities.dat"), scenario["V_p"])
-        write_scalar_dat(os.path.join(DAT_DIR, "frio.dat"), scenario["T_frio_max"])
+        write_scalar_dat(os.path.join(DAT_DIR, "cold.dat"), scenario["T_cold"])
 
         if not solve_stage2:
             return stage1_values, route_times, None, None
@@ -60,8 +60,8 @@ class OPPTestCaseSplit(unittest.TestCase):
         # (same pattern as opp_v4's input_validation.py pre-checks in solve_zpl).
         stuck_batches = batches_without_eligible_picker(
             scenario["P"], scenario["B"], scenario["N"], scenario["C_n"],
-            scenario["Bn"], scenario["B_setup"], scenario["B_picking"],
-            route_times, scenario["V_p"], scenario["T_frio_max"],
+            scenario["B_nb"], scenario["T_setup"], scenario["T_pick"],
+            route_times, scenario["V_p"], scenario["T_cold"],
         )
         if stuck_batches:
             # Register the outcome of the pipeline itself: otherwise the
@@ -123,7 +123,7 @@ class OPPTestCaseSplit(unittest.TestCase):
             self.assertEqual(sum(j == scenario["final"] for _, j in arcs), 1)
             required = {
                 location for location in scenario["V"]
-                if any(scenario["A_ni"][(order, location)] * scenario["Bn"][(order, batch)]
+                if any(scenario["A_ni"][(order, location)] * scenario["B_nb"][(order, batch)]
                        for order in scenario["N"])
             }
             visited = {node for arc in arcs for node in arc}
@@ -133,8 +133,8 @@ class OPPTestCaseSplit(unittest.TestCase):
         assignments = self.assignments(values, scenario["P"], scenario["B"])
         completions = self.completion_times(values, scenario["P"], scenario["B"])
         for batch, picker in assignments.items():
-            duration = scenario["B_setup"] + scenario["B_picking"] * sum(
-                scenario["C_n"][order] * scenario["Bn"][(order, batch)] for order in scenario["N"]
+            duration = scenario["T_setup"] + scenario["T_pick"] * sum(
+                scenario["C_n"][order] * scenario["B_nb"][(order, batch)] for order in scenario["N"]
             ) + route_times[batch] / scenario["V_p"][picker]
             self.assertGreaterEqual(completions[(picker, batch)] + 1e-5, duration)
 
@@ -143,8 +143,8 @@ class OPPTestCaseSplit(unittest.TestCase):
             for batch, assigned_picker in assignments.items():
                 if assigned_picker == picker:
                     end = completions[(picker, batch)]
-                    duration = scenario["B_setup"] + scenario["B_picking"] * sum(
-                        scenario["C_n"][order] * scenario["Bn"][(order, batch)] for order in scenario["N"]
+                    duration = scenario["T_setup"] + scenario["T_pick"] * sum(
+                        scenario["C_n"][order] * scenario["B_nb"][(order, batch)] for order in scenario["N"]
                     ) + route_times[batch] / scenario["V_p"][picker]
                     intervals.append((end - duration, end, batch))
             intervals.sort()
@@ -157,12 +157,12 @@ class OPPTestCaseSplit(unittest.TestCase):
         pairs = set()
         for picker in scenario["P"]:
             for batch in scenario["B"]:
-                fixed_time = scenario["B_setup"] + scenario["B_picking"] * sum(
-                    scenario["C_n"][order] * scenario["Bn"][(order, batch)]
+                fixed_time = scenario["T_setup"] + scenario["T_pick"] * sum(
+                    scenario["C_n"][order] * scenario["B_nb"][(order, batch)]
                     for order in scenario["N"]
                 )
                 t_exec = fixed_time + route_times[batch] / scenario["V_p"][picker]
-                if t_exec <= scenario["T_frio_max"] + COLD_CHAIN_TOLERANCE:
+                if t_exec <= scenario["T_cold"] + COLD_CHAIN_TOLERANCE:
                     pairs.add((picker, batch))
         return pairs
 

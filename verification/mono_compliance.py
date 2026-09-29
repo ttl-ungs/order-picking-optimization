@@ -22,7 +22,7 @@ import pyscipopt
 
 from dtos.verification.compliance_report_dto import ComplianceReportDTO
 from tests.infra.zimpl.dat_files_builder import (
-    DEFAULT_T_FRIO_MAX,
+    DEFAULT_T_COLD,
     _compute_m_seq,
     build_dat_files,
     write_scalar_params,
@@ -53,7 +53,7 @@ def _drop_empty_batches(instance, solution, report):
     solved; no constraint of mono is touched. A batch that IS in the
     solution is kept (and checked) even if empty."""
     used = {b for seq in solution["picker_sequences"].values() for b in seq} | set(solution["routes"])
-    with_orders = {b for (_n, b), value in instance["Bn"].items() if value}
+    with_orders = {b for (_n, b), value in instance["B_nb"].items() if value}
     empty = sorted(b for b in instance["B"] if b not in with_orders and b not in used)
     if not empty:
         return instance
@@ -62,7 +62,7 @@ def _drop_empty_batches(instance, solution, report):
     return dict(
         instance,
         B=[b for b in instance["B"] if b not in dropped],
-        Bn={(n, b): v for (n, b), v in instance["Bn"].items() if b not in dropped},
+        B_nb={(n, b): v for (n, b), v in instance["B_nb"].items() if b not in dropped},
     )
 
 
@@ -70,7 +70,7 @@ def _scenario(instance):
     """Instance (as read by solution_store) -> the dense dict
     dat_files_builder.build_dat_files expects. Missing entries get the same
     default the heuristics use when they read them (`.get(key, 0)`): 0 for
-    A_ni/Bn/C_n/S_i (A_ni is kept sparse until _dense_for_mono)."""
+    A_ni/B_nb/C_n/S_i (A_ni is kept sparse until _dense_for_mono)."""
     N, V, B = instance["N"], instance["V"], instance["B"]
     return {
         "N": set(N),
@@ -80,34 +80,34 @@ def _scenario(instance):
         "E": instance["E"],
         "depot": instance["depot"],
         "final": instance["final"],
-        "W_full": instance["W_full"],
-        "W_ea_ta": instance["W_ea_ta"],
-        "W_ea": instance["W_ea"],
-        "W_ta": instance["W_ta"],
-        "B_time": instance["B_time"],
-        "B_setup": instance["B_setup"],
-        "B_picking": instance["B_picking"],
+        "W_c": instance["W_c"],
+        "W_pen": instance["W_pen"],
+        "W_e": instance["W_e"],
+        "W_t": instance["W_t"],
+        "T_travel": instance["T_travel"],
+        "T_setup": instance["T_setup"],
+        "T_pick": instance["T_pick"],
         "C_v": instance["C_v"] if instance["C_v"] is not None else 0.0,
         "M": instance["M"],
         "C_n": {n: instance["C_n"].get(n, 0.0) for n in N},
-        "Dd": dict(instance["Dd"]),
-        "d_ij": instance["d_ij"],
+        "T_due_n": dict(instance["T_due_n"]),
+        "D_ij": instance["D_ij"],
         "S_i": {i: instance["S_i"].get(i, 0.0) for i in V},
         # Sparse (non-zero entries only): dense it is |N| x |V| (7.5M entries
         # on the 100x100 instance). _dense_for_mono fills it in right before
         # compiling, once the SCIP scenario is restricted.
         "A_ni": {(n, i): v for (n, i), v in instance["A_ni"].items() if v},
-        "Bn": {(n, b): instance["Bn"].get((n, b), 0) for n in N for b in B},
+        "B_nb": {(n, b): instance["B_nb"].get((n, b), 0) for n in N for b in B},
         "V_p": dict(instance["V_p"]),
         # +inf (cold chain disabled, the heuristics' default) can't be written
         # to a .dat: use the same stand-in the v5 migrated tests use.
-        "T_frio_max": instance["T_frio_max"] if math.isfinite(instance["T_frio_max"]) else DEFAULT_T_FRIO_MAX,
+        "T_cold": instance["T_cold"] if math.isfinite(instance["T_cold"]) else DEFAULT_T_COLD,
     }
 
 
 def _required_locations(sc):
     """b -> locations batch b must visit: mono's
-    `sum_n A_ni[n,i] * Bn[n,b] >= 1` (i not depot/final), computed from
+    `sum_n A_ni[n,i] * B_nb[n,b] >= 1` (i not depot/final), computed from
     A_ni's non-zero entries only instead of every (b, i, n) triple."""
     locations_of = {}
     for (n, i), value in sc["A_ni"].items():
@@ -116,7 +116,7 @@ def _required_locations(sc):
     for b in sc["B"]:
         demand = {}
         for n in sc["N"]:
-            weight = sc["Bn"][(n, b)]
+            weight = sc["B_nb"][(n, b)]
             if weight:
                 for i, value in locations_of.get(n, ()):
                     demand[i] = demand.get(i, 0) + value * weight
@@ -145,11 +145,11 @@ class _Evaluation:
 def _precheck(instance, solution, sc, report):
     ev = _Evaluation()
     depot, final = sc["depot"], sc["final"]
-    V, E, d_ij, S_i = sc["V"], sc["E"], sc["d_ij"], sc["S_i"]
-    speeds, t_frio = sc["V_p"], sc["T_frio_max"]
+    V, E, D_ij, S_i = sc["V"], sc["E"], sc["D_ij"], sc["S_i"]
+    speeds, t_frio = sc["V_p"], sc["T_cold"]
     violations = report.prechecks
 
-    orders_of = {b: [n for n in sc["N"] if sc["Bn"][(n, b)] > 0.5] for b in sc["B"]}
+    orders_of = {b: [n for n in sc["N"] if sc["B_nb"][(n, b)] > 0.5] for b in sc["B"]}
     required_of = _required_locations(sc)
     assigned = {}
     for p, seq in solution["picker_sequences"].items():
@@ -190,11 +190,11 @@ def _precheck(instance, solution, sc, report):
             continue
 
         p = assigned[b][0]
-        route_time = sc["B_time"] * sum(d_ij[a] for a in arcs) + sum(S_i[i] for i in stops)
-        fixed_time = sc["B_setup"] + sc["B_picking"] * sum(sc["C_n"][n] * sc["Bn"][(n, b)] for n in sc["N"])
+        route_time = sc["T_travel"] * sum(D_ij[a] for a in arcs) + sum(S_i[i] for i in stops)
+        fixed_time = sc["T_setup"] + sc["T_pick"] * sum(sc["C_n"][n] * sc["B_nb"][(n, b)] for n in sc["N"])
         t_exec = fixed_time + route_time / speeds[p]
         if t_exec > t_frio + COLD_CHAIN_TOL:
-            violations.append(f"{b} on {p}: t_exec {t_exec:.6g} > T_frio_max {t_frio:.6g} (cold chain)")
+            violations.append(f"{b} on {p}: t_exec {t_exec:.6g} > T_cold {t_frio:.6g} (cold chain)")
         reported = solution["batch_times"].get(b)
         if reported is not None and not _close(reported, t_exec):
             violations.append(f"{b} on {p}: reported t_exec {reported:.6g} != recomputed {t_exec:.6g}")
@@ -208,7 +208,7 @@ def _precheck(instance, solution, sc, report):
 
     fixed = set(ev.fixed_batches)
     t_exec_of = {
-        b: sc["B_setup"] + sc["B_picking"] * sum(sc["C_n"][n] * sc["Bn"][(n, b)] for n in sc["N"])
+        b: sc["T_setup"] + sc["T_pick"] * sum(sc["C_n"][n] * sc["B_nb"][(n, b)] for n in sc["N"])
         + ev.route_time[b] / speeds[ev.picker_of[b]]
         for b in fixed
     }
@@ -222,15 +222,15 @@ def _precheck(instance, solution, sc, report):
             if reported is not None and not _close(reported, clock):
                 violations.append(f"{b}: reported completion {reported:.6g} != recomputed {clock:.6g}")
 
-    missing_dd = [n for n in sc["N"] if n not in sc["Dd"]]
+    missing_dd = [n for n in sc["N"] if n not in sc["T_due_n"]]
     if missing_dd:
         violations.append(f"orders without due date (mono needs one): {sorted(missing_dd)}")
     elif len(fixed) == len(sc["B"]):
         batch_of = {n: b for b in sc["B"] for n in orders_of[b]}
         v_sum = sum(ev.completion[b] for b in sc["B"])
-        ea = sum(max(0.0, sc["Dd"][n] - ev.completion[batch_of[n]]) for n in sc["N"] if n in batch_of)
-        ta = sum(max(0.0, ev.completion[batch_of[n]] - sc["Dd"][n]) for n in sc["N"] if n in batch_of)
-        report.recomputed_obj = sc["W_full"] * v_sum + sc["W_ea_ta"] * (sc["W_ea"] * ea + sc["W_ta"] * ta)
+        ea = sum(max(0.0, sc["T_due_n"][n] - ev.completion[batch_of[n]]) for n in sc["N"] if n in batch_of)
+        ta = sum(max(0.0, ev.completion[batch_of[n]] - sc["T_due_n"][n]) for n in sc["N"] if n in batch_of)
+        report.recomputed_obj = sc["W_c"] * v_sum + sc["W_pen"] * (sc["W_e"] * ea + sc["W_t"] * ta)
         if report.heuristic_obj is not None and not _close(report.recomputed_obj, report.heuristic_obj):
             violations.append(
                 f"reported objective {report.heuristic_obj:.10g} != recomputed with mono's formula "
@@ -272,8 +272,8 @@ def _compile_lp(sc, m, m_seq, workdir):
     build_dat_files(dat_dir, dict(sc, M=m))
     write_scalar_params(
         os.path.join(dat_dir, "params.dat"),
-        W_full=sc["W_full"], W_ea_ta=sc["W_ea_ta"], W_ea=sc["W_ea"], W_ta=sc["W_ta"],
-        B_time=sc["B_time"], B_setup=sc["B_setup"], B_picking=sc["B_picking"],
+        W_c=sc["W_c"], W_pen=sc["W_pen"], W_e=sc["W_e"], W_t=sc["W_t"],
+        T_travel=sc["T_travel"], T_setup=sc["T_setup"], T_pick=sc["T_pick"],
         C_v=sc["C_v"], M=m, M_seq=m_seq,
     )
     out_base = os.path.join(dat_dir, "model")
@@ -365,7 +365,7 @@ def _diagnose(sc, ev, lp_path, time_limit, report):
 def _restrict_to_solution(sc, ev, report):
     """Scenario for the SCIP levels restricted to what the fixed routes use
     (agreed with the user, 2026-09-29): E -> the union of the routes' arcs,
-    V -> the nodes those routes touch (+ depot, final), and d_ij / S_i /
+    V -> the nodes those routes touch (+ depot, final), and D_ij / S_i /
     A_ni restricted accordingly.
 
     Exactly equivalent for levels 1 and 2: with every route fixed, an arc
@@ -394,7 +394,7 @@ def _restrict_to_solution(sc, ev, report):
         sc,
         V=nodes,
         E=arcs,
-        d_ij={a: sc["d_ij"][a] for a in arcs},
+        D_ij={a: sc["D_ij"][a] for a in arcs},
         S_i={i: sc["S_i"][i] for i in nodes},
         A_ni={(n, i): v for (n, i), v in sc["A_ni"].items() if i in nodes},
     )

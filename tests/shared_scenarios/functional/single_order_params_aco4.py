@@ -6,9 +6,9 @@ from tests.infra.factories.graphs_factory import GraphsFactory
 def single_order_params(due_date_value, start_time, cap_vehicle=100.0):
     """
     Same fixture as tests.shared_scenarios.functional.single_order_params_aco,
-    ported to return a SolveAco4ModelDTO (V_p unset / T_frio_max default +inf,
+    ported to return a SolveAco4ModelDTO (V_p unset / T_cold default +inf,
     so it behaves identically to the aco_2 version) since opp_aco_4's solve()
-    reads params.V_p / params.T_frio_max, which a plain SolveAcoModelDTO
+    reads params.V_p / params.T_cold, which a plain SolveAcoModelDTO
     doesn't have.
     """
     B = {"B1"}
@@ -24,19 +24,19 @@ def single_order_params(due_date_value, start_time, cap_vehicle=100.0):
     params = SolveAco4ModelDTO()
     # w1 > w2*gamma forces the optimizer to minimize v (completion time)
     # rather than trading it off against earliness
-    params.W_full = 10.0
-    params.W_ea_ta = 1.0
-    params.W_ea = 1.0
-    params.W_ta = 1.0
+    params.W_c = 10.0
+    params.W_pen = 1.0
+    params.W_e = 1.0
+    params.W_t = 1.0
     params.C_n = {"O1": 1.0}
     params.C_v = cap_vehicle
     params.A = a
-    params.B_time = 0.5
-    params.B_setup = 1.0
-    params.B_picking = 1.0
-    params.Dd = {"O1": due_date_value}
+    params.T_travel = 0.5
+    params.T_setup = 1.0
+    params.T_pick = 1.0
+    params.T_due_n = {"O1": due_date_value}
     params.M = 1000.0
-    params.Bn = y
+    params.B_nb = y
 
     model_dto = ModelDTO()
     model_dto.N = N

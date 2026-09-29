@@ -39,7 +39,7 @@ METHOD_PREFIX = "test_v5eq__"
 # Same defaults opp_v5_2_split applies to scenarios that predate picker speed
 # and cold chain (tests/infra/zimpl/dat_files_builder.py, migrated_case.py).
 DEFAULT_SPEED = 1.0
-DEFAULT_T_FRIO_MAX = 1_000_000_000.0
+DEFAULT_T_COLD = 1_000_000_000.0
 
 
 # --- JSON encoding: sets and tuple-keyed dicts --------------------------------
@@ -73,11 +73,11 @@ def decode(value):
 
 
 def with_v5_defaults(scenario):
-    """Fill V_p / T_frio_max the way opp_v5_2_split does when a scenario omits them."""
+    """Fill V_p / T_cold the way opp_v5_2_split does when a scenario omits them."""
     scenario = dict(scenario)
     if not scenario.get("V_p"):
         scenario["V_p"] = {p: DEFAULT_SPEED for p in scenario["P"]}
-    scenario.setdefault("T_frio_max", DEFAULT_T_FRIO_MAX)
+    scenario.setdefault("T_cold", DEFAULT_T_COLD)
     return scenario
 
 
@@ -151,29 +151,29 @@ def equivalence_case(model_cls, dto_cls, configure_params=None, fixture_path=FIX
 def v5_waiting_batches(scenario, values, route_times, tolerance=1e-6):
     """
     Batches whose completion v5 reports LATER than its picker could have
-    finished them: v5's c_pb >= t_exec_pb (not ==) lets it delay a batch to
+    finished them: v5's c_pb >= T_exec_pb (not ==) lets it delay a batch to
     cut earliness -- "voluntary waiting", which the heuristics don't model.
     For each picker, its batches (x_pb = 1, with orders) are taken in
     completion order; batch b waits if c_pb[p, b] exceeds the previous
-    batch's completion (0 for the first) plus t_exec_pb[p, b] =
-    B_setup + B_picking * sum(C_n) + R_b[b] / V_p[p].
+    batch's completion (0 for the first) plus T_exec_pb[p, b] =
+    T_setup + T_pick * sum(C_n) + R_b[b] / V_p[p].
     """
     s = with_v5_defaults(scenario)
-    if s["W_ea_ta"] * s["W_ea"] <= 0:
+    if s["W_pen"] * s["W_e"] <= 0:
         # Earliness doesn't count: a later c_pb can't lower the objective,
         # so any slack is just the solver's arbitrary pick within an
         # indifferent range, not waiting that changes the result (e.g.
-        # test_longer_single_mission_penalties' second instance, W_full =
-        # W_ea = 0: v5 and the heuristics both reach 0).
+        # test_longer_single_mission_penalties' second instance, W_c =
+        # W_e = 0: v5 and the heuristics both reach 0).
         return []
-    orders = {b: [n for n in s["N"] if s["Bn"].get((n, b), 0) > 0.5] for b in s["B"]}
+    orders = {b: [n for n in s["N"] if s["B_nb"].get((n, b), 0) > 0.5] for b in s["B"]}
     waits = []
     for p in sorted(s["P"]):
         mine = [b for b in s["B"] if values.get(f"x_pb${p}${b}", 0) > 0.5 and orders[b]]
         previous_end = 0.0
         for b in sorted(mine, key=lambda b: values.get(f"c_pb${p}${b}", 0.0)):
             t_exec = (
-                s["B_setup"] + s["B_picking"] * sum(s["C_n"][n] for n in orders[b])
+                s["T_setup"] + s["T_pick"] * sum(s["C_n"][n] for n in orders[b])
                 + route_times.get(b, 0.0) / s["V_p"][p]
             )
             completion = values.get(f"c_pb${p}${b}", 0.0)

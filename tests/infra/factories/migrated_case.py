@@ -55,7 +55,7 @@ def solve_split_from_v4_data(_zpl_path, dat_dir=None, params=None):
     write_indexed_dat(os.path.join(dat_dir, "route_time_b.dat"), route_times)
     write_indexed_dat(os.path.join(dat_dir, "velocities.dat"), {picker: 1.0 for picker in pickers})
     # v4 had no cold-chain restriction; disable it for the migrated baseline.
-    write_scalar_dat(os.path.join(dat_dir, "frio.dat"), 1_000_000_000.0)
+    write_scalar_dat(os.path.join(dat_dir, "cold.dat"), 1_000_000_000.0)
 
     # Stash what assert_no_time_overlap needs to recompute each task's
     # duration itself (see that method's docstring for why: opp_v5_2_split has no u_pb).
@@ -91,7 +91,7 @@ def make_split_compat_case(v4_module, v4_case):
             Overrides opp_v4's OPPTestCaseV4.assert_no_time_overlap (which
             reconstructs a task's duration as c_pb - u_pb): opp_model_v5_2_split_stage2_scheduling.zpl
             has no u_pb variable at all (opp_v5_2_split replaced it with the fixed
-            parameter t_exec_pb, see that file's header) -- var_values never
+            parameter T_exec_pb, see that file's header) -- var_values never
             contains a "u_pb$..." key, so u_pb.get(...) always returned 0
             there, silently turning the whole overlap check into a tautology
             (duration always came out as 0, so "start" == "end" == c_pb, and
@@ -111,14 +111,14 @@ def make_split_compat_case(v4_module, v4_case):
             """
             route_times = _last_call_context.get("route_times", {})
             params = _last_call_context.get("params") or {}
-            B_setup = params.get("B_setup", 0.0)
-            B_picking = params.get("B_picking", 0.0)
+            T_setup = params.get("T_setup", 0.0)
+            T_pick = params.get("T_pick", 0.0)
             C_n = params.get("C_n", {}) or {}
-            Bn = params.get("Bn", {}) or {}
+            B_nb = params.get("B_nb", {}) or {}
 
             def duration(batch):
-                orders_in_batch = [n for (n, b), assigned in Bn.items() if b == batch and assigned]
-                fixed_time = B_setup + B_picking * sum(C_n.get(n, 0.0) for n in orders_in_batch)
+                orders_in_batch = [n for (n, b), assigned in B_nb.items() if b == batch and assigned]
+                fixed_time = T_setup + T_pick * sum(C_n.get(n, 0.0) for n in orders_in_batch)
                 return fixed_time + route_times.get(batch, 0.0)
 
             x_pb, c_pb = {}, {}

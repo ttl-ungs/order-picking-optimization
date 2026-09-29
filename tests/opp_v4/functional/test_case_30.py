@@ -34,12 +34,12 @@ class TestSingleOrderExceedsVehicleZIMPL(OPPTestCaseV4):
         due_date = {"O1": 100.0}
 
         E = set()
-        d_ij = {}
+        D_ij = {}
         for i in opp_location_graph.get_vertices():
             for j in opp_location_graph.get_vertices():
                 if opp_location_graph.has_edge(i, j):
                     E.add((i, j))
-                    d_ij[(i, j)] = opp_location_graph.get_distance(i, j)
+                    D_ij[(i, j)] = opp_location_graph.get_distance(i, j)
 
         scenario_data = {
             "N": N,
@@ -49,21 +49,21 @@ class TestSingleOrderExceedsVehicleZIMPL(OPPTestCaseV4):
             "E": E,
             "depot": opp_location_graph.get_depot(),
             "final": opp_location_graph.get_final(),
-            "W_full": 1.0,
-            "W_ea_ta": 1.0,
-            "W_ea": 1.0,
-            "W_ta": 1.0,
-            "B_time": 0.5,
-            "B_setup": 1.0,
-            "B_picking": 1.0,
+            "W_c": 1.0,
+            "W_pen": 1.0,
+            "W_e": 1.0,
+            "W_t": 1.0,
+            "T_travel": 0.5,
+            "T_setup": 1.0,
+            "T_pick": 1.0,
             "C_v": cap_vehicle,
             "M": 1000.0,
             "C_n": cap_n,
-            "Dd": due_date,
-            "d_ij": d_ij,
+            "T_due_n": due_date,
+            "D_ij": D_ij,
             "S_i": {v: 0.0 for v in V},
             "A_ni": a,
-            "Bn": y,
+            "B_nb": y,
         }
 
         build_dat_files(DAT_DIR, scenario_data)
@@ -73,7 +73,7 @@ class TestSingleOrderExceedsVehicleZIMPL(OPPTestCaseV4):
             dat_dir=DAT_DIR,
             params={
                 "N": len(N), "B": len(B), "V": len(V), "P": len(P),
-                "C_n": cap_n, "Bn": y, "C_v": cap_vehicle,
+                "C_n": cap_n, "B_nb": y, "C_v": cap_vehicle,
             },
         )
 

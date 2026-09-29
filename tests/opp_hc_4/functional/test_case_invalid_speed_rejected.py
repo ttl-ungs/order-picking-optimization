@@ -19,9 +19,9 @@ class TestOPPHillClimbing4InvalidSpeedRejected(OPPTestCaseHC4):
     """
     Ported from opp_v5_1_mono's test_case_36
     (TestOPPMonoSpeedCoverage.test_non_positive_speed_is_rejected_before_solving):
-    a speed of 0 would divide by zero in t_exec_pb, and a negative one
+    a speed of 0 would divide by zero in T_exec_pb, and a negative one
     would yield a negative duration; both must be refused up front, not
-    crash or silently look "eligible" for any T_frio_max (see
+    crash or silently look "eligible" for any T_cold (see
     models/opp_v5_2_split/utils/cold_chain_validation.py's invalid_speeds(),
     shared by opp_aco_4 and opp_hc_4, called at opp_aco_4.py:150 /
     opp_hc_4.py:142 before any batch is ever evaluated).
@@ -44,21 +44,21 @@ class TestOPPHillClimbing4InvalidSpeedRejected(OPPTestCaseHC4):
         cap_n = {"O1": 1.0}
 
         params = SolveHC4ModelDTO()
-        params.W_full = 1.0
-        params.W_ea_ta = 0.0
-        params.W_ea = 0.0
-        params.W_ta = 0.0
+        params.W_c = 1.0
+        params.W_pen = 0.0
+        params.W_e = 0.0
+        params.W_t = 0.0
         params.C_n = cap_n
         params.C_v = 10.0
         params.A = a
-        params.B_time = 1.0
-        params.B_setup = 1.0
-        params.B_picking = 1.0
-        params.Dd = {"O1": 1000.0}
+        params.T_travel = 1.0
+        params.T_setup = 1.0
+        params.T_pick = 1.0
+        params.T_due_n = {"O1": 1000.0}
         params.M = 1000.0
-        params.Bn = y
+        params.B_nb = y
         params.V_p = {"P1": speed}
-        params.T_frio_max = float("inf")
+        params.T_cold = float("inf")
         params.Seed = 1
         params.Max_it = 100
         params.Max_imp = 30

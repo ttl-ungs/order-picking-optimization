@@ -36,7 +36,7 @@ def v5_reference_objectives():
     {test method name: v5_2_split obj_val or None}, taking for each test
     the row of the NEWEST opp_v5_2_split stress CSV that has it -- even if
     that row is a timeout (None then): an older CSV may predate the
-    W_full = 27 change (2026-09-26) and hold an objective for a different
+    W_c = 27 change (2026-09-26) and hold an objective for a different
     objective function, so it must never be used as a fallback for a test
     the newer run also covered.
     """
@@ -61,7 +61,7 @@ def solve_aco(scenario, seed, alpha=None, beta=None, rho=None, components=None):
     (Alpha 1.0, Beta 2.5, E 0.15) when given; `components` maps flag name
     (COMPONENT_FLAGS) -> bool, overriding opp_aco_4's defaults (all on) on
     this model instance only. Returns a dict with status, obj_val,
-    elapsed_s, route_time_sum (sum over batches of B_time * route distance
+    elapsed_s, route_time_sum (sum over batches of T_travel * route distance
     of the reported solution) and iterations_run.
     """
     model_dto, params = build_model_dto_and_params(scenario, SolveAco4ModelDTO, seed=seed)
@@ -88,7 +88,7 @@ def solve_aco(scenario, seed, alpha=None, beta=None, rho=None, components=None):
     route_time_sum = None
     if status != "infeasible" and info.get("routes"):
         route_time_sum = sum(
-            scenario["B_time"] * exec_time.calculate_route_distance(model_dto.location_graph, route)
+            scenario["T_travel"] * exec_time.calculate_route_distance(model_dto.location_graph, route)
             for route in info["routes"].values()
         )
     return {

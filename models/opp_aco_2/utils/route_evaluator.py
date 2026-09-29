@@ -22,18 +22,18 @@ class RouteEvaluator:
         P: List[str],
         location_graph,
         batch_assignments: Dict[str, Set[str]],
-        W_full: float,
-        W_ea_ta: float,
-        W_ea: float,
-        W_ta: float,
+        W_c: float,
+        W_pen: float,
+        W_e: float,
+        W_t: float,
         C_n: Dict,
         C_v: float,
         A: Dict,
-        B_time: float,
-        B_setup: float,
-        B_picking: float,
+        T_travel: float,
+        T_setup: float,
+        T_pick: float,
         S: Dict,
-        Dd: Dict,
+        T_due_n: Dict,
         M: float,
     ):
         self.N = N
@@ -41,24 +41,24 @@ class RouteEvaluator:
         self.P = P
         self.location_graph = location_graph
         self.batch_assignments = batch_assignments
-        self.W_full = W_full
-        self.W_ea_ta = W_ea_ta
-        self.W_ea = W_ea
-        self.W_ta = W_ta
+        self.W_c = W_c
+        self.W_pen = W_pen
+        self.W_e = W_e
+        self.W_t = W_t
         self.C_n = C_n
         self.C_v = C_v
         self.A = A
-        self.B_time = B_time
-        self.B_setup = B_setup
-        self.B_picking = B_picking
+        self.T_travel = T_travel
+        self.T_setup = T_setup
+        self.T_pick = T_pick
         self.S = S if isinstance(S, dict) else {}
-        self.Dd = Dd
+        self.T_due_n = T_due_n
         self.M = M
 
     def evaluate(self, solution) -> float:
         """
         Evaluate objective function:
-        W_full * sum(v_b) + W_ea_ta * (W_ea * sum(ea_n) + W_ta * sum(ta_n))
+        W_c * sum(v_b) + W_pen * (W_e * sum(ea_n) + W_t * sum(ta_n))
         """
         batch_times = self.compute_batch_completions(solution)
 
@@ -78,7 +78,7 @@ class RouteEvaluator:
                 continue
 
             completion_time = batch_times[batch]
-            due_date = self.Dd.get(order, float("inf"))
+            due_date = self.T_due_n.get(order, float("inf"))
 
             if completion_time < due_date:
                 earliness_total += due_date - completion_time
@@ -87,9 +87,9 @@ class RouteEvaluator:
 
         # Calculate objective
         recollection_time = sum(batch_times.values()) if batch_times else 0.0
-        penalty = self.W_ea * earliness_total + self.W_ta * tardiness_total
+        penalty = self.W_e * earliness_total + self.W_t * tardiness_total
 
-        objective = self.W_full * recollection_time + self.W_ea_ta * penalty
+        objective = self.W_c * recollection_time + self.W_pen * penalty
 
         return objective
 
@@ -116,18 +116,18 @@ class RouteEvaluator:
     def _calculate_batch_execution_time(self, batch: str, route: list, orders: Set[str]) -> float:
         """
         Calculate execution time for a batch route:
-        t_exec = B_setup + B_picking * sum(C_n) + B_time * travel_distance + service_time
+        t_exec = T_setup + T_pick * sum(C_n) + T_travel * travel_distance + service_time
         """
         # Setup time
-        setup_time = self.B_setup
+        setup_time = self.T_setup
 
         # Picking time: sum of capacities for all orders in batch
         picking_capacity = sum(self.C_n.get(order, 0) for order in orders)
-        picking_time = self.B_picking * picking_capacity
+        picking_time = self.T_pick * picking_capacity
 
         # Travel time from route distance
         travel_distance = self._calculate_route_distance(route)
-        travel_time = self.B_time * travel_distance
+        travel_time = self.T_travel * travel_distance
 
         # Service time: sum of service times for each location in route
         service_time = sum(self.S.get(loc, 0) for loc in route)

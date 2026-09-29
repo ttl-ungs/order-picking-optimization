@@ -40,8 +40,8 @@ from tests.infra.factories.v5_equivalence import FIXTURE_PATH, comparability, en
 # else that reaches the solver is exported.
 EXCLUDED = {
     "test_batch_is_delayed_while_early_orders_outweigh_completion_weight": (
-        "el test verifica justamente que v5 espere voluntariamente (c_pb > t_exec_pb), algo que las "
-        "heurísticas no modelan a propósito (ver W_full en stress_scenarios_v5_designed.py)"
+        "el test verifica justamente que v5 espere voluntariamente (c_pb > T_exec_pb), algo que las "
+        "heurísticas no modelan a propósito (ver W_c en stress_scenarios_v5_designed.py)"
     ),
 }
 

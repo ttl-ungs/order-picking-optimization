@@ -15,7 +15,7 @@ class TestOPPSplitSpeedFormula(OPPTestCaseSplit):
     """
     Deeper validation of opp_v5_2_split's own capability (heterogeneous picker
     speed), beyond model_20's "which picker gets which batch" check:
-    asserts the exact t_exec_pb = tiempo_fijo + R_b / V_p formula
+    asserts the exact T_exec_pb = F_b + R_b / V_p formula
     numerically, confirming ONLY the route-time component is divided by
     speed -- setup/picking stays fixed regardless of which picker runs it,
     per opp_model_v5_2_split_stage2_scheduling.zpl's documented assumption.
@@ -37,12 +37,12 @@ class TestOPPSplitSpeedFormula(OPPTestCaseSplit):
 
         # Exact numbers, not just "smaller than the other assignment would
         # give" -- ties the test directly to the formula in the .zpl.
-        tiempo_fijo = 2.0  # B_setup(1.0) + B_picking(1.0) * C_n["O1" or "O2"](1.0)
+        F_b = 2.0  # T_setup(1.0) + T_pick(1.0) * C_n["O1" or "O2"](1.0)
         self.assertAlmostEqual(
-            completions[("P_slow", "B1")], tiempo_fijo + 5.0 / 1.0, places=5
+            completions[("P_slow", "B1")], F_b + 5.0 / 1.0, places=5
         )
         self.assertAlmostEqual(
-            completions[("P_fast", "B2")], tiempo_fijo + 14.0 / 2.0, places=5
+            completions[("P_fast", "B2")], F_b + 14.0 / 2.0, places=5
         )
         self.assert_no_overlap(values, scenario, route_times)
 
@@ -56,10 +56,10 @@ class TestOPPSplitColdChainEdgeCases(OPPTestCaseSplit):
     """
 
     def test_picker_exactly_at_the_cold_chain_limit_is_still_eligible(self):
-        # T_frio_max == t_exec_pb(P_fast, B1) == 9.0 exactly. PB_elig is
+        # T_cold == T_exec_pb(P_fast, B1) == 9.0 exactly. PB_elig is
         # defined with `<=`, so this must NOT be excluded by an off-by-one
         # at the boundary -- a real risk given the floating-point
-        # equality involved (t_exec_pb is itself a derived, not a directly
+        # equality involved (T_exec_pb is itself a derived, not a directly
         # read, parameter).
         scenario = cold_chain_exact_boundary()
         self.assertIn(("P_fast", "B1"), self.eligible_pairs(scenario, {"B1": 14.0}))
@@ -71,7 +71,7 @@ class TestOPPSplitColdChainEdgeCases(OPPTestCaseSplit):
 
     def test_no_eligible_picker_returns_infeasible_gracefully(self):
         # Regression test for the bug found 2026-08-31 and fixed 2026-09-01:
-        # opp_model_v5_2_split_stage2_scheduling.zpl's own comment on B_sin_picker_elegible claims
+        # opp_model_v5_2_split_stage2_scheduling.zpl's own comment on B_no_eligible_picker claims
         # a batch with no eligible (picker, batch) pair under the cold-chain
         # limit "will surely come back infeasible", but ZIMPL itself rejects
         # the resulting empty-sum constraint at COMPILE time,  raising a bare

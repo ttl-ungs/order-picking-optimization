@@ -10,14 +10,14 @@ class SolveHC4ModelDTO(SolveHCModelDTO):
     Unlike opp_hc_3, congestion between concurrent pickers is intentionally
     left out here (see models/opp_hc_4/opp_hc_4.py header for why) - the two
     extensions are orthogonal (opp_hc_3 keeps opp_v4's fixed d_b, this
-    one replaces it with a per-picker t_exec_pb), so they don't need to be
+    one replaces it with a per-picker T_exec_pb), so they don't need to be
     combined into a single model.
 
-    Execution time per (picker, batch) mirrors opp_v5_2_split's t_exec_pb:
-        t_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]
-    where fixed_time(b) = B_setup + B_picking * sum(C_n over b's orders)
+    Execution time per (picker, batch) mirrors opp_v5_2_split's T_exec_pb:
+        T_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]
+    where fixed_time(b) = T_setup + T_pick * sum(C_n over b's orders)
     does NOT depend on picker speed (setup/picking are manual work, not
-    walking), and route_time(b) = B_time * travel_distance + service_time
+    walking), and route_time(b) = T_travel * travel_distance + service_time
     is the part scaled by how fast the picker walks/scans (same split as
     opp_model_v5_2_split_stage2_scheduling.zpl lines ~72-81).
     """
@@ -25,7 +25,7 @@ class SolveHC4ModelDTO(SolveHCModelDTO):
     def __init__(self):
         super().__init__()
         self._V_p: dict = {}
-        self._T_frio_max: float = float("inf")
+        self._T_cold: float = float("inf")
 
     @property
     def V_p(self) -> dict:
@@ -40,13 +40,13 @@ class SolveHC4ModelDTO(SolveHCModelDTO):
         self._V_p = value or {}
 
     @property
-    def T_frio_max(self) -> float:
-        """Cold-chain deadline (seconds): the max allowed t_exec_pb[p, b]
+    def T_cold(self) -> float:
+        """Cold-chain deadline (seconds): the max allowed T_exec_pb[p, b]
         for a (picker, batch) pair to remain eligible for that assignment.
         Default +inf disables cold-chain entirely (every picker is eligible
         for every batch), matching opp_v5_2_split's migrated-baseline behavior."""
-        return self._T_frio_max
+        return self._T_cold
 
-    @T_frio_max.setter
-    def T_frio_max(self, value: float):
-        self._T_frio_max = value
+    @T_cold.setter
+    def T_cold(self, value: float):
+        self._T_cold = value

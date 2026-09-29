@@ -81,23 +81,23 @@ class TestOPPAntColonyOptimization4Model7SoftColdChainProtectsSiblings(OPPTestCa
         cap_n = {"O1": 1.0, "O2": 1.0}
 
         params = SolveAco4ModelDTO()
-        params.W_full = 1.0
-        params.W_ea_ta = 0.0
-        params.W_ea = 0.0
-        params.W_ta = 0.0
+        params.W_c = 1.0
+        params.W_pen = 0.0
+        params.W_e = 0.0
+        params.W_t = 0.0
         params.C_n = cap_n
         params.C_v = 10.0
         params.A = a
-        params.B_time = 1.0
-        params.B_setup = 0.0
-        params.B_picking = 0.0
-        params.Dd = {n: 1000.0 for n in N}
+        params.T_travel = 1.0
+        params.T_setup = 0.0
+        params.T_pick = 0.0
+        params.T_due_n = {n: 1000.0 for n in N}
         params.M = 1000.0
-        params.Bn = y
+        params.B_nb = y
         params.V_p = {"P1": 1.0}
         # Tight for B1 (needs the ~6%-likely order), trivially satisfied by
         # B2 (distance 2 for D->E1->F either way).
-        params.T_frio_max = 8.0
+        params.T_cold = 8.0
         params.Seed = 1
 
         model_dto = ModelDTO()
@@ -118,7 +118,7 @@ class TestOPPAntColonyOptimization4Model7SoftColdChainProtectsSiblings(OPPTestCa
             "A cold-chain-tight batch must not make the solver fail to find "
             "an assignment for an easy sibling batch either.",
         )
-        self.assert_cold_chain_respected(solution_info, params.T_frio_max)
+        self.assert_cold_chain_respected(solution_info, params.T_cold)
         self.assertAlmostEqual(solution_info["batch_times"]["B1"], 7.0, places=4)
         self.assertAlmostEqual(solution_info["batch_times"]["B2"], 2.0, places=4)
 

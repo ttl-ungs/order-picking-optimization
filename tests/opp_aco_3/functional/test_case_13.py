@@ -22,9 +22,9 @@ class TestOPPModel(OPPTestCase):
         """
         NOTE (2026-08-27): this test used to assert an exact hardcoded route
         (L1-L2-L3-L5-L6-L7, the shortest physical path). That assertion was
-        WRONG, not opp_aco_3: with Dd=20.0 and W_ea (earliness weight) > 0,
+        WRONG, not opp_aco_3: with T_due_n=20.0 and W_e (earliness weight) > 0,
         finishing at t=12.5 via the short route is heavily penalized for
-        being too EARLY (4 orders x (20-12.5) x W_ea x W_ea_ta = 300), while
+        being too EARLY (4 orders x (20-12.5) x W_e x W_pen = 300), while
         the longer detour through L4 finishes at t=16.0, closer to the due
         date, for a strictly lower total objective (176.0 < 312.5) -- verify
         with RouteEvaluator, same one opp_aco_3 itself uses to score
@@ -50,19 +50,19 @@ class TestOPPModel(OPPTestCase):
         cap_n = {"O1": 2.0, "O2": 2.0, "O3": 2.0, "O4": 2.0}
 
         params = SolveAco3ModelDTO()
-        params.W_full = w1
-        params.W_ea_ta = w2
-        params.W_ea = gamma
-        params.W_ta = delta
+        params.W_c = w1
+        params.W_pen = w2
+        params.W_e = gamma
+        params.W_t = delta
         params.C_n = cap_n
         params.C_v = cap_vehicle
         params.A = a
-        params.B_time = 0.5
-        params.B_setup = 1.0
-        params.B_picking = 1.0
-        params.Dd = {n: 20.0 for n in N}
+        params.T_travel = 0.5
+        params.T_setup = 1.0
+        params.T_pick = 1.0
+        params.T_due_n = {n: 20.0 for n in N}
         params.M = 1000.0
-        params.Bn = y
+        params.B_nb = y
 
         model_dto = ModelDTO()
         model_dto.N = N
@@ -87,10 +87,10 @@ class TestOPPModel(OPPTestCase):
         evaluator = RouteEvaluator(
             N=N, B=B, P=["P1"], location_graph=location_graph,
             batch_assignments=batch_assignments,
-            W_full=w1, W_ea_ta=w2, W_ea=gamma, W_ta=delta,
+            W_c=w1, W_pen=w2, W_e=gamma, W_t=delta,
             C_n=cap_n, C_v=cap_vehicle, A=a,
-            B_time=0.5, B_setup=1.0, B_picking=1.0,
-            S={}, Dd=params.Dd, M=1000.0,
+            T_travel=0.5, T_setup=1.0, T_pick=1.0,
+            S={}, T_due_n=params.T_due_n, M=1000.0,
         )
 
         naive_shortest_route = ["L2", "L3", "L5", "L6"]

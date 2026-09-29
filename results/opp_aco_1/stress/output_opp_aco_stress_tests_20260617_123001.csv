@@ -1,4 +1,4 @@
-test,status,total_time,model_time,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,V,A_ants,Max_it,Alpha,Beta
+test,status,total_time,model_time,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,V,A_ants,Max_it,Alpha,Beta
 test_opp_aco_model_01.TestOPPModel.test_100_locations,ok,22.092238426208496,21.247843742370605,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,100,15,60,1.0,2.5
 test_opp_aco_model_02.TestOPPModel.test_400_locations,ok,596.3850607872009,549.5287547111511,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,400,15,60,1.0,2.5
 test_opp_aco_model_03.TestOPPModel.test_625_locations,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,,,,

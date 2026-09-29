@@ -174,15 +174,15 @@ def _split_stress_instance(data):
     pairs = lambda key: {k: v for k, v in raw.get(key, [])}
     triples = lambda key: {(a, b): v for a, b, v in raw.get(key, [])}
     P = list(raw["P"])
-    instance = {k: raw.get(k) for k in ("W_full", "W_ea_ta", "W_ea", "W_ta", "B_time", "B_setup", "B_picking",
+    instance = {k: raw.get(k) for k in ("W_c", "W_pen", "W_e", "W_t", "T_travel", "T_setup", "T_pick",
                                         "C_v", "M", "depot", "final")}
     instance.update(
         N=list(raw["N"]), V=list(raw["V"]), P=P, B=list(raw["B"]),
-        E={tuple(e) for e in raw["E"]}, d_ij=triples("d_ij"),
-        C_n=pairs("C_n"), Dd=pairs("Dd"), S_i=pairs("S_i"),
-        A_ni=triples("A_ni"), Bn=triples("Bn"),
+        E={tuple(e) for e in raw["E"]}, D_ij=triples("D_ij"),
+        C_n=pairs("C_n"), T_due_n=pairs("T_due_n"), S_i=pairs("S_i"),
+        A_ni=triples("A_ni"), B_nb=triples("B_nb"),
         V_p={p: pairs("V_p").get(p, 1.0) for p in P},
-        T_frio_max=float(raw.get("T_frio_max", float("inf"))),
+        T_cold=float(raw.get("T_cold", float("inf"))),
         start_time=0.0,
     )
     return instance

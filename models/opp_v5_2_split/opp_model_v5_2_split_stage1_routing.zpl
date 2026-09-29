@@ -35,14 +35,15 @@ set E := { read "../dat_files/data_E.dat" as "<1s,2s>" comment "#" };
 # PARAMETERS
 ##############################################################################
 
+# v_start / v_end : nodo de inicio (deposito) y nodo final de cada ruta
 param v_start := read "../dat_files/depot.dat" as "1s" comment "#";
-param v_end := read "../dat_files/final.dat" as "1s" comment "#";
+param v_end   := read "../dat_files/final.dat" as "1s" comment "#";
 
-# B_time : tiempo por unidad de distancia
-param B_time := read "../dat_files/params.dat" as "1n" skip 4 comment "#";
+# T_travel : tiempo por unidad de distancia
+param T_travel := read "../dat_files/params.dat" as "1n" skip 4 comment "#";
 
-# d_ij[(i,j)] : distancia entre locaciones i y j (solo arcos validos)
-param d_ij[E] := read "../dat_files/distances.dat" as "<1s,2s> 3n" comment "#";
+# D_ij[(i,j)] : distancia entre locaciones i y j (solo arcos validos)
+param D_ij[E] := read "../dat_files/distances.dat" as "<1s,2s> 3n" comment "#";
 
 # S_i[i] : tiempo de servicio en la locacion i
 param S_i[V] := read "../dat_files/service_time.dat" as "<1s> 2n" comment "#";
@@ -50,12 +51,12 @@ param S_i[V] := read "../dat_files/service_time.dat" as "<1s> 2n" comment "#";
 # A_ni[n,i] : 1 si la orden n debe visitar la locacion i, 0 si no
 param A_ni[N * V] := read "../dat_files/a_ni.dat" as "<1s,2s> 3n" comment "#";
 
-# Bn[n,b] : 1 si el lote b contiene la orden n, 0 si no
-param Bn[N * B] := read "../dat_files/Bn.dat" as "<1s,2s> 3n" comment "#";
+# B_nb[n,b] : 1 si el lote b contiene la orden n, 0 si no
+param B_nb[N * B] := read "../dat_files/B_nb.dat" as "<1s,2s> 3n" comment "#";
 
 # L_b[b] : numero de locaciones distintas requeridas por el lote b (para GG)
 param L_b[<b> in B] :=
-    sum <i> in V with (i != v_start and i != v_end and (sum <n> in N : A_ni[n,i] * Bn[n,b]) >= 1) : 1;
+    sum <i> in V with (i != v_start and i != v_end and (sum <n> in N : A_ni[n,i] * B_nb[n,b]) >= 1) : 1;
 
 
 ##############################################################################
@@ -65,7 +66,9 @@ param L_b[<b> in B] :=
 # z_ijb[i,j,b] : 1 si el arco valido (i,j) esta incluido en el lote b
 var z_ijb[E * B] binary;
 
-# q_ijb[i,j,b] : unidades que pasan por el arco valido (i,j) en el lote b
+# q_ijb[i,j,b] : flujo de carga de Gavish-Graves: cantidad de locaciones
+#                requeridas del lote b que todavia faltan visitar al recorrer
+#                el arco valido (i,j). Solo existe para eliminar subtours.
 var q_ijb[E * B] >= 0;
 
 # r_b[b] : tiempo de traslado + servicio del lote b bajo la mejor ruta
@@ -117,14 +120,14 @@ subto force_visit_inflow:
         forall <j> in V with j != v_start and j != v_end:
             sum <i, j> in E:
                 z_ijb[i, j, b]
-            >= if (sum <n> in N: A_ni[n,j] * Bn[n,b]) >= 1 then 1 else 0 end;
+            >= if (sum <n> in N: A_ni[n,j] * B_nb[n,b]) >= 1 then 1 else 0 end;
 
 subto force_visit_outflow:
     forall <b> in B:
         forall <j> in V with j != v_start and j != v_end:
             sum <j, i> in E:
                 z_ijb[j, i, b]
-            >= if (sum <n> in N: A_ni[n,j] * Bn[n,b]) >= 1 then 1 else 0 end;
+            >= if (sum <n> in N: A_ni[n,j] * B_nb[n,b]) >= 1 then 1 else 0 end;
 
 subto route_flow_conservation:
     forall <b> in B:
@@ -161,18 +164,18 @@ subto load_flow_conservation:
         forall <i> in V with i != v_start and i != v_end:
             (sum <g, i> in E: q_ijb[g, i, b])
             - (sum <i, j> in E: q_ijb[i, j, b])
-            == if (sum <n> in N: A_ni[n,i] * Bn[n,b]) >= 1 then 1 else 0 end;
+            == if (sum <n> in N: A_ni[n,i] * B_nb[n,b]) >= 1 then 1 else 0 end;
 
 ########################## Tiempo de ruta del lote ############################
 
-# r_b[b] = traslado (distancia * B_time) + servicio en cada ubicacion
-# visitada. NO incluye B_setup ni B_picking: esos son independientes de la
+# r_b[b] = traslado (distancia * T_travel) + servicio en cada ubicacion
+# visitada. NO incluye T_setup ni T_pick: esos son independientes de la
 # ruta elegida (dependen solo de la composicion del lote), asi que no hace
 # falta que el solver de la Etapa 1 los cargue - se suman en la Etapa 2.
 subto define_route_time:
     forall <b> in B:
         r_b[b] ==
-              B_time * (sum <i,j> in E with i != v_end and j != v_start:
-                             d_ij[i,j] * z_ijb[i,j,b])
+              T_travel * (sum <i,j> in E with i != v_end and j != v_start:
+                             D_ij[i,j] * z_ijb[i,j,b])
             + (sum <i> in V with i != v_start and i != v_end:
                    S_i[i] * (sum <i, j> in E: z_ijb[i, j, b]));

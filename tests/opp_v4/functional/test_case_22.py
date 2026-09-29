@@ -35,12 +35,12 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
         )
 
         # Extracción para ZIMPL
-        E, d_ij = set(), {}
+        E, D_ij = set(), {}
         for i in model_dto.location_graph.get_vertices():
             for j in model_dto.location_graph.get_vertices():
                 if model_dto.location_graph.has_edge(i, j):
                     E.add((i, j))
-                    d_ij[(i, j)] = model_dto.location_graph.get_distance(i, j)
+                    D_ij[(i, j)] = model_dto.location_graph.get_distance(i, j)
 
         scenario_data = {
             "N": model_dto.N,
@@ -50,21 +50,21 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
             "E": E,
             "depot": model_dto.location_graph.get_depot(),
             "final": model_dto.location_graph.get_final(),
-            "W_full": params.W_full,
-            "W_ea_ta": params.W_ea_ta,
-            "W_ea": params.W_ea,
-            "W_ta": params.W_ta,
-            "B_time": params.B_time,
-            "B_setup": params.B_setup,
-            "B_picking": params.B_picking,
+            "W_c": params.W_c,
+            "W_pen": params.W_pen,
+            "W_e": params.W_e,
+            "W_t": params.W_t,
+            "T_travel": params.T_travel,
+            "T_setup": params.T_setup,
+            "T_pick": params.T_pick,
             "C_v": params.C_v,
             "M": params.M,
             "C_n": params.C_n,
-            "Dd": params.Dd,
-            "d_ij": d_ij,
+            "T_due_n": params.T_due_n,
+            "D_ij": D_ij,
             "S_i": {v: 0.0 for v in set(model_dto.location_graph.get_vertices())},
             "A_ni": params.A,
-            "Bn": params.Bn,
+            "B_nb": params.B_nb,
         }
 
         build_dat_files(DAT_DIR, scenario_data)
@@ -76,20 +76,20 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
                 "B": len(model_dto.B),
                 "V": len(scenario_data["V"]),
                 "P": len(model_dto.P),
-                "W_full": params.W_full,
-                "W_ea_ta": params.W_ea_ta,
-                "W_ea": params.W_ea,
-                "W_ta": params.W_ta,
-                "B_time": params.B_time,
-                "B_setup": params.B_setup,
-                "B_picking": params.B_picking,
+                "W_c": params.W_c,
+                "W_pen": params.W_pen,
+                "W_e": params.W_e,
+                "W_t": params.W_t,
+                "T_travel": params.T_travel,
+                "T_setup": params.T_setup,
+                "T_pick": params.T_pick,
                 "C_v": params.C_v,
                 "C_n": params.C_n,
-                "Dd": params.Dd,
-                "d_ij": d_ij,
+                "T_due_n": params.T_due_n,
+                "D_ij": D_ij,
                 "S_i": {v: 0.0 for v in set(model_dto.location_graph.get_vertices())},
                 "A_ni": params.A,
-                "Bn": params.Bn
+                "B_nb": params.B_nb
             },
         )
 
@@ -105,12 +105,12 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
         )
 
         # Extracción para ZIMPL (Misma logica)
-        E, d_ij = set(), {}
+        E, D_ij = set(), {}
         for i in model_dto.location_graph.get_vertices():
             for j in model_dto.location_graph.get_vertices():
                 if model_dto.location_graph.has_edge(i, j):
                     E.add((i, j))
-                    d_ij[(i, j)] = model_dto.location_graph.get_distance(i, j)
+                    D_ij[(i, j)] = model_dto.location_graph.get_distance(i, j)
 
         scenario_data = {
             "N": model_dto.N,
@@ -120,21 +120,21 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
             "E": E,
             "depot": model_dto.location_graph.get_depot(),
             "final": model_dto.location_graph.get_final(),
-            "W_full": params.W_full,
-            "W_ea_ta": params.W_ea_ta,
-            "W_ea": params.W_ea,
-            "W_ta": params.W_ta,
-            "B_time": params.B_time,
-            "B_setup": params.B_setup,
-            "B_picking": params.B_picking,
+            "W_c": params.W_c,
+            "W_pen": params.W_pen,
+            "W_e": params.W_e,
+            "W_t": params.W_t,
+            "T_travel": params.T_travel,
+            "T_setup": params.T_setup,
+            "T_pick": params.T_pick,
             "C_v": params.C_v,
             "M": params.M,
             "C_n": params.C_n,
-            "Dd": params.Dd,
-            "d_ij": d_ij,
+            "T_due_n": params.T_due_n,
+            "D_ij": D_ij,
             "S_i": {v: 0.0 for v in set(model_dto.location_graph.get_vertices())},
             "A_ni": params.A,
-            "Bn": params.Bn
+            "B_nb": params.B_nb
         }
 
         build_dat_files(DAT_DIR, scenario_data)
@@ -146,20 +146,20 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
                 "B": len(model_dto.B),
                 "V": len(scenario_data["V"]),
                 "P": len(model_dto.P),
-                "W_full": params.W_full,
-                "W_ea_ta": params.W_ea_ta,
-                "W_ea": params.W_ea,
-                "W_ta": params.W_ta,
-                "B_time": params.B_time,
-                "B_setup": params.B_setup,
-                "B_picking": params.B_picking,
+                "W_c": params.W_c,
+                "W_pen": params.W_pen,
+                "W_e": params.W_e,
+                "W_t": params.W_t,
+                "T_travel": params.T_travel,
+                "T_setup": params.T_setup,
+                "T_pick": params.T_pick,
                 "C_v": params.C_v,
                 "C_n": params.C_n,
-                "Dd": params.Dd,
-                "d_ij": d_ij,
+                "T_due_n": params.T_due_n,
+                "D_ij": D_ij,
                 "S_i": {v: 0.0 for v in set(model_dto.location_graph.get_vertices())},
                 "A_ni": params.A,
-                "Bn": params.Bn
+                "B_nb": params.B_nb
             },
         )
 

@@ -20,8 +20,8 @@ class TestOPPAntColonyOptimization4Model3ColdChainInfeasible(OPPTestCase):
     Test ACO4-3: Cold chain infeasibility. Same batch/graph as ACO4-2, but
     with a single (slow) picker and a cold-chain deadline no picker can
     meet.
-    Purpose: mirrors opp_v5_2_split's B_sin_picker_elegible short-circuit - when
-    every (picker, batch) pair violates T_frio_max, solve() must return
+    Purpose: mirrors opp_v5_2_split's B_no_eligible_picker short-circuit - when
+    every (picker, batch) pair violates T_cold, solve() must return
     "infeasible" up front instead of running ACO on an unsatisfiable
     instance.
     """
@@ -40,22 +40,22 @@ class TestOPPAntColonyOptimization4Model3ColdChainInfeasible(OPPTestCase):
         cap_n = {"O1": 2.0, "O2": 2.0}
 
         params = SolveAco4ModelDTO()
-        params.W_full = 1.0
-        params.W_ea_ta = 0.0
-        params.W_ea = 0.0
-        params.W_ta = 0.0
+        params.W_c = 1.0
+        params.W_pen = 0.0
+        params.W_e = 0.0
+        params.W_t = 0.0
         params.C_n = cap_n
         params.C_v = cap_vehicle
         params.A = a
-        params.B_time = 0.5
-        params.B_setup = 1.0
-        params.B_picking = 1.0
-        params.Dd = {"O1": 1000.0, "O2": 1000.0}
+        params.T_travel = 0.5
+        params.T_setup = 1.0
+        params.T_pick = 1.0
+        params.T_due_n = {"O1": 1000.0, "O2": 1000.0}
         params.M = 1000.0
-        params.Bn = y
+        params.B_nb = y
         params.V_p = {"P1": 1.0}
-        # Best achievable t_exec_pb(P1, B1) = 5.0 + 12.5/1.0 = 17.5 -- unreachable at 10.0.
-        params.T_frio_max = 10.0
+        # Best achievable T_exec_pb(P1, B1) = 5.0 + 12.5/1.0 = 17.5 -- unreachable at 10.0.
+        params.T_cold = 10.0
 
         model_dto = ModelDTO()
         model_dto.N = N

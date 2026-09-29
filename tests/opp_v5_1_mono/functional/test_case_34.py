@@ -15,7 +15,7 @@ class TestOPPMonoSpeedFormula(OPPTestCaseMono):
     """
     Deeper validation of opp_v5_2_split.1's own capability (heterogeneous picker
     speed), beyond model_20's "which picker gets which batch" check:
-    asserts the exact t_exec_pb = tiempo_fijo + R_b / V_p formula
+    asserts the exact T_exec_pb = F_b + R_b / V_p formula
     numerically, confirming ONLY the route-time component is divided by
     speed -- setup/picking stays fixed regardless of which picker runs it,
     per opp_model_v5_1_mono.zpl's documented assumption.
@@ -37,12 +37,12 @@ class TestOPPMonoSpeedFormula(OPPTestCaseMono):
 
         # Exact numbers, not just "smaller than the other assignment would
         # give" -- ties the test directly to the formula in the .zpl.
-        tiempo_fijo = 2.0  # B_setup(1.0) + B_picking(1.0) * C_n["O1" or "O2"](1.0)
+        F_b = 2.0  # T_setup(1.0) + T_pick(1.0) * C_n["O1" or "O2"](1.0)
         self.assertAlmostEqual(
-            completions[("P_slow", "B1")], tiempo_fijo + 5.0 / 1.0, places=5
+            completions[("P_slow", "B1")], F_b + 5.0 / 1.0, places=5
         )
         self.assertAlmostEqual(
-            completions[("P_fast", "B2")], tiempo_fijo + 14.0 / 2.0, places=5
+            completions[("P_fast", "B2")], F_b + 14.0 / 2.0, places=5
         )
         self.assert_no_overlap(values, scenario, route_times)
 
@@ -56,10 +56,10 @@ class TestOPPMonoColdChainEdgeCases(OPPTestCaseMono):
     """
 
     def test_picker_exactly_at_the_cold_chain_limit_is_still_eligible(self):
-        # T_frio_max == t_exec_pb(P_fast, B1) == 9.0 exactly. The cold-chain limit
+        # T_cold == T_exec_pb(P_fast, B1) == 9.0 exactly. The cold-chain limit
         # is a `<=` bound (+1e-9), so this must NOT be excluded by an off-by-one
         # at the boundary -- a real risk given the floating-point
-        # equality involved (t_exec_pb is itself a derived, not a directly
+        # equality involved (T_exec_pb is itself a derived, not a directly
         # read, parameter).
         scenario = cold_chain_exact_boundary()
         self.assertIn(("P_fast", "B1"), self.eligible_pairs(scenario, {"B1": 14.0}))
@@ -75,7 +75,7 @@ class TestOPPMonoColdChainEdgeCases(OPPTestCaseMono):
         # opp_v5_2_split needs a Python-side pre-check for this (ZIMPL rejects the empty
         # sum in its eligibility set at compile time); the monolithic model has
         # no such set, so here SCIP itself has to prove the infeasibility: with
-        # u_pb bounded by T_frio_max, assign_exactly_one_picker cannot hold.
+        # u_pb bounded by T_cold, assign_exactly_one_picker cannot hold.
         scenario = cold_chain_infeasible_for_every_picker()
         self.assertEqual(self.eligible_pairs(scenario, {"B1": 14.0}), set())
 

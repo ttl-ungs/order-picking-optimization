@@ -11,7 +11,7 @@ from tests.shared_scenarios.functional.single_order_params_hc4 import single_ord
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "..")))
 
 
-# Ported from opp_hc_2's test_case_18.py for opp_hc_4/analysis parity (V_p unset, T_frio_max default +inf -> pure equivalence).
+# Ported from opp_hc_2's test_case_18.py for opp_hc_4/analysis parity (V_p unset, T_cold default +inf -> pure equivalence).
 class ResultCapture(Observer):
     # Captures ta and ea values after the model is solved.
     def __init__(self):

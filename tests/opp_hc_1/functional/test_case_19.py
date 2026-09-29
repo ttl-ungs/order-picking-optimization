@@ -36,22 +36,22 @@ class TestDueDatesExtreme(OPPTestCase):
         cap_n = {"O1": 3.0, "O2": 3.0}
 
         params_base = SolveHCModelDTO()
-        params_base.W_full = 0.0
-        params_base.W_ea_ta = 1.0
-        params_base.W_ea = 0.0
-        params_base.W_ta = 1.0
+        params_base.W_c = 0.0
+        params_base.W_pen = 1.0
+        params_base.W_e = 0.0
+        params_base.W_t = 1.0
         params_base.C_n = cap_n
         params_base.C_v = cap_vehicle
         params_base.A = a
-        params_base.B_time = 0.5
-        params_base.B_setup = 1.0
-        params_base.B_picking = 2.0
+        params_base.T_travel = 0.5
+        params_base.T_setup = 1.0
+        params_base.T_pick = 2.0
         params_base.M = 1000.0
-        params_base.Bn = y
+        params_base.B_nb = y
 
         # tight due dates
         params_tight = params_base
-        params_tight.Dd = {"O1": 1.0, "O2": 1.0}
+        params_tight.T_due_n = {"O1": 1.0, "O2": 1.0}
 
         model_dto = ModelDTO()
         model_dto.N = N
@@ -66,7 +66,7 @@ class TestDueDatesExtreme(OPPTestCase):
 
         # relaxed due dates
         params_relaxed = params_base
-        params_relaxed.Dd = {"O1": 1000.0, "O2": 1000.0}
+        params_relaxed.T_due_n = {"O1": 1000.0, "O2": 1000.0}
 
         model_relaxed = OPPHillClimbing(model_dto)
         model_relaxed.attach(OutputHandler())

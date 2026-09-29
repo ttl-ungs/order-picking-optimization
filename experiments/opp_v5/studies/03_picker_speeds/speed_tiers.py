@@ -84,7 +84,7 @@ with open(OUT, "w", newline="", encoding="utf-8") as handle:
         }
         write_indexed_dat(os.path.join(DAT_DIR, "route_time_b.dat"), routes)
         write_indexed_dat(os.path.join(DAT_DIR, "velocities.dat"), scenario["V_p"])
-        write_scalar_dat(os.path.join(DAT_DIR, "frio.dat"), scenario["T_frio_max"])
+        write_scalar_dat(os.path.join(DAT_DIR, "cold.dat"), scenario["T_cold"])
 
         base = os.path.join(DAT_DIR, "tiers_stage2")
         subprocess.run(

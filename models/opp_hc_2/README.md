@@ -13,7 +13,7 @@ while batches on the same picker are sequenced one after another.
 
 **Same Input:**
 - Receives all parameters from `SolveModelDTO`
-- Fixed batch assignments `Bn` (parameter)
+- Fixed batch assignments `B_nb` (parameter)
 - Set of pickers `P` (via `ModelDTO.P`); when omitted, falls back to a single
   implicit picker, matching the old non-parallel behaviour
 

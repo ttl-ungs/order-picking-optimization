@@ -45,9 +45,9 @@ B (Cantidad de Batches)
 
 C_v (Capacidad del Vehículo)
 
-W_full (Peso de Utilización)
+W_c (Peso de Utilización)
 
-W_ea_ta (Peso de Penalización Temprano/Tarde)
+W_pen (Peso de Penalización Temprano/Tarde)
 
 Filtro de Éxito (Factibilidad Temporal):
 
@@ -156,7 +156,7 @@ for key, pattern in paths.items():
 df_master = pd.concat(all_dfs, ignore_index=True)
 
 # 4. Transformación Numérica (Incluye Profiling vars)
-numeric_cols = ['total_time', 'model_time', 'solver_time', 'N', 'V', 'B', 'C_v', 'W_full', 'W_ea_ta']
+numeric_cols = ['total_time', 'model_time', 'solver_time', 'N', 'V', 'B', 'C_v', 'W_c', 'W_pen']
 for col in numeric_cols:
     if col in df_master.columns:
         df_master[col] = pd.to_numeric(df_master[col], errors='coerce')
@@ -177,7 +177,7 @@ summary = df_master.groupby(['model', 'scenario']).agg(
 correlations_global = {}
 for model in df_ok['model'].unique():
     model_data = df_ok[df_ok['model'] == model]
-    correlations_global[model] = model_data[['total_time', 'N', 'V', 'B', 'C_v', 'W_full', 'W_ea_ta']].corr()['total_time'].round(4)
+    correlations_global[model] = model_data[['total_time', 'N', 'V', 'B', 'C_v', 'W_c', 'W_pen']].corr()['total_time'].round(4)
 
 # 8. Motor de Correlaciones (Nivel Escenario Específico)
 correlations_scenario = {}

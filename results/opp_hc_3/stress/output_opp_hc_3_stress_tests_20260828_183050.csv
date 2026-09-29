@@ -1,4 +1,4 @@
-test,status,total_time,model_time,obj_val,obj_val_congestion,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,Max_it,Max_imp,Min_dwell
+test,status,total_time,model_time,obj_val,obj_val_congestion,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,P,V,Max_it,Max_imp,Min_dwell
 test_opp_hc_3_model_01.TestOPPModel.test_100_locations,ok,0.04208993911743164,0.03216695785522461,5947.0,6.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,100,500,30,0.0
 test_opp_hc_3_model_02.TestOPPModel.test_400_locations,ok,0.2127242088317871,0.17627501487731934,9555.0,6.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,400,500,30,0.0
 test_opp_hc_3_model_03.TestOPPModel.test_625_locations,ok,0.33159399032592773,0.2531261444091797,11535.0,6.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,625,500,30,0.0
