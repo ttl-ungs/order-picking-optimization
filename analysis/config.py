@@ -163,8 +163,9 @@ LATEST_FILE_OVERRIDES = {
     ("opp_hc_4", "stress"): "output_opp_hc_4_stress_tests.csv",
     ("opp_aco_4", "functional"): "output_opp_aco_4_functional_tests.csv",
     ("opp_aco_4", "stress"): "output_opp_aco_4_stress_tests.csv",
-    ("opp_v5_2_split", "stress"): [
-        "output_opp_v5_2_split_stress_tests_20260926_225549.csv",
-        ("output_opp_v5_2_split_stress_tests_parallel.csv", MIGRATED_STRESS_INSTANCES),
-    ],
+    # 2026-09-29: split stress unified in one file. 02, 04-07, 09-11 and 15
+    # re-run with the current code (Stage 1 on 6 workers, same objectives as
+    # before); the 10 timeouts (40 min) kept from their previous runs: 01 and
+    # 03 from the 09-24 run, 08 and 12-19 from the 09-26 run (W_full = 27).
+    ("opp_v5_2_split", "stress"): "output_opp_v5_2_split_stress_tests_parallel.csv",
 }
