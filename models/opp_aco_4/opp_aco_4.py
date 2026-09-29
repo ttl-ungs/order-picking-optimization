@@ -75,6 +75,7 @@ from typing import Dict, List, Set, Optional, Tuple
 
 from dtos.aco.solve_aco_4_model_dto import SolveAco4ModelDTO
 from dtos.opp.solve_result import SolveResult
+from dtos.opp.solution_record_dto import SolutionRecordDTO
 from dtos.opp.model_dto import ModelDTO
 from models.base.model import Model
 from models.base.opp_location_graph import OPPLocationGraph
@@ -561,6 +562,16 @@ class OPPAntColonyOptimization(Model):
                 "timed_out": timed_out,
                 "best_found_at_iteration": best_found_at_iteration,
             },
+        )
+        solve_result.solution_record = SolutionRecordDTO(
+            model_name="opp_aco_4",
+            N=self.N,
+            B=self.B,
+            P=self.P,
+            location_graph=self.location_graph,
+            start_time=self.T_0 if self.T_0 is not None else 0,
+            params=params,
+            solution_info=solution_info,
         )
         solve_registry.register(solve_result)
         return solve_result

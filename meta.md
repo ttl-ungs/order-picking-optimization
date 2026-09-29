@@ -627,6 +627,25 @@ Las dos primeras son de rendimiento puro y están medidas. Las otras cuatro son 
 - Riesgo / atención: la notebook entró en suspensión durante las corridas de stress del 23-09 y del 24-09. Los timeouts valen (el tope cuenta solo tiempo despierto), pero la duración de los tests resueltos incluye el tiempo suspendido: los tiempos del split son un techo. Los documentos lo dicen.
 - Validación: los tres generadores corren; los tres documentos compilan con `context` (0 errores) y se revisaron las páginas nuevas.
 
+### Cambio 2026-09-28 - Verificador de soluciones heurísticas contra opp_v5_1_mono
+- Alcance: infraestructura de tests / verificación / resultados
+- Archivos principales:
+  - [verification/](verification/) (nuevo): `solution_store.py`, `mono_compliance.py`, `run_compliance.py`
+  - [dtos/opp/solution_record_dto.py](dtos/opp/solution_record_dto.py), [dtos/verification/compliance_report_dto.py](dtos/verification/compliance_report_dto.py) (nuevos); [dtos/opp/solve_result.py](dtos/opp/solve_result.py)
+  - [models/opp_hc_4/opp_hc_4.py](models/opp_hc_4/opp_hc_4.py), [models/opp_aco_4/opp_aco_4.py](models/opp_aco_4/opp_aco_4.py): adjuntan un `SolutionRecordDTO` al `SolveResult` (solo referencias, no cambia la búsqueda ni los tiempos)
+  - [tests/infra/execution/runner.py](tests/infra/execution/runner.py), [config.py](tests/infra/execution/config.py), [tests/run_suite.py](tests/run_suite.py), `.env.example`: variable `WRITE_SOLUTIONS`
+  - Resultados: `results/opp_{hc,aco}_4/functional/output_*_20260928_{202021,205341}.csv`, sus carpetas `solutions/<corrida>/` y `results/compliance/opp_{hc,aco}_4/functional/`
+- Qué se hizo:
+  - Con `WRITE_SOLUTIONS=1`, el runner guarda cada solución de HC-4/ACO-4 (instancia + solución) como un JSON en `results/<modelo>/<tier>/solutions/<corrida>/`, enlazado desde la columna `solution_file` del CSV. Se serializa después de medir `total_time`. Cada corrida conserva sus JSON, igual que su CSV.
+  - `python -m verification.run_compliance --model <m> --tier <t>` lee esos JSON (no vuelve a correr tests) y verifica cada solución contra mono en tres capas: chequeos en Python (arcos en E, sin revisitas, locaciones requeridas, un picker por lote, cadena de frío, tiempos y objetivo recalculados, validez de big-M); nivel 1 en SCIP (rutas, asignación y secuencia fijas, tiempos libres); nivel 2 (también los tiempos de completitud fijos, exactos). Las variables se fijan por nombre sobre el LP compilado: no se copia ni edita ninguna restricción del `.zpl`. Escribe una fila por test apenas la verifica; `--resume` saltea las filas que ya tienen veredicto y `--test` reemplaza solo las filas que vuelve a revisar.
+  - Lotes vacíos (decisión de la usuaria): mono obliga a rutear, asignar y cobrar en el objetivo todo lote de `B` aunque no tenga órdenes, y las heurísticas los ignoran. El verificador saca de `B` los lotes sin órdenes que la solución no usa (queda en `notes`); ninguna restricción cambia.
+- Resultado: funcionales de HC-4 y ACO-4, 63 tests cada uno: 51 `compliant`, 0 `violations`, 12 `skipped` (los que esperan infactibilidad, no hay solución que verificar).
+- Hallazgos:
+  - En 7 de los 51 casos (los mismos en los dos modelos) el nivel 1 baja el objetivo entre 7,9 % y 93,6 % con las mismas rutas, asignación y secuencia: mono espera para no terminar antes del due date y las heurísticas nunca esperan (la espera voluntaria de v5). No es una violación.
+  - `test_fractional_and_zero_capacities_feasible` (timeout en split y mono) tiene 10 de 12 lotes vacíos: sin ellos se verifica en 0,13 s; con ellos libres SCIP no cerraba en 600 s. Probable causa del timeout de los modelos lineales.
+- Riesgo / atención: los CSV funcionales nuevos de HC-4/ACO-4 pasan a ser los más recientes, así que el análisis los toma (sin override); traen la columna extra `solution_file`. El 2026-09-28 se perdió el primer reporte de compliance de HC-4 funcional al volver a correr el verificador con `--test` (bug ya corregido); se regeneró completo desde los JSON.
+- Validación: prueba de mutaciones sobre una solución chica (arco inexistente, completitud solapada, cadena de frío, objetivo mal reportado): las cuatro se detectan. Reportes de compliance completos de los dos funcionales, 63 filas cada uno sin duplicados.
+
 ---
 
 

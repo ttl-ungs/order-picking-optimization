@@ -14,6 +14,8 @@ except ImportError:
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
+_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+
 
 def _peak_rss_mb():
     """
@@ -93,7 +95,30 @@ def _kill_process_tree(pid):
         pass
 
 
-def _run_test_child(test_name, q):
+def _save_solution(sr, test_name, solutions_dir, solve_data):
+    """Write the heuristic's solution record (if the model attached one) as
+    JSON under solutions_dir and link it from the CSV row as solution_file,
+    a path relative to the project root. Runs after `duration` was taken,
+    so serializing never counts towards the test's reported time. A failure
+    here is reported in the row instead of costing the test's result."""
+    record = getattr(sr, "solution_record", None)
+    if record is None or solve_data is None:
+        return
+    try:
+        from verification.solution_store import write_solution_record
+
+        # <module>.<method>.json: the class name is dropped to stay under
+        # Windows' 260-char path limit (git can't index longer paths by
+        # default); the full unittest id is kept inside the JSON ("test").
+        parts = test_name.split(".")
+        path = os.path.join(solutions_dir, f"{parts[0]}.{parts[-1]}.json")
+        write_solution_record(record, test_name, path)
+        solve_data["solution_file"] = os.path.relpath(path, _PROJECT_ROOT).replace(os.sep, "/")
+    except Exception as e:
+        solve_data["solution_file"] = f"ERROR: {e}"
+
+
+def _run_test_child(test_name, q, solutions_dir=None):
     start = time.time()
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromName(test_name)
@@ -109,6 +134,8 @@ def _run_test_child(test_name, q):
         sr = get_last()
         if sr is not None:
             solve_data = sr.to_csv_row()
+            if solutions_dir:
+                _save_solution(sr, test_name, solutions_dir, solve_data)
     except Exception:
         pass
 
@@ -132,7 +159,8 @@ class TestRunner:
     _FIXED_FIELDNAMES = ["test", "status", "total_time", "model_time", "obj_val", "peak_rss_mb"]
 
     def __init__(
-        self, timeout_minutes: int, write_csv: bool, model_name: str, test_type: str
+        self, timeout_minutes: int, write_csv: bool, model_name: str, test_type: str,
+        write_solutions: bool = False,
     ):
         self.timeout_minutes = timeout_minutes
         self.TIMEOUT_MSG = f"{self.TIMEOUT_MSG} - {timeout_minutes}"
@@ -147,6 +175,14 @@ class TestRunner:
         # Ej: results/opp_hc_1/stress/output_opp_hc_stress_tests_20231024_153000.csv
         self.csv_path = os.path.join(
             project_root, "results", model_name, test_type, csv_filename
+        )
+
+        # One JSON per test, same run timestamp as the CSV that links them
+        # (column solution_file). See verification/solution_store.py.
+        self.solutions_dir = (
+            os.path.join(project_root, "results", model_name, test_type, "solutions", timestamp)
+            if write_solutions
+            else None
         )
 
         if self.write_csv:
@@ -174,7 +210,7 @@ class TestRunner:
         for test_id in test_ids:
             print(f"Running {test_id} (timeout: {self.timeout_minutes} min)")
             q = multiprocessing.Queue()
-            p = multiprocessing.Process(target=_run_test_child, args=(test_id, q))
+            p = multiprocessing.Process(target=_run_test_child, args=(test_id, q, self.solutions_dir))
             p.start()
             p.join(timeout_seconds)
 
@@ -244,6 +280,8 @@ class TestRunner:
 
         if self.write_csv:
             print(f"\n✅ Resultados guardados en:\n{self.csv_path}")
+        if self.solutions_dir and os.path.isdir(self.solutions_dir):
+            print(f"\n✅ Soluciones guardadas en:\n{self.solutions_dir}")
 
     def write_results_csv(self, results: list):
         param_keys = list(
