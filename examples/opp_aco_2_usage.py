@@ -5,7 +5,7 @@ This script demonstrates how to use the ACO solver with the same input
 format as the exact solver (opp_model_v4). The key differences vs. opp_aco_1 (v3):
 - Input: Fixed batch assignments (B_nb parameter) + a set of pickers (P)
 - Optimize: Routes within each batch (probabilistic ACO construction) AND the
-  assignment/sequencing of batches to pickers (X_pb), so batches on different
+  assignment/sequencing of batches to pickers (x_pb), so batches on different
   pickers run in parallel
 """
 

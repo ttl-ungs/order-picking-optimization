@@ -49,7 +49,7 @@ class RouteEvaluator:
     def evaluate(self, solution) -> float:
         """
         Evaluate objective function:
-        W_c * sum(v_b) + W_pen * (W_e * sum(ea_n) + W_t * sum(ta_n))
+        W_c * sum(c_b) + W_pen * (W_e * sum(ea_n) + W_t * sum(ta_n))
         """
         # Calculate completion time for each batch
         batch_times = {}

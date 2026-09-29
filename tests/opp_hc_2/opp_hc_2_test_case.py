@@ -16,7 +16,7 @@ class OPPTestCaseHC2(OPPTestCase):
     """
     Base test case for opp_hc_2, adding assertions specific to the picker
     parallelization introduced vs. opp_hc_1 (v3): batches distributed across
-    pickers (X_pb) and no time overlap between batches on the same picker.
+    pickers (x_pb) and no time overlap between batches on the same picker.
     """
 
     def solve_and_capture(self, model, params):

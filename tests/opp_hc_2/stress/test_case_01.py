@@ -21,7 +21,7 @@ class TestOPPModel(OPPTestCaseHC2):
     Test 1: 12 orders, 6 batches, 3 pickers. 10x10 grid.
     Purpose: stress the model.
 
-    With 6 batches and 3 pickers, batches should be distributed (X_pb) with
+    With 6 batches and 3 pickers, batches should be distributed (x_pb) with
     an even workload, and batches on the same picker must not overlap in time.
     """
 

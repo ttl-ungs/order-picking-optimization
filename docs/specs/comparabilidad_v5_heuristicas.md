@@ -35,13 +35,13 @@ Están implementadas en `tests/infra/factories/v5_equivalence.py` (`comparabilit
 | Situación | ¿Estado comparable? | ¿Objetivo comparable? | Motivo |
 |---|---|---|---|
 | v5 no terminó (timeout) | No | No | No hay referencia |
-| v5 fija la asignación batch→picker (`X_pb`) | No | No | Las heurísticas no admiten esa restricción. Hoy no hay ningún caso |
+| v5 fija la asignación batch→picker (`x_pb`) | No | No | Las heurísticas no admiten esa restricción. Hoy no hay ningún caso |
 | v5 infeasible | **Sí** | No | No hay objetivo; sí se compara que la heurística también dé infeasible |
 | v5 usa espera voluntaria | **Sí** | No | Ver abajo |
 | v5 óptimo, sin espera | **Sí** | **Sí** | Mismos datos, mismo objetivo |
 
-**Espera voluntaria.** En v5 la restricción es `v_pb >= T_exec_pb`, no una igualdad. Eso le permite reportar un batch como terminado más tarde de lo que termina físicamente, para reducir la earliness. Las heurísticas reportan tiempos reales y no pueden hacerlo, así que en esos casos el objetivo de v5 es menor por diseño del modelo, no por un mejor plan.
-- **Cómo se detecta.** Sobre la solución de v5: un batch espera si su `v_pb` supera la finalización del batch anterior del mismo picker más su `T_exec_pb`.
+**Espera voluntaria.** En v5 la restricción es `c_pb >= T_exec_pb`, no una igualdad. Eso le permite reportar un batch como terminado más tarde de lo que termina físicamente, para reducir la earliness. Las heurísticas reportan tiempos reales y no pueden hacerlo, así que en esos casos el objetivo de v5 es menor por diseño del modelo, no por un mejor plan.
+- **Cómo se detecta.** Sobre la solución de v5: un batch espera si su `c_pb` supera la finalización del batch anterior del mismo picker más su `T_exec_pb`.
 - **Cuándo se cuenta.** Solo si la earliness tiene peso (`W_pen · W_e > 0`). Si no lo tiene, esperar no puede bajar el objetivo.
 - **Verificación exacta del 2026-09-28.** En las 9 instancias marcadas, "rutas más cortas + espera óptima" reproduce exactamente el objetivo de v5. ACO, en esas mismas instancias, obtiene el mejor scheduling posible sin espera para sus rutas.
 

@@ -490,10 +490,10 @@ class OPPHillClimbing(Model):
                 continue
 
             # Calculate execution time for this batch
-            t_exec_b = self._calculate_batch_execution_time(batch, route, params)
-            current_time += t_exec_b
+            d_b = self._calculate_batch_execution_time(batch, route, params)
+            current_time += d_b
 
-            solution_info["batch_times"][batch] = t_exec_b
+            solution_info["batch_times"][batch] = d_b
             solution_info["batch_completions"][batch] = current_time
             solution_info["routes"][batch] = route
 

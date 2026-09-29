@@ -153,7 +153,7 @@ class OPPAntColonyOptimization(Model):
         )
 
         # 1. Pheromone initialization: two matrices (time, congestion) per
-        # m-ACO4(1,m) [Alaya et al.], plus the unchanged X_pb assignment
+        # m-ACO4(1,m) [Alaya et al.], plus the unchanged x_pb assignment
         # pheromone. Initialized to tau_max (MAX-MIN Ant System convention:
         # start high to encourage early exploration, then evaporate down).
         pheromones_time = self._initialize_pheromones(tau_max)
@@ -363,7 +363,7 @@ class OPPAntColonyOptimization(Model):
             pheromones[edge] = initial_value
 
     def _initialize_picker_pheromones(self) -> Dict[Tuple[str, str], float]:
-        """Initializes the batch/picker assignment pheromone table (X_pb) with a base value of 1.0."""
+        """Initializes the batch/picker assignment pheromone table (x_pb) with a base value of 1.0."""
         return {(b, p): 1.0 for b in self.B for p in self.P}
 
     # ------------------------------------------------------------------
@@ -384,7 +384,7 @@ class OPPAntColonyOptimization(Model):
         p_objective_switch: float,
     ) -> Optional[RouteSolution]:
         """
-        Each ant first assigns every batch with orders to a picker (X_pb),
+        Each ant first assigns every batch with orders to a picker (x_pb),
         exactly like opp_aco_2, which fixes each picker's processing queue.
         Routes are then built round-by-round across pickers' queue slots
         (slot 0 of every picker, then slot 1, ...), so that a batch always
@@ -943,11 +943,11 @@ class OPPAntColonyOptimization(Model):
                 route = solution.get_batch_route(batch)
                 orders = batch_assignments.get(batch, set())
 
-                t_exec_b = self._calculate_batch_execution_time(route, orders, params)
-                t_exec_b += solution.get_batch_congestion_wait(batch)
-                current_time += t_exec_b
+                d_b = self._calculate_batch_execution_time(route, orders, params)
+                d_b += solution.get_batch_congestion_wait(batch)
+                current_time += d_b
 
-                solution_info["batch_times"][batch] = t_exec_b
+                solution_info["batch_times"][batch] = d_b
                 solution_info["batch_completions"][batch] = current_time
                 solution_info["batch_congestion_wait"][batch] = solution.get_batch_congestion_wait(batch)
                 solution_info["picker_assignments"][batch] = picker
@@ -958,11 +958,11 @@ class OPPAntColonyOptimization(Model):
                 (b for b, orders in batch_assignments.items() if order in orders), None
             )
             if order_batch and order_batch in solution_info["batch_completions"]:
-                v_b = solution_info["batch_completions"][order_batch]
+                c_b = solution_info["batch_completions"][order_batch]
                 due_date = params.T_due_n.get(order, float("inf"))
 
-                solution_info["tardiness"][order] = max(0, v_b - due_date)
-                solution_info["earliness"][order] = max(0, due_date - v_b)
+                solution_info["tardiness"][order] = max(0, c_b - due_date)
+                solution_info["earliness"][order] = max(0, due_date - c_b)
 
         return solution_info
 

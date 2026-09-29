@@ -41,7 +41,7 @@ SUBROUTINE GENERATE_INITIAL_FEASIBLE_SOLUTION()             (_generate_initial_f
             return None                                   # graph disconnected / unreachable stop
         S.set_batch_route(batch, route)
 
-    assign every batch with orders to a picker, round-robin (X_pb)         (_assign_batches_to_pickers)
+    assign every batch with orders to a picker, round-robin (x_pb)         (_assign_batches_to_pickers)
     return S if VALIDATE(S) else None                       # congestion NOT considered at this stage
 
 

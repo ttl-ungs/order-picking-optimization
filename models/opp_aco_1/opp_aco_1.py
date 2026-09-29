@@ -449,15 +449,15 @@ class OPPAntColonyOptimization(Model):
                 service_time = sum(params.S.get(loc, 0) for loc in visited_locations)
 
             # EXACT V3 t_exec formula (Constraint 18 replication)
-            t_exec_b = (
+            d_b = (
                 params.T_setup
                 + (params.T_pick * picking_time)
                 + (params.T_travel * travel_time)
                 + service_time
             )
 
-            current_time += t_exec_b
-            solution_info["batch_times"][batch] = t_exec_b
+            current_time += d_b
+            solution_info["batch_times"][batch] = d_b
             solution_info["batch_completions"][batch] = current_time
 
         # Earliness and Tardiness calculations
@@ -466,11 +466,11 @@ class OPPAntColonyOptimization(Model):
                 (b for b, orders in batch_assignments.items() if order in orders), None
             )
             if order_batch and order_batch in solution_info["batch_completions"]:
-                v_b = solution_info["batch_completions"][order_batch]
+                c_b = solution_info["batch_completions"][order_batch]
                 due_date = params.T_due_n.get(order, float("inf"))
 
-                solution_info["tardiness"][order] = max(0, v_b - due_date)
-                solution_info["earliness"][order] = max(0, due_date - v_b)
+                solution_info["tardiness"][order] = max(0, c_b - due_date)
+                solution_info["earliness"][order] = max(0, due_date - c_b)
 
         return solution_info
 

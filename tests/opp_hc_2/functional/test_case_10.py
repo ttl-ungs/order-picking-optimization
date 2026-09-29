@@ -22,7 +22,7 @@ class TestOPPHillClimbing2(OPPTestCaseHC2):
     Test 10: 12 orders, 6 missions, 3 pickers. Each picker has two missions, and each mission has two orders.
     Two periods per picker and two orders per vehicle.
 
-    With 6 batches and 3 pickers, batches should be distributed (X_pb) with
+    With 6 batches and 3 pickers, batches should be distributed (x_pb) with
     an even workload, and batches on the same picker must not overlap in time.
     """
 

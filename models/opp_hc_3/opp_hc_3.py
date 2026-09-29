@@ -287,7 +287,7 @@ class OPPHillClimbing(Model):
     def _assign_batches_to_pickers(
         self, solution: RouteSolution, batch_assignments: Dict[str, Set[str]]
     ) -> None:
-        """Distribute batches with orders across pickers round-robin (X_pb)."""
+        """Distribute batches with orders across pickers round-robin (x_pb)."""
         batches_to_assign = [b for b in self.B if batch_assignments[b]]
         for index, batch in enumerate(batches_to_assign):
             picker = self.P[index % len(self.P)]
@@ -473,7 +473,7 @@ class OPPHillClimbing(Model):
         """
         Generate a neighbor via one of three feasibility-preserving moves:
         - 2-opt on a batch's route (routing only, picker assignment untouched)
-        - Reassign a batch to a different picker (X_pb), to rebalance load
+        - Reassign a batch to a different picker (x_pb), to rebalance load
         - Swap the processing order of two batches on the same picker
 
         None of these moves is congestion-aware by itself (2-opt still picks
@@ -558,7 +558,7 @@ class OPPHillClimbing(Model):
         batch_assignments: Dict[str, Set[str]],
         A: Dict,
     ) -> Optional[RouteSolution]:
-        """Move a random batch to a different picker (X_pb), routes untouched."""
+        """Move a random batch to a different picker (x_pb), routes untouched."""
         batches_with_orders = [b for b in self.B if batch_assignments[b]]
         if not batches_with_orders:
             return None
@@ -681,7 +681,7 @@ class OPPHillClimbing(Model):
         """
         Build solution information dictionary for OutputHandler. Compatible
         with opp_hc_2's shape, plus congestion_objective_value and
-        batch_congestion_wait. Per-batch t_exec_h/completion times are
+        batch_congestion_wait. Per-batch d_h/completion times are
         recomputed here with the SAME formula RouteEvaluator uses (unlike
         opp_hc_2, whose reporting-only helper diverged from its evaluator's
         formula), plus the congestion wait already priced by the last
@@ -709,11 +709,11 @@ class OPPHillClimbing(Model):
                 route = solution.get_batch_route(batch)
                 orders = batch_assignments.get(batch, set())
 
-                t_exec_b = self._calculate_batch_execution_time(route, orders, params)
-                t_exec_b += solution.get_batch_congestion_wait(batch)
-                current_time += t_exec_b
+                d_b = self._calculate_batch_execution_time(route, orders, params)
+                d_b += solution.get_batch_congestion_wait(batch)
+                current_time += d_b
 
-                solution_info["batch_times"][batch] = t_exec_b
+                solution_info["batch_times"][batch] = d_b
                 solution_info["batch_completions"][batch] = current_time
                 solution_info["batch_congestion_wait"][batch] = solution.get_batch_congestion_wait(batch)
                 solution_info["picker_assignments"][batch] = picker

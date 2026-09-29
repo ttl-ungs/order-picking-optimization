@@ -5,7 +5,7 @@
 This directory contains an **Ant Colony Optimization (ACO)** heuristic solver that solves the **exact same problem as `opp_model_v4.zpl`**, with the **same constraints**, but using a metaheuristic approach instead of exact integer linear programming.
 
 The key feature added on top of `opp_aco_1` (v3): orders are grouped into batches
-and **batches are assigned to different pickers (X_pb)** so that the work can
+and **batches are assigned to different pickers (x_pb)** so that the work can
 be **parallelized** — batches on different pickers execute at the same time,
 while batches on the same picker are sequenced one after another.
 
@@ -26,7 +26,7 @@ while batches on the same picker are sequenced one after another.
 - (12) Articles capacity ≤ vehicle capacity
 - (13) Flow conservation
 - (14), (15) One arc per node
-- (14) Every batch with orders assigned to exactly one picker (X_pb)
+- (14) Every batch with orders assigned to exactly one picker (x_pb)
 - (17) No loops/cycles
 - (25) Only valid edges
 - Plus: execution time, earliness/tardiness calculations
@@ -51,7 +51,7 @@ guided by two independent pheromone tables:
 1. **Route construction** (edge pheromone table): probabilistic roulette-wheel
    selection of the next location to visit, combining pheromone intensity
    with a distance-based visibility term, same as `opp_aco_1`.
-2. **Picker assignment** (batch/picker pheromone table, `X_pb`): probabilistic
+2. **Picker assignment** (batch/picker pheromone table, `x_pb`): probabilistic
    roulette-wheel selection of which picker executes the batch, combining
    the `(batch, picker)` pheromone with a load-balancing visibility term that
    favors currently less-loaded pickers.
@@ -90,7 +90,7 @@ models/opp_aco_2/
   - Returns compatible output
 
 - **RouteSolution**: Represents a solution as routes per batch, plus the
-  picker assigned to each batch (`X_pb`) and each picker's processing
+  picker assigned to each batch (`x_pb`) and each picker's processing
   sequence.
 
 - **ConstraintsValidator**: Ensures feasibility

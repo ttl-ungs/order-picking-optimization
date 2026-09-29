@@ -5,7 +5,7 @@ Same problem as opp_model_v4.zpl:
 - Receives: same SolveModelDTO parameters, plus a set of pickers (P)
 - Validates: ALL constraints from the exact model
 - Optimizes: routes within batches (probabilistic ACO construction) AND the
-  assignment/sequencing of batches to pickers (X_pb), so that batches on
+  assignment/sequencing of batches to pickers (x_pb), so that batches on
   different pickers run in parallel and batches on the same picker are
   sequenced without overlap
 - Output: compatible with build_output
@@ -282,7 +282,7 @@ class OPPAntColonyOptimization(Model):
         return pheromones
 
     def _initialize_picker_pheromones(self) -> Dict[Tuple[str, str], float]:
-        """Initializes the batch/picker assignment pheromone table (X_pb) with a base value of 1.0."""
+        """Initializes the batch/picker assignment pheromone table (x_pb) with a base value of 1.0."""
         return {(b, p): 1.0 for b in self.B for p in self.P}
 
     def _build_ant_solution(
@@ -296,7 +296,7 @@ class OPPAntColonyOptimization(Model):
     ) -> Optional[RouteSolution]:
         """
         Each ant constructs a feasible route per batch AND assigns every
-        batch that has orders to a picker (X_pb). Returns a RouteSolution,
+        batch that has orders to a picker (x_pb). Returns a RouteSolution,
         or None if the ant got stuck building a route.
         """
         solution = RouteSolution(self.B, self.location_graph, batch_assignments, self.P)
@@ -549,7 +549,7 @@ class OPPAntColonyOptimization(Model):
         """
         Applies evaporation and pheromone deposit based on ant solutions, on
         both the edge pheromone table (routing) and the batch/picker
-        assignment pheromone table (X_pb). Elite upgrade: provides a strong
+        assignment pheromone table (x_pb). Elite upgrade: provides a strong
         additional boost to the best historical solution found.
         """
         depot = self.location_graph.get_depot()
@@ -649,10 +649,10 @@ class OPPAntColonyOptimization(Model):
                 route = solution.get_batch_route(batch)
                 orders = batch_assignments.get(batch, set())
 
-                t_exec_b = self._calculate_batch_execution_time(route, orders, params)
-                current_time += t_exec_b
+                d_b = self._calculate_batch_execution_time(route, orders, params)
+                current_time += d_b
 
-                solution_info["batch_times"][batch] = t_exec_b
+                solution_info["batch_times"][batch] = d_b
                 solution_info["batch_completions"][batch] = current_time
                 solution_info["picker_assignments"][batch] = picker
                 solution_info["routes"][batch] = route
@@ -663,11 +663,11 @@ class OPPAntColonyOptimization(Model):
                 (b for b, orders in batch_assignments.items() if order in orders), None
             )
             if order_batch and order_batch in solution_info["batch_completions"]:
-                v_b = solution_info["batch_completions"][order_batch]
+                c_b = solution_info["batch_completions"][order_batch]
                 due_date = params.T_due_n.get(order, float("inf"))
 
-                solution_info["tardiness"][order] = max(0, v_b - due_date)
-                solution_info["earliness"][order] = max(0, due_date - v_b)
+                solution_info["tardiness"][order] = max(0, c_b - due_date)
+                solution_info["earliness"][order] = max(0, due_date - c_b)
 
         return solution_info
 

@@ -4,8 +4,8 @@ Objective function evaluator for OPP v4 routes (same as exact model).
 Batches assigned to the same picker are executed sequentially (their
 completion times accumulate one after another); batches assigned to
 different pickers are executed in parallel (each picker's queue starts
-from time zero independently). This mirrors v_pb/v_b in the ZPL model:
-sum_{p,b} v_pb[p,b] collapses to sum_b v_b[b] since exactly one picker
+from time zero independently). This mirrors c_pb/c_b in the ZPL model:
+sum_{p,b} c_pb[p,b] collapses to sum_b c_b[b] since exactly one picker
 is assigned per batch.
 """
 
@@ -58,7 +58,7 @@ class RouteEvaluator:
     def evaluate(self, solution) -> float:
         """
         Evaluate objective function:
-        W_c * sum(v_b) + W_pen * (W_e * sum(ea_n) + W_t * sum(ta_n))
+        W_c * sum(c_b) + W_pen * (W_e * sum(ea_n) + W_t * sum(ta_n))
         """
         batch_times = self.compute_batch_completions(solution)
 
@@ -95,7 +95,7 @@ class RouteEvaluator:
 
     def compute_batch_completions(self, solution) -> Dict[str, float]:
         """
-        Compute v_b[b]: the completion time of each batch, given the picker
+        Compute c_b[b]: the completion time of each batch, given the picker
         it is assigned to and its position within that picker's sequence.
         Pickers process their assigned batches sequentially starting from
         time zero; different pickers work in parallel.

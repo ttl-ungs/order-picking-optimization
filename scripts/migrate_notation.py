@@ -44,8 +44,8 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 TOKEN = re.compile(r"[A-Za-z0-9_]+")
 
 # Never rewritten by any group: the thesis documents and report templates are
-# updated by hand (LaTeX notation, not code identifiers), meta.md is a
-# historical changelog, and the legacy opp_v2 ZIMPL model keeps its own names.
+# updated by hand (LaTeX notation, not code identifiers) and meta.md is a
+# historical changelog.
 GLOBAL_EXCLUDE = [
     "docs/thesis/*",
     "*.tex",
@@ -54,7 +54,6 @@ GLOBAL_EXCLUDE = [
     "*.lp",
     "*.tbl",
     "meta.md",
-    "models/opp_v2/*",
     "scripts/migrate_notation.py",
 ]
 
@@ -165,6 +164,66 @@ GROUPS = {
         # after this group "R_b" is the Stage 2 route-time input: a second run
         # would turn it into L_b
         "sentinels": ["L_b"],
+    },
+    # Legacy models (v1-v3, hc_1-3, aco_1-3): their comments, docstrings,
+    # prints and heuristic locals use the same variable names. The PySCIPOpt
+    # locals/SCIP names of v1-v3 (v, f, t_exec) are renamed separately with a
+    # tokenizer, since a token map cannot tell a local `f` from an f-string.
+    "legacy": {
+        "rules": [
+            Rule(
+                {
+                    "X_pb": "x_pb",
+                    "Z_bk": "y_bk",
+                    "f_ijb": "q_ijb",
+                    "f_ijh": "q_ijh",
+                    "v_pb": "c_pb",
+                    "v_pk": "c_pk",
+                    "v_b": "c_b",
+                    "t_exec_b": "d_b",
+                    "t_exec_h": "d_h",
+                    "v_1": "v_start",
+                    "v_f": "v_end",
+                },
+                [
+                    "models/opp_v1/*",
+                    "models/opp_v2/*.py",
+                    "models/opp_v3/*",
+                    "models/opp_hc_1/*",
+                    "models/opp_hc_2/*",
+                    "models/opp_hc_3/*",
+                    "models/opp_aco_1/*",
+                    "models/opp_aco_2/*",
+                    "models/opp_aco_3/*",
+                    "examples/*",
+                    "tests/opp_hc_2/*",
+                    "tests/opp_aco_2/*",
+                    "tests/opp_aco_3/*",
+                    "docs/specs/*",
+                    "docs/tests/*",
+                ],
+            ),
+            # Legacy opp_v2 ZIMPL model: same variables and ZIMPL-only names as
+            # opp_v4, except X_pb, which is an input parameter there (a fixed
+            # assignment) and keeps its uppercase name.
+            Rule(
+                {
+                    "Z_bk": "y_bk",
+                    "f_ijb": "q_ijb",
+                    "v_pb": "c_pb",
+                    "v_b": "c_b",
+                    "t_exec_b": "d_b",
+                    "v_1": "v_start",
+                    "v_f": "v_end",
+                    "R_b": "L_b",
+                    "flow_conservation": "route_flow_conservation",
+                    "f_flow_conservation": "load_flow_conservation",
+                    "f_depot_source": "load_flow_source",
+                },
+                ["models/opp_v2/*.zpl"],
+            ),
+        ],
+        "sentinels": [],
     },
     "params": {
         "rules": [

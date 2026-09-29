@@ -5,7 +5,7 @@ Identical formula to opp_aco_2/opp_model_v4 (batches on the same picker run
 sequentially, different pickers run in parallel), plus one additive term:
 the congestion wait time accumulated while each batch's route was built
 (RouteSolution.get_batch_congestion_wait), which is folded directly into the
-batch's execution time t_exec_b. This keeps the objective's formula the
+batch's execution time d_b. This keeps the objective's formula the
 "time/completion" criterion of the m-ACO4(1,m) multi-pheromone architecture
 (see opp_aco_3.py header docstring) while remaining backwards-compatible: a
 solution with zero congestion wait reduces exactly to opp_aco_2's objective.
@@ -60,7 +60,7 @@ class RouteEvaluator:
     def evaluate(self, solution) -> float:
         """
         Evaluate the "time" objective (tau1 in the m-ACO4 architecture):
-        W_c * sum(v_b) + W_pen * (W_e * sum(ea_n) + W_t * sum(ta_n))
+        W_c * sum(c_b) + W_pen * (W_e * sum(ea_n) + W_t * sum(ta_n))
         """
         batch_times = self.compute_batch_completions(solution)
 
@@ -112,7 +112,7 @@ class RouteEvaluator:
 
     def compute_batch_completions(self, solution) -> Dict[str, float]:
         """
-        Compute v_b[b]: the completion time of each batch, given the picker
+        Compute c_b[b]: the completion time of each batch, given the picker
         it is assigned to and its position within that picker's sequence.
         Pickers process their assigned batches sequentially starting from
         time zero; different pickers work in parallel.

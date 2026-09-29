@@ -25,7 +25,7 @@ class TestOPPAntColonyOptimization2(OPPTestCaseACO2):
     Test 16: 6 orders, 3 missions, 2 pickers on a 4x4 grid with transversal aisles.
     Each order visits more than one location.
 
-    With 3 batches and 2 pickers, batches should be distributed (X_pb) across
+    With 3 batches and 2 pickers, batches should be distributed (x_pb) across
     both pickers, and batches on the same picker must not overlap in time.
     """
 
