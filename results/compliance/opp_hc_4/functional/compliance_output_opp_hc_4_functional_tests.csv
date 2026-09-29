@@ -128,4 +128,5 @@ test_case_v5_equivalence.TestV5Equivalence.test_v5eq__test_two_orders_two_aisles
 test_case_v5_equivalence.TestV5Equivalence.test_v5eq__test_two_orders_two_locations,opp_hc_4,compliant,1833.0,1833.0,optimal,1833.0,optimal,1833.0,False,,,,,0.06814122200012207
 test_case_v5_equivalence.TestV5Equivalence.test_v5eq__test_two_orders_two_locations_two_missions,opp_hc_4,compliant,1509.0,1509.0,optimal,1509.0,optimal,1509.0,False,,,,,0.080841064453125
 test_case_v5_equivalence.TestV5Equivalence.test_v5eq__test_two_periods_two_orders_per_vehicle,opp_hc_4,compliant,3087.0,3087.0,optimal,3087.0,optimal,3087.0,False,,,,,0.10051894187927246
-test_case_v5_equivalence.TestV5Equivalence.test_v5eq__test_two_possible_routes,opp_hc_4,compliant,144.0,144.0,optimal,144.0,optimal,144.0,False,,,,,0.08470940589904785
+test_case_v5_equivalence.TestV5Equivalence.test_v5eq__test_every_route_is_optimal_when_all_arrive_in_time,opp_hc_4,compliant,144.0,144.0,optimal,144.0,optimal,144.0,False,,,"SCIP levels ran on the routes' subgraph: 3 of 5 nodes, 2 of 6 arcs",,0.19388747215270996
+test_case_v5_equivalence.TestV5Equivalence.test_v5eq__test_shorter_route_is_chosen_when_the_longer_one_is_late,opp_hc_4,compliant,56.0,56.0,optimal,20.0,optimal,56.0,False,,,"SCIP levels ran on the routes' subgraph: 3 of 5 nodes, 2 of 6 arcs",,0.1354210376739502
