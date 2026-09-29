@@ -85,6 +85,7 @@ from models.opp_aco_4.utils.route_evaluator import RouteEvaluator
 from models.opp_aco_4.utils.constraints_validator import ConstraintsValidator
 from models.opp_aco_4.utils import exec_time
 from models.opp_v5_2_split.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
+from models.utils.input_validation import orders_without_exactly_one_batch
 from models.utils.sla import sla_on_time_pct
 
 
@@ -205,6 +206,16 @@ class OPPAntColonyOptimization(Model):
             return "infeasible", None
 
         if not (params.is_capacity_valid() and params.is_batch_assignment_valid()):
+            self._register_infeasible(params, time.time() - start_time)
+            return "infeasible", None
+
+        # is_batch_assignment_valid only rejects an order in TWO+ batches.
+        unassigned_or_duplicated = orders_without_exactly_one_batch(params.Bn, self.N)
+        if unassigned_or_duplicated:
+            print(
+                "ERROR: every order must be in exactly one batch; not the case for "
+                f"{sorted(unassigned_or_duplicated)}"
+            )
             self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
 
