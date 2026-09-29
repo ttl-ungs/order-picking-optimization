@@ -671,6 +671,12 @@ Las dos primeras son de rendimiento puro y están medidas. Las otras cuatro son 
 - Resultado: los 9 objetivos son idénticos a los anteriores. Los tiempos bajan a cerca de la mitad (15×15: 1.949 s → 888 s), salvo `scheduling_heavy` (86 s → 365 s), probablemente inflado por suspensiones de la notebook durante la corrida (14:26, 14:31–14:36, 14:41).
 - Riesgo / atención: los reportes y documentos generados desde ese CSV se armaron con su contenido anterior (04–19 con `W_full` = 9); si se regeneran, cambian.
 - Validación: el análisis carga 19 filas (9 `ok`, 10 `timeout`); `check_repo` pasa.
+
+### Cambio 2026-09-29 - Reportes de opp_v5 regenerados con las corridas nuevas
+- Alcance: documentación
+- Archivos: [experiments/opp_v5/reports/split_exploration_template.tex](experiments/opp_v5/reports/split_exploration_template.tex), [functional_comparison_template.tex](experiments/opp_v5/reports/functional_comparison_template.tex); los tres `.tex`/`.pdf` de `docs/thesis/` (exploración de split, exploración de mono, comparación mono vs split)
+- Qué se hizo: se regeneraron los tres reportes con los CSV nuevos. En la exploración de split, la sección de validación (tabla de tiempos por etapa escrita a mano) describía la corrida del 23-09 con `W_full` = 9: ahora describe la del 29-09 (`W_full` = 27) y deja dicho el contraste (Etapa 2 de 86–203 s a menos de 10 s, SLA de 68 % a 100 %); se ajustaron los tres puntos de esa sección (8×21 ahora tarda más que 14×14 en la Etapa 1) y cuatro frases de la síntesis y las limitaciones (15×15 ≈ 15 min, SLA según `W_full`, la confusión objetivo plano / $N_b$ en parte resuelta, franja de 10–20 min cubierta). En la comparación, la introducción describe las corridas funcionales del 29-09. La exploración de mono no tenía texto fijo desactualizado.
+- Validación: los tres compilan con `context` (0 errores); se revisó la página de la sección de validación renderizada.
 ---
 
 

@@ -24,14 +24,17 @@ escenarios. Los dos modelos definen el mismo problema de optimización (ruteo, a
 secuenciación, con velocidades heterogéneas de pickers y cadena de frío) y tienen el mismo valor
 óptimo.
 
-Se usan las corridas del 24 de septiembre de 2026, que ya incluyen los tests 35 a 38 (cadena de
-frío, velocidad, demora a propósito y el límite de un arco por vértice):
+Se usan las corridas del 29 de septiembre de 2026, con el código actual; incluyen los tests 35
+a 38 (cadena de frío, velocidad, demora a propósito y el límite de un arco por vértice). Cada
+modelo corrió solo en la máquina:
 \startitemize
-\item \type{results/opp_v5_2_split/functional/} — %%NUM:split_tests%% tests, corrida sola.
-\item \type{results/opp_v5_1_mono/functional/} — %%NUM:mono_tests%% tests, corrida mientras se
-ejecutaba aparte el test\_case\_30 de los dos modelos, así que sus tiempos pueden estar algo
-inflados.
+\item \type{results/opp_v5_2_split/functional/} — %%NUM:split_tests%% tests, con la Etapa 1 en
+secuencia.
+\item \type{results/opp_v5_1_mono/functional/} — %%NUM:mono_tests%% tests.
 \stopitemize
+La variante factible del test\_case\_30 da timeout (25 minutos) en los dos modelos; no se volvió a
+correr y su fila viene de la corrida del 24 de septiembre. Respecto de esa corrida, ningún test
+cambió de estado ni de objetivo.
 
 El test\_case\_30 se corrió por separado y sus filas se agregaron a cada CSV. Su variante
 factible no termina en los 25 minutos de tope en ninguno de los dos modelos y queda fuera de la
