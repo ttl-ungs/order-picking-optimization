@@ -4,10 +4,12 @@ and stress runs.
     python -m experiments.opp_v5.reports.build_functional_comparison
 
 Pairs every functional test the two models share (same test_case number and
-method), classifies the pairs, and fills the %%TABLE:id%%, %%FIG:id%% and
-%%NUM:id%% markers of functional_comparison_template.tex. Pairs that time out
-in both models (test_case_30's feasible variant) are listed but kept out of the
-statistics.
+method) and keeps the comparable ones: the tests whose instances split, hc_4 and
+aco_4 all solve or all declare infeasible (comparable_set, the same base as the
+heuristics report). Solved pairs carry the verdict of
+results/comparability/compare_v5_split_vs_mono.csv (same solution or an
+alternative optimum). Fills the %%TABLE:id%%, %%FIG:id%% and %%NUM:id%% markers
+of functional_comparison_template.tex.
 Compile the output with `context` from docs/thesis/.
 """
 import csv
@@ -19,7 +21,8 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
-from experiments.opp_v5.reports.charts import Chart, ROOT, es
+from experiments.opp_v5.reports.charts import Chart, ROOT, STUDIES, es
+from experiments.opp_v5.reports.comparable_set import functional_methods, split_vs_mono_verdicts
 from experiments.opp_v5.reports.stress_suite import counts as stress_counts, stress_table
 
 TEMPLATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "functional_comparison_template.tex")
@@ -30,7 +33,8 @@ MONO_RUN = "results/opp_v5_1_mono/functional/output_opp_v5_1_mono_functional_tes
 # (test_case, fragment of the method name, short Spanish label for the tables)
 LABELS = [
     ("01", "", "Capacidad básica"), ("02", "", "Dos pasillos"), ("03", "", "Dos pasillos (variante)"),
-    ("04", "", "Un punto por orden"), ("05", "", "Un pasillo"), ("06", "", "Dos rutas posibles"),
+    ("04", "", "Un punto por orden"), ("05", "", "Un pasillo"),
+    ("06", "every_route", "Todas las rutas llegan a tiempo"), ("06", "shorter", "Ruta corta si la larga atrasa"),
     ("07", "", "Ubicaciones repetidas"), ("08", "", "Ubicaciones repetidas 2"),
     ("09", "", "Dos ubicaciones"), ("10", "", "Dos misiones"), ("11", "", "Cuatro órdenes"),
     ("13", "", "Dos períodos, grilla"), ("14", "", "Un período, grilla"),
@@ -114,23 +118,29 @@ def build():
     shared = sorted(set(split) & set(mono))
     ids = case_ids(set(split) | set(mono))
 
-    feasible, infeasible, validation, mono_failed, timed_out = [], [], [], [], []
+    comparable = functional_methods()
+    verdicts = split_vs_mono_verdicts()
+    # A method can appear in several test cases (02 and 03); compare_v5 keeps one row per
+    # method name, so the cases that share it share its verdict.
+    verdict = {}
     for key in shared:
-        s, m = split[key], mono[key]
-        if s["status"] == "timeout" and m["status"] == "timeout":
-            timed_out.append(key)
-        elif s["status"] != "ok" or m["status"] != "ok":
-            if s["status"] == "ok":
-                mono_failed.append(key)
-        elif "non_positive" in key[1]:
-            validation.append(key)
-        elif num(m["obj_val"]) is None:
-            # Split records Stage 1's objective when its cold-chain pre-check stops
-            # before Stage 2 (test_case_34/35): infeasible in both all the same.
+        rows = verdicts[("functional", key[1])]
+        verdict[key] = rows.pop(0) if len(rows) > 1 else rows[0]
+
+    feasible, infeasible, excluded_keys = [], [], []
+    for key in shared:
+        if not comparable[key[1]][0]:
+            excluded_keys.append(key)
+        elif verdict[key][0] in ("same_solution", "alternative_optimum"):
+            feasible.append(key)
+        elif verdict[key][0] == "both_infeasible":
             infeasible.append(key)
         else:
-            feasible.append(key)
+            raise ValueError((key, verdict[key]))
     split_only = sorted(set(split) - set(mono))
+    alternative = [k for k in feasible if verdict[k][0] == "alternative_optimum"]
+    alt_routes = [k for k in alternative if "routes" in verdict[k][1]]
+    alt_assign = [k for k in alternative if "assignment" in verdict[k][1]]
 
     t_m = [num(mono[k]["total_time"]) for k in feasible]
     t_s = [num(split[k]["total_time"]) for k in feasible]
@@ -145,6 +155,10 @@ def build():
 
     NUM = {
         "pairs": str(len(shared)), "split_tests": str(len(split)), "mono_tests": str(len(mono)),
+        "comparable": str(len(feasible) + len(infeasible)),
+        "excluded": str(len(excluded_keys) + len(split_only)),
+        "same_solution": str(len(feasible) - len(alternative)), "alternative": str(len(alternative)),
+        "alt_routes": str(len(alt_routes)), "alt_assign": str(len(alt_assign)),
         "feasible": str(len(feasible)), "infeasible": str(len(infeasible)),
         "max_diff": max_diff,
         "diff_cases": ", ".join(sorted({ids[k] for k, d in diffs.items() if d > 1e-9})),
@@ -162,15 +176,12 @@ def build():
         return [name, es(f_m, dec), es(f_s, dec), (es(f_m / f_s, 2) + "×") if ratio else "--"]
 
     TABLE = {}
-    TABLE["coverage"] = table(["Métrica", "Mono", "Split"], [
-        ["Tests ejecutados", len(mono), len(split)],
-        ["Pares equivalentes", len(shared), len(shared)],
-        ["Factibles, con objetivo en ambos", len(feasible), len(feasible)],
-        ["Infactibles en ambos", len(infeasible), len(infeasible)],
-        ["Validación sin resolver", len(validation), len(validation)],
-        ["Timeout en ambos", len(timed_out), len(timed_out)],
-        ["Falla solo en mono", len(mono_failed), 0],
-        ["Solo en split", "--", len(split_only)],
+    TABLE["coverage"] = table(["Métrica", "Pares"], [
+        ["Tests en los dos modelos", len(shared)],
+        ["Comparables", len(feasible) + len(infeasible)],
+        ["\\quad resueltos en los dos", len(feasible)],
+        ["\\quad infactibles en los dos", len(infeasible)],
+        ["Fuera de la comparación", len(excluded_keys) + len(split_only)],
     ])
     TABLE["times"] = table(["Métrica", "Mono (s)", "Split (s)", "Mono / split"], [
         stat_row("\\type{total_time} suma", sum(t_m), sum(t_s), dec=1),
@@ -182,19 +193,30 @@ def build():
         stat_row("\\type{model_time} suma", sum(m_m), sum(m_s), dec=2),
         stat_row("\\type{model_time} mediana", statistics.median(m_m), statistics.median(m_s)),
     ])
-    TABLE["detail"] = table(["Caso", "Test", "Mono (s)", "Split (s)", "Mono / split", "Objetivo"], [
+    SOLUTION = {"": "igual", "routes": "otras rutas", "assignment": "otra asignación",
+                "routes, assignment": "otras rutas y asignación"}
+    TABLE["detail"] = table(["Caso", "Test", "Mono (s)", "Split (s)", "Mono / split", "Objetivo", "Solución de mono"], [
         [ids[k], label(*k), es(num(mono[k]["total_time"]), 3), es(num(split[k]["total_time"]), 3),
-         es(ratios[k], 2) + "×", es(num(split[k]["obj_val"]), 1)] for k in feasible
+         es(ratios[k], 2) + "×", es(num(split[k]["obj_val"]), 1),
+         SOLUTION[verdict[k][1].replace("differs in ", "")]] for k in feasible
     ])
     TABLE["infeasible"] = table(["Caso", "Test", "Mono (s)", "Split (s)", "Mono / split"], [
         [ids[k], label(*k), es(num(mono[k]["total_time"]), 3), es(num(split[k]["total_time"]), 3),
          es(num(mono[k]["total_time"]) / num(split[k]["total_time"]), 2) + "×"] for k in infeasible
     ])
-    excluded = [[ids[k], label(*k), "falla", "ok", "Empate de rutas; ver sección siguiente"] for k in mono_failed]
-    excluded += [[ids[k], label(*k), "--", "ok", "La Etapa 1 sola; mono no tiene etapas"] for k in split_only]
-    excluded += [[ids[k], label(*k), "ok", "ok", "Rechaza la velocidad antes de resolver"] for k in validation]
-    excluded += [[ids[k], label(*k), "timeout", "timeout", "No termina en 25 min"] for k in timed_out]
-    TABLE["excluded"] = table(["Caso", "Test", "Mono", "Split", "Motivo"], excluded)
+    def reason(key):
+        text = comparable[key[1]][1]
+        if "timeout" in text:
+            return "Timeout en split (25 min): sin referencia"
+        if "espere" in text:
+            return "Verifica la espera voluntaria, que las heurísticas no modelan"
+        if "no llega al solver" in text:
+            return "Rechaza la entrada antes de resolver"
+        return text
+
+    excluded = [[ids[k], label(*k), reason(k)] for k in excluded_keys]
+    excluded += [[ids[k], label(*k), "Resuelve solo la Etapa 1; mono no tiene etapas"] for k in split_only]
+    TABLE["excluded"] = table(["Caso", "Test", "Motivo"], sorted(excluded))
 
     FIG = {}
     # Scatter of total_time, log-log, with the y = x diagonal.
@@ -205,7 +227,7 @@ def build():
     c.line([(lo, lo), (hi, hi)], "blueline", dashed=True, markers=False)
     for k in feasible:
         c.dot(math.log10(num(split[k]["total_time"])), math.log10(num(mono[k]["total_time"])), "darkblue")
-    c.legend([("darkblue", "par factible", "dot"), ("blueline", "igual tiempo", "dashed")], x=0.3, top=7.85)
+    c.legend([("darkblue", "par resuelto", "dot"), ("blueline", "igual tiempo", "dashed")], x=0.3, top=7.85)
     FIG["scatter"] = c.code()
 
     # Ratio per pair, sorted, log scale.
@@ -239,7 +261,86 @@ def build():
 
     TABLE["stress"] = stress_table()
     NUM.update(stress_counts())
+    scale(TABLE, FIG, NUM)
     return TABLE, FIG, NUM
+
+
+def study(pattern):
+    """{(label, model): row} of the latest CSV of a pair study (split and mono on one instance)."""
+    import glob
+    path = sorted(glob.glob(os.path.join(STUDIES, pattern)))[-1]
+    with open(path, encoding="utf-8") as fh:
+        return {(r["label"], r["model"]): r for r in csv.DictReader(fh)}
+
+
+def scale(TABLE, FIG, NUM):
+    """Studies 08 and 11: the realistic profile on growing grids, solved by both models."""
+    f08 = study("08_mono_frontier/frontier_*.csv")
+    cap = float(f08[("B2S3", "mono")]["hard_cap_s"])
+    SIDES = [3, 4, 5, 6, 7]
+    LINES = [(2, "darkblue"), (3, "redline"), (4, "blueline"), (6, "greenline")]
+    panels, ratios, capped = [], {}, []
+    for model in ("split", "mono"):
+        c = Chart(2.6, 7.4, 0.1, 20000, logy=True, w=6.4, h=6.5)
+        c.axes([(s, f"{s}×{s}") for s in SIDES],
+               [(v, lab) for v, lab in ((0.1, "0,1"), (1, "1"), (10, "10"), (100, "100"), (1000, "1.000"))],
+               "Grilla", "Tiempo hasta el óptimo (s, escala log.)")
+        c.hline(cap, "tope: 10 min", at="right" if model == "split" else "left")
+        for b, color in LINES:
+            pts = []
+            for side in SIDES:
+                r = f08.get((f"B{b}S{side}", model))
+                if not r or r["status"] in ("skipped", "infeasible") or r["status"].endswith("infeasible"):
+                    continue
+                t = float(r["total_s"])
+                if r["status"] == "optimal":
+                    pts.append((side, t))
+                    if model == "mono" and f08[(f"B{b}S{side}", "split")]["status"] == "optimal":
+                        ratios[(b, side)] = t / float(f08[(f"B{b}S{side}", "split")]["total_s"])
+                else:
+                    pts.append((side, cap))
+                    capped.append((b, side))
+            c.line(pts, color, markers=False)
+            for side, t in pts:
+                if model == "mono" and (b, side) in capped:
+                    c.open_dot(side, t, color)
+                else:
+                    c.dot(side, t, color)
+        if model == "split":
+            c.legend([(color, f"{b} lotes", "line") for b, color in LINES], x=0.3, top=6.4)
+        else:
+            c.legend([("darkblue", "no termina (cortado al tope)", "open")], x=0.3, top=6.4)
+        panels.append(c.code())
+    FIG["scale_split"], FIG["scale_mono"] = panels
+    NUM["scale_cap_min"] = es(cap / 60, 0)
+    NUM["scale_capped"] = ", ".join(f"{b} lotes en {side}×{side}" for b, side in capped)
+    worst = max(ratios, key=ratios.get)
+    NUM["scale_max_ratio"] = es(ratios[worst], 0)
+    NUM["scale_max_case"] = f"{worst[0]} lotes en {worst[1]}×{worst[1]}"
+    # Where mono hit the cap its ratio is only a lower bound: cap / split time.
+    bound = {(b, side): cap / float(f08[(f"B{b}S{side}", "split")]["total_s"]) for b, side in capped}
+    top = max(bound, key=bound.get)
+    NUM["scale_bound_ratio"] = es(bound[top], 0)
+    NUM["scale_bound_case"] = f"{top[0]} lotes en {top[1]}×{top[1]}"
+    NUM["scale_bound_split"] = es(float(f08[(f"B{top[0]}S{top[1]}", "split")]["total_s"]), 1)
+
+    # Study 11: the points mono did not close, and stress test 04, with a 40-minute cap.
+    f11 = study("11_mono_long_cap/points_*.csv")
+    rows = []
+    for lab, text in (("B3S7", "3 lotes, 7×7"), ("B4S6", "4 lotes, 6×6"), ("B6S5", "6 lotes, 5×5"),
+                      ("test04", "stress 04: 6 lotes, 7×7")):
+        sp, mo = f11[(lab, "split")], f11[(lab, "mono")]
+        closed = mo["status"] == "optimal"
+        rows.append([text, es(float(sp["total_s"]), 1), es(float(mo["total_s"]) / 60, 1) + " min",
+                     "sí" if closed else "no",
+                     es(float(mo["best_gap_to_opt_pct"]), 2) + " \\%",
+                     "--" if closed else es(float(mo["gap_pct"]), 1) + " \\%"])
+    TABLE["long_cap"] = table(["Instancia", "Split (s)", "Mono", "¿Mono prueba el óptimo?",
+                               "Mono: distancia al óptimo", "Mono: gap que reporta"], rows)
+    t04 = f11[("test04", "mono")]
+    NUM["t04_best"] = es(float(t04["best_gap_to_opt_pct"]), 2)
+    NUM["t04_gap"] = es(float(t04["gap_pct"]), 1)
+    NUM["t04_split"] = es(float(f11[("test04", "split")]["total_s"]), 0)
 
 
 def main():
