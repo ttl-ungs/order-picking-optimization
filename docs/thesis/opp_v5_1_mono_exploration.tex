@@ -66,8 +66,8 @@ dificultad (ver el documento del split).
 \startsection[title={El modelo monolítico}]
 El monolítico resuelve en un solo MIP lo que el split resuelve en dos etapas: las rutas de todos
 los lotes, la asignación a pickers y la secuencia, con la misma función objetivo. La diferencia
-estructural está en el tiempo de ruta de cada lote, $R_b$. En el split es un dato: la Etapa 1
-lo fija en el mínimo antes de programar. En el monolítico es una variable, definida por los
+estructural está en el tiempo de ruta de cada lote. En el split es un dato, $R_b$: la Etapa 1
+lo fija en el mínimo antes de programar. En el monolítico es una variable, $r_b$, definida por los
 arcos elegidos, que entra en las restricciones big-M de duración y de no superposición.
 
 La equivalencia de los dos modelos se apoya en que la ruta más corta domina a cualquier otra.
@@ -75,7 +75,7 @@ El split usa ese hecho de entrada; el monolítico tiene que descubrirlo durante 
 puede explorar combinaciones de rutas que nunca pueden mejorar el objetivo.
 
 El split no usa ningún ajuste propio: los parámetros de SCIP, la función objetivo y las
-constantes big-M ($M$ y $M_{seq}$) son las mismas en los dos modelos. Lo que cambia son dos
+constantes big-M ($M$ y $M^{seq}$) son las mismas en los dos modelos. Lo que cambia son dos
 simplificaciones que la división habilita, porque con la ruta ya conocida el tiempo de ejecución
 de cada lote en cada picker es un número:
 
