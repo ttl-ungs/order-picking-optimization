@@ -12,7 +12,9 @@ Checks:
   naming      test files (test_*.py) under tests/<model>/{functional,stress,diagnostics}/
               are test_case_<NN|slug>.py, and the numbered ones are continuous (01..N)
   layout      no leftover scenarios/, tests/, doc/ inside tests/<model>/;
-              results/<model>/<tier> tiers are functional|stress|stability
+              results/ is results/<model>/<tier|study>/, results/compliance/<model>/<tier>/
+              or the flat results/comparability/ and results/equal_time/ (tiers:
+              functional|stress|stability; studies: ablation|pheromone)
   references  no tracked .py/.md still uses a module path or directory that
               was removed or renamed
 Exit code is 1 if any check fails.
@@ -29,6 +31,15 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 ROOT = os.getcwd()
 TIERS = ("functional", "stress", "diagnostics")
 RESULT_TIERS = {"functional", "stress", "stability"}
+# results/<model>/<study>/: a model's own calibration studies (opp_aco_4's
+# ablation and pheromone sweeps), not test-suite runs.
+RESULT_STUDIES = {"ablation", "pheromone"}
+# results/<dir>/ that hold cross-model outputs instead of one model's runs:
+#   compliance/<model>/<tier>/  verification/ reports (one per run it checks)
+#   comparability/, equal_time/  flat CSVs (analysis.comparability, the
+#                                equal-time study)
+RESULT_CROSS_MODEL_NESTED = {"compliance"}
+RESULT_CROSS_MODEL_FLAT = {"comparability", "equal_time"}
 
 # Entry points / scripts whose import would run something or is not a library module.
 # experiments/*/studies/ keeps each study's scripts exactly as they were run;
@@ -116,6 +127,32 @@ def check_naming(files):
     return errors
 
 
+def _check_result_path(f):
+    """results/ holds exactly four shapes (anything else is a misplaced file):
+      results/<opp_model>/<tier|study>/...
+      results/compliance/<opp_model>/<tier>/<file>
+      results/comparability/<file>, results/equal_time/<file>
+    """
+    parts = f.split("/")[1:]
+    top = parts[0]
+    if top.startswith("opp_"):
+        if len(parts) < 3:
+            return [f"{f}: results/{top}/ files go inside a tier or study directory"]
+        if parts[1] not in RESULT_TIERS | RESULT_STUDIES:
+            return [f"{f}: results tier must be one of {sorted(RESULT_TIERS)} (or a study: {sorted(RESULT_STUDIES)})"]
+        return []
+    if top in RESULT_CROSS_MODEL_NESTED:
+        if len(parts) != 4 or not parts[1].startswith("opp_") or parts[2] not in RESULT_TIERS:
+            return [f"{f}: expected results/{top}/<opp_model>/<tier>/<file>, tier in {sorted(RESULT_TIERS)}"]
+        return []
+    if top in RESULT_CROSS_MODEL_FLAT:
+        if len(parts) != 2:
+            return [f"{f}: results/{top}/ holds files directly, no subdirectories"]
+        return []
+    return [f"{f}: unknown results/ directory '{top}' (expected opp_<model>, "
+            f"{', '.join(sorted(RESULT_CROSS_MODEL_NESTED | RESULT_CROSS_MODEL_FLAT))})"]
+
+
 def check_layout(files):
     errors = []
     for f in files:
@@ -124,9 +161,8 @@ def check_layout(files):
             errors.append(f"{f}: tests/<model>/{m.group(2)}/ should not exist (scenarios -> tests/shared_scenarios, docs -> docs/tests)")
         if re.match(r"models/opp_\w+/example_usage\.py$", f):
             errors.append(f"{f}: usage examples live in examples/")
-        m = re.match(r"results/[^/]+/([^/]+)/", f)
-        if m and m.group(1) not in RESULT_TIERS:
-            errors.append(f"{f}: results tier must be one of {sorted(RESULT_TIERS)}")
+        if f.startswith("results/"):
+            errors.extend(_check_result_path(f))
     return errors
 
 
