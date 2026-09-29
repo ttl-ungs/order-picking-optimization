@@ -101,7 +101,7 @@ Nivel Escenario: Fragmentando el análisis de Pearson separadamente para casos N
 
 $$r_{x,y} = \frac{\sum (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum (x_i - \bar{x})^2 \sum (y_i - \bar{y})^2}}$$
 
-Donde la variable dependiente $y$ es total_time, y las independientes ($x$) son: $N, V, B, C_v, W_{full}, W_{ea\_ta}$.
+Donde la variable dependiente $y$ es total_time, y las independientes ($x$) son: $N, V, B, C_v, W^{c}, W^{pen}$.
 
 5. Salidas Visuales Requeridas (Data Visualization)
 
