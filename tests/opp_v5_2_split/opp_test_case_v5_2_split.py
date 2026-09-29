@@ -8,7 +8,8 @@ from tests.infra.zimpl.dat_files_builder import build_dat_files, write_indexed_d
 from models.opp_v5_2_split.utils.cold_chain_validation import (
     COLD_CHAIN_TOLERANCE, batches_without_eligible_picker, invalid_speeds,
 )
-from models.utils.solve_registry import get_last
+from dtos.opp.solve_result import SolveResult
+from models.utils.solve_registry import get_last, register as register_solve
 from tests.opp_v5_2_split.config import DAT_DIR, STAGE1_ZPL_PATH, STAGE2_ZPL_PATH
 from tests.opp_v5_2_split.stage1_decomposition import solve_stage1_decomposed
 from tests.infra.zimpl.zpl_utils import extract_active_arcs, solve_zpl
@@ -63,9 +64,27 @@ class OPPTestCaseSplit(unittest.TestCase):
             route_times, scenario["V_p"], scenario["T_frio_max"],
         )
         if stuck_batches:
+            # Register the outcome of the pipeline itself: otherwise the
+            # runner's "last solve" is Stage 1's last batch, whose obj_val
+            # (a route time) ends up in the CSV as if it were the objective.
+            register_solve(SolveResult(
+                status="infeasible",
+                output={},
+                elapsed=0.0,
+                params={
+                    "obj_val": None,
+                    "debug_output": "INFEASIBLE: no eligible picker under the cold chain for "
+                    + ", ".join(sorted(stuck_batches)),
+                },
+            ))
             return stage1_values, route_times, "infeasible", {}
 
         stage2_status, stage2_values = solve_zpl(STAGE2_ZPL_PATH, dat_dir=DAT_DIR)
+        # The saved solution (WRITE_SOLUTIONS) needs Stage 1 too: Stage 2
+        # only sees the routes' times, not the routes themselves.
+        record = getattr(get_last(), "solution_record", None)
+        if record is not None:
+            record.add_stage1_values(stage1_values)
         return stage1_values, route_times, stage2_status, stage2_values
 
     def extract_route_times(self, values, batches):
