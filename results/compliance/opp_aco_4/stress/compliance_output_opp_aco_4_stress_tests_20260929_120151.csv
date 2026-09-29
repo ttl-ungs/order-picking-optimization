@@ -1,0 +1,2 @@
+test,model,verdict,heuristic_obj,recomputed_obj,level1_status,level1_obj,level2_status,level2_obj,big_m_substituted,prechecks,diagnosis,notes,error,check_time
+test_case_01.TestOPPAco4StressMigrated100x10030batches750orders.test_25_orders_per_batch_30_batches_100x100,opp_aco_4,compliant,988252.0,988252.0,optimal,988252.0,optimal,988252.0,False,,,"SCIP levels ran on the routes' subgraph: 1499 of 10000 nodes, 3160 of 39600 arcs",,318.11819338798523
