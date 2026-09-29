@@ -70,7 +70,7 @@ def _scenario(instance):
     """Instance (as read by solution_store) -> the dense dict
     dat_files_builder.build_dat_files expects. Missing entries get the same
     default the heuristics use when they read them (`.get(key, 0)`): 0 for
-    A_ni/Bn/C_n/S_i."""
+    A_ni/Bn/C_n/S_i (A_ni is kept sparse until _dense_for_mono)."""
     N, V, B = instance["N"], instance["V"], instance["B"]
     return {
         "N": set(N),
@@ -93,13 +93,40 @@ def _scenario(instance):
         "Dd": dict(instance["Dd"]),
         "d_ij": instance["d_ij"],
         "S_i": {i: instance["S_i"].get(i, 0.0) for i in V},
-        "A_ni": {(n, i): instance["A_ni"].get((n, i), 0) for n in N for i in V},
+        # Sparse (non-zero entries only): dense it is |N| x |V| (7.5M entries
+        # on the 100x100 instance). _dense_for_mono fills it in right before
+        # compiling, once the SCIP scenario is restricted.
+        "A_ni": {(n, i): v for (n, i), v in instance["A_ni"].items() if v},
         "Bn": {(n, b): instance["Bn"].get((n, b), 0) for n in N for b in B},
         "V_p": dict(instance["V_p"]),
         # +inf (cold chain disabled, the heuristics' default) can't be written
         # to a .dat: use the same stand-in the v5 migrated tests use.
         "T_frio_max": instance["T_frio_max"] if math.isfinite(instance["T_frio_max"]) else DEFAULT_T_FRIO_MAX,
     }
+
+
+def _required_locations(sc):
+    """b -> locations batch b must visit: mono's
+    `sum_n A_ni[n,i] * Bn[n,b] >= 1` (i not depot/final), computed from
+    A_ni's non-zero entries only instead of every (b, i, n) triple."""
+    locations_of = {}
+    for (n, i), value in sc["A_ni"].items():
+        locations_of.setdefault(n, []).append((i, value))
+    required = {}
+    for b in sc["B"]:
+        demand = {}
+        for n in sc["N"]:
+            weight = sc["Bn"][(n, b)]
+            if weight:
+                for i, value in locations_of.get(n, ()):
+                    demand[i] = demand.get(i, 0) + value * weight
+        required[b] = {i for i, d in demand.items() if d >= 1 and i not in (sc["depot"], sc["final"])}
+    return required
+
+
+def _dense_for_mono(sc):
+    """A_ni as mono reads it: every (n, i) of N x V, zeros included."""
+    return dict(sc, A_ni={(n, i): sc["A_ni"].get((n, i), 0) for n in sc["N"] for i in sc["V"]})
 
 
 class _Evaluation:
@@ -123,6 +150,7 @@ def _precheck(instance, solution, sc, report):
     violations = report.prechecks
 
     orders_of = {b: [n for n in sc["N"] if sc["Bn"][(n, b)] > 0.5] for b in sc["B"]}
+    required_of = _required_locations(sc)
     assigned = {}
     for p, seq in solution["picker_sequences"].items():
         if p not in sc["P"]:
@@ -155,11 +183,7 @@ def _precheck(instance, solution, sc, report):
         missing_arcs = [a for a in arcs if a not in E]
         if missing_arcs:
             violations.append(f"{b} route uses arcs not in E: {missing_arcs}")
-        required = {
-            i for i in V
-            if i not in (depot, final) and sum(sc["A_ni"][(n, i)] * sc["Bn"][(n, b)] for n in sc["N"]) >= 1
-        }
-        uncovered = sorted(required - set(path))
+        uncovered = sorted(required_of[b] - set(path))
         if uncovered:
             violations.append(f"{b} route misses required locations {uncovered}")
         if bad_nodes or missing_arcs:
@@ -338,7 +362,45 @@ def _diagnose(sc, ev, lp_path, time_limit, report):
                 report.diagnosis.append(f"route of {b} alone makes it infeasible (freed: {status})")
 
 
-def check_compliance(meta, instance, solution, time_limit=300.0, keep_workdir=None):
+def _restrict_to_solution(sc, ev, report):
+    """Scenario for the SCIP levels restricted to what the fixed routes use
+    (agreed with the user, 2026-09-29): E -> the union of the routes' arcs,
+    V -> the nodes those routes touch (+ depot, final), and d_ij / S_i /
+    A_ni restricted accordingly.
+
+    Exactly equivalent for levels 1 and 2: with every route fixed, an arc
+    no batch uses has z_ijb = 0 (hence f_ijb = 0) in every batch, and a
+    node no route touches has no arcs and is required by no order, so every
+    constraint over them holds with or without them. What it saves is
+    ZIMPL instantiating z/f over |E| x |B| and the visit constraints over
+    |B| x |V| x |N| -- on the 100x100 stress instance (10,000 nodes, 750
+    orders) that ran ZIMPL out of memory.
+
+    Only applied when every batch is fixed and no precheck flagged a route
+    problem; otherwise the full scenario is returned (a free batch needs
+    the whole graph)."""
+    if set(ev.fixed_batches) != set(sc["B"]) or any("route" in p for p in report.prechecks):
+        return sc
+    arcs = {a for path in ev.paths.values() for a in zip(path, path[1:])}
+    nodes = {sc["depot"], sc["final"]} | {v for path in ev.paths.values() for v in path}
+    required = set().union(*_required_locations(sc).values())
+    if not required <= nodes:
+        return sc  # can't happen after a clean precheck; never drop a required node
+    report.notes.append(
+        f"SCIP levels ran on the routes' subgraph: {len(nodes)} of {len(sc['V'])} nodes, "
+        f"{len(arcs)} of {len(sc['E'])} arcs"
+    )
+    return dict(
+        sc,
+        V=nodes,
+        E=arcs,
+        d_ij={a: sc["d_ij"][a] for a in arcs},
+        S_i={i: sc["S_i"][i] for i in nodes},
+        A_ni={(n, i): v for (n, i), v in sc["A_ni"].items() if i in nodes},
+    )
+
+
+def check_compliance(meta, instance, solution, time_limit=300.0, keep_workdir=None, restrict=True):
     """Check one solution (as read by verification.solution_store) against
     opp_v5_1_mono.
 
@@ -348,6 +410,8 @@ def check_compliance(meta, instance, solution, time_limit=300.0, keep_workdir=No
         time_limit: SCIP time limit (seconds) per solve.
         keep_workdir: if given, the .dat/.lp files are written there and
             kept (for debugging); otherwise a temp dir that is removed.
+        restrict: run the SCIP levels on the routes' subgraph (see
+            _restrict_to_solution); False uses the full instance.
 
     Returns:
         ComplianceReportDTO.
@@ -365,6 +429,9 @@ def check_compliance(meta, instance, solution, time_limit=300.0, keep_workdir=No
         unfixed = sorted(set(sc["B"]) - set(ev.fixed_batches))
         if unfixed:
             report.notes.append(f"SCIP levels ran with {len(unfixed)} batch(es) left free: {unfixed}")
+        if restrict:
+            sc = _restrict_to_solution(sc, ev, report)
+        sc = _dense_for_mono(sc)
         m, m_seq = _big_m(sc, ev, report)
         lp_path = _compile_lp(sc, m, m_seq, workdir)
 
