@@ -151,14 +151,18 @@ LATEST_FILE_OVERRIDES = {
         ("output_opp_v5_1_mono_stress_tests.csv", MIGRATED_STRESS_INSTANCES),
     ],
     ("opp_v5_2_split", "functional"): "output_opp_v5_2_split_functional_tests.csv",
-    # 2026-09-28: opp_aco_4's 100x100 migrated scenario was re-run alone
-    # after the Max_time budget started covering post-processing (commit
-    # "Bound ACO post-processing by Max_time"): take that row from the
-    # single-test run and every other scenario from the full stress run.
-    ("opp_aco_4", "stress"): [
-        ("output_opp_aco_4_stress_tests_20260928_113625.csv", ("test_25_orders_per_batch_30_batches_100x100",)),
-        "output_opp_aco_4_stress_tests_20260927_135419.csv",
-    ],
+    # 2026-09-29: opp_hc_4/opp_aco_4 results are unified runs under fixed
+    # names, like opp_v5's: one row per current test, every row taken from a
+    # run saved with WRITE_SOLUTIONS, so each links to its solution JSON
+    # (solution_file) and to its row in results/compliance/ (all verified
+    # against opp_v5_1_mono). opp_aco_4 stress merges three runs (8 + 10
+    # tests + the 100x100); its 100x100 row had a 4-min laptop suspension,
+    # so its objective (988,252) is 6.9% above the discarded 2026-09-28 run
+    # without a saved solution (924,536) -- see meta.md.
+    ("opp_hc_4", "functional"): "output_opp_hc_4_functional_tests.csv",
+    ("opp_hc_4", "stress"): "output_opp_hc_4_stress_tests.csv",
+    ("opp_aco_4", "functional"): "output_opp_aco_4_functional_tests.csv",
+    ("opp_aco_4", "stress"): "output_opp_aco_4_stress_tests.csv",
     ("opp_v5_2_split", "stress"): [
         "output_opp_v5_2_split_stress_tests_20260926_225549.csv",
         ("output_opp_v5_2_split_stress_tests_parallel.csv", MIGRATED_STRESS_INSTANCES),

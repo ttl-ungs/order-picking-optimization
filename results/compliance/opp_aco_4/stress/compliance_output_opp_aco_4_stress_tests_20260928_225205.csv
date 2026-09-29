@@ -1,9 +1,0 @@
-test,model,verdict,heuristic_obj,recomputed_obj,level1_status,level1_obj,level2_status,level2_obj,big_m_substituted,prechecks,diagnosis,notes,error,check_time
-test_case_18.TestOPPAco4StressLargeCrewHalfSecondBatches.test_large_crew_half_second_batches,opp_aco_4,compliant,439792.2499999997,439792.25,optimal,439792.24999999977,optimal,439792.2500000091,False,,,,,5.726739168167114
-test_case_16.TestOPPAco4StressLargeCrewSingleWave.test_large_crew_single_wave,opp_aco_4,compliant,195898.16666666674,195898.1666666667,optimal,195898.16666666674,optimal,195898.16666666465,False,,,,,2.456624984741211
-test_case_17.TestOPPAco4StressLargeCrewThreeSecondBatches.test_large_crew_three_second_batches,opp_aco_4,compliant,305804.6766666667,305804.6766666667,optimal,305804.6766666666,optimal,305804.6766666677,False,,,,,3.751713752746582
-test_case_19.TestOPPAco4StressLargeCrewTwoBatchesEach.test_large_crew_two_batches_each,opp_aco_4,compliant,780787.3333333331,780787.3333333334,optimal,780787.3333333335,optimal,780787.3333333323,False,,,,,10.10281491279602
-test_case_13.TestOPPAco4StressLargerCrew10batches5pickers.test_larger_crew_10_batches_5_pickers,opp_aco_4,compliant,248695.4166666667,248695.41666666666,optimal,248695.41666666683,optimal,248695.41666666465,False,,,,,0.9944603443145752
-test_case_14.TestOPPAco4StressLargerCrew12batches6pickers.test_larger_crew_12_batches_6_pickers,opp_aco_4,compliant,298373.2499999999,298373.25,optimal,298373.25000000006,optimal,298373.25,False,,,,,1.2087345123291016
-test_case_12.TestOPPAco4StressLargerCrew8batches4pickers.test_larger_crew_8_batches_4_pickers,opp_aco_4,compliant,198903.4166666667,198903.41666666666,optimal,198903.41666666674,optimal,198903.41666666768,False,,,,,0.6819546222686768
-test_case_02.TestOPPAco4StressMigrated10x1010batches.test_10_orders_per_batch,opp_aco_4,compliant,29034.0,29034.0,optimal,29034.0,optimal,29034.0,False,,,,,0.9470727443695068
