@@ -6,24 +6,24 @@ Sets:
     B = Lotes de pedidos factibles
 
 Parameters:
-    w_1 = Peso del tiempo de cumplimiento
-    w_2 = Peso asociado a la suma pesada de las demoras y los adelantos
-    γ = Peso asociado al adelanto total
-    δ = Peso asociado a la demora total
-    d_(i,j) = Distancia entre localizaciones de picking i ∈ V y j ∈ V
-    cap_n = Capacidad requerida para una órden n ∈ N
-    cap_vehicle = Capacidad del vehículo de picking
-    a_ni = 1 si la órder n ∈ N debe visitar la locaclización de picking
+    W_c = Peso del tiempo de cumplimiento
+    W_pen = Peso asociado a la suma pesada de las demoras y los adelantos
+    W_e = Peso asociado al adelanto total
+    W_t = Peso asociado a la demora total
+    D_ij = Distancia entre localizaciones de picking i ∈ V y j ∈ V
+    C_n = Capacidad requerida para una órden n ∈ N
+    C_v = Capacidad del vehículo de picking
+    A_ni = 1 si la órder n ∈ N debe visitar la locaclización de picking
             i ∈ V, 0 si no
-    β^time = Tiempo requerido para viajar en una unidad de espacio
-    β^setup = Tiempo requerido para planificar cada lote
-    β^picking = Tiempo requerido para buscar y recolectar ítems
-    due_date = Fecha límite para la órden n ∈ N
+    T_travel = Tiempo requerido para viajar en una unidad de espacio
+    T_setup = Tiempo requerido para planificar cada lote
+    T_pick = Tiempo requerido para buscar y recolectar ítems
+    T_due_n = Fecha límite para la órden n ∈ N
     M = Entero lo suficientemente grande
     dis_i = Distancia viajada para completar el lote i ∈ B
     capbatch_i = Capacidad requerida para un lote i ∈ B
-    y_nb = 1 si el lote b ∈ B contiene a la orden n ∈ N
-    x_pb = 1 si el lote b ∈ B es asignado al picker p ∈ P
+    B_nb = 1 si el lote b ∈ B contiene a la orden n ∈ N
+    X_pb = 1 si el lote b ∈ B es asignado al picker p ∈ P (dato de entrada)
 
 Variables:
     ta_n = tardanza de la orden n ∈ N
@@ -33,8 +33,8 @@ Variables:
     c_pb = tiempo de completitud para el lote b ∈ B del picker p ∈ P
     z_ijb = 1 si el arco que conecta las locaciones i ∈ V y j ∈ V están
             incluidos en el lote b ∈ B, 0 si no
-    q_ijb = Número de unidades pasando por el arco que conecta las locaciones
-            i ∈ V y j ∈ V en el lote b ∈ B
+    q_ijb = Flujo de carga: locaciones requeridas del lote b ∈ B que
+            todavía faltan visitar al recorrer el arco (i, j)
 """
 
 import time
@@ -63,20 +63,20 @@ class OPPModelV2(Model):
         self.start_time = dto.start_time
 
     def solve(self, params: SolveModelDTO):
-        w1 = params.W_c
-        w2 = params.W_pen
-        gamma = params.W_e
-        delta = params.W_t
-        cap_n = params.C_n
-        cap_vehicle = params.C_v
-        a = params.A
-        beta_time = params.T_travel
-        beta_setup = params.T_setup
-        beta_picking = params.T_pick
-        due_date = params.T_due_n
+        W_c = params.W_c
+        W_pen = params.W_pen
+        W_e = params.W_e
+        W_t = params.W_t
+        C_n = params.C_n
+        C_v = params.C_v
+        A = params.A
+        T_travel = params.T_travel
+        T_setup = params.T_setup
+        T_pick = params.T_pick
+        T_due_n = params.T_due_n
         M = params.M
-        x = params.x
-        y = params.B_nb
+        X = params.x
+        B_nb = params.B_nb
         start_time = self.start_time
 
         model = pyscipopt.Model("OPP Model Version 2")
@@ -125,7 +125,7 @@ class OPPModelV2(Model):
 
         # Objective function
         model.setObjective(
-            self.objective_function(w1, c, w2, ea, gamma, delta, ta), sense="minimize"
+            self.objective_function(W_c, c, W_pen, ea, W_e, W_t, ta), sense="minimize"
         )
 
         # Constraints
@@ -165,7 +165,7 @@ class OPPModelV2(Model):
             for j in self.location_graph.get_vertices():
                 if j != depot_node and j != final_node:
                     model.addCons(
-                        self.constraint_force_visit_inflow(b, j, z, a, y),
+                        self.constraint_force_visit_inflow(b, j, z, A, B_nb),
                         name=f"force_visit_inflow_b{b}_j{j}",
                     )
 
@@ -174,7 +174,7 @@ class OPPModelV2(Model):
             for j in self.location_graph.get_vertices():
                 if j != depot_node and j != final_node:
                     model.addCons(
-                        self.constraint_force_visit_outflow(b, j, z, a, y),
+                        self.constraint_force_visit_outflow(b, j, z, A, B_nb),
                         name=f"force_visit_outflow_b{b}_j{j}",
                     )
 
@@ -185,7 +185,7 @@ class OPPModelV2(Model):
                     if i != final_node and j != depot_node:
                         model.addCons(
                             self.constraint_articles_capacity(
-                                i, j, b, q, cap_vehicle, z
+                                i, j, b, q, C_v, z
                             ),
                             name=f"articles_capacity_b{b}_i{i}_j{j}",
                         )
@@ -232,13 +232,13 @@ class OPPModelV2(Model):
         # (16) - Gavish-Graves subtour elimination
         for b in self.B:
             model.addCons(
-                self.constraint_load_flow_source(b, q, a, y),
+                self.constraint_load_flow_source(b, q, A, B_nb),
                 name=f"load_flow_source_b{b}",
             )
             for i in self.location_graph.get_vertices():
                 if i != depot_node and i != final_node:
                     model.addCons(
-                        self.constraint_load_flow_conservation(i, b, q, a, y),
+                        self.constraint_load_flow_conservation(i, b, q, A, B_nb),
                         name=f"load_flow_conservation_b{b}_i{i}",
                     )
 
@@ -257,11 +257,11 @@ class OPPModelV2(Model):
                 self.constraint_valid_execution_time(
                     b,
                     d,
-                    beta_time,
-                    beta_setup,
-                    beta_picking,
-                    cap_n,
-                    y,
+                    T_travel,
+                    T_setup,
+                    T_pick,
+                    C_n,
+                    B_nb,
                     z,
                 ),
                 name=f"valid_execution_time_b{b}",
@@ -271,7 +271,7 @@ class OPPModelV2(Model):
         for p in self.P:
             for b in self.B:
                 model.addCons(
-                    self.constraint_batch_execution_time(p, b, d, M, x, u),
+                    self.constraint_batch_execution_time(p, b, d, M, X, u),
                     name=f"batch_execution_time_p{p}_b{b}",
                 )
 
@@ -298,7 +298,7 @@ class OPPModelV2(Model):
                 for n in self.N:
                     model.addCons(
                         self.constraint_tardiness_definition(
-                            c, p, due_date, n, M, b, x, y, ta
+                            c, p, T_due_n, n, M, b, X, B_nb, ta
                         ),
                         name=f"tardiness_definition_p{p}_n{n}_b{b}",
                     )
@@ -309,7 +309,7 @@ class OPPModelV2(Model):
                 for n in self.N:
                     model.addCons(
                         self.constraint_earliness_definition(
-                            c, p, due_date, n, M, b, x, y, ea
+                            c, p, T_due_n, n, M, b, X, B_nb, ea
                         ),
                         name=f"earliness_definition_p{p}_n{n}_b{b}",
                     )
@@ -329,7 +329,7 @@ class OPPModelV2(Model):
         # Batch loading capacity
         for b in self.B:
             model.addCons(
-                self.constraint_batch_capacity(cap_n, y, b, self.N, cap_vehicle),
+                self.constraint_batch_capacity(C_n, B_nb, b, self.N, C_v),
                 name=f"batch_capacity_b{b}",
             )
 
@@ -360,13 +360,13 @@ class OPPModelV2(Model):
         output = build_output(model, self.location_graph, self.B, z)
         return model.getStatus(), output
 
-    def objective_function(self, w1, c, w2, ea, gamma, delta, ta):
+    def objective_function(self, W_c, c, W_pen, ea, W_e, W_t, ta):
         recollection_time = sum(c[p, b] for p in self.P for b in self.B)
         advance_time = sum(ea[n] for n in self.N)
         delay_time = sum(ta[n] for n in self.N)
-        penalty = gamma * advance_time + delta * delay_time
+        penalty = W_e * advance_time + W_t * delay_time
 
-        return w1 * recollection_time + w2 * penalty
+        return W_c * recollection_time + W_pen * penalty
 
     def constraint_start_from_depot(self, z, b):
         """
@@ -424,7 +424,7 @@ class OPPModelV2(Model):
             == 0
         )
 
-    def constraint_force_visit_inflow(self, b, j, z, a, y):
+    def constraint_force_visit_inflow(self, b, j, z, A, B_nb):
         """
         (10): If any order from batch 'b' must visit location 'j',
         then the sum of arcs entering 'j' must be at least 1.
@@ -433,11 +433,11 @@ class OPPModelV2(Model):
             z[i, j, b] for i in self.location_graph.get_vertices() if i != j
         )
 
-        requirement = min(1, sum(a[n, j] * y[n, b] for n in self.N))
+        requirement = min(1, sum(A[n, j] * B_nb[n, b] for n in self.N))
 
         return inflow >= requirement
 
-    def constraint_force_visit_outflow(self, b, j, z, a, y):
+    def constraint_force_visit_outflow(self, b, j, z, A, B_nb):
         """
         (11): If any order from batch 'b' must visit location 'j',
         then the sum of arcs leaving 'j' must be at least 1.
@@ -446,17 +446,17 @@ class OPPModelV2(Model):
             z[j, i, b] for i in self.location_graph.get_vertices() if i != j
         )
 
-        requirement = min(1, sum(a[n, j] * y[n, b] for n in self.N))
+        requirement = min(1, sum(A[n, j] * B_nb[n, b] for n in self.N))
 
         return outflow >= requirement
 
-    def constraint_articles_capacity(self, i, j, b, q, cap_vehicle, z):
+    def constraint_articles_capacity(self, i, j, b, q, C_v, z):
         """
         (12): Articles capacity constraint.
         Ensures that the total capacity of articles of a batch b does
         not exceed the vehicle's capacity.
         """
-        return q[i, j, b] - float(cap_vehicle) * z[i, j, b] <= 0
+        return q[i, j, b] - float(C_v) * z[i, j, b] <= 0
 
     def constraint_route_flow_conservation(self, z, b, i):
         """
@@ -500,13 +500,13 @@ class OPPModelV2(Model):
     #     required_flow = a[n, i] * y[n, b]
     #     return flow_in >= required_flow
 
-    def constraint_load_flow_source(self, b, q, a, y):
+    def constraint_load_flow_source(self, b, q, A, B_nb):
         """
         (16) Depot sends out exactly required_nodes units.
         """
         # How many required_nodes batch b must visit
         required_nodes = sum(
-            min(1, sum(a[n, i] * y[n, b] for n in self.N))
+            min(1, sum(A[n, i] * B_nb[n, b] for n in self.N))
             for i in self.location_graph.get_vertices()
             if i != self.location_graph.get_depot()
             and i != self.location_graph.get_final()
@@ -521,7 +521,7 @@ class OPPModelV2(Model):
         # outflow must be exactly required_flow
         return outflow == required_nodes
 
-    def constraint_load_flow_conservation(self, i, b, q, a, y):
+    def constraint_load_flow_conservation(self, i, b, q, A, B_nb):
         """
         (16) Gavish-Graves balance:
         inflow - outflow = demand at each intermediate node.
@@ -542,7 +542,7 @@ class OPPModelV2(Model):
         )
 
         # 1 if node i must be visited in batch b, else 0
-        demand = min(1, sum(a[n, i] * y[n, b] for n in self.N))
+        demand = min(1, sum(A[n, i] * B_nb[n, b] for n in self.N))
 
         # If node i must be visited consumes 1 flow unit. Else, consumes 0 flow units.
         return inflow - outflow == demand
@@ -555,7 +555,7 @@ class OPPModelV2(Model):
         return z[i, i, b] == 0 if i != self.location_graph.get_depot() else None
 
     def constraint_valid_execution_time(
-        self, b, d, beta_time, beta_setup, beta_picking, cap_n, y, z
+        self, b, d, T_travel, T_setup, T_pick, C_n, B_nb, z
     ):
         """
         (18): Valid execution time constraint.
@@ -563,9 +563,9 @@ class OPPModelV2(Model):
         based on travel time, setup time, and picking time.
         """
         return (
-            beta_setup
-            + beta_picking * quicksum(cap_n[n] * y[n, b] for n in self.N)
-            + beta_time
+            T_setup
+            + T_pick * quicksum(C_n[n] * B_nb[n, b] for n in self.N)
+            + T_travel
             * (
                 quicksum(
                     self.location_graph.get_distance(i, j) * z[i, j, b]
@@ -579,14 +579,14 @@ class OPPModelV2(Model):
             <= d[b]
         )
 
-    def constraint_batch_execution_time(self, p, b, d, M, x, u):
+    def constraint_batch_execution_time(self, p, b, d, M, X, u):
         """
         (19): Batch execution time constraint.
         Ensures that the processing time of a batch assigned to a picker is less or
         equal to the execution time of the batch
         assigned to that position.
         """
-        return d[b] - M * (1 - x[p, b]) <= u[p, b]
+        return d[b] - M * (1 - X[p, b]) <= u[p, b]
 
     def constraint_processing_time(self, p, u, c, b):
         """
@@ -604,31 +604,31 @@ class OPPModelV2(Model):
     #     """
     #     return u[p, b] + v[p, b - 1] <= v[p, b]
 
-    def constraint_tardiness_definition(self, c, p, due_date, n, M, b, x, y, ta):
+    def constraint_tardiness_definition(self, c, p, T_due_n, n, M, b, X, B_nb, ta):
         """
         (22): Tardiness definition constraint.
         Ensures that the tardiness of an order is correctly calculated
         based on the due date and the completion time of the batch
         to which the order is assigned.
         """
-        return c[p, b] - due_date[n] - M * (2 - x[p, b] - y[n, b]) <= ta[n]
+        return c[p, b] - T_due_n[n] - M * (2 - X[p, b] - B_nb[n, b]) <= ta[n]
 
-    def constraint_earliness_definition(self, c, p, due_date, n, M, b, x, y, ea):
+    def constraint_earliness_definition(self, c, p, T_due_n, n, M, b, X, B_nb, ea):
         """
         (23): Earliness definition constraint.
         Ensures that the earliness of an order is correctly calculated
         based on the due date and the completion time of the batch
         to which the order is assigned.
         """
-        return due_date[n] - c[p, b] - M * (2 - x[p, b] - y[n, b]) <= ea[n]
+        return T_due_n[n] - c[p, b] - M * (2 - X[p, b] - B_nb[n, b]) <= ea[n]
 
-    def constraint_batch_capacity(self, cap_n, y, b, N, cap_vehicle):
+    def constraint_batch_capacity(self, C_n, B_nb, b, N, C_v):
         """
         (24): Batch loading capacity constraint.
         Ensures that the total capacity required by orders assigned to a batch
         does not exceed the vehicle's capacity.
         """
-        return quicksum(cap_n[n] * y[n, b] for n in N) <= cap_vehicle
+        return quicksum(C_n[n] * B_nb[n, b] for n in N) <= C_v
 
     def constraint_only_valid_edges(self, i, j, b, z):
         """

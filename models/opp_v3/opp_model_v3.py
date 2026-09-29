@@ -8,8 +8,8 @@ Sets:
 Parameters:
     W_c = Peso del tiempo de cumplimiento
     W_pen = Peso asociado a la suma pesada de las demoras y los adelantos
-    W_e = Peso asociado al adelanto total (gamma)
-    W_t = Peso asociado a la demora total (delta)
+    W_e = Peso asociado al adelanto total
+    W_t = Peso asociado a la demora total
     D_ij = Distancia entre locaciones i ∈ V y j ∈ V
     C_n = Capacidad requerida para una órden n ∈ N
     C_v = Capacidad del vehículo de picking
@@ -31,8 +31,8 @@ Variables:
     c_b = tiempo de completitud del lote b ∈ B
     z_ijb = 1 si el arco que conecta las locaciones i ∈ V y j ∈ V están
             incluidos en el lote b ∈ B, 0 si no
-    q_ijb = Número de unidades pasando por el arco que conecta las locaciones
-            i ∈ V y j ∈ V en el lote b ∈ B
+    q_ijb = Flujo de carga: locaciones requeridas del lote b ∈ B que
+            todavía faltan visitar al recorrer el arco (i, j)
 """
 
 import time
