@@ -201,6 +201,56 @@ def three_orders_one_batch(w_full):
     return data
 
 
+def two_possible_routes(due_date):
+    """opp_v4's two_possible_routes instance (scenario_03_v4) for v5: two
+    orders at L4, one batch each, two pickers at speed 1.0, and three ways
+    from L1 to L5 through L4 -- the short one L1 -> L4 -> L5 (distance 8)
+    and two long ones through L2 or L3 (distance 15).
+
+    tiempo_fijo = B_setup + B_picking * 3 = 4.0, so a batch takes
+    4.0 + 0.5 * 8 = 8.0 on the short route and 4.0 + 0.5 * 15 = 11.5 on a
+    long one. Earliness weighs W_ea_ta * W_ea = 10 > W_full = 1, so a batch
+    that can finish before its due date waits until it (voluntary wait):
+      - due_date = 10: only the short route arrives in time; completion
+        10.0 per batch, objective 1 * (10 + 10) = 20.0. A long route would
+        be 1.5 late (10 * 5 * 1.5 = 75 of tardiness per batch).
+      - due_date = 15 (opp_v4's): every route arrives in time, so every
+        route is optimal; completion 15.0 per batch, objective 30.0.
+    """
+    return {
+        "N": {"O1", "O2"},
+        "P": {"P1", "P2"},
+        "B": {"B1", "B2"},
+        "V": {"L1", "L2", "L3", "L4", "L5"},
+        "E": {("L1", "L2"), ("L1", "L3"), ("L1", "L4"), ("L2", "L4"), ("L3", "L4"), ("L4", "L5")},
+        "depot": "L1",
+        "final": "L5",
+        "d_ij": {
+            ("L1", "L2"): 5.0, ("L1", "L3"): 5.0, ("L1", "L4"): 3.0,
+            ("L2", "L4"): 5.0, ("L3", "L4"): 5.0, ("L4", "L5"): 5.0,
+        },
+        "S_i": {v: 0.0 for v in ("L1", "L2", "L3", "L4", "L5")},
+        "A_ni": {
+            (order, location): int(location == "L4")
+            for order in ("O1", "O2") for location in ("L1", "L2", "L3", "L4", "L5")
+        },
+        "Bn": {("O1", "B1"): 1, ("O1", "B2"): 0, ("O2", "B1"): 0, ("O2", "B2"): 1},
+        "C_n": {"O1": 3.0, "O2": 3.0},
+        "Dd": {"O1": due_date, "O2": due_date},
+        "W_full": 1.0,
+        "W_ea_ta": 10.0,
+        "W_ea": 1.0,
+        "W_ta": 5.0,
+        "B_time": 0.5,
+        "B_setup": 1.0,
+        "B_picking": 1.0,
+        "C_v": 5.0,
+        "M": 10000.0,
+        "V_p": {"P1": 1.0, "P2": 1.0},
+        "T_frio_max": 1_000_000_000.0,
+    }
+
+
 def two_dead_end_aisles():
     """A central hub H with two dead-end aisles, L1 and L2, one order in each.
 
