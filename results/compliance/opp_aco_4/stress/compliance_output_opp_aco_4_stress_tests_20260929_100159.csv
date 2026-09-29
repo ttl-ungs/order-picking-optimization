@@ -1,0 +1,11 @@
+test,model,verdict,heuristic_obj,recomputed_obj,level1_status,level1_obj,level2_status,level2_obj,big_m_substituted,prechecks,diagnosis,notes,error,check_time
+test_case_03.TestOPPAco4StressMigrated7x740batches1picker.test_8_orders_per_batch_7x7_320_orders,opp_aco_4,compliant,1752212.0,1752212.0,optimal,1752212.0,optimal,1752212.0,False,,,,,3.3493402004241943
+test_case_04.TestOPPAco4StressRealisticCrew7x7.test_realistic_crew_7x7_warehouse,opp_aco_4,compliant,149221.0,149221.0,optimal,149221.0000000001,optimal,149221.0,False,,,,,0.5407710075378418
+test_case_05.TestOPPAco4StressRealisticCrew13x13.test_realistic_crew_13x13_warehouse,opp_aco_4,compliant,241288.91666666666,241288.91666666666,optimal,241288.9166666666,optimal,241288.91666666768,False,,,,,1.214508056640625
+test_case_06.TestOPPAco4StressRealisticCrew14x14.test_realistic_crew_14x14_warehouse,opp_aco_4,compliant,256587.66666666666,256587.66666666666,optimal,256587.6666666666,optimal,256587.66666666768,False,,,,,1.3477063179016113
+test_case_07.TestOPPAco4StressRealisticCrew15x15.test_realistic_crew_15x15_warehouse,opp_aco_4,compliant,271946.8333333333,271946.8333333333,optimal,271946.8333333333,optimal,271946.8333333323,False,,,,,1.5413439273834229
+test_case_08.TestOPPAco4StressRealisticCrew16x16.test_realistic_crew_16x16_warehouse,opp_aco_4,compliant,287196.0,287196.0,optimal,287196.0,optimal,287196.0,False,,,,,1.8038825988769531
+test_case_09.TestOPPAco4StressRealisticCrewRectangular.test_realistic_crew_rectangular_warehouse,opp_aco_4,compliant,275030.5533333333,275030.55333333334,optimal,275030.5533333332,optimal,275030.5533333353,False,,,,,1.2720448970794678
+test_case_10.TestOPPAco4StressRealisticCrewSchedulingHeavy.test_realistic_crew_scheduling_heavy,opp_aco_4,compliant,112079.48999999998,112079.49,optimal,112079.49000000015,optimal,112079.48999999696,False,,,,,0.49412107467651367
+test_case_11.TestOPPAco4StressRealisticCrewColdChain.test_realistic_crew_cold_chain,opp_aco_4,compliant,182361.05,182361.05,optimal,182361.0500000003,optimal,182361.04999999702,False,,,,,1.1710846424102783
+test_case_15.TestOPPAco4StressOverstaffedWave6batches9pickers.test_over_staffed_wave_6_batches_9_pickers,opp_aco_4,compliant,97919.5,97919.5,optimal,97919.49999999988,optimal,97919.50000000303,False,,,,,0.7504668235778809
