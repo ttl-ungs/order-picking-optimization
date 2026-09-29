@@ -656,6 +656,13 @@ Las dos primeras son de rendimiento puro y están medidas. Las otras cuatro son 
 - Riesgo / atención: los CSV funcionales nuevos de HC-4/ACO-4 pasan a ser los más recientes, así que el análisis los toma (sin override); traen la columna extra `solution_file`. El 2026-09-28 se perdió el primer reporte de compliance de HC-4 funcional al volver a correr el verificador con `--test` (bug ya corregido); se regeneró completo desde los JSON.
 - Validación: prueba de mutaciones sobre una solución chica (arco inexistente, completitud solapada, cadena de frío, objetivo mal reportado): las cuatro se detectan. Reportes de compliance completos de los dos funcionales, 63 filas cada uno sin duplicados.
 
+
+### Cambio 2026-09-29 - Funcionales de opp_v5 (split y mono) corridos de nuevo
+- Alcance: resultados
+- Archivos: `results/opp_v5_2_split/functional/output_opp_v5_2_split_functional_tests.csv`, `results/opp_v5_1_mono/functional/output_opp_v5_1_mono_functional_tests.csv`
+- Qué se hizo: se volvieron a correr las suites funcionales con el código actual (el PR #16 cambió `stage1_decomposition.py`, `zpl_utils.py` y los escenarios de stress después de las corridas del 24-09), salteando `test_fractional_and_zero_capacities_feasible`, que da timeout (25 min) en los dos modelos. Split en secuencia (`OPP_STAGE1_WORKERS=1`): con 6 procesos tardaba más (51 s contra 46 s) porque en instancias chicas levantar los procesos cuesta más de lo que ahorra. Cada CSV de nombre fijo queda con las filas nuevas más la fila del timeout de la corrida anterior.
+- Resultado: split 62/62 `ok`; mono 60 `ok` y la falla conocida del 06. Ningún test cambió de status ni de objetivo respecto de las corridas del 24-09; solo cambian los tiempos.
+- Validación: comparación fila por fila contra los CSV anteriores; el análisis carga los dos CSV (63 y 62 filas).
 ---
 
 
