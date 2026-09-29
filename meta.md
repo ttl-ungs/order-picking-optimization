@@ -692,6 +692,12 @@ Las dos primeras son de rendimiento puro y están medidas. Las otras cuatro son 
 - Qué se hizo: `python -m verification.compare_v5` compara split con mono desde los CSV fijos y los JSON guardados (no resuelve nada): estado, objetivo (tolerancia relativa 1e-6) y, si coinciden, rutas, asignación y orden por picker; agrupa migrados de v4 / propios de v5 / stress. `--verify-split-stress` (a pedido) verifica además cada solución de stress de split contra mono con el verificador. Termina con error solo si algún objetivo difiere.
 - Resultado: ningún desacuerdo. Funcionales migrados: 15 misma solución, 20 óptimos alternativos (mismo objetivo), 8 infactibles en los dos, 1 timeout en los dos, y el 06 (falla conocida de mono, mismo objetivo). Propios: 12 misma solución, 4 infactibles en los dos, 1 solo de split. Stress: mono no resuelve ninguno; con `--verify-split-stress` las 9 soluciones de split dan `compliant`.
 - Corrección: cuando ningún picker es elegible por la cadena de frío, `run_pipeline` de split cortaba antes de la Etapa 2 sin registrar nada, y el CSV mostraba como objetivo el tiempo de ruta de la Etapa 1 (14). Ahora registra un resultado `infeasible` sin objetivo, como `solve_zpl` y las heurísticas al rechazar una entrada. Se volvieron a correr `test_case_24`, `34` y `35` de split: 2 filas pasan de 14 a vacío (las demás, mismo objetivo) y se borraron los 8 JSON viejos que quedaron sin referencia. `test_preflight_detects_when_no_picker_is_eligible` conserva su 14: ese test corre solo la Etapa 1 a propósito.
+
+### Cambio 2026-09-29 - Stress de mono unificado en un solo CSV
+- Alcance: resultados / análisis
+- Archivos: `results/opp_v5_1_mono/stress/output_opp_v5_1_mono_stress_tests.csv`, [analysis/config.py](analysis/config.py)
+- Qué se hizo: la fila del test 04 de la corrida del 27-09 (`W_full` = 27) reemplaza a la vieja en el CSV fijo y se borró `…_20260927_124455.csv`. Las filas 01–03 y 05–19 quedan sin tocar (05–19 como registro de `W_full` = 9, nunca corridas con 27). El override lee del archivo único solo 01–04, así que el análisis ve lo mismo que antes (01 sin resultado, 02–04 timeout).
+- Validación: solo cambió la fila del 04 respecto del archivo commiteado; el análisis carga las mismas 4 filas; `check_repo` pasa. Con esto los cuatro modelos actuales tienen un solo CSV por tier en funcional y stress.
 ---
 
 

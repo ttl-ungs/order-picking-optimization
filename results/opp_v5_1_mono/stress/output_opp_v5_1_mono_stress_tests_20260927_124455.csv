@@ -1,2 +1,0 @@
-test,status,total_time,model_time,obj_val,peak_rss_mb
-test_case_04.TestOPPMonoStress04.test_realistic_crew_7x7_warehouse,timeout,Ejecución detenida por timeout - 40.0,Ejecución detenida por timeout - 40.0,Ejecución detenida por timeout - 40.0,Ejecución detenida por timeout - 40.0

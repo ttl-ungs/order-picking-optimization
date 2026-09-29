@@ -145,10 +145,12 @@ LATEST_FILE_OVERRIDES = {
     # 9 there). Mono's new run was cut after 04 (timeout at 40 min, the
     # smallest scenario); 05-19 were never run with W_full = 27, so they're
     # left out and reported as missing rather than taken from the W_full = 9
-    # file.
+    # file. 2026-09-29: unified in one file (04's row from the 2026-09-27
+    # run replaced the W_full = 9 one; 05-19 kept untouched as the W_full = 9
+    # record), so only 01-04 are read from it.
     ("opp_v5_1_mono", "stress"): [
-        "output_opp_v5_1_mono_stress_tests_20260927_124455.csv",
-        ("output_opp_v5_1_mono_stress_tests.csv", MIGRATED_STRESS_INSTANCES),
+        ("output_opp_v5_1_mono_stress_tests.csv",
+         MIGRATED_STRESS_INSTANCES + ("test_realistic_crew_7x7_warehouse",)),
     ],
     ("opp_v5_2_split", "functional"): "output_opp_v5_2_split_functional_tests.csv",
     # 2026-09-29: opp_hc_4/opp_aco_4 results are unified runs under fixed
