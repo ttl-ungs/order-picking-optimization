@@ -685,6 +685,13 @@ Las dos primeras son de rendimiento puro y están medidas. Las otras cuatro son 
 - Se volvieron a correr, salteando los timeouts: funcionales de split (en secuencia) y mono, y los 9 stress de split que resuelven (Etapa 1 en 6 procesos). Cada CSV fijo queda con las filas nuevas (con `solution_file`) más las filas de timeout anteriores.
 - Resultado: split funcional 62/62 `ok` (57 soluciones), mono 60 `ok` + la falla conocida del 06 (53), split stress 9/9 (9). Ningún test cambió de estado ni de objetivo; 119 JSON, ningún enlace roto.
 - Validación: prueba con 3 tests por modelo y con el stress 04 de split en 6 procesos (rutas de los 6 lotes + cronograma); el análisis carga los CSV; `check_repo` pasa.
+
+### Cambio 2026-09-29 - Comparación split contra mono y registro de infactibles de split
+- Alcance: verificación / tests / resultados
+- Archivos: [verification/compare_v5.py](verification/compare_v5.py) (nuevo), `results/comparability/compare_v5_split_vs_mono.csv`, [tests/opp_v5_2_split/opp_test_case_v5_2_split.py](tests/opp_v5_2_split/opp_test_case_v5_2_split.py), el CSV funcional fijo de split
+- Qué se hizo: `python -m verification.compare_v5` compara split con mono desde los CSV fijos y los JSON guardados (no resuelve nada): estado, objetivo (tolerancia relativa 1e-6) y, si coinciden, rutas, asignación y orden por picker; agrupa migrados de v4 / propios de v5 / stress. `--verify-split-stress` (a pedido) verifica además cada solución de stress de split contra mono con el verificador. Termina con error solo si algún objetivo difiere.
+- Resultado: ningún desacuerdo. Funcionales migrados: 15 misma solución, 20 óptimos alternativos (mismo objetivo), 8 infactibles en los dos, 1 timeout en los dos, y el 06 (falla conocida de mono, mismo objetivo). Propios: 12 misma solución, 4 infactibles en los dos, 1 solo de split. Stress: mono no resuelve ninguno; con `--verify-split-stress` las 9 soluciones de split dan `compliant`.
+- Corrección: cuando ningún picker es elegible por la cadena de frío, `run_pipeline` de split cortaba antes de la Etapa 2 sin registrar nada, y el CSV mostraba como objetivo el tiempo de ruta de la Etapa 1 (14). Ahora registra un resultado `infeasible` sin objetivo, como `solve_zpl` y las heurísticas al rechazar una entrada. Se volvieron a correr `test_case_24`, `34` y `35` de split: 2 filas pasan de 14 a vacío (las demás, mismo objetivo) y se borraron los 8 JSON viejos que quedaron sin referencia. `test_preflight_detects_when_no_picker_is_eligible` conserva su 14: ese test corre solo la Etapa 1 a propósito.
 ---
 
 
