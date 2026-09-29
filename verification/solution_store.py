@@ -118,11 +118,70 @@ def solution_record_to_dict(record, test_id):
     }
 
 
+def _scenario_value(key, value):
+    """One entry of a build_dat_files scenario dict, JSON-safe with string ids:
+    sets -> sorted lists (tuple members as lists), tuple-keyed dicts ->
+    [[k1, k2, value], ...] (zeros dropped for the dense 0/1 incidence
+    tables A_ni and Bn), id-keyed dicts -> [[k, value], ...]."""
+    if isinstance(value, (set, frozenset, list, tuple)):
+        items = [[str(x) for x in v] if isinstance(v, tuple) else str(v) for v in value]
+        return sorted(items, key=str)
+    if isinstance(value, dict):
+        if value and isinstance(next(iter(value)), tuple):
+            drop_zeros = key in ("A_ni", "Bn", "X_pb")
+            return [[*(str(k) for k in ks), v] for ks, v in value.items() if v or not drop_zeros]
+        return [[str(k), v] for k, v in value.items()]
+    return value
+
+
+def zimpl_record_to_dict(record, test_id):
+    """Serialize a ZimplSolutionRecordDTO (dtos/opp/zimpl_solution_record_dto.py):
+    kind "zimpl", the instance as the build_dat_files scenario dict (see
+    _scenario_value) and every non-zero variable value; for opp_v5_2_split
+    also Stage 1's values (the routes)."""
+    def nonzero(values):
+        return None if values is None else {k: v for k, v in values.items() if abs(v) > 1e-9}
+
+    scenario = record.scenario or {}
+    return {
+        "format_version": FORMAT_VERSION,
+        "kind": "zimpl",
+        "zpl": os.path.basename(record.zpl_path),
+        "test": test_id,
+        "instance": {key: _scenario_value(key, value) for key, value in scenario.items()},
+        "solution": {
+            "status": record.status,
+            "objective_value": record.objective,
+            "values": nonzero(record.values),
+            "stage1_values": nonzero(record.stage1_values),
+        },
+    }
+
+
+def read_zimpl_record(path):
+    """Read a kind "zimpl" JSON: returns the raw dict (instance entries as
+    serialized by _scenario_value, solution values keyed by SCIP variable
+    name)."""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    if data.get("kind") != "zimpl":
+        raise ValueError(f"{path}: not an exact-model (zimpl) solution record")
+    return data
+
+
 def write_solution_record(record, test_id, path):
-    """Write `record` as JSON at `path` (parent dirs created)."""
+    """Write `record` (a heuristic's SolutionRecordDTO or an exact model's
+    ZimplSolutionRecordDTO) as JSON at `path` (parent dirs created)."""
+    from dtos.opp.zimpl_solution_record_dto import ZimplSolutionRecordDTO
+
+    data = (
+        zimpl_record_to_dict(record, test_id)
+        if isinstance(record, ZimplSolutionRecordDTO)
+        else solution_record_to_dict(record, test_id)
+    )
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(solution_record_to_dict(record, test_id), f, separators=(",", ":"))
+        json.dump(data, f, separators=(",", ":"))
 
 
 def read_solution_record(path):
@@ -134,6 +193,8 @@ def read_solution_record(path):
         data = json.load(f)
     if data.get("format_version") != FORMAT_VERSION:
         raise ValueError(f"{path}: unsupported format_version {data.get('format_version')}")
+    if data.get("kind") == "zimpl":
+        raise ValueError(f"{path}: exact-model solution record, read it with read_zimpl_record")
 
     raw = data["instance"]
     instance = dict(raw)

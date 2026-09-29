@@ -3,6 +3,8 @@ import subprocess
 import time
 import pyscipopt
 from dtos.opp.solve_result import SolveResult
+from dtos.opp.zimpl_solution_record_dto import ZimplSolutionRecordDTO
+from tests.infra.zimpl.dat_files_builder import last_scenario
 import models.utils.solve_registry as solve_registry
 from models.utils.input_validation import overloaded_batches, orders_without_exactly_one_batch
 
@@ -136,6 +138,11 @@ def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
         output=var_values,
         elapsed=elapsed,
         params={"obj_val": obj_val, **params},
+        # Instance + solution for verification/ (written only with
+        # WRITE_SOLUTIONS); references only, nothing is copied here.
+        solution_record=ZimplSolutionRecordDTO(
+            zpl_path=zpl_path, scenario=last_scenario(), status=status, objective=obj_val, values=var_values,
+        ),
     )
     solve_registry.register(solve_result)
 
