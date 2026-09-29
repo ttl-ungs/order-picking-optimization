@@ -675,3 +675,14 @@ inventa un cero ni se descarta en silencio.
 - `analysis/plots.py` — los gráficos (paleta fija: `#003366, #e6e6e6, #d9534f,
   #5bc0de, #5cb85c`, igual que la especificada en `docs/specs/model_analysis.md`).
 - `analysis/run_analysis.py` — CLI que junta todo y escribe el reporte.
+
+## Comparabilidad con v5
+
+Qué resultados de v5 y de las heurísticas (aco_4, hc_4) se pueden comparar, y cuáles no, está definido en
+`docs/specs/comparabilidad_v5_heuristicas.md`. El registro por instancia está en
+`results/comparability/comparability_v5_vs_heuristics.csv` y se regenera con `python -m analysis.comparability`.
+Toda tabla o gráfico comparativo debe filtrar por `comparable_status` / `comparable_objective`.
+
+El mismo comando escribe `results/comparability/results_v5_vs_heuristics.csv`: el registro cruzado con los últimos
+resultados de aco_4 y hc_4 (los que elige `analysis.load`). Tiene una fila por instancia y heurística, con objetivo,
+tiempo, `gap_pct`, `speedup` y `status_matches`. Es la tabla de partida para los gráficos v5 vs heurísticas.
