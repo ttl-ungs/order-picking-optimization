@@ -322,6 +322,17 @@ def scale(TABLE, FIG, NUM):
     top = max(bound, key=bound.get)
     NUM["scale_bound_ratio"] = es(bound[top], 0)
     NUM["scale_bound_case"] = f"{top[0]} lotes en {top[1]}×{top[1]}"
+    # Model size: mono's MIP against split's Stage 2 (what the study records for split).
+    size_rows = []
+    for b in (3, 4):
+        for side in (3, 5, 6, 7):
+            m, sp = f08.get((f"B{b}S{side}", "mono")), f08.get((f"B{b}S{side}", "split"))
+            if not m or not sp or not m["n_vars"] or not sp["n_vars"]:
+                continue
+            size_rows.append([f"{b} lotes, {side}×{side}", es(float(m["n_vars"]), 0), es(float(m["n_conss"]), 0),
+                              es(float(sp["n_vars"]), 0), es(float(sp["n_conss"]), 0)])
+    TABLE["model_size"] = table(["Instancia", "Mono: variables", "Mono: restricciones",
+                                 "Split Etapa 2: variables", "Split Etapa 2: restricciones"], size_rows)
     NUM["scale_bound_split"] = es(float(f08[(f"B{top[0]}S{top[1]}", "split")]["total_s"]), 1)
 
     # Study 11: the points mono did not close, and stress test 04, with a 40-minute cap.

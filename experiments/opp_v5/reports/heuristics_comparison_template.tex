@@ -65,10 +65,15 @@ de cada solución de las heurísticas contra las restricciones de v5.
 \setupTABLE[column][3][width=6.5cm, align=flushleft]
 \bTR \bTH Método \eTH \bTH Tipo \eTH \bTH Configuración en stress \eTH \bTH Tope \eTH \eTR
 \bTR \bTD OPP\_v5\_2\_split \eTD \bTD Exacto (ZIMPL + SCIP) \eTD \bTD Etapa 1: un MIP de ruteo por lote, en 6 procesos. Etapa 2: asignación y secuenciación. \eTD \bTD 40 min por test \eTD \eTR
-\bTR \bTD HC-4 \eTD \bTD Búsqueda local \eTD \bTD Hasta %%NUM:hc_max_it%% iteraciones; corta tras %%NUM:hc_max_imp%% sin mejora. \eTD \bTD 30 s de reloj \eTD \eTR
-\bTR \bTD ACO-4 \eTD \bTD Colonia de hormigas \eTD \bTD %%NUM:aco_ants%% hormigas, %%NUM:aco_max_it%% iteraciones, $\alpha = %%NUM:aco_alpha%%$, $\beta = %%NUM:aco_beta%%$, %%NUM:aco_route_attempts%% intentos de ruta por lote. \eTD \bTD %%NUM:aco_max_time_min%% min de reloj \eTD \eTR
+\bTR \bTD HC-4 \eTD \bTD Búsqueda local \eTD \bTD Hasta %%NUM:hc_max_it%% iteraciones; corta tras %%NUM:hc_max_imp%% sin mejora. \eTD \bTD 30 s de reloj, mirado entre iteraciones \eTD \eTR
+\bTR \bTD ACO-4 \eTD \bTD Colonia de hormigas \eTD \bTD %%NUM:aco_ants%% hormigas, %%NUM:aco_max_it%% iteraciones, $\alpha = %%NUM:aco_alpha%%$, $\beta = %%NUM:aco_beta%%$, %%NUM:aco_route_attempts%% intentos de ruta por lote. \eTD \bTD %%NUM:aco_max_time_min%% min de reloj, mirado entre iteraciones \eTD \eTR
 \eTABLE
 \blank[medium]
+
+Los topes de las heurísticas no interrumpen una iteración en curso: se comparan con el reloj
+al terminar cada una. En el 01 (100×100) eso las lleva a %%NUM:hc_01_min%% y
+%%NUM:aco_01_min%% minutos: HC-4 supera sus 30~s ya en la construcción de la solución inicial, y
+cada iteración de ACO-4 dura más de un cuarto de hora.
 
 Las heurísticas corren una sola vez por instancia, con semilla 1. Los tiempos son de reloj,
 medidos en la misma notebook, e incluyen la preparación de cada test (en split, escribir los
@@ -123,9 +128,11 @@ la encuentra y no la encuentra donde split prueba que la instancia es infactible
 
 %%TABLE:status%%
 
-Las dos heurísticas coinciden en todas las instancias comparables en estado, incluidas las
-%%NUM:functional_infeasible%% infactibles: no hay falsos positivos (una solución donde no existe)
-ni falsos negativos (declarar infactible algo que tiene solución).
+Las dos heurísticas coinciden en todas las instancias comparables en estado. En las
+%%NUM:functional_infeasible%% infactibles no devuelven solución, como corresponde; en las demás
+siempre encuentran una. Hay que leerlo con cuidado: una heurística no prueba infactibilidad, solo no
+encuentra solución. Que coincida con split en las infactibles muestra que no inventa soluciones
+inválidas, y que en las factibles nunca se queda sin respuesta.
 \stopsection
 
 \startsection[title={Suite funcional}]
@@ -145,12 +152,28 @@ funcionales.
 %%NUM:functional_both%% funcionales.
 \stopitemize
 
+La brecha en stress está en la sección \in[sec:brecha_stress].
+
 Las %%NUM:missed%% instancias funcionales en las que alguna heurística no llega al óptimo son
 todas de grilla, y en todas es HC-4. Una búsqueda local se queda ahí en un óptimo local: la grilla
 tiene muchas rutas y asignaciones de costo parecido, y los movimientos de a uno no alcanzan para
 salir.
 
 %%TABLE:missed%%
+\stopsubsection
+
+\startsubsection[title={Instancias con espera voluntaria}]
+En %%NUM:wait_count%% instancias funcionales la solución de split demora a propósito algún lote:
+lo reporta terminado más tarde de lo que termina, para acercarlo a la fecha de entrega y reducir
+la penalización por adelanto. Las heurísticas reportan el tiempo en que el lote realmente termina y
+no pueden hacerlo, así que ahí el objetivo de split es menor por diseño del modelo, no por un plan
+mejor. Por eso estas instancias se comparan solo en estado, y la diferencia no es una brecha:
+
+%%TABLE:wait%%
+
+ACO-4 queda por encima de split en %%NUM:wait_aco_above%% de las %%NUM:wait_count%%. La
+especificación de comparabilidad registra que, en estas instancias, tomar las rutas más cortas y
+agregarles la espera óptima reproduce exactamente el objetivo de split: la diferencia es la espera.
 \stopsubsection
 
 \startsubsection[title={Tiempos}]
@@ -165,9 +188,11 @@ cuando el test resuelve una sola instancia.
 
 Las instancias funcionales son chicas y los tiempos de split, del orden de 0,3~s, están
 dominados por el costo fijo de escribir y compilar los modelos. HC-4 es
-%%NUM:functional_speedup_opp_hc_4%% veces más rápido en la mediana; ACO-4,
-%%NUM:functional_speedup_opp_aco_4%% veces, porque corre sus iteraciones completas aunque la
-instancia sea trivial.
+%%NUM:functional_speedup_opp_hc_4%% veces más rápido en la mediana y es más lento que split en
+%%NUM:functional_slower_opp_hc_4%% de las %%NUM:timed%% instancias. ACO-4 es
+%%NUM:functional_speedup_opp_aco_4%% veces más rápido en la mediana, pero más lento que split en
+%%NUM:functional_slower_opp_aco_4%% de las %%NUM:timed%% (los puntos por encima de la diagonal,
+cerca de 1~s): corre sus iteraciones completas aunque la instancia sea trivial.
 \stopsubsection
 \stopsection
 
@@ -195,6 +220,9 @@ En los %%NUM:stress_both%% escenarios que split resuelve, HC-4 es %%NUM:stress_s
 veces más rápido que split en la mediana y ACO-4, %%NUM:stress_speedup_opp_aco_4%% veces. HC-4
 resuelve todos menos el 01 en menos de 5~s; ACO-4 tarda entre 10~s y 10 minutos, del mismo orden que
 split en los escenarios chicos y bastante menos en los grandes.
+
+El tiempo de split en el 10 es el de la corrida del 26 de septiembre (86~s). La corrida más
+reciente, con el mismo objetivo, marcó 412~s porque la notebook se suspendió durante el test.
 \stopsubsection
 
 \startsubsection[title={Escalabilidad}, reference=sec:escala]
@@ -210,7 +238,9 @@ Las heurísticas no tienen ninguna de las dos: HC-4 se mantiene en segundos en t
 el 100×100, y ACO-4 en minutos.
 \stopsubsection
 
-\startsubsection[title={Calidad de la solución}]
+\startsubsection[title={Calidad de la solución}, reference=sec:brecha_stress]
+%%TABLE:gap_stress%%
+
 \placefigure[force][fig:brecha]{Brecha contra el óptimo de split en cada escenario que split resuelve. Un 0 indica que la heurística encontró el óptimo.}
 {%%FIG:stress_gap%%}
 

@@ -17,6 +17,18 @@
 \title{\bf Comparación de OPP\_v5\_1\_mono\crlf y OPP\_v5\_2\_split en pruebas funcionales y de stress}
 \blank[big]
 
+\startsection[title={Resumen}]
+\startitemize
+\item {\bf Mismo problema, mismo óptimo}: en los 49 pares que los dos resuelven el
+objetivo es el mismo, y los 11 infactibles lo son en los dos.
+\item {\bf En instancias chicas da lo mismo}: el monolítico es algo más rápido por décimas de
+segundo, porque compila un modelo en vez de dos.
+\item {\bf A escala realista solo el split prueba el óptimo}: con la misma instancia, el monolítico
+deja de cerrar en 10 minutos lo que el split resuelve en segundos, y con 40 minutos tampoco lo
+logra.
+\stopitemize
+\stopsection
+
 \startsection[title={Objetivo y alcance}]
 Este documento compara las ejecuciones de los tests funcionales y de stress de OPP\_v5\_1\_mono
 (formulación monolítica) y OPP\_v5\_2\_split (formulación en dos etapas) sobre los mismos
@@ -61,7 +73,9 @@ solución y tiempos) o si los dos lo declaran infactible (se compara el estado).
 \eTABLE
 \blank[medium]
 
-Quedan fuera 4 tests:
+Quedan fuera 4 tests. El 37a sería comparable entre mono y split (los dos
+modelan la espera voluntaria), pero se deja fuera para mantener la misma base que la comparación
+con las heurísticas:
 
 \blank[medium]
 \bTABLE[split=yes, align=middle, frame=on, width=fit]
@@ -627,6 +641,28 @@ en 5×5 a 139~s en 6×6 y a no terminar en 7×7, y en 3 lotes en 7×7, 4 lotes e
 al menos 71 veces (4 lotes en 6×6, que el split resuelve en
 8,4~s).
 
+La razón es estructural. El estudio registra el tamaño del MIP que resuelve SCIP: en el
+monolítico, el modelo entero; en el split, la Etapa 2, porque la Etapa 1 son MIPs chicos de ruteo,
+uno por lote, que se resuelven en pocos segundos.
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Instancia \eTH \bTH Mono: variables \eTH \bTH Mono: restricciones \eTH \bTH Split Etapa 2: variables \eTH \bTH Split Etapa 2: restricciones \eTH \eTR
+\bTR \bTD 3 lotes, 3×3 \eTD \bTD 327 \eTD \bTD 573 \eTD \bTD 174 \eTD \bTD 339 \eTD \eTR
+\bTR \bTD 3 lotes, 5×5 \eTD \bTD 663 \eTD \bTD 1.029 \eTD \bTD 174 \eTD \bTD 339 \eTD \eTR
+\bTR \bTD 3 lotes, 6×6 \eTD \bTD 903 \eTD \bTD 1.347 \eTD \bTD 174 \eTD \bTD 339 \eTD \eTR
+\bTR \bTD 3 lotes, 7×7 \eTD \bTD 1.191 \eTD \bTD 1.725 \eTD \bTD 174 \eTD \bTD 339 \eTD \eTR
+\bTR \bTD 4 lotes, 3×3 \eTD \bTD 438 \eTD \bTD 772 \eTD \bTD 234 \eTD \bTD 460 \eTD \eTR
+\bTR \bTD 4 lotes, 5×5 \eTD \bTD 886 \eTD \bTD 1.380 \eTD \bTD 234 \eTD \bTD 460 \eTD \eTR
+\bTR \bTD 4 lotes, 6×6 \eTD \bTD 1.206 \eTD \bTD 1.804 \eTD \bTD 234 \eTD \bTD 460 \eTD \eTR
+\eTABLE
+\blank[medium]
+
+El MIP del monolítico crece con la grilla, porque incluye el ruteo de todos los lotes; el de la
+Etapa 2 no depende de la grilla, porque recibe las rutas ya resueltas y solo decide asignación y
+secuencia. Por eso el split escala con la grilla y el monolítico no.
+
 ¿Es cuestión de darle más tiempo? El estudio 11 repite esos puntos, y la instancia exacta del
 test de stress 04, con 40 minutos de tope:
 
@@ -661,7 +697,8 @@ procesos. Su tiempo es la duración completa del test y es un techo: si la noteb
 durante la corrida, el tiempo suspendido cuenta en la duración pero no en el tope.
 
 Como el monolítico no termina ninguno, no hay pares resueltos en los dos: la comparación de stress
-es solo de estado.
+es solo de estado. En el 01 (100×100) el monolítico figura {\em sin resultado}: el proceso del test
+terminó sin devolver un estado, ni solución ni timeout.
 
 \blank[medium]
 \bTABLE[split=yes, align=middle, frame=on]
@@ -676,7 +713,7 @@ es solo de estado.
 \bTR \bTD 07 \eTD \bTD realista \eTD \bTD 6 \eTD \bTD 15×15 \eTD \bTD 15,1 min \eTD \bTD timeout \eTD \eTR
 \bTR \bTD 08 \eTD \bTD realista \eTD \bTD 6 \eTD \bTD 16×16 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
 \bTR \bTD 09 \eTD \bTD realista, depósito rectangular \eTD \bTD 6 \eTD \bTD 8×21 \eTD \bTD 3,7 min \eTD \bTD timeout \eTD \eTR
-\bTR \bTD 10 \eTD \bTD realista, 4 pickers \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 6,9 min \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 10 \eTD \bTD realista, 4 pickers \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 1,4 min \eTD \bTD timeout \eTD \eTR
 \bTR \bTD 11 \eTD \bTD realista, 4 pickers, cadena de frío \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 2,3 min \eTD \bTD timeout \eTD \eTR
 \bTR \bTD 12 \eTD \bTD cuadrilla de 4 pickers \eTD \bTD 8 \eTD \bTD 7×7 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
 \bTR \bTD 13 \eTD \bTD cuadrilla de 5 pickers \eTD \bTD 10 \eTD \bTD 7×7 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR

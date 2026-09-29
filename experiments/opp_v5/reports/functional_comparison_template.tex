@@ -17,6 +17,18 @@
 \title{\bf Comparación de OPP\_v5\_1\_mono\crlf y OPP\_v5\_2\_split en pruebas funcionales y de stress}
 \blank[big]
 
+\startsection[title={Resumen}]
+\startitemize
+\item {\bf Mismo problema, mismo óptimo}: en los %%NUM:feasible%% pares que los dos resuelven el
+objetivo es el mismo, y los %%NUM:infeasible%% infactibles lo son en los dos.
+\item {\bf En instancias chicas da lo mismo}: el monolítico es algo más rápido por décimas de
+segundo, porque compila un modelo en vez de dos.
+\item {\bf A escala realista solo el split prueba el óptimo}: con la misma instancia, el monolítico
+deja de cerrar en 10 minutos lo que el split resuelve en segundos, y con 40 minutos tampoco lo
+logra.
+\stopitemize
+\stopsection
+
 \startsection[title={Objetivo y alcance}]
 Este documento compara las ejecuciones de los tests funcionales y de stress de OPP\_v5\_1\_mono
 (formulación monolítica) y OPP\_v5\_2\_split (formulación en dos etapas) sobre los mismos
@@ -51,7 +63,9 @@ solución y tiempos) o si los dos lo declaran infactible (se compara el estado).
 
 %%TABLE:coverage%%
 
-Quedan fuera %%NUM:excluded%% tests:
+Quedan fuera %%NUM:excluded%% tests. El 37a sería comparable entre mono y split (los dos
+modelan la espera voluntaria), pero se deja fuera para mantener la misma base que la comparación
+con las heurísticas:
 
 %%TABLE:excluded%%
 \stopsection
@@ -158,6 +172,16 @@ en 5×5 a 139~s en 6×6 y a no terminar en 7×7, y en %%NUM:scale_capped%% no pr
 al menos %%NUM:scale_bound_ratio%% veces (%%NUM:scale_bound_case%%, que el split resuelve en
 %%NUM:scale_bound_split%%~s).
 
+La razón es estructural. El estudio registra el tamaño del MIP que resuelve SCIP: en el
+monolítico, el modelo entero; en el split, la Etapa 2, porque la Etapa 1 son MIPs chicos de ruteo,
+uno por lote, que se resuelven en pocos segundos.
+
+%%TABLE:model_size%%
+
+El MIP del monolítico crece con la grilla, porque incluye el ruteo de todos los lotes; el de la
+Etapa 2 no depende de la grilla, porque recibe las rutas ya resueltas y solo decide asignación y
+secuencia. Por eso el split escala con la grilla y el monolítico no.
+
 ¿Es cuestión de darle más tiempo? El estudio 11 repite esos puntos, y la instancia exacta del
 test de stress 04, con 40 minutos de tope:
 
@@ -183,7 +207,8 @@ procesos. Su tiempo es la duración completa del test y es un techo: si la noteb
 durante la corrida, el tiempo suspendido cuenta en la duración pero no en el tope.
 
 Como el monolítico no termina ninguno, no hay pares resueltos en los dos: la comparación de stress
-es solo de estado.
+es solo de estado. En el 01 (100×100) el monolítico figura {\em sin resultado}: el proceso del test
+terminó sin devolver un estado, ni solución ni timeout.
 
 %%TABLE:stress%%
 

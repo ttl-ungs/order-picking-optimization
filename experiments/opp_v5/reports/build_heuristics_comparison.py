@@ -157,19 +157,38 @@ def build():
     TABLE["status"] = table(["Heurística", "Funcional", "Stress"], status_rows)
 
     # --- Objective gap where it is comparable.
-    gap_rows = []
+    gap_rows = {"functional": [], "stress": []}
     for h in HEURISTICS:
         for tier, tier_name in (("functional", "Funcional"), ("stress", "Stress")):
             gaps = [num(r["gap_pct"]) for r in of(tier, h) if is_true(r["comparable_objective"])]
             optimal = sum(1 for g in gaps if abs(g) <= EXACT)
-            gap_rows.append([NAME[h], tier_name, len(gaps), optimal, pct(statistics.mean(gaps)),
-                             pct(statistics.median(gaps)), pct(max(gaps))])
+            gap_rows[tier].append([NAME[h], len(gaps), optimal, pct(statistics.mean(gaps)),
+                                   pct(statistics.median(gaps)), pct(max(gaps))])
             NUM[f"optimal_{tier}_{h}"] = str(optimal)
             NUM[f"max_gap_{tier}_{h}"] = es(max(gaps), 2)
             NUM[f"mean_gap_{tier}_{h}"] = es(statistics.mean(gaps), 2)
             NUM[f"better_{tier}_{h}"] = str(sum(1 for g in gaps if g < -EXACT))
-    TABLE["gap"] = table(["Heurística", "Suite", "Instancias", "Óptimo", "Brecha media", "Mediana", "Máxima"],
-                         gap_rows)
+    header = ["Heurística", "Instancias", "Óptimo", "Brecha media", "Mediana", "Máxima"]
+    TABLE["gap"] = table(header, gap_rows["functional"])
+    TABLE["gap_stress"] = table(header, gap_rows["stress"])
+
+    # Instances where split uses voluntary waiting: status comparable, objective not.
+    wait = {h: {r["heuristic_instance"]: r for r in of("functional", h) if is_true(r["comparable_status"])
+                and not is_true(r["comparable_objective"]) and r["v5_status"] == "optimal"} for h in HEURISTICS}
+    wait_rows = []
+    for inst in sorted(wait[HEURISTICS[0]]):
+        r0 = wait[HEURISTICS[0]][inst]
+        case, text = instance_label(r0, by_method)
+        cells = [case, text, es(num(r0["v5_obj"]), 1)]
+        for h in HEURISTICS:
+            cells.append(es(num(wait[h][inst]["heuristic_obj"]), 1))
+        cells.append(r0["not_comparable_reason"].replace("v5 usa espera voluntaria en ", "")
+                     .replace("[", "").replace("]", "").replace("'", ""))
+        wait_rows.append(cells)
+    TABLE["wait"] = table(["Caso", "Test", "Split", "HC-4", "ACO-4", "Lotes que esperan"], sorted(wait_rows))
+    NUM["wait_count"] = str(len(wait_rows))
+    NUM["wait_aco_above"] = str(sum(1 for inst in wait["opp_aco_4"]
+                                    if num(wait["opp_aco_4"][inst]["heuristic_obj"]) > num(wait["opp_aco_4"][inst]["v5_obj"]) + 1e-6))
 
     # Functional instances where some heuristic misses the optimum.
     functional = {h: {r["heuristic_instance"]: r for r in of("functional", h)
@@ -198,6 +217,7 @@ def build():
         speed = statistics.median(num(r["speedup"]) for r in timed[h])
         time_rows.append([NAME[h], es(statistics.median(h_t), 3), es(sum(h_t), 1), es(speed, 1) + "×"])
         NUM[f"functional_speedup_{h}"] = es(speed, 1)
+        NUM[f"functional_slower_{h}"] = str(sum(1 for r in timed[h] if num(r["heuristic_time"]) > num(r["v5_time"])))
     TABLE["functional_times"] = table(["Modelo", "Mediana (s)", "Suma (s)", "Split / heurística (mediana)"],
                                       time_rows)
 
@@ -387,7 +407,10 @@ def stress_extras(order, stress, case_of, TABLE, FIG, NUM):
     ])
     NUM["hc_max_it"], NUM["hc_max_imp"] = (str(int(float(hc["04"][k]))) for k in ("Max_it", "Max_imp"))
     NUM["aco_ants"], NUM["aco_max_it"] = (str(int(float(aco["04"][k]))) for k in ("A_ants", "Max_it"))
-    NUM["aco_alpha"], NUM["aco_beta"] = es(num(aco["04"]["Alpha"]), 1), es(num(aco["04"]["Beta"]), 1)
+    # Inside $...$: a bare decimal comma is spaced like a list separator.
+    NUM["aco_alpha"], NUM["aco_beta"] = (es(num(aco["04"][k]), 1).replace(",", "{,}") for k in ("Alpha", "Beta"))
+    NUM["hc_01_min"] = es(num(hc["01"]["total_time"]) / 60, 0)
+    NUM["aco_01_min"] = es(num(aco["01"]["total_time"]) / 60, 0)
     NUM["aco_max_time_min"] = es(num(aco["04"]["Max_time"]) / 60, 0)
     NUM["aco_route_attempts"] = str(int(float(aco["04"]["Max_route_attempts_per_batch"])))
     NUM["hc_best_at_start"] = str(sum(1 for n in cases if n != "01" and hc[n]["best_found_at_iteration"] == "0"))

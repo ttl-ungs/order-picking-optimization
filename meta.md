@@ -728,6 +728,17 @@ Las dos primeras son de rendimiento puro y están medidas. Las otras cuatro son 
 - Riesgo / atención: los números salen de los CSV consolidados; si cambian, hay que regenerar los dos documentos. La memoria de split no incluye los procesos hijos de la Etapa 1 ni ZIMPL (el documento lo dice). Algunas frases de la comparación con las heurísticas están escritas a mano sobre los datos actuales (rangos de iteraciones, el 01 de ACO-4, la recomendación). Los estudios 08 y 11 corrieron con la máquina compartida: valen los cocientes entre modelos, no los tiempos absolutos (el documento lo dice). El texto sobre el stress 01 de ACO-4 (suspensión de la notebook) está escrito a mano en la plantilla.
 - Validación: los dos `.tex` compilan con `context` sin errores; se revisaron las páginas renderizadas; los conteos coinciden con un recálculo independiente sobre los CSV.
 
+### Cambio 2026-09-29 - Revisión de las comparaciones de v5, tiempo del stress 10 de split y reporte de análisis
+- Alcance: resultados / documentación / análisis
+- Archivos: `results/opp_v5_2_split/stress/output_opp_v5_2_split_stress_tests_parallel.csv` (fila del 10), `results/comparability/results_v5_vs_heuristics.csv`, `analysis/output/` (reporte y gráficos), generadores y plantillas de `experiments/opp_v5/reports/`, los dos `.tex`/`.pdf` comparativos
+- Qué se hizo:
+  - Stress 10 de split (`scheduling_heavy`): `total_time` y `model_time` pasan a los de la corrida del 26-09 (85,6 s y 71,0 s; mismo objetivo, 112.079,49). La corrida del 29-09 marcó 412 s por suspensiones de la notebook (ver la entrada "Stress de opp_v5_2_split corrido de nuevo y unificado"). Se mantienen el objetivo, `peak_rss_mb`, `debug_output` y `solution_file` de la corrida del 29-09. Se regeneró `results_v5_vs_heuristics.csv` (solo cambian las dos filas del 10: speedup de ACO-4 27,0 → 5,6 y de HC-4 752,8 → 156,5).
+  - Mono vs split: resumen al inicio, tabla de tamaño del MIP (mono contra la Etapa 2 de split, estudio 08), qué significa "sin resultado" en el 01, y por qué el 37a queda fuera.
+  - Split vs heurísticas: coma decimal en fórmulas, topes de las heurísticas (se miran entre iteraciones), redacción de la sección de estado, tabla de las 10 instancias con espera voluntaria, tabla de brechas separada entre funcional y stress, y cuántas instancias funcionales tarda cada heurística más que split.
+  - `python -m analysis.run_analysis` regenerado con los CSV actuales.
+- Riesgo / atención: la sección 4.1 de `analysis/output/report.md` sigue sin reflejar la comparación correcta: `quality_gap_table` empareja por nombre de test y tamaño de instancia, no por el registro de comparabilidad, y mezcla tests de HC-4/ACO-4 que no son equivalentes a los de split (brecha máx. 1.180 %). Arreglarlo requiere cambiar `analysis/`; pendiente de decisión. Además, `analysis/config.py` registra que el stress de mono 05–19 nunca se corrió con `W_c` = 27 (el documento los muestra como timeout; punto desestimado).
+- Validación: los dos `.tex` compilan con `context`; `check_repo` pasa.
+
 ---
 
 
