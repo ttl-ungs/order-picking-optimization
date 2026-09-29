@@ -15,7 +15,7 @@ Toda tabla o gráfico que compare v5 con las heurísticas debe filtrar por sus c
 | Qué | Instancias de las heurísticas | Referencia de v5 |
 |---|---|---|
 | **Funcional** | `test_v5eq__<test de v5>[__<k>]` en `tests/opp_{aco,hc}_4/functional/test_case_v5_equivalence.py` | Estado y objetivo por instancia en `tests/shared_scenarios/functional/v5_equivalence_scenarios.json` |
-| **Estrés** | `test_case_v5_*` en `tests/opp_{aco,hc}_4/stress/`, con el mismo nombre de método que v5 | CSV de estrés de `opp_v5_2_split`, combinados por `analysis.load`: 04–19 con W_full = 27 y 01–03 de las corridas consolidadas |
+| **Estrés** | `test_case_NN` en `tests/opp_{aco,hc}_4/stress/`, con la misma numeración y el mismo nombre de método que v5 | CSV de estrés de `opp_v5_2_split`, combinados por `analysis.load`: 04–19 con W_full = 27 y 01–03 de las corridas consolidadas |
 | **Tiempo igual** | CSV de estrés de cada heurística | `results/equal_time/output_equal_time_<heurística>_*.csv`, donde v5 corre con el tiempo de la heurística como límite |
 
 **Los demás tests funcionales de aco_4 y hc_4 no son comparables con v5, aunque compartan el nombre.** La mayoría envuelve tests de aco_2 y hc_2 que no definen pickers y corren con uno solo, mientras que el test de v5 del mismo nombre usa dos. Para comparar funcionales se usan solo las instancias `test_v5eq__*`.

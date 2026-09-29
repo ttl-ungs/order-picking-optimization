@@ -85,12 +85,16 @@ def latest_heuristic_results(model_label):
         glob.glob(os.path.join(OUTPUTS_ROOT, model_label, "stress", f"output_{model_label}_stress_tests_*.csv")),
         key=os.path.getmtime, reverse=True,
     )
+    # Matched by method name, not file name: the v5 ports were test_case_v5_*.py
+    # in older CSVs and test_case_NN.py (v5's own numbering) since the legacy
+    # stress tests were removed; no legacy method name collides with v5's.
+    v5_methods = {name for name, _ in SCENARIOS.values()}
     for path in paths:
         with open(path, newline="", encoding="utf-8") as f:
-            rows = [r for r in csv.DictReader(f) if r["test"].startswith("test_case_v5_")]
+            rows = [r for r in csv.DictReader(f) if r["test"].split(".")[-1] in v5_methods]
         if rows:
             return path, {r["test"].split(".")[-1]: r for r in rows}
-    raise SystemExit(f"No stress CSV with test_case_v5_* rows under results/{model_label}/stress/")
+    raise SystemExit(f"No stress CSV with v5-ported rows under results/{model_label}/stress/")
 
 
 def _last_solve_info():

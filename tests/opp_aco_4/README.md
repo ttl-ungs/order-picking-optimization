@@ -52,19 +52,16 @@ tests/opp_aco_4/
 │   ├── test_case_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
 │   └── test_case_NN.py                     # ported 1:1 from opp_aco_2 (V_p unset, T_frio_max=+inf)
 └── stress/
-    ├── test_case_{01..20}.py       # ported 1:1 from opp_aco_2 (full parity)
-    ├── test_case_picker_speed.py   # dedicated: heterogeneous speeds at scale
-    └── test_case_cold_chain.py      # dedicated: binding T_frio_max at scale
+    ├── v5_stress_test_case.py      # base: runs a v5 stress scenario through this model
+    └── test_case_{01..19}.py       # v5's 19 stress scenarios, same numbering and method names as opp_v5_2_split
 ```
 
-The ported files (both normal and stress) are literal copies of their
-`opp_aco_2` counterpart -- same scenario builder, same numeric parameters
--- with `V_p` unset and `T_frio_max` left at its default (`+inf`), giving
-`analysis/`'s `quality_gap_table`/cross-model comparisons the same-named,
-same-shaped instances it needs to join `opp_aco_4` against
-`opp_aco_2`/`opp_aco_3`/`opp_v4` (same pattern `opp_v5_2_split` and `opp_hc_4`
-use). `opp_aco_2` only has 20 stress instances (vs. `opp_hc_2`'s 43), so
-all 20 were ported for full parity (`opp_aco_3` also has all 20).
+The ported functional files are literal copies of their `opp_aco_2`
+counterpart -- same scenario builder, same numeric parameters -- with `V_p`
+unset and `T_frio_max` left at its default (`+inf`). The stress suite runs
+`opp_v5_2_split`'s 19 stress scenarios instead, file-for-file and with the
+same method names, so `analysis/` joins them against v5 by instance name
+(see `docs/specs/comparabilidad_v5_heuristicas.md`).
 
 `opp_aco_4` is registered in `analysis/config.py`'s `MODEL_DIRS` (and
 deliberately left OUT of `CONGESTION_AWARE_MODELS`).
