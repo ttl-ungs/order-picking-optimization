@@ -3,7 +3,8 @@ functional,test_basic_two_orders_capacity_limit,migrated,ok,ok,30.0,30.0,same_so
 functional,test_two_orders_two_aisles,migrated,ok,ok,795.0,795.0,same_solution,
 functional,test_two_orders_two_aisles_one_picking_point_per_order,migrated,ok,ok,795.0,795.0,same_solution,
 functional,test_two_orders_two_aisles_using_one_aisle,migrated,ok,ok,846.0,846.0,same_solution,
-functional,test_two_possible_routes,migrated,ok,failed,30.000000000000053,30.00000000000096,not_both_solved,"split ok, mono failed"
+functional,test_every_route_is_optimal_when_all_arrive_in_time,own,ok,ok,30.000000000000053,30.00000000000096,alternative_optimum,differs in routes
+functional,test_shorter_route_is_chosen_when_the_longer_one_is_late,own,ok,ok,20.000000000000263,20.000000000000185,same_solution,
 functional,test_repeated_picking_locations,migrated,ok,ok,,,both_infeasible,neither model returned an objective (split stopped before Stage 2)
 functional,test_repeated_picking_locations_2,migrated,ok,ok,69.0,69.0,same_solution,
 functional,test_two_orders_two_locations,migrated,ok,ok,1833.0,1833.0,same_solution,
