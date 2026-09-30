@@ -10,12 +10,15 @@ Exploration that is not tests: sweeps and calibrations to understand where and w
 
   A `pair` point solves the same instance with the split and then with the monolithic model, and measures the monolithic run against the split's proven optimum (the two models share it). That separates finding a good solution from proving it optimal. See the module docstring for every column.
 - `stress_test_design.md` — the design of the stress tests, which draws on studies 01–07. It uses the old test numbering (see the note at its top).
-- `reports/` — the generators of the two ConTeXt reports, `docs/thesis/opp_v5_2_split_exploration.tex` and `docs/thesis/opp_v5_1_mono_exploration.tex`. Each one fills the `%%FIG:id%%` markers of its `*_template.tex` with MetaPost charts computed from the study CSVs. Edit the template, not the generated `.tex`, then regenerate and compile:
+- `reports/` — the generators of the four ConTeXt reports: the two explorations (`docs/thesis/opp_v5_2_split_exploration.tex`, `docs/thesis/opp_v5_1_mono_exploration.tex`, from the study CSVs) and the two comparisons (`docs/thesis/opp_v5_1_mono_vs_opp_v5_2_split_comparison.tex` and `docs/thesis/opp_v5_2_split_vs_heuristics_comparison.tex`, from the consolidated result CSVs). Each one fills the `%%FIG:id%%`, `%%TABLE:id%%` and `%%NUM:id%%` markers of its `*_template.tex`. The two comparisons use the same base, `comparable_set.py`: the instances split, hc_4 and aco_4 share according to `results/comparability/comparability_v5_vs_heuristics.csv`. Edit the template, not the generated `.tex`, then regenerate and compile:
 
   ```
   python -m experiments.opp_v5.reports.build_split_exploration
   python -m experiments.opp_v5.reports.build_mono_exploration
+  python -m experiments.opp_v5.reports.build_functional_comparison
+  python -m experiments.opp_v5.reports.build_heuristics_comparison
   cd docs/thesis && context opp_v5_2_split_exploration.tex && context opp_v5_1_mono_exploration.tex
+  cd docs/thesis && context opp_v5_1_mono_vs_opp_v5_2_split_comparison.tex && context opp_v5_2_split_vs_heuristics_comparison.tex
   ```
 - `studies/NN_name/` — one directory per question, holding the points or scripts that were run and the CSVs they produced. CSV names keep the date and time of the run.
 
