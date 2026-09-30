@@ -16,7 +16,7 @@ class OPPTestCaseACO3(OPPTestCase):
     """
     Base test case for opp_aco_3, adding assertions specific to the
     congestion + multi-pheromone mechanisms introduced vs. opp_aco_2:
-    - Every batch is still assigned to exactly one picker (X_pb), unchanged.
+    - Every batch is still assigned to exactly one picker (x_pb), unchanged.
     - No time overlap between batches on the SAME picker, unchanged.
     - Congestion wait times are non-negative and only appear when two
       pickers' batches actually contend for the same node/edge.

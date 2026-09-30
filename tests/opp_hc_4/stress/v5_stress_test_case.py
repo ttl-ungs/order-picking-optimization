@@ -66,7 +66,7 @@ class OPPHc4StressTestCase(OPPTestCase):
             required = {
                 location for location in scenario["V"]
                 if any(
-                    scenario["A_ni"][(order, location)] and scenario["Bn"][(order, batch)]
+                    scenario["A_ni"][(order, location)] and scenario["B_nb"][(order, batch)]
                     for order in scenario["N"]
                 )
             }

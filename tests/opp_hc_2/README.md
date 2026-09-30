@@ -3,7 +3,7 @@
 Test suite for the Hill Climbing heuristic solver `models.opp_hc_2` - the
 picker-parallelization equivalent of `opp_model_v4.zpl`. Batches are still
 routed the same way as in `opp_hc_1` (v3), but batches can now be assigned to
-different pickers (X_pb) so work is parallelized.
+different pickers (x_pb) so work is parallelized.
 
 ## Structure
 
@@ -48,7 +48,7 @@ Each test:
 - Validates output graph structure (routes) matches expectations
 - Checks all routing constraints are satisfied
 - Where a scenario names multiple pickers, verifies batches are distributed
-  across pickers (X_pb) and that batches on the same picker never overlap in
+  across pickers (x_pb) and that batches on the same picker never overlap in
   time (mirrors the ZPL model's non-overlap and unique-assignment constraints)
 
 **Note:** Objective values may differ from the exact solver (heuristic vs.

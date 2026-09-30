@@ -7,7 +7,7 @@ Same problem as opp_aco_2 (multi-picker, all constraints validated):
 - Validates: ALL constraints from opp_aco_2, plus cold-chain eligibility
 - Optimizes: routes within batches (probabilistic pick-to-pick ACO
   construction after Chen et al. 2013, see _build_batch_route) AND
-  the assignment/sequencing of batches to pickers (X_pb), so that batches
+  the assignment/sequencing of batches to pickers (x_pb), so that batches
   on different pickers run in parallel and batches on the same picker are
   sequenced without overlap
 - Output: compatible with build_output
@@ -17,7 +17,7 @@ counterpart of opp_hc_4 (itself the Hill Climbing counterpart of opp_v5_2_split'
 opp_model_v5_2_split_stage2_scheduling.zpl additions over opp_v4):
 
 - Picker speed (V_p): a batch's execution time is no longer a single
-  t_exec_b fixed for every picker. Instead t_exec_pb[p, b] = fixed_time(b)
+  d_b fixed for every picker. Instead T_exec_pb[p, b] = fixed_time(b)
   + route_time(b) / V_p[p], where fixed_time (setup + picking) doesn't
   depend on speed and route_time (travel + service) does. Faster pickers
   finish the same route sooner. This changes _select_picker's roulette:
@@ -25,8 +25,8 @@ opp_model_v5_2_split_stage2_scheduling.zpl additions over opp_v4):
   picker suits which batch), but at selection time the candidate pool is
   filtered down to the batch's CURRENT ant's route's cold-chain-eligible
   pickers (see below) before the roulette runs.
-- Cold chain (T_frio_max): a (picker, batch) pair is only eligible if
-  t_exec_pb[p, b] <= T_frio_max. Since each ant builds a batch's route
+- Cold chain (T_cold): a (picker, batch) pair is only eligible if
+  T_exec_pb[p, b] <= T_cold. Since each ant builds a batch's route
   BEFORE picking its picker (same order as opp_aco_2's _build_ant_solution
   loop), eligibility for _select_picker is computed EXACTLY against that
   ant's own just-built route, not an approximation. If that particular
@@ -168,7 +168,7 @@ class OPPAntColonyOptimization(Model):
     # constraints_validator.py's module docstring for why cold chain is a
     # SOFT constraint during search now (2026-09-09 audit fix). Large
     # enough to dominate the search away from violations (typical marginal
-    # objective contribution per unit of recollection time is W_full,
+    # objective contribution per unit of recollection time is W_c,
     # usually single-to-low-double digits) without using an arbitrarily
     # huge Big-M-style constant -- this is a continuous heuristic penalty,
     # not a MIP constraint, so there's no SCIP-presolve-numerics failure
@@ -202,7 +202,7 @@ class OPPAntColonyOptimization(Model):
 
         start_time = time.time()
 
-        if params.Bn is None:
+        if params.B_nb is None:
             self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
 
@@ -211,7 +211,7 @@ class OPPAntColonyOptimization(Model):
             return "infeasible", None
 
         # is_batch_assignment_valid only rejects an order in TWO+ batches.
-        unassigned_or_duplicated = orders_without_exactly_one_batch(params.Bn, self.N)
+        unassigned_or_duplicated = orders_without_exactly_one_batch(params.B_nb, self.N)
         if unassigned_or_duplicated:
             print(
                 "ERROR: every order must be in exactly one batch; not the case for "
@@ -235,12 +235,12 @@ class OPPAntColonyOptimization(Model):
         evaporation_rate = getattr(params, "_E", 0.15)
         q_factor = getattr(params, "_Q", 100.0)
 
-        # V_p[p] is a divisor in _t_exec_pb (fixed_time(b) + route_time(b)
+        # V_p[p] is a divisor in _T_exec_pb (fixed_time(b) + route_time(b)
         # / V_p[p]): a speed of exactly 0 is a ZeroDivisionError waiting
         # to happen the first time any batch/picker pair gets evaluated
         # (the eligibility pre-check below, if nothing else); a negative
-        # one silently produces a negative t_exec_pb that would look
-        # "eligible" for any T_frio_max. Reject up front instead of
+        # one silently produces a negative T_exec_pb that would look
+        # "eligible" for any T_cold. Reject up front instead of
         # crashing or accepting nonsensical input (2026-09-10 audit finding).
         bad_speeds = invalid_speeds(self._picker_speeds(params))
         if bad_speeds:
@@ -250,7 +250,7 @@ class OPPAntColonyOptimization(Model):
 
         # Exact (not estimated) impossibility pre-check: fixed_time(b)
         # alone (setup + picking, independent of route/picker) already
-        # tells us the BEST possible t_exec_pb for any picker, since
+        # tells us the BEST possible T_exec_pb for any picker, since
         # route_time is always >= 0 -- feeding batches_without_eligible_
         # picker a route_time of exactly 0.0 for every batch asks it "is
         # there a picker fast enough even for a zero-distance route?".
@@ -263,9 +263,9 @@ class OPPAntColonyOptimization(Model):
         # header for the full rationale.
         best_case_route_time = {batch: 0.0 for batch in self.B}
         impossible_batches = batches_without_eligible_picker(
-            self.P, self.B, self.N, params.C_n, params.Bn,
-            params.B_setup, params.B_picking, best_case_route_time,
-            self._picker_speeds(params), params.T_frio_max,
+            self.P, self.B, self.N, params.C_n, params.B_nb,
+            params.T_setup, params.T_pick, best_case_route_time,
+            self._picker_speeds(params), params.T_cold,
         )
         if impossible_batches:
             print(
@@ -283,12 +283,12 @@ class OPPAntColonyOptimization(Model):
             C_n=params.C_n,
             C_v=params.C_v,
             A=params.A,
-            B_time=params.B_time,
-            B_setup=params.B_setup,
-            B_picking=params.B_picking,
+            T_travel=params.T_travel,
+            T_setup=params.T_setup,
+            T_pick=params.T_pick,
             S=params.S,
             V_p=params.V_p,
-            T_frio_max=params.T_frio_max,
+            T_cold=params.T_cold,
             P=self.P,
         )
 
@@ -298,18 +298,18 @@ class OPPAntColonyOptimization(Model):
             P=self.P,
             location_graph=self.location_graph,
             batch_assignments=batch_assignments,
-            W_full=params.W_full,
-            W_ea_ta=params.W_ea_ta,
-            W_ea=params.W_ea,
-            W_ta=params.W_ta,
+            W_c=params.W_c,
+            W_pen=params.W_pen,
+            W_e=params.W_e,
+            W_t=params.W_t,
             C_n=params.C_n,
             C_v=params.C_v,
             A=params.A,
-            B_time=params.B_time,
-            B_setup=params.B_setup,
-            B_picking=params.B_picking,
+            T_travel=params.T_travel,
+            T_setup=params.T_setup,
+            T_pick=params.T_pick,
             S=params.S,
-            Dd=params.Dd,
+            T_due_n=params.T_due_n,
             M=params.M,
             V_p=params.V_p,
         )
@@ -471,7 +471,7 @@ class OPPAntColonyOptimization(Model):
             # best_global_solution is tracked ONLY among cold-chain-COMPLIANT
             # ants (base_cost, unpenalized -- violation is 0 for these
             # anyway) so the reported final answer always satisfies
-            # T_frio_max exactly, even though the search itself tolerates
+            # T_cold exactly, even though the search itself tolerates
             # temporary violations to keep learning.
             best_improved = False
             if feasible_ant_solutions:
@@ -537,17 +537,17 @@ class OPPAntColonyOptimization(Model):
             params={
                 "obj_val": best_global_cost,
                 "sla_on_time_pct": sla_on_time_pct(solution_info["tardiness"]),
-                "W_full": params.W_full,
-                "W_ea_ta": params.W_ea_ta,
-                "W_ea": params.W_ea,
-                "W_ta": params.W_ta,
+                "W_c": params.W_c,
+                "W_pen": params.W_pen,
+                "W_e": params.W_e,
+                "W_t": params.W_t,
                 "C_v": params.C_v,
-                "B_time": params.B_time,
-                "B_setup": params.B_setup,
-                "B_picking": params.B_picking,
+                "T_travel": params.T_travel,
+                "T_setup": params.T_setup,
+                "T_pick": params.T_pick,
                 "M": params.M,
                 "V_p": dict(params.V_p),
-                "T_frio_max": params.T_frio_max,
+                "T_cold": params.T_cold,
                 "N": len(self.N),
                 "B": len(self.B),
                 "P": len(self.P),
@@ -582,17 +582,17 @@ class OPPAntColonyOptimization(Model):
             output=None,
             elapsed=elapsed,
             params={
-                "W_full": getattr(params, "W_full", None),
-                "W_ea_ta": getattr(params, "W_ea_ta", None),
-                "W_ea": getattr(params, "W_ea", None),
-                "W_ta": getattr(params, "W_ta", None),
+                "W_c": getattr(params, "W_c", None),
+                "W_pen": getattr(params, "W_pen", None),
+                "W_e": getattr(params, "W_e", None),
+                "W_t": getattr(params, "W_t", None),
                 "C_v": getattr(params, "C_v", None),
-                "B_time": getattr(params, "B_time", None),
-                "B_setup": getattr(params, "B_setup", None),
-                "B_picking": getattr(params, "B_picking", None),
+                "T_travel": getattr(params, "T_travel", None),
+                "T_setup": getattr(params, "T_setup", None),
+                "T_pick": getattr(params, "T_pick", None),
                 "M": getattr(params, "M", None),
                 "V_p": dict(getattr(params, "V_p", {}) or {}),
-                "T_frio_max": getattr(params, "T_frio_max", None),
+                "T_cold": getattr(params, "T_cold", None),
                 "N": len(self.N),
                 "B": len(self.B),
                 "P": len(self.P),
@@ -612,46 +612,46 @@ class OPPAntColonyOptimization(Model):
         return {p: self._picker_speed(p, params) for p in self.P}
 
     def _fixed_time(self, batch: str, batch_assignments: Dict[str, Set[str]], params: SolveAco4ModelDTO) -> float:
-        """Setup + picking time -- the part of t_exec_pb that does NOT depend on picker speed."""
+        """Setup + picking time -- the part of T_exec_pb that does NOT depend on picker speed."""
         orders = batch_assignments.get(batch, set())
-        return exec_time.fixed_time(orders, params.C_n, params.B_setup, params.B_picking)
+        return exec_time.fixed_time(orders, params.C_n, params.T_setup, params.T_pick)
 
     def _route_time(
         self, route: List[str], params: SolveAco4ModelDTO, distance: Optional[float] = None
     ) -> float:
         """
-        Travel time (B_time * distance) + service time -- opp_v5_2_split's
-        R_b_time, the part scaled by V_p. Pass `distance` when the caller
+        Travel time (T_travel * distance) + service time -- opp_v5_2_split's
+        R_b, the part scaled by V_p. Pass `distance` when the caller
         already computed it, to avoid recomputing it again here (2026-09-10
         audit finding: _eligible_pickers_for_batch used to call this once
         per picker, recomputing the SAME route's distance every time, even
         though distance doesn't depend on picker at all).
         """
-        return exec_time.route_time(self.location_graph, route, params.B_time, params.S, distance)
+        return exec_time.route_time(self.location_graph, route, params.T_travel, params.S, distance)
 
-    def _t_exec_pb(
+    def _T_exec_pb(
         self, batch: str, route: List[str], picker: str,
         batch_assignments: Dict[str, Set[str]], params: SolveAco4ModelDTO,
         distance: Optional[float] = None,
     ) -> float:
         """See _route_time's docstring for why `distance` can be passed in precomputed."""
         orders = batch_assignments.get(batch, set())
-        return exec_time.t_exec_pb(
+        return exec_time.T_exec_pb(
             self.location_graph, route, orders, picker,
-            params.C_n, params.B_setup, params.B_picking, params.B_time, params.S, params.V_p,
+            params.C_n, params.T_setup, params.T_pick, params.T_travel, params.S, params.V_p,
             distance=distance,
         )
 
     def _eligible_pickers_for_batch(
         self, batch: str, route: List[str], batch_assignments: Dict[str, Set[str]], params: SolveAco4ModelDTO,
     ) -> List[str]:
-        """Pickers p for which t_exec_pb[p, batch] <= T_frio_max, given `route`."""
+        """Pickers p for which T_exec_pb[p, batch] <= T_cold, given `route`."""
         # Route distance doesn't depend on picker -- compute it once
         # instead of once per picker (see _route_time's docstring).
         distance = self._calculate_route_distance(route)
         return [
             p for p in self.P
-            if self._t_exec_pb(batch, route, p, batch_assignments, params, distance=distance) <= params.T_frio_max + 1e-9
+            if self._T_exec_pb(batch, route, p, batch_assignments, params, distance=distance) <= params.T_cold + 1e-9
         ]
 
     # NOTE: this model used to have a route-time ESTIMATE (greedy nearest-
@@ -708,7 +708,7 @@ class OPPAntColonyOptimization(Model):
         return pheromones
 
     def _initialize_picker_pheromones(self) -> Dict[Tuple[str, str], float]:
-        """Initializes the batch/picker assignment pheromone table (X_pb) with a base value of 1.0."""
+        """Initializes the batch/picker assignment pheromone table (x_pb) with a base value of 1.0."""
         return {(b, p): 1.0 for b in self.B for p in self.P}
 
     def _build_ant_solution(
@@ -723,7 +723,7 @@ class OPPAntColonyOptimization(Model):
     ) -> Optional[RouteSolution]:
         """
         Each ant constructs a feasible route per batch AND assigns every
-        batch that has orders to a COLD-CHAIN-ELIGIBLE picker (X_pb).
+        batch that has orders to a COLD-CHAIN-ELIGIBLE picker (x_pb).
         Returns a RouteSolution, or None if the ant got stuck building a route.
         """
         solution = RouteSolution(self.B, self.location_graph, batch_assignments, self.P)
@@ -760,7 +760,7 @@ class OPPAntColonyOptimization(Model):
             solution.assign_batch_to_picker(batch, picker)
             picker_load[picker] += 1
 
-        self._sort_picker_queues_by_due_date(solution, batch_assignments, params.Dd)
+        self._sort_picker_queues_by_due_date(solution, batch_assignments, params.T_due_n)
 
         return solution
 
@@ -933,7 +933,7 @@ class OPPAntColonyOptimization(Model):
         cheaper, else None.
 
         Our own addition, not from the papers. Why it's needed (measured
-        2026-09-26 on realistic_crew_scenario(7) with W_full=27): the
+        2026-09-26 on realistic_crew_scenario(7) with W_c=27): the
         construction does reach v5's optimal Stage 1 route for most
         batches, but rarely, and in a different ant each time -- an ant's
         cost couples all batches, so one short route inside an otherwise
@@ -943,7 +943,7 @@ class OPPAntColonyOptimization(Model):
         Stuetzle 2004, ch. 3.3-3.4), applied per batch because batches'
         routes are independent of each other. A shorter route is not
         always cheaper under this objective (finishing earlier can add
-        earliness when W_full is small), hence the evaluator decides.
+        earliness when W_c is small), hence the evaluator decides.
         """
         candidate = best_solution.copy()
         changed = False
@@ -979,7 +979,7 @@ class OPPAntColonyOptimization(Model):
         Our own addition, not from the papers (Chen et al.'s ACO only
         routes; batch-to-picker assignment/sequencing is outside their
         problem). Why it's needed (measured 2026-09-26 on
-        realistic_crew_scenario(7), W_full=27): with every route already
+        realistic_crew_scenario(7), W_c=27): with every route already
         equal to v5's optimal Stage 1 routes, ACO still lost to v5 by ~8
         objective units, from the schedule alone -- ants pick pickers by
         roulette and sequence each picker by earliest due date
@@ -1137,8 +1137,8 @@ class OPPAntColonyOptimization(Model):
         first reaches them, depot first and final last -- matching what
         _build_batch_route chooses. No cold-chain filter is needed here
         (unlike picker pheromone): these are the SHORTEST routes found,
-        and a shorter route can only lower t_exec_pb, never cause a
-        T_frio_max violation.
+        and a shorter route can only lower T_exec_pb, never cause a
+        T_cold violation.
         """
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
@@ -1206,7 +1206,7 @@ class OPPAntColonyOptimization(Model):
         cold-chain PENALTY happens to still let it through, which is what
         the very first version of this soft-constraint fix did) matters a
         lot in practice: depositing for a batch's route/picker pheromone
-        even when THAT batch violates T_frio_max reinforces exactly the
+        even when THAT batch violates T_cold reinforces exactly the
         edges/assignment that caused the violation. Verified empirically
         (2026-09-09) on an adversarial two-node instance where the
         violating construction was ~94% likely per ant vs. ~6% for the
@@ -1238,17 +1238,17 @@ class OPPAntColonyOptimization(Model):
         self, route: List[str], orders: Set[str], picker: str, params: SolveAco4ModelDTO
     ) -> float:
         """
-        t_exec_pb = B_setup + B_picking * sum(C_n)          [fixed, no speed]
-                  + (B_time * travel_distance + service_time) / V_p[picker]
+        T_exec_pb = T_setup + T_pick * sum(C_n)          [fixed, no speed]
+                  + (T_travel * travel_distance + service_time) / V_p[picker]
         (same formula as RouteEvaluator._calculate_batch_execution_time --
         kept here too since this copy also drives the reported
         batch_times/batch_completions/tardiness/earliness, same split
         opp_aco_2/opp_hc_4 use between the search's evaluator and this
         reporting-only helper).
         """
-        return exec_time.t_exec_pb(
+        return exec_time.T_exec_pb(
             self.location_graph, route, orders, picker,
-            params.C_n, params.B_setup, params.B_picking, params.B_time, params.S, params.V_p,
+            params.C_n, params.T_setup, params.T_pick, params.T_travel, params.S, params.V_p,
         )
 
     def _build_solution_info(
@@ -1265,7 +1265,7 @@ class OPPAntColonyOptimization(Model):
             "earliness": {},
             "routes": {},
             "V_p": dict(params.V_p),
-            "T_frio_max": params.T_frio_max,
+            "T_cold": params.T_cold,
         }
 
         batch_assignments = params.extract_batch_assignments()
@@ -1277,10 +1277,10 @@ class OPPAntColonyOptimization(Model):
                 route = solution.get_batch_route(batch)
                 orders = batch_assignments.get(batch, set())
 
-                t_exec_pb = self._calculate_batch_execution_time(route, orders, picker, params)
-                current_time += t_exec_pb
+                T_exec_pb = self._calculate_batch_execution_time(route, orders, picker, params)
+                current_time += T_exec_pb
 
-                solution_info["batch_times"][batch] = t_exec_pb
+                solution_info["batch_times"][batch] = T_exec_pb
                 solution_info["batch_completions"][batch] = current_time
                 solution_info["picker_assignments"][batch] = picker
                 solution_info["routes"][batch] = route
@@ -1290,11 +1290,11 @@ class OPPAntColonyOptimization(Model):
                 (b for b, orders in batch_assignments.items() if order in orders), None
             )
             if order_batch and order_batch in solution_info["batch_completions"]:
-                v_b = solution_info["batch_completions"][order_batch]
-                due_date = params.Dd.get(order, float("inf"))
+                c_b = solution_info["batch_completions"][order_batch]
+                due_date = params.T_due_n.get(order, float("inf"))
 
-                solution_info["tardiness"][order] = max(0, v_b - due_date)
-                solution_info["earliness"][order] = max(0, due_date - v_b)
+                solution_info["tardiness"][order] = max(0, c_b - due_date)
+                solution_info["earliness"][order] = max(0, due_date - c_b)
 
         return solution_info
 

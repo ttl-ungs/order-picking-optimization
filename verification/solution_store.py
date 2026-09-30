@@ -16,16 +16,16 @@ turning an int vertex id into a different key than the same id in a list:
       "instance": {
         "N": [...], "V": [...], "P": [...], "B": [...],
         "depot": "...", "final": "...",
-        "E": [[i, j, d_ij], ...],
-        "W_full", "W_ea_ta", "W_ea", "W_ta",
-        "B_time", "B_setup", "B_picking", "C_v", "M",   (scalars, may be null)
-        "C_n": [[n, value], ...], "Dd": [[n, value], ...],
+        "E": [[i, j, D_ij], ...],
+        "W_c", "W_pen", "W_e", "W_t",
+        "T_travel", "T_setup", "T_pick", "C_v", "M",   (scalars, may be null)
+        "C_n": [[n, value], ...], "T_due_n": [[n, value], ...],
         "S_i": [[i, value], ...],
         "A_ni": [[n, i, value], ...],   (non-zero entries only)
-        "Bn": [[n, b, value], ...],     (non-zero entries only)
+        "B_nb": [[n, b, value], ...],     (non-zero entries only)
         "V_p": [[p, speed], ...],       (every picker; missing ones as 1.0,
                                          the models' own default)
-        "T_frio_max": float,            (Infinity when disabled)
+        "T_cold": float,            (Infinity when disabled)
         "start_time": float, "Seed": int | null
       },
       "solution": {
@@ -33,7 +33,7 @@ turning an int vertex id into a different key than the same id in a list:
         "routes": [[b, [stops...]], ...],   (stops strictly between depot and final)
         "picker_sequences": [[p, [b...]], ...],   (execution order per picker)
         "batch_times": [[b, t_exec], ...],
-        "batch_completions": [[b, v_b], ...],
+        "batch_completions": [[b, c_b], ...],
         "tardiness": [[n, ta], ...], "earliness": [[n, ea], ...]
       }
     }
@@ -80,22 +80,22 @@ def solution_record_to_dict(record, test_id):
         "depot": str(graph.get_depot()),
         "final": str(graph.get_final()),
         "E": [[str(i.location_id), str(j.location_id), d] for (i, j), d in graph.distances.items()],
-        "W_full": params.W_full,
-        "W_ea_ta": params.W_ea_ta,
-        "W_ea": params.W_ea,
-        "W_ta": params.W_ta,
-        "B_time": params.B_time,
-        "B_setup": params.B_setup,
-        "B_picking": params.B_picking,
+        "W_c": params.W_c,
+        "W_pen": params.W_pen,
+        "W_e": params.W_e,
+        "W_t": params.W_t,
+        "T_travel": params.T_travel,
+        "T_setup": params.T_setup,
+        "T_pick": params.T_pick,
         "C_v": params.C_v,
         "M": params.M,
         "C_n": _pairs(params.C_n if isinstance(params.C_n, dict) else {}),
-        "Dd": _pairs(params.Dd),
+        "T_due_n": _pairs(params.T_due_n),
         "S_i": _pairs(params.S if isinstance(params.S, dict) else {}),
         "A_ni": _nonzero_triples(params.A),
-        "Bn": _nonzero_triples(params.Bn),
+        "B_nb": _nonzero_triples(params.B_nb),
         "V_p": [[str(p), float(speeds.get(p, 1.0))] for p in record.P],
-        "T_frio_max": float(params.T_frio_max),
+        "T_cold": float(params.T_cold),
         "start_time": record.start_time,
         "Seed": params.Seed,
     }
@@ -122,13 +122,13 @@ def _scenario_value(key, value):
     """One entry of a build_dat_files scenario dict, JSON-safe with string ids:
     sets -> sorted lists (tuple members as lists), tuple-keyed dicts ->
     [[k1, k2, value], ...] (zeros dropped for the dense 0/1 incidence
-    tables A_ni and Bn), id-keyed dicts -> [[k, value], ...]."""
+    tables A_ni and B_nb), id-keyed dicts -> [[k, value], ...]."""
     if isinstance(value, (set, frozenset, list, tuple)):
         items = [[str(x) for x in v] if isinstance(v, tuple) else str(v) for v in value]
         return sorted(items, key=str)
     if isinstance(value, dict):
         if value and isinstance(next(iter(value)), tuple):
-            drop_zeros = key in ("A_ni", "Bn", "X_pb")
+            drop_zeros = key in ("A_ni", "B_nb", "X_pb")
             return [[*(str(k) for k in ks), v] for ks, v in value.items() if v or not drop_zeros]
         return [[str(k), v] for k, v in value.items()]
     return value
@@ -188,7 +188,7 @@ def read_solution_record(path):
     """Read a solution JSON back into plain dicts with tuple keys:
     returns (meta, instance, solution) where instance uses the same shapes
     tests/infra/zimpl/dat_files_builder.build_dat_files expects (E as a set
-    of (i, j), d_ij/A_ni/Bn keyed by tuples, the rest keyed by id)."""
+    of (i, j), D_ij/A_ni/B_nb keyed by tuples, the rest keyed by id)."""
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
     if data.get("format_version") != FORMAT_VERSION:
@@ -203,12 +203,12 @@ def read_solution_record(path):
     instance["P"] = list(raw["P"])
     instance["B"] = list(raw["B"])
     instance["E"] = {(i, j) for i, j, _ in raw["E"]}
-    instance["d_ij"] = {(i, j): d for i, j, d in raw["E"]}
+    instance["D_ij"] = {(i, j): d for i, j, d in raw["E"]}
     instance["C_n"] = dict(raw["C_n"])
-    instance["Dd"] = dict(raw["Dd"])
+    instance["T_due_n"] = dict(raw["T_due_n"])
     instance["S_i"] = dict(raw["S_i"])
     instance["A_ni"] = {(n, i): v for n, i, v in raw["A_ni"]}
-    instance["Bn"] = {(n, b): v for n, b, v in raw["Bn"]}
+    instance["B_nb"] = {(n, b): v for n, b, v in raw["B_nb"]}
     instance["V_p"] = dict(raw["V_p"])
 
     raw_sol = data["solution"]

@@ -75,14 +75,14 @@ directamente con los de los estudios posteriores.
 \startsection[title={El modelo en dos etapas}]
 La Etapa 1 resuelve, para cada lote por separado, el camino de menor costo que sale del depósito,
 visita todas las ubicaciones del lote y termina en el nodo final. La conectividad la garantiza un
-flujo de Gavish-Graves ($f_{ijb} \leq R_b \, z_{ijb}$). La Etapa 2 recibe solamente el tiempo
+flujo de Gavish-Graves ($q_{ijb} \leq L_b \, z_{ijb}$). La Etapa 2 recibe solamente el tiempo
 de ruta de cada lote y decide qué picker hace cada lote y en qué orden, con el objetivo
 
 \startformula
-\min \left( W_{full} \cdot \sum_{b \in \mathcal{B}} v_b + W_{ea\_ta} \cdot \left( W_{ea} \cdot \sum_{n \in \mathcal{N}} ea_n + W_{ta} \cdot \sum_{n \in \mathcal{N}} ta_n \right) \right)
+\min \left( W^{c} \cdot \sum_{b \in \mathcal{B}} c_b + W^{pen} \cdot \left( W^{e} \cdot \sum_{n \in \mathcal{N}} ea_n + W^{t} \cdot \sum_{n \in \mathcal{N}} ta_n \right) \right)
 \stopformula
 
-donde $v_b$ es el inicio del lote, $ea_n$ el adelanto y $ta_n$ el atraso de cada orden.
+donde $c_b$ es el tiempo de completitud del lote, $ea_n$ el adelanto y $ta_n$ el atraso de cada orden.
 
 La consecuencia central para la exploración es que las dos etapas tienen motores de costo
 separados. La Etapa 1 no depende de cuántos pickers hay ni de sus velocidades: en el barrido de
@@ -163,19 +163,19 @@ Llegar a unas 31 ubicaciones por lote agrandando los pedidos cuesta 46 s; llegar
 agrandando la grilla cuesta 464 s. El estudio 06 lo confirma desde el otro lado: en 25×25, con
 solo 12 órdenes por lote, la Etapa 1 no terminó en 15 minutos. El mecanismo no está
 identificado. Una sospecha sin verificar es que la relajación lineal del flujo, acotado por
-$R_b$, se debilita a medida que crece el grafo.
+$L_b$, se debilita a medida que crece el grafo.
 \stopsubsection
 \stopsection
 
 \startsection[title={El SLA lo fija la función objetivo, no las fechas de entrega}]
-Demorar un lote una unidad de tiempo cuesta $W_{full}$, más una unidad por cada orden suya que
+Demorar un lote una unidad de tiempo cuesta $W^{c}$, más una unidad por cada orden suya que
 ya está atrasada, y ahorra una unidad por cada orden que todavía llegaría antes de tiempo. En el
 óptimo, el modelo demora cada lote mientras las órdenes adelantadas superen a las atrasadas en
-más de $W_{full}$. Con $W_{ea} = W_{ta} = 1$ y fechas repartidas y alcanzables, eso da una
+más de $W^{c}$. Con $W^{e} = W^{t} = 1$ y fechas repartidas y alcanzables, eso da una
 proporción de órdenes a tiempo de
 
 \startformula
-\mathrm{SLA} = \frac{N_b + W_{full}}{2 \, N_b}
+\mathrm{SLA} = \frac{N_b + W^{c}}{2 \, N_b}
 \stopformula
 
 donde $N_b$ es la cantidad de órdenes por lote.
@@ -355,11 +355,11 @@ objetivo con y sin la restricción.
 
 \startsection[title={Validación: los tests de stress del perfil realista},reference=sec:tests]
 La corrida de la suite de stress del split del 29 de septiembre, con el código actual, la Etapa 1
-en 6 procesos y $W_{full} = 27$ (mayor que las órdenes por lote, así que esperar a propósito no
+en 6 procesos y $W^{c} = 27$ (mayor que las órdenes por lote, así que esperar a propósito no
 conviene). La Etapa 1 se estima como el tiempo total menos el de la Etapa 2, así que incluye la
 compilación y el resto de la preparación. La corrida anterior, del 23 de septiembre, usaba
-$W_{full} = 9$: con los mismos tests, la Etapa 2 tardaba entre 86 y 203 s (salvo el test 11) y el
-SLA quedaba en 68\%; con $W_{full} = 27$ la Etapa 2 baja a segundos y el SLA sube al 100\%.
+$W^{c} = 9$: con los mismos tests, la Etapa 2 tardaba entre 86 y 203 s (salvo el test 11) y el
+SLA quedaba en 68\%; con $W^{c} = 27$ la Etapa 2 baja a segundos y el SLA sube al 100\%.
 
 \placefigure[force][fig:etapas_tests]{Tiempo de cada etapa en los tests de stress del perfil realista, con la Etapa 1 en 6 procesos.}
 {%%FIG:etapas_tests%%}
@@ -381,14 +381,14 @@ SLA quedaba en 68\%; con $W_{full} = 27$ la Etapa 2 baja a segundos y el SLA sub
 {%%FIG:etapa1_realista%%}
 
 \startitemize
-\item {\bf Con $W_{full} = 27$ domina la Etapa 1 en todos los tests}, aun en paralelo, y su
+\item {\bf Con $W^{c} = 27$ domina la Etapa 1 en todos los tests}, aun en paralelo, y su
 crecimiento es abrupto: de 13×13 a 14×14 se multiplica por 2,0; de 14×14 a 15×15, por 4,7.
 \item {\bf La forma de la grilla pesa:} la grilla alargada de 8×21 (168 ubicaciones) tardó en
 la Etapa 1 más que la cuadrada de 14×14 (196), aunque tiene menos ubicaciones. En la corrida del
 23 de septiembre había quedado entre 13×13 y 14×14.
-\item {\bf La Etapa 2 deja de pesar cuando esperar no conviene.} Con $W_{full} = 27$ resuelve en
+\item {\bf La Etapa 2 deja de pesar cuando esperar no conviene.} Con $W^{c} = 27$ resuelve en
 menos de 10 s en todos los tests, también en el 11 (4 pickers, cadena de frío), donde ya era
-barata con $W_{full} = 9$ porque el límite de frío deja elegibles solo a los 2 pickers rápidos.
+barata con $W^{c} = 9$ porque el límite de frío deja elegibles solo a los 2 pickers rápidos.
 \stopitemize
 \stopsection
 
@@ -461,8 +461,8 @@ la grilla: segundos en 7×7, minutos en 13×13, casi 15 minutos en 15×15 (en 6 
 tolera unos dos lotes por picker. La proporción intermedia (6 lotes para 4 pickers) es la más
 difícil, y el salto de costo aparece apenas hay dos velocidades distintas.
 \item {\bf El SLA no es un parámetro del escenario}, sino una consecuencia de $N_b$ y
-$W_{full}$. Con $W_{full}$ menor que las órdenes por lote, el modelo retrasa lotes a propósito para
-no adelantarse; con $W_{full} = 27$ eso deja de convenir y el SLA de la suite sube al 100\%.
+$W^{c}$. Con $W^{c}$ menor que las órdenes por lote, el modelo retrasa lotes a propósito para
+no adelantarse; con $W^{c} = 27$ eso deja de convenir y el SLA de la suite sube al 100\%.
 \item {\bf Las simplificaciones de los escenarios heredados no son neutras:} los pesos uniformes
 encarecen la Etapa 1 en grillas chicas; las velocidades uniformes abaratan la Etapa 2; las
 fechas imposibles dejan la mitad del objetivo sin ejercitar.
@@ -481,8 +481,8 @@ se vio que no se transfieren de una instancia a la de al lado sin volver a medir
 paralelo; la calibración, con hasta ocho. Los tiempos absolutos de esos estudios no se deben
 citar sin repetirlos.
 \item El efecto del objetivo aplanado sobre la Etapa 2 estaba confundido con $N_b$. La suite
-corrida con $W_{full} = 27$ sobre las mismas instancias ($N_b$ fijo) separa una parte: la Etapa 2
-bajó de 86--203 s a menos de 10 s. Falta barrer valores intermedios de $W_{full}$.
+corrida con $W^{c} = 27$ sobre las mismas instancias ($N_b$ fijo) separa una parte: la Etapa 2
+bajó de 86--203 s a menos de 10 s. Falta barrer valores intermedios de $W^{c}$.
 \item Qué hace crecer la Etapa 1 con la grilla sigue sin explicación.
 \item La franja de 10 a 20 minutos del perfil realista quedó cubierta con la corrida del 29 de
 septiembre: 15×15 tardó 14,8 minutos (14×14, 3,2).

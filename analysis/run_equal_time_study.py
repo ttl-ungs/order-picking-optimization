@@ -62,7 +62,7 @@ SCENARIOS = {
     "08": ("test_realistic_crew_16x16_warehouse", lambda: realistic_crew_scenario(16)),
     "09": ("test_realistic_crew_rectangular_warehouse", lambda: realistic_crew_scenario(8, 21)),
     "10": ("test_realistic_crew_scheduling_heavy", lambda: realistic_crew_scenario(7, pickers=4)),
-    "11": ("test_realistic_crew_cold_chain", lambda: realistic_crew_scenario(13, pickers=4, t_frio_max=280)),
+    "11": ("test_realistic_crew_cold_chain", lambda: realistic_crew_scenario(13, pickers=4, t_cold=280)),
     "12": ("test_larger_crew_8_batches_4_pickers", lambda: realistic_crew_scenario(7, batches=8, pickers=4)),
     "13": ("test_larger_crew_10_batches_5_pickers", lambda: realistic_crew_scenario(7, batches=10, pickers=5)),
     "14": ("test_larger_crew_12_batches_6_pickers", lambda: realistic_crew_scenario(7, batches=12, pickers=6)),
@@ -120,18 +120,18 @@ def run_split(scenario, budget):
     route_times = {
         name.split("$")[-1]: value
         for name, value in stage1_values.items()
-        if name.lower().startswith("r_b_time$") and name.split("$")[-1] in scenario["B"]
+        if name.lower().startswith("r_b$") and name.split("$")[-1] in scenario["B"]
     }
     if set(route_times) != set(scenario["B"]):
         return f"stage1_{stage1_status}", None, None, None, time.time() - start
 
     write_indexed_dat(os.path.join(DAT_DIR, "route_time_b.dat"), route_times)
     write_indexed_dat(os.path.join(DAT_DIR, "velocities.dat"), scenario["V_p"])
-    write_scalar_dat(os.path.join(DAT_DIR, "frio.dat"), scenario["T_frio_max"])
+    write_scalar_dat(os.path.join(DAT_DIR, "cold.dat"), scenario["T_cold"])
 
     stuck = batches_without_eligible_picker(
-        scenario["P"], scenario["B"], scenario["N"], scenario["C_n"], scenario["Bn"],
-        scenario["B_setup"], scenario["B_picking"], route_times, scenario["V_p"], scenario["T_frio_max"],
+        scenario["P"], scenario["B"], scenario["N"], scenario["C_n"], scenario["B_nb"],
+        scenario["T_setup"], scenario["T_pick"], route_times, scenario["V_p"], scenario["T_cold"],
     )
     if stuck:
         # Stage 1's time-limited routes may be too long for the cold-chain

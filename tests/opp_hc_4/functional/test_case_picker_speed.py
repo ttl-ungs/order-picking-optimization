@@ -19,9 +19,9 @@ class TestOPPHillClimbing4Model2PickerSpeed(OPPTestCaseHC4):
     """
     Test HC4-2: Picker speed. Same graph as HC4-1, but both orders share a
     single batch (B1) and there are two pickers with very different speeds.
-    Purpose: with cold chain disabled (T_frio_max=+inf), Hill Climbing must
+    Purpose: with cold chain disabled (T_cold=+inf), Hill Climbing must
     still discover that reassigning the batch to the FASTER picker lowers
-    the objective (W_full weights recollection time only), even though it
+    the objective (W_c weights recollection time only), even though it
     starts out assigned to the slower one (round-robin picks the first
     picker when loads are tied).
     """
@@ -51,21 +51,21 @@ class TestOPPHillClimbing4Model2PickerSpeed(OPPTestCaseHC4):
         due_date = {"O1": 1000.0, "O2": 1000.0}
 
         params = SolveHC4ModelDTO()
-        params.W_full = 1.0
-        params.W_ea_ta = 0.0  # isolate the recollection-time term
-        params.W_ea = 0.0
-        params.W_ta = 0.0
+        params.W_c = 1.0
+        params.W_pen = 0.0  # isolate the recollection-time term
+        params.W_e = 0.0
+        params.W_t = 0.0
         params.C_n = cap_n
         params.C_v = cap_vehicle
         params.A = a
-        params.B_time = beta_time
-        params.B_setup = beta_setup
-        params.B_picking = beta_picking
-        params.Dd = due_date
+        params.T_travel = beta_time
+        params.T_setup = beta_setup
+        params.T_pick = beta_picking
+        params.T_due_n = due_date
         params.M = M
-        params.Bn = y
+        params.B_nb = y
         params.V_p = {"P1": 1.0, "P2": 10.0}  # P1 slow, P2 fast
-        params.T_frio_max = float("inf")  # cold chain disabled
+        params.T_cold = float("inf")  # cold chain disabled
         params.Seed = 1
         params.Max_it = 200
         params.Max_imp = 60
@@ -89,10 +89,10 @@ class TestOPPHillClimbing4Model2PickerSpeed(OPPTestCaseHC4):
         self.assert_no_time_overlap(solution_info, {"P1", "P2"})
 
         # Best feasible route for {L2, L3}: L1->L2->L3->L4, distance 25.
-        # fixed_time = B_setup + B_picking * sum(C_n) = 1.0 + 1.0*4.0 = 5.0
-        # route_time = B_time * distance = 0.5 * 25 = 12.5
-        # t_exec_pb(P1) = 5.0 + 12.5/1.0  = 17.5
-        # t_exec_pb(P2) = 5.0 + 12.5/10.0 =  6.25
+        # fixed_time = T_setup + T_pick * sum(C_n) = 1.0 + 1.0*4.0 = 5.0
+        # route_time = T_travel * distance = 0.5 * 25 = 12.5
+        # T_exec_pb(P1) = 5.0 + 12.5/1.0  = 17.5
+        # T_exec_pb(P2) = 5.0 + 12.5/10.0 =  6.25
         self.assertEqual(
             solution_info["picker_assignments"]["B1"], "P2",
             "Hill Climbing should reassign the batch to the faster picker to lower the objective",

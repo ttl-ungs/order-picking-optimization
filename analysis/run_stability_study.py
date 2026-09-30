@@ -54,7 +54,7 @@ N_SEEDS = 30
 # label -> (model class, params DTO class, extra DTO fields beyond the
 # common ones build_params already sets -- empty means "just use that
 # DTO's own defaults", which for hc_4/aco_4 already means V_p unset/
-# T_frio_max=+inf (cold chain disabled) and for hc_3/aco_3 Min_dwell=0.0
+# T_cold=+inf (cold chain disabled) and for hc_3/aco_3 Min_dwell=0.0
 # (no synthetic congestion floor) -- this study compares search behavior
 # on the SAME underlying problem across the family, not the cold-chain/
 # congestion features themselves.

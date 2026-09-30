@@ -24,10 +24,10 @@ class OPPTestCaseMono(unittest.TestCase):
         """Solve the monolithic model; returns (values, route_times, status, values).
 
         Kept with opp_v5_2_split's `run_pipeline` name and 4-tuple shape so the ported
-        test bodies stay identical. `route_times` are the R_b_time values the
+        test bodies stay identical. `route_times` are the r_b values the
         model itself chose (opp_v5_2_split obtains them from its stage 1).
         """
-        # V_p[p] is a divisor in the model's t_exec_pb; a speed of 0 divides by
+        # V_p[p] is a divisor in the model's T_exec_pb; a speed of 0 divides by
         # zero at ZIMPL compile time and a negative one silently yields a
         # negative duration. Reject before ZIMPL ever sees it (same guard
         # OPPTestCaseSplit.run_pipeline applies).
@@ -37,8 +37,8 @@ class OPPTestCaseMono(unittest.TestCase):
             f"V_p must be strictly positive for every picker; got non-positive speed for {sorted(bad_speeds)}",
         )
 
-        # build_dat_files also writes velocities.dat and frio.dat from the
-        # scenario's V_p / T_frio_max.
+        # build_dat_files also writes velocities.dat and cold.dat from the
+        # scenario's V_p / T_cold.
         build_dat_files(DAT_DIR, scenario)
         status, values = solve_zpl(ZPL_PATH, dat_dir=DAT_DIR)
         route_times = self.extract_route_times(values, scenario["B"])
@@ -47,7 +47,7 @@ class OPPTestCaseMono(unittest.TestCase):
     def extract_route_times(self, values, batches):
         result = {}
         for name, value in values.items():
-            if name.lower().startswith("r_b_time$"):
+            if name.lower().startswith("r_b$"):
                 batch = name.split("$")[-1]
                 if batch in batches:
                     result[batch] = value
@@ -66,7 +66,7 @@ class OPPTestCaseMono(unittest.TestCase):
     def completion_times(self, values, pickers, batches):
         result = {}
         for name, value in values.items():
-            if name.lower().startswith("v_pb$"):
+            if name.lower().startswith("c_pb$"):
                 _, picker, batch = name.split("$")
                 if picker in pickers and batch in batches:
                     result[(picker, batch)] = value
@@ -80,7 +80,7 @@ class OPPTestCaseMono(unittest.TestCase):
             self.assertEqual(sum(j == scenario["final"] for _, j in arcs), 1)
             required = {
                 location for location in scenario["V"]
-                if any(scenario["A_ni"][(order, location)] * scenario["Bn"][(order, batch)]
+                if any(scenario["A_ni"][(order, location)] * scenario["B_nb"][(order, batch)]
                        for order in scenario["N"])
             }
             visited = {node for arc in arcs for node in arc}
@@ -90,8 +90,8 @@ class OPPTestCaseMono(unittest.TestCase):
         assignments = self.assignments(values, scenario["P"], scenario["B"])
         completions = self.completion_times(values, scenario["P"], scenario["B"])
         for batch, picker in assignments.items():
-            duration = scenario["B_setup"] + scenario["B_picking"] * sum(
-                scenario["C_n"][order] * scenario["Bn"][(order, batch)] for order in scenario["N"]
+            duration = scenario["T_setup"] + scenario["T_pick"] * sum(
+                scenario["C_n"][order] * scenario["B_nb"][(order, batch)] for order in scenario["N"]
             ) + route_times[batch] / scenario["V_p"][picker]
             self.assertGreaterEqual(completions[(picker, batch)] + 1e-5, duration)
 
@@ -100,8 +100,8 @@ class OPPTestCaseMono(unittest.TestCase):
             for batch, assigned_picker in assignments.items():
                 if assigned_picker == picker:
                     end = completions[(picker, batch)]
-                    duration = scenario["B_setup"] + scenario["B_picking"] * sum(
-                        scenario["C_n"][order] * scenario["Bn"][(order, batch)] for order in scenario["N"]
+                    duration = scenario["T_setup"] + scenario["T_pick"] * sum(
+                        scenario["C_n"][order] * scenario["B_nb"][(order, batch)] for order in scenario["N"]
                     ) + route_times[batch] / scenario["V_p"][picker]
                     intervals.append((end - duration, end, batch))
             intervals.sort()
@@ -114,12 +114,12 @@ class OPPTestCaseMono(unittest.TestCase):
         pairs = set()
         for picker in scenario["P"]:
             for batch in scenario["B"]:
-                fixed_time = scenario["B_setup"] + scenario["B_picking"] * sum(
-                    scenario["C_n"][order] * scenario["Bn"][(order, batch)]
+                fixed_time = scenario["T_setup"] + scenario["T_pick"] * sum(
+                    scenario["C_n"][order] * scenario["B_nb"][(order, batch)]
                     for order in scenario["N"]
                 )
                 t_exec = fixed_time + route_times[batch] / scenario["V_p"][picker]
-                if t_exec <= scenario["T_frio_max"] + COLD_CHAIN_TOLERANCE:
+                if t_exec <= scenario["T_cold"] + COLD_CHAIN_TOLERANCE:
                     pairs.add((picker, batch))
         return pairs
 

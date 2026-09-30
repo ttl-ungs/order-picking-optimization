@@ -16,7 +16,7 @@ class OPPTestCaseHC4(OPPTestCase):
     """
     Base test case for opp_hc_4, adding assertions specific to the picker
     speed / cold chain extensions over opp_hc_2: eligibility of each
-    (picker, batch) assignment under T_frio_max, and the effect of V_p on
+    (picker, batch) assignment under T_cold, and the effect of V_p on
     reported batch execution times.
     """
 
@@ -75,11 +75,11 @@ class OPPTestCaseHC4(OPPTestCase):
                     f"Time overlap on picker {picker}: {intervals[i]} vs {intervals[i + 1]}",
                 )
 
-    def assert_cold_chain_respected(self, solution_info, T_frio_max, tolerance=1e-6):
-        """Every reported batch execution time (t_exec_pb) must respect T_frio_max."""
+    def assert_cold_chain_respected(self, solution_info, T_cold, tolerance=1e-6):
+        """Every reported batch execution time (T_exec_pb) must respect T_cold."""
         batch_times = solution_info.get("batch_times", {})
         for batch, t_exec in batch_times.items():
             self.assertLessEqual(
-                t_exec, T_frio_max + tolerance,
-                f"Batch {batch} exceeds cold-chain deadline: t_exec_pb={t_exec} > T_frio_max={T_frio_max}",
+                t_exec, T_cold + tolerance,
+                f"Batch {batch} exceeds cold-chain deadline: T_exec_pb={t_exec} > T_cold={T_cold}",
             )

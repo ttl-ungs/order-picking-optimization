@@ -63,19 +63,19 @@ line-by-line pseudocode, cross-referenced to the actual method names.
 
 1. **Initial solution** — unchanged from opp_hc_2: Dijkstra-based
    nearest-neighbor routes per batch, batches distributed round-robin
-   across pickers (X_pb).
+   across pickers (x_pb).
 2. **Neighbor generation** — unchanged from opp_hc_2: 2-opt on a random
    batch's route, picker reassignment, or picker-sequence swap.
 3. **Evaluation** — `RouteEvaluator.compute_batch_completions` walks every
    picker's queue in **round-robin slot order** (slot 0 of every picker,
    then slot 1, ...), and for each batch's fixed route calls
    `simulate_route_congestion` against a shared `CongestionTracker`. The
-   resulting wait is folded into `t_exec_b` and written onto the solution
+   resulting wait is folded into `d_b` and written onto the solution
    (`RouteSolution.set_batch_congestion_wait`) for reporting.
 4. **Accept if better** — unchanged from opp_hc_2: accept the neighbor iff
    its full objective (now congestion-inclusive) improves on the current one.
 
-`t_exec_b = B_setup + B_picking·Σcap + B_time·distance + Σservice_time + congestion_wait`
+`d_b = T_setup + T_pick·Σcap + T_travel·distance + Σservice_time + congestion_wait`
 — a strict superset of opp_hc_2's formula (last term is new).
 
 ## Architecture
@@ -110,7 +110,7 @@ dtos/hc/solve_hc_3_model_dto.py     # SolveHC3ModelDTO: adds Min_dwell on top of
 `SolveResult.params` likewise adds `obj_val_congestion` and `Min_dwell`.
 
 Also fixed while porting: opp_hc_2's own `_build_solution_info` used a
-formula for `t_exec_b` that diverged from the one `RouteEvaluator` actually
+formula for `d_b` that diverged from the one `RouteEvaluator` actually
 optimizes against (it indexed service time by *order* instead of
 *location*, and skipped congestion entirely by construction). opp_hc_3's
 `_build_solution_info` now reuses the exact same formula as its

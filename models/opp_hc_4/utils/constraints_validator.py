@@ -41,7 +41,7 @@ from models.opp_v5_2_split.utils.cold_chain_validation import COLD_CHAIN_TOLERAN
 
 
 class ConstraintsValidator(BaseConstraintsValidator):
-    """opp_hc_2's validator plus a cold-chain eligibility check on X_pb."""
+    """opp_hc_2's validator plus a cold-chain eligibility check on x_pb."""
 
     def __init__(
         self,
@@ -52,21 +52,21 @@ class ConstraintsValidator(BaseConstraintsValidator):
         C_n: Dict,
         C_v: float,
         A: Dict,
-        B_time: float,
-        B_setup: float,
-        B_picking: float,
+        T_travel: float,
+        T_setup: float,
+        T_pick: float,
         S: Dict,
         V_p: Dict[str, float],
-        T_frio_max: float,
+        T_cold: float,
         P: List[str] = None,
     ):
         super().__init__(N, B, location_graph, batch_assignments, C_n, C_v, A, P)
-        self.B_time = B_time
-        self.B_setup = B_setup
-        self.B_picking = B_picking
+        self.T_travel = T_travel
+        self.T_setup = T_setup
+        self.T_pick = T_pick
         self.S = S if isinstance(S, dict) else {}
         self.V_p = V_p or {}
-        self.T_frio_max = T_frio_max
+        self.T_cold = T_cold
 
         # Incremental cold_chain_violation() cache -- see
         # cold_chain_violation_incremental()'s docstring. _last_* reflects
@@ -93,7 +93,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
     def validate_cold_chain_strict(self, solution) -> bool:
         """
         HARD cold-chain check: every batch with orders must be assigned to
-        a picker whose t_exec_pb is within T_frio_max. Used to decide
+        a picker whose T_exec_pb is within T_cold. Used to decide
         whether a solution may become the reported best_feasible_solution
         -- NOT used to gate the search itself (see cold_chain_violation()
         for that; module docstring explains why).
@@ -108,7 +108,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
                 return False
 
             route = solution.get_batch_route(batch)
-            if self.t_exec_pb(batch, route, picker) > self.T_frio_max + COLD_CHAIN_TOLERANCE:
+            if self.T_exec_pb(batch, route, picker) > self.T_cold + COLD_CHAIN_TOLERANCE:
                 return False
 
         return True
@@ -116,10 +116,10 @@ class ConstraintsValidator(BaseConstraintsValidator):
     def cold_chain_violation(self, solution) -> float:
         """
         Total cold-chain overrun across every batch with orders: sum of
-        max(0, t_exec_pb[assigned_picker, b] - T_frio_max - COLD_CHAIN_TOLERANCE).
+        max(0, T_exec_pb[assigned_picker, b] - T_cold - COLD_CHAIN_TOLERANCE).
         Zero exactly when validate_cold_chain_strict() would return True --
         the tolerance is subtracted here too (2026-09-26 audit finding: it
-        used to be omitted, so a t_exec_pb within tolerance of T_frio_max
+        used to be omitted, so a T_exec_pb within tolerance of T_cold
         still had overrun > 0, and a solution could get stuck never
         reaching the zero-violation state validate_cold_chain_strict()
         would have accepted). Consumed by opp_hc_4.py as a large
@@ -138,7 +138,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
                 continue
 
             route = solution.get_batch_route(batch)
-            overrun = self.t_exec_pb(batch, route, picker) - self.T_frio_max - COLD_CHAIN_TOLERANCE
+            overrun = self.T_exec_pb(batch, route, picker) - self.T_cold - COLD_CHAIN_TOLERANCE
             if overrun > 0:
                 total += overrun
 
@@ -157,7 +157,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
             return 0.0
 
         route = solution.get_batch_route(batch)
-        return max(0.0, self.t_exec_pb(batch, route, picker) - self.T_frio_max - COLD_CHAIN_TOLERANCE)
+        return max(0.0, self.T_exec_pb(batch, route, picker) - self.T_cold - COLD_CHAIN_TOLERANCE)
 
     def _diff_batches(self, a, b) -> Set[str]:
         """Batches whose route or assigned picker differs between two
@@ -176,7 +176,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
         """
         Same value cold_chain_violation(solution) would return, computed as
         a delta from the last COMMITTED solution (see commit()) instead of
-        recomputing every batch's t_exec_pb from scratch every call: unlike
+        recomputing every batch's T_exec_pb from scratch every call: unlike
         the objective's completion times (which cascade through a picker's
         whole sequence), a batch's cold-chain overrun depends only on its
         OWN route and picker, never on other batches or on sequence order
@@ -233,19 +233,19 @@ class ConstraintsValidator(BaseConstraintsValidator):
         self._last_overrun_by_batch = {b: self._batch_overrun(b, solution) for b in self.B}
         self._last_total_violation = sum(self._last_overrun_by_batch.values())
 
-    def t_exec_pb(self, batch: str, route: list, picker: str) -> float:
-        """Same formula as opp_model_v5_2_split_stage2_scheduling.zpl's t_exec_pb: fixed setup/
+    def T_exec_pb(self, batch: str, route: list, picker: str) -> float:
+        """Same formula as opp_model_v5_2_split_stage2_scheduling.zpl's T_exec_pb: fixed setup/
         picking time (speed-independent) plus travel+service time divided
         by the picker's speed."""
-        fixed_time = self.B_setup + self.B_picking * sum(
+        fixed_time = self.T_setup + self.T_pick * sum(
             self.C_n.get(order, 0) for order in self.batch_assignments.get(batch, set())
         )
         speed = self.V_p.get(picker, 1.0)
         return fixed_time + self._route_time(route) / speed
 
     def _route_time(self, route: list) -> float:
-        """Travel time (B_time * distance) + service time -- the part of
-        t_exec that scales with picker speed (opp_v5_2_split's R_b_time)."""
+        """Travel time (T_travel * distance) + service time -- the part of
+        t_exec that scales with picker speed (opp_v5_2_split's R_b)."""
         if not route:
             return 0.0
 
@@ -259,4 +259,4 @@ class ConstraintsValidator(BaseConstraintsValidator):
 
         service_time = sum(self.S.get(loc, 0) for loc in route)
 
-        return self.B_time * distance + service_time
+        return self.T_travel * distance + service_time

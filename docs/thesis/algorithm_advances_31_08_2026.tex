@@ -81,7 +81,7 @@ SUBRUTINA GenerarSolucionInicialFactible()
             retornar None                     # grafo desconectado / inalcanzable
         S.fijar_ruta(lote, ruta)
 
-    asignar cada lote con órdenes a un picker, round-robin (X_pb)
+    asignar cada lote con órdenes a un picker, round-robin (x_pb)
     retornar S si Validar(S) si_no None
 
 
@@ -140,8 +140,8 @@ SUBRUTINA Evaluar(S)                    # reemplaza a Evaluar en hc_2
             lote <- S.secuencia[picker][slot]
             ruta <- S.ruta(lote)
 
-            base <- B_setup + B_picking*capacidad(lote)
-                    + B_time*distancia(ruta) + tiempo_servicio(ruta)
+            base <- T_setup + T_pick*capacidad(lote)
+                    + T_travel*distancia(ruta) + tiempo_servicio(ruta)
             espera <- SimularCongestionDeRuta(ruta, dueño=picker,
                                                inicio=tiempo_picker[picker],
                                                tracker)
@@ -149,8 +149,8 @@ SUBRUTINA Evaluar(S)                    # reemplaza a Evaluar en hc_2
             tiempo_picker[picker] <- tiempo_picker[picker] + base + espera
             completitud[lote] <- tiempo_picker[picker]
 
-    adelanto, tardanza <- comparar completitud[lote] vs. Dd(orden)
-    retornar W_full*sum(completitud) + W_ea_ta*(W_ea*adelanto + W_ta*tardanza)
+    adelanto, tardanza <- comparar completitud[lote] vs. T_due_n(orden)
+    retornar W_c*sum(completitud) + W_pen*(W_e*adelanto + W_t*tardanza)
 \stoptyping
 
 \type{CongestionTracker} modela cada nodo y cada arco como un recurso de
@@ -334,22 +334,22 @@ picker lo va a ejecutar. Usa la misma familia de restricciones que
 llegada al nodo final, conservación de flujo, sin ciclos), con
 eliminación de subtours vía una formulación de flujo de un solo producto
 (Gavish-Graves) en vez de la que usa \type{opp\_v4}. Exporta, para cada
-lote $b$, el tiempo óptimo de ruta $Rt_b$.
+lote $b$, el tiempo óptimo de ruta $r_b$.
 
 \stopsubsection
 
 \startsubsection[title={Etapa 2: asignación, secuenciación y cadena de frío}]
 
-Toma $Rt_b$ como dato fijo (ya no es variable de decisión) y decide qué
+Toma $R_b$ como dato fijo (ya no es variable de decisión) y decide qué
 picker ejecuta cada lote, en qué orden, respetando adelanto/tardanza. El
 tiempo de ejecución de un lote en un picker,
-$t\_exec_{pb} = F_b + Rt_b / V_p$ (donde $F_b$ es el tiempo fijo de
+$T^{exec}_{pb} = F_b + R_b / V_p$ (donde $F_b$ es el tiempo fijo de
 \emph{setup}+\emph{picking}, independiente del picker, y $V_p$ es el
 factor de velocidad del picker $p$), pasa a ser un parámetro
 derivado en vez de una variable (ya no hace falta linealizar con Big-M
 para vincularlo). La cadena de frío se implementa restringiendo el
 dominio de las variables de asignación al conjunto de pares
-elegibles $\mathcal{PB}_{elig} = \{(p,b) : t\_exec_{pb} \le T_{frio}\}$, en
+elegibles $\mathcal{PB}^{elig} = \{(p,b) : T^{exec}_{pb} \le T^{cold}\}$, en
 vez de agregar una restricción aparte.
 
 \blank
@@ -358,12 +358,12 @@ La definición formal completa (conjuntos, parámetros, variables, función
 objetivo y las 9 restricciones de la Etapa 2) está en
 \type{opp\_v5.tex}/\type{.pdf}, con el mismo formato usado para
 \type{opp\_model\_v4.tex}. Función objetivo de la Etapa 2 (idéntica en
-forma a la de \type{opp\_v4}, aplicada sobre $v_b$ en vez de sobre
+forma a la de \type{opp\_v4}, aplicada sobre $c_b$ en vez de sobre
 variables de ruteo):
 
 \placeformula
 \startformula
-\min \left( W_{full} \cdot \sum_{b \in \mathcal{B}} v_{b} + W_{ea\_ta} \cdot \left( W_{ea} \cdot \sum_{n \in \mathcal{N}} ea_{n} + W_{ta} \cdot \sum_{n \in \mathcal{N}} ta_{n} \right) \right)
+\min \left( W^{c} \cdot \sum_{b \in \mathcal{B}} c_{b} + W^{pen} \cdot \left( W^{e} \cdot \sum_{n \in \mathcal{N}} ea_{n} + W^{t} \cdot \sum_{n \in \mathcal{N}} ta_{n} \right) \right)
 \stopformula
 
 \stopsubsection

@@ -27,7 +27,7 @@ class TestOPPAntColonyOptimization4Model6PreCheckUsesTightenedRoute(OPPTestCaseA
         D--1-->R1--3-->R2--5-->F   (nearest-neighbor order): distance 9
         D--3-->R2--3-->R1--1-->F   (optimal order):          distance 7
 
-    T_frio_max = 8 sits strictly between these two: only the shorter order
+    T_cold = 8 sits strictly between these two: only the shorter order
     is cold-chain-compliant. There is no longer any route-time-ESTIMATE
     pre-check to fool -- the only pre-check left (batches_without_eligible_
     picker fed route_time=0.0, i.e. "is there a picker fast enough even
@@ -65,23 +65,23 @@ class TestOPPAntColonyOptimization4Model6PreCheckUsesTightenedRoute(OPPTestCaseA
         cap_n = {"O1": 1.0}
 
         params = SolveAco4ModelDTO()
-        params.W_full = 1.0
-        params.W_ea_ta = 0.0
-        params.W_ea = 0.0
-        params.W_ta = 0.0
+        params.W_c = 1.0
+        params.W_pen = 0.0
+        params.W_e = 0.0
+        params.W_t = 0.0
         params.C_n = cap_n
         params.C_v = 10.0
         params.A = a
-        params.B_time = 1.0  # so route_time == raw distance, for a clean bound
-        params.B_setup = 0.0
-        params.B_picking = 0.0
-        params.Dd = {"O1": 1000.0}
+        params.T_travel = 1.0  # so route_time == raw distance, for a clean bound
+        params.T_setup = 0.0
+        params.T_pick = 0.0
+        params.T_due_n = {"O1": 1000.0}
         params.M = 1000.0
-        params.Bn = y
+        params.B_nb = y
         params.V_p = {"P1": 1.0}
         # Between the tightened (optimal here) route's distance (7) and the
         # raw nearest-neighbor construction's distance (9).
-        params.T_frio_max = 8.0
+        params.T_cold = 8.0
         params.Seed = 1
 
         model_dto = ModelDTO()
@@ -102,7 +102,7 @@ class TestOPPAntColonyOptimization4Model6PreCheckUsesTightenedRoute(OPPTestCaseA
             "The greedy nearest-neighbor ESTIMATE must not make the cold-chain "
             "pre-check declare this feasible instance infeasible.",
         )
-        self.assert_cold_chain_respected(solution_info, params.T_frio_max)
+        self.assert_cold_chain_respected(solution_info, params.T_cold)
         self.assertAlmostEqual(solution_info["batch_times"]["B1"], 7.0, places=4)
 
 

@@ -48,10 +48,10 @@ NUMERIC_COLUMNS = [
     "B",
     "P",
     "C_v",
-    "W_full",
-    "W_ea_ta",
-    "W_ea",
-    "W_ta",
+    "W_c",
+    "W_pen",
+    "W_e",
+    "W_t",
 ]
 
 

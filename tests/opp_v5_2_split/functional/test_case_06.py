@@ -34,7 +34,7 @@ class TestOPPSplitShortestRoute(OPPTestCaseSplit):
         for batch, arcs in extract_active_arcs(routes, scenario["B"]).items():
             self.assertEqual(set(arcs), SHORT_ROUTE, f"{batch} did not take the short route")
         for batch in scenario["B"]:
-            self.assertAlmostEqual(values[f"v_b${batch}"], 10.0, places=5)
+            self.assertAlmostEqual(values[f"c_b${batch}"], 10.0, places=5)
         self.assertAlmostEqual(self.objective_value(), 20.0, places=5)
 
     def test_every_route_is_optimal_when_all_arrive_in_time(self):
@@ -47,5 +47,5 @@ class TestOPPSplitShortestRoute(OPPTestCaseSplit):
         self.assertIn(status, ("optimal", "feasible"))
         self.assert_routes_cover_requirements(routes, scenario)
         for batch in scenario["B"]:
-            self.assertAlmostEqual(values[f"v_b${batch}"], 15.0, places=5)
+            self.assertAlmostEqual(values[f"c_b${batch}"], 15.0, places=5)
         self.assertAlmostEqual(self.objective_value(), 30.0, places=5)

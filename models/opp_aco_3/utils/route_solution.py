@@ -2,7 +2,7 @@
 Route-based solution representation for opp_aco_3.
 
 Identical to opp_aco_2's RouteSolution (routes per batch + picker assignment
-X_pb + per-picker processing sequence), plus a per-batch congestion wait time
+x_pb + per-picker processing sequence), plus a per-batch congestion wait time
 accumulated while the route was built (see CongestionTracker in
 models/utils/congestion.py and _build_batch_route_congestion_aware in
 opp_aco_3.py). Storing it here - rather than recomputing it inside
@@ -35,7 +35,7 @@ class RouteSolution:
         # routes[batch] = list of location IDs in order
         self.routes: Dict[str, List] = {batch: [] for batch in batches}
 
-        # picker_of[batch] = picker assigned to that batch (X_pb == 1)
+        # picker_of[batch] = picker assigned to that batch (x_pb == 1)
         self.picker_of: Dict[str, str] = {}
 
         # sequence[picker] = ordered list of batches processed by that picker

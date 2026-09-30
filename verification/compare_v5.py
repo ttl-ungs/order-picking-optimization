@@ -7,8 +7,8 @@ the fixed-name result CSVs and the solution JSONs saved with WRITE_SOLUTIONS
 
   status        both statuses equal?
   objective     both objectives equal (relative tolerance 1e-6)?
-  solution      same routes (z_ijb), assignment (X_pb) and per-picker order
-                (by v_pb)? Equal objective with a different solution is an
+  solution      same routes (z_ijb), assignment (x_pb) and per-picker order
+                (by c_pb)? Equal objective with a different solution is an
                 alternative optimum, not a disagreement.
 
 Tests are grouped as "migrated" (split's test module wraps an opp_v4 test)
@@ -105,11 +105,11 @@ def _active(values, prefix):
 
 
 def _sequences(values):
-    """picker -> batches in completion order (X_pb = 1, sorted by v_pb)."""
+    """picker -> batches in completion order (x_pb = 1, sorted by c_pb)."""
     seq = {}
-    for name in _active(values, "X_pb$"):
+    for name in _active(values, "x_pb$"):
         _, p, b = name.split("$")
-        seq.setdefault(p, []).append((values.get(f"v_pb${p}${b}", 0.0), b))
+        seq.setdefault(p, []).append((values.get(f"c_pb${p}${b}", 0.0), b))
     return {p: [b for _, b in sorted(items)] for p, items in seq.items()}
 
 
@@ -117,7 +117,7 @@ def _compare_solutions(split_values, mono_values):
     diffs = []
     if _active(split_values, "z_ijb$") != _active(mono_values, "z_ijb$"):
         diffs.append("routes")
-    if _active(split_values, "X_pb$") != _active(mono_values, "X_pb$"):
+    if _active(split_values, "x_pb$") != _active(mono_values, "x_pb$"):
         diffs.append("assignment")
     elif _sequences(split_values) != _sequences(mono_values):
         diffs.append("order")
@@ -174,15 +174,15 @@ def _split_stress_instance(data):
     pairs = lambda key: {k: v for k, v in raw.get(key, [])}
     triples = lambda key: {(a, b): v for a, b, v in raw.get(key, [])}
     P = list(raw["P"])
-    instance = {k: raw.get(k) for k in ("W_full", "W_ea_ta", "W_ea", "W_ta", "B_time", "B_setup", "B_picking",
+    instance = {k: raw.get(k) for k in ("W_c", "W_pen", "W_e", "W_t", "T_travel", "T_setup", "T_pick",
                                         "C_v", "M", "depot", "final")}
     instance.update(
         N=list(raw["N"]), V=list(raw["V"]), P=P, B=list(raw["B"]),
-        E={tuple(e) for e in raw["E"]}, d_ij=triples("d_ij"),
-        C_n=pairs("C_n"), Dd=pairs("Dd"), S_i=pairs("S_i"),
-        A_ni=triples("A_ni"), Bn=triples("Bn"),
+        E={tuple(e) for e in raw["E"]}, D_ij=triples("D_ij"),
+        C_n=pairs("C_n"), T_due_n=pairs("T_due_n"), S_i=pairs("S_i"),
+        A_ni=triples("A_ni"), B_nb=triples("B_nb"),
         V_p={p: pairs("V_p").get(p, 1.0) for p in P},
-        T_frio_max=float(raw.get("T_frio_max", float("inf"))),
+        T_cold=float(raw.get("T_cold", float("inf"))),
         start_time=0.0,
     )
     return instance
@@ -208,7 +208,7 @@ def _split_stress_solution(data, instance):
         "status": sol["status"], "objective_value": sol["objective_value"], "routes": routes,
         "picker_sequences": _sequences(values),
         "batch_times": {},
-        "batch_completions": {name.split("$")[1]: v for name, v in values.items() if name.startswith("v_b$")},
+        "batch_completions": {name.split("$")[1]: v for name, v in values.items() if name.startswith("c_b$")},
         "tardiness": {}, "earliness": {},
     }
 

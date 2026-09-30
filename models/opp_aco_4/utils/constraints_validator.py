@@ -32,7 +32,7 @@ batch) -- every ant that clears those deposits pheromone (route AND
 picker-assignment edges), so the search keeps learning good routes/
 assignments for every OTHER batch even while one stays cold-chain-tight,
 and the penalty naturally biases the roulette/deposit trajectory towards
-whichever picker gets closest to (and eventually within) T_frio_max.
+whichever picker gets closest to (and eventually within) T_cold.
 
 No congestion here (unlike opp_aco_3): this model's only addition over
 opp_aco_2 is picker speed + cold chain, kept orthogonal to congestion.
@@ -48,7 +48,7 @@ from models.opp_v5_2_split.utils.cold_chain_validation import COLD_CHAIN_TOLERAN
 
 
 class ConstraintsValidator(BaseConstraintsValidator):
-    """opp_aco_2's validator plus a cold-chain eligibility check on X_pb."""
+    """opp_aco_2's validator plus a cold-chain eligibility check on x_pb."""
 
     def __init__(
         self,
@@ -59,21 +59,21 @@ class ConstraintsValidator(BaseConstraintsValidator):
         C_n: Dict,
         C_v: float,
         A: Dict,
-        B_time: float,
-        B_setup: float,
-        B_picking: float,
+        T_travel: float,
+        T_setup: float,
+        T_pick: float,
         S: Dict,
         V_p: Dict[str, float],
-        T_frio_max: float,
+        T_cold: float,
         P: List[str] = None,
     ):
         super().__init__(N, B, location_graph, batch_assignments, C_n, C_v, A, P)
-        self.B_time = B_time
-        self.B_setup = B_setup
-        self.B_picking = B_picking
+        self.T_travel = T_travel
+        self.T_setup = T_setup
+        self.T_pick = T_pick
         self.S = S if isinstance(S, dict) else {}
         self.V_p = V_p or {}
-        self.T_frio_max = T_frio_max
+        self.T_cold = T_cold
 
     def validate_solution(self, solution) -> bool:
         """
@@ -88,7 +88,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
     def validate_cold_chain_strict(self, solution) -> bool:
         """
         HARD cold-chain check: every batch with orders must be assigned to
-        a picker whose t_exec_pb is within T_frio_max. Used to decide
+        a picker whose T_exec_pb is within T_cold. Used to decide
         whether a solution may become the reported best_global_solution --
         NOT used to gate pheromone updates (see cold_chain_violation() for
         that; module docstring explains why).
@@ -103,7 +103,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
                 return False
 
             route = solution.get_batch_route(batch)
-            if self.t_exec_pb(batch, route, picker) > self.T_frio_max + COLD_CHAIN_TOLERANCE:
+            if self.T_exec_pb(batch, route, picker) > self.T_cold + COLD_CHAIN_TOLERANCE:
                 return False
 
         return True
@@ -111,10 +111,10 @@ class ConstraintsValidator(BaseConstraintsValidator):
     def cold_chain_violation(self, solution) -> float:
         """
         Total cold-chain overrun across every batch with orders: sum of
-        max(0, t_exec_pb[assigned_picker, b] - T_frio_max - COLD_CHAIN_TOLERANCE).
+        max(0, T_exec_pb[assigned_picker, b] - T_cold - COLD_CHAIN_TOLERANCE).
         Zero exactly when validate_cold_chain_strict() would return True --
         the tolerance is subtracted here too (2026-09-26 audit finding: it
-        used to be omitted, so a t_exec_pb within tolerance of T_frio_max
+        used to be omitted, so a T_exec_pb within tolerance of T_cold
         still had overrun > 0, kept it out of feasible_ant_solutions in
         opp_aco_4.py's main loop, and could make the whole run report
         "infeasible" despite validate_cold_chain_strict considering it
@@ -137,7 +137,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
                 continue
 
             route = solution.get_batch_route(batch)
-            overrun = self.t_exec_pb(batch, route, picker) - self.T_frio_max - COLD_CHAIN_TOLERANCE
+            overrun = self.T_exec_pb(batch, route, picker) - self.T_cold - COLD_CHAIN_TOLERANCE
             if overrun > 0:
                 total += overrun
 
@@ -164,22 +164,22 @@ class ConstraintsValidator(BaseConstraintsValidator):
                 continue
 
             route = solution.get_batch_route(batch)
-            if self.t_exec_pb(batch, route, picker) <= self.T_frio_max + 1e-9:
+            if self.T_exec_pb(batch, route, picker) <= self.T_cold + 1e-9:
                 compliant.add(batch)
 
         return compliant
 
-    def t_exec_pb(self, batch: str, route: list, picker: str) -> float:
-        """Same formula as opp_model_v5_2_split_stage2_scheduling.zpl's t_exec_pb: fixed setup/
+    def T_exec_pb(self, batch: str, route: list, picker: str) -> float:
+        """Same formula as opp_model_v5_2_split_stage2_scheduling.zpl's T_exec_pb: fixed setup/
         picking time (speed-independent) plus travel+service time divided
         by the picker's speed."""
         orders = self.batch_assignments.get(batch, set())
-        return exec_time.t_exec_pb(
+        return exec_time.T_exec_pb(
             self.location_graph, route, orders, picker,
-            self.C_n, self.B_setup, self.B_picking, self.B_time, self.S, self.V_p,
+            self.C_n, self.T_setup, self.T_pick, self.T_travel, self.S, self.V_p,
         )
 
     def _route_time(self, route: list) -> float:
-        """Travel time (B_time * distance) + service time -- the part of
-        t_exec that scales with picker speed (opp_v5_2_split's R_b_time)."""
-        return exec_time.route_time(self.location_graph, route, self.B_time, self.S)
+        """Travel time (T_travel * distance) + service time -- the part of
+        t_exec that scales with picker speed (opp_v5_2_split's R_b)."""
+        return exec_time.route_time(self.location_graph, route, self.T_travel, self.S)

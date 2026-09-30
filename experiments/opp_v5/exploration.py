@@ -150,7 +150,7 @@ def _describe(point, scenario):
     row = _point_row(point)
     per_batch = [
         len({v for v in scenario["V"]
-             if any(scenario["A_ni"][(n, v)] * scenario["Bn"][(n, b)] for n in scenario["N"])})
+             if any(scenario["A_ni"][(n, v)] * scenario["B_nb"][(n, b)] for n in scenario["N"])})
         for b in sorted(scenario["B"])
     ]
     row["vertices"] = len(scenario["V"])
@@ -224,7 +224,7 @@ def _relax_simple_path(zpl_path):
     Only ever applied to the per-process temp workspace copy that
     tests/opp_v5_2_split/config.py or tests/opp_v5_1_mono/config.py makes --
     never to models/. Subtours stay
-    excluded: connectivity comes from the Gavish-Graves flow `f_ijb`, not from
+    excluded: connectivity comes from the Gavish-Graves flow `q_ijb`, not from
     these two constraints, and depot/final keep their own equality constraints.
     What it permits is a route that passes through an intermediate vertex more
     than once.
@@ -272,11 +272,11 @@ def _split_child(point, q):
 
     routes = {
         key.split("$")[-1]: val for key, val in values.items()
-        if key.lower().startswith("r_b_time$")
+        if key.lower().startswith("r_b$")
     }
     row["route_min"] = round(min(routes.values()), 1)
     row["route_max"] = round(max(routes.values()), 1)
-    fixed = scenario["B_setup"] + scenario["B_picking"] * point["orders_per_batch"] * next(
+    fixed = scenario["T_setup"] + scenario["T_pick"] * point["orders_per_batch"] * next(
         iter(scenario["C_n"].values())
     )
     depth = -(-point["batches"] // point["pickers"])
@@ -294,7 +294,7 @@ def _split_child(point, q):
 
     write_indexed_dat(os.path.join(DAT_DIR, "route_time_b.dat"), routes)
     write_indexed_dat(os.path.join(DAT_DIR, "velocities.dat"), scenario["V_p"])
-    write_scalar_dat(os.path.join(DAT_DIR, "frio.dat"), scenario["T_frio_max"])
+    write_scalar_dat(os.path.join(DAT_DIR, "cold.dat"), scenario["T_cold"])
     base = os.path.join(DAT_DIR, "exploration_stage2")
     subprocess.run(
         ["zimpl", "-t", "lp", "-l", "8192", "-o", base, STAGE2_ZPL_PATH],

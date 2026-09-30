@@ -25,13 +25,13 @@ This document contains tests for the OPP Hill Climbing heuristic model. Graph re
   - `s=mixed` fractional values per-vertex — varied results but model solved. Observed: optimal/feasible.
 
 - `test_case_25`: edge and robustness cases for `s` handling:
-  - Missing `s` (params.s absent) — defaults to zero service times; currently crashes with AttributeError on params.Bn. Requires null-safety fix.
-  - Partial `s` (only subset of vertices present) — missing entries treated as 0. Currently crashes with AttributeError on params.Bn. Requires null-safety fix.
-  - Non-dict `s` values (e.g., numeric, list) — treated as missing. Currently crashes with AttributeError on params.Bn. Requires null-safety fix.
-  - Large/fractional `s` values — numeric stability check. Currently crashes with AttributeError on params.Bn. Requires null-safety fix.
-  - Depot/final included in `s` — these are ignored by the service-time term. Currently crashes with AttributeError on params.Bn. Requires null-safety fix.
-  - Negative `s` values — model behavior under negative values. Currently crashes with AttributeError on params.Bn. Requires null-safety fix.
+  - Missing `s` (params.s absent) — defaults to zero service times; currently crashes with AttributeError on params.B_nb. Requires null-safety fix.
+  - Partial `s` (only subset of vertices present) — missing entries treated as 0. Currently crashes with AttributeError on params.B_nb. Requires null-safety fix.
+  - Non-dict `s` values (e.g., numeric, list) — treated as missing. Currently crashes with AttributeError on params.B_nb. Requires null-safety fix.
+  - Large/fractional `s` values — numeric stability check. Currently crashes with AttributeError on params.B_nb. Requires null-safety fix.
+  - Depot/final included in `s` — these are ignored by the service-time term. Currently crashes with AttributeError on params.B_nb. Requires null-safety fix.
+  - Negative `s` values — model behavior under negative values. Currently crashes with AttributeError on params.B_nb. Requires null-safety fix.
 
-All 46 tests imported and executed; pass rate: 29/46 (63%). 6 tests fail due to AttributeError (params.Bn = None handling). 5 tests fail due to route generation issues. 5 tests fail due to infeasibility detection being too permissive (heuristic vs exact solver trade-off). See test modules for details.
+All 46 tests imported and executed; pass rate: 29/46 (63%). 6 tests fail due to AttributeError (params.B_nb = None handling). 5 tests fail due to route generation issues. 5 tests fail due to infeasibility detection being too permissive (heuristic vs exact solver trade-off). See test modules for details.
 
 

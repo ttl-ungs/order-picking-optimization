@@ -24,9 +24,9 @@ class TestOPPHillClimbing4SpeedSequencingTradeoff(OPPTestCaseHC4):
     tardiness term.
 
     Geometry: two single-order batches, both requiring location M
-    (distance D->M->F = 14.0, B_time=1.0). fixed_time =
-    B_setup(1.0) + B_picking(1.0)*C_n(1.0) = 2.0, so
-    t_exec_pb = 2.0 + 14.0/V_p.
+    (distance D->M->F = 14.0, T_travel=1.0). fixed_time =
+    T_setup(1.0) + T_pick(1.0)*C_n(1.0) = 2.0, so
+    T_exec_pb = 2.0 + 14.0/V_p.
     """
 
     def _graph(self):
@@ -48,21 +48,21 @@ class TestOPPHillClimbing4SpeedSequencingTradeoff(OPPTestCaseHC4):
         cap_n = {"O1": 1.0, "O2": 1.0}
 
         params = SolveHC4ModelDTO()
-        params.W_full = 1.0
-        params.W_ea_ta = 0.0
-        params.W_ea = 0.0
-        params.W_ta = 0.0
+        params.W_c = 1.0
+        params.W_pen = 0.0
+        params.W_e = 0.0
+        params.W_t = 0.0
         params.C_n = cap_n
         params.C_v = 10.0
         params.A = a
-        params.B_time = 1.0
-        params.B_setup = 1.0
-        params.B_picking = 1.0
-        params.Dd = {"O1": 1000.0, "O2": 1000.0}
+        params.T_travel = 1.0
+        params.T_setup = 1.0
+        params.T_pick = 1.0
+        params.T_due_n = {"O1": 1000.0, "O2": 1000.0}
         params.M = 1000.0
-        params.Bn = y
+        params.B_nb = y
         params.V_p = {"P_slow": 1.0, "P_fast": fast_speed}
-        params.T_frio_max = float("inf")
+        params.T_cold = float("inf")
         params.Seed = 1
         params.Max_it = 200
         params.Max_imp = 60
@@ -77,9 +77,9 @@ class TestOPPHillClimbing4SpeedSequencingTradeoff(OPPTestCaseHC4):
         return model_dto, params
 
     def test_fast_picker_takes_both_batches_when_four_times_faster(self):
-        """t_exec_pb(P_fast, V_p=4) = 2.0 + 14.0/4.0 = 5.5. Queueing both
+        """T_exec_pb(P_fast, V_p=4) = 2.0 + 14.0/4.0 = 5.5. Queueing both
         batches on it completes at 5.5 and 11.0, cheaper than giving one to
-        P_slow (t_exec_pb = 2.0 + 14.0 = 16.0)."""
+        P_slow (T_exec_pb = 2.0 + 14.0 = 16.0)."""
         model_dto, params = self._two_batches_params(fast_speed=4.0)
         model = OPPHillClimbing(model_dto)
 
@@ -101,7 +101,7 @@ class TestOPPHillClimbing4SpeedSequencingTradeoff(OPPTestCaseHC4):
         self.assertAlmostEqual(ends[1], 11.0, places=4)
 
     def test_batches_are_split_when_fast_picker_is_only_twice_as_fast(self):
-        """t_exec_pb(P_fast, V_p=2) = 2.0 + 14.0/2.0 = 9.0. Splitting the
+        """T_exec_pb(P_fast, V_p=2) = 2.0 + 14.0/2.0 = 9.0. Splitting the
         batches (9.0 + 16.0 = 25.0) beats queueing both on P_fast
         (9.0 + 18.0 = 27.0)."""
         model_dto, params = self._two_batches_params(fast_speed=2.0)
@@ -137,21 +137,21 @@ class TestOPPHillClimbing4SpeedSequencingTradeoff(OPPTestCaseHC4):
         cap_n = {"O1": 1.0}
 
         params = SolveHC4ModelDTO()
-        params.W_full = 10.0
-        params.W_ea_ta = 1.0
-        params.W_ea = 1.0
-        params.W_ta = 1.0
+        params.W_c = 10.0
+        params.W_pen = 1.0
+        params.W_e = 1.0
+        params.W_t = 1.0
         params.C_n = cap_n
         params.C_v = 10.0
         params.A = a
-        params.B_time = 1.0
-        params.B_setup = 1.0
-        params.B_picking = 1.0
-        params.Dd = {"O1": 20.0}
+        params.T_travel = 1.0
+        params.T_setup = 1.0
+        params.T_pick = 1.0
+        params.T_due_n = {"O1": 20.0}
         params.M = 1000.0
-        params.Bn = y
+        params.B_nb = y
         params.V_p = {"P_only": 0.5}
-        params.T_frio_max = float("inf")
+        params.T_cold = float("inf")
         params.Seed = 1
         params.Max_it = 100
         params.Max_imp = 30

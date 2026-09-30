@@ -97,9 +97,9 @@ The grid costs by itself, not only through the locations: reaching ~31 locations
 
 With due dates spread and reachable:
 
-**SLA = (N_b + W_full) / (2 · N_b)**, with N_b = orders per batch.
+**SLA = (N_b + W_c) / (2 · N_b)**, with N_b = orders per batch.
 
-Delaying a batch costs `W_full` per unit of time and saves one unit for each order that would still arrive early, so the model delays each batch until #early − #late ≈ W_full. Verified at 8 sizes (10 to 50 orders per batch), all within 1.7 points.
+Delaying a batch costs `W_c` per unit of time and saves one unit for each order that would still arrive early, so the model delays each batch until #early − #late ≈ W_c. Verified at 8 sizes (10 to 50 orders per batch), all within 1.7 points.
 
 Consequences for the design:
 - **Due dates need no calibration**: it is enough that they are spread and reachable. With 26 orders per batch, SLA comes out ~67%.
@@ -138,7 +138,7 @@ Six degeneracies found in those scenarios (detail in `meta.md`):
 
 | # | Degeneracy | Type |
 |---|---|---|
-| 3 | Identical, unreachable due dates (`Dd = 30`) | performance |
+| 3 | Identical, unreachable due dates (`T_due_n = 30`) | performance |
 | 1 | `\|P\| > \|B\|` (test 07) | coverage |
 | 2 | `\|B\| = \|P\|` in 5 of 8 | coverage |
 | 4 | Uniform `V_p` everywhere | coverage |

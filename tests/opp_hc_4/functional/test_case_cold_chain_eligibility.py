@@ -18,8 +18,8 @@ from tests.shared_scenarios.functional.scenario_01 import basic_two_orders_capac
 class TestOPPHillClimbing4Model4ColdChainEligibility(OPPTestCaseHC4):
     """
     Test HC4-4: Cold chain eligibility. Same batch/graph as HC4-2/3, with
-    two pickers: P1 (slow) violates T_frio_max, P2 (fast) satisfies it.
-    Purpose: mirrors opp_model_v5_2_split_stage2_scheduling.zpl's PB_elig -- X_pb's domain must
+    two pickers: P1 (slow) violates T_cold, P2 (fast) satisfies it.
+    Purpose: mirrors opp_model_v5_2_split_stage2_scheduling.zpl's PB_elig -- x_pb's domain must
     exclude ineligible (picker, batch) pairs, so the batch must be assigned
     to P2 from the very first feasible solution, without needing Hill
     Climbing to "discover" it via an improving move (unlike HC4-2, where
@@ -40,22 +40,22 @@ class TestOPPHillClimbing4Model4ColdChainEligibility(OPPTestCaseHC4):
         cap_n = {"O1": 2.0, "O2": 2.0}
 
         params = SolveHC4ModelDTO()
-        params.W_full = 1.0
-        params.W_ea_ta = 0.0
-        params.W_ea = 0.0
-        params.W_ta = 0.0
+        params.W_c = 1.0
+        params.W_pen = 0.0
+        params.W_e = 0.0
+        params.W_t = 0.0
         params.C_n = cap_n
         params.C_v = cap_vehicle
         params.A = a
-        params.B_time = 0.5
-        params.B_setup = 1.0
-        params.B_picking = 1.0
-        params.Dd = {"O1": 1000.0, "O2": 1000.0}
+        params.T_travel = 0.5
+        params.T_setup = 1.0
+        params.T_pick = 1.0
+        params.T_due_n = {"O1": 1000.0, "O2": 1000.0}
         params.M = 1000.0
-        params.Bn = y
-        # t_exec_pb(P1) = 17.5 (> 10.0, ineligible); t_exec_pb(P2) = 6.25 (<= 10.0, eligible).
+        params.B_nb = y
+        # T_exec_pb(P1) = 17.5 (> 10.0, ineligible); T_exec_pb(P2) = 6.25 (<= 10.0, eligible).
         params.V_p = {"P1": 1.0, "P2": 10.0}
-        params.T_frio_max = 10.0
+        params.T_cold = 10.0
         params.Seed = 1
         params.Max_it = 100
         params.Max_imp = 30
@@ -76,7 +76,7 @@ class TestOPPHillClimbing4Model4ColdChainEligibility(OPPTestCaseHC4):
 
         self.assertIn(result, ("optimal", "feasible"))
         self.assert_every_batch_has_one_picker(solution_info, {"P1", "P2"})
-        self.assert_cold_chain_respected(solution_info, params.T_frio_max)
+        self.assert_cold_chain_respected(solution_info, params.T_cold)
         self.assertEqual(solution_info["picker_assignments"]["B1"], "P2")
 
 

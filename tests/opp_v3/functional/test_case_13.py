@@ -36,19 +36,19 @@ class TestOPPModel(OPPTestCase):
         cap_n = {"O1": 2.0, "O2": 2.0, "O3": 2.0, "O4": 2.0}
 
         params = SolveModelDTO()
-        params.W_full = w1
-        params.W_ea_ta = w2
-        params.W_ea = gamma
-        params.W_ta = delta
+        params.W_c = w1
+        params.W_pen = w2
+        params.W_e = gamma
+        params.W_t = delta
         params.C_n = cap_n
         params.C_v = cap_vehicle
         params.A = a
-        params.B_time = 0.5
-        params.B_setup = 1.0
-        params.B_picking = 1.0
-        params.Dd = {n: 20.0 for n in N}
+        params.T_travel = 0.5
+        params.T_setup = 1.0
+        params.T_pick = 1.0
+        params.T_due_n = {n: 20.0 for n in N}
         params.M = 1000.0
-        params.Bn = y
+        params.B_nb = y
 
         model_dto = ModelDTO()
         model_dto.N = N

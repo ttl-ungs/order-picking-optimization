@@ -162,7 +162,7 @@
 
 ### 6.1 Nivel global (functional + estrés)
 
-| model | N | V | B | C_v | W_full | W_ea_ta | n |
+| model | N | V | B | C_v | W_c | W_pen | n |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | opp_aco_2 | 0.5265 | 0.8371 | 0.4687 | 0.5859 | 0.532 | -0.3729 | 65 |
 | opp_aco_3 | 0.6693 | 0.5885 | 0.5343 | 0.7242 | 0.5087 | -0.3299 | 68 |
@@ -176,7 +176,7 @@
 
 ### 6.2 Nivel escenario
 
-| model | scenario | N | V | B | C_v | W_full | W_ea_ta | n |
+| model | scenario | N | V | B | C_v | W_c | W_pen | n |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | opp_aco_2 | functional | 0.5165 | 0.1495 | 0.1768 | -0.0908 | -0.0507 | -0.2146 | 48 |
 | opp_aco_2 | stress | 0.2105 | 0.7043 | 0.0487 | 0.1807 | nan | nan | 17 |

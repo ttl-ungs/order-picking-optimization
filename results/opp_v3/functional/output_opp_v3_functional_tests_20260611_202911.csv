@@ -1,4 +1,4 @@
-test,status,total_time,model_time,solver_time,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,V
+test,status,total_time,model_time,solver_time,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,V
 test_opp_v3_model_01.TestOPPModel.test_basic_two_orders_capacity_limit,ok,0.2998983860015869,0.02079916000366211,0.0,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,4
 test_opp_v3_model_02.TestOPPModel.test_two_orders_two_aisles,ok,0.3183293342590332,0.03322768211364746,0.0,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,8
 test_opp_v3_model_02.TestOPPModel.test_two_orders_two_aisles_one_picking_point_per_order,ok,0.2597787380218506,0.022170543670654297,0.0,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,8

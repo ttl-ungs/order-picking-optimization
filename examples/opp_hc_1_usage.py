@@ -3,7 +3,7 @@ Example usage of OPP Hill Climbing V3 heuristic.
 
 This script demonstrates how to use the Hill Climbing solver with the same input
 format as the exact solver (opp_model_v3). The key difference:
-- Input: Fixed batch assignments (Bn parameter)
+- Input: Fixed batch assignments (B_nb parameter)
 - Optimize: Routes within each batch
 """
 
@@ -65,10 +65,10 @@ def example_small_instance():
     solve_dto = SolveModelDTO()
 
     # Objective weights
-    solve_dto.W_full = 1.0
-    solve_dto.W_ea_ta = 1.0
-    solve_dto.W_ea = 0.1
-    solve_dto.W_ta = 0.5
+    solve_dto.W_c = 1.0
+    solve_dto.W_pen = 1.0
+    solve_dto.W_e = 0.1
+    solve_dto.W_t = 0.5
 
     # Capacity
     solve_dto.C_n = {"O1": 5, "O2": 3, "O3": 4, "O4": 2, "O5": 6}
@@ -84,22 +84,22 @@ def example_small_instance():
     }
 
     # Time parameters
-    solve_dto.B_time = 0.5
-    solve_dto.B_setup = 5.0
-    solve_dto.B_picking = 0.1
+    solve_dto.T_travel = 0.5
+    solve_dto.T_setup = 5.0
+    solve_dto.T_pick = 0.1
     solve_dto.S = {"L1": 2.0, "L2": 3.0, "L3": 1.5}
 
     # Due dates
-    solve_dto.Dd = {
+    solve_dto.T_due_n = {
         "O1": 100.0, "O2": 80.0, "O3": 120.0, "O4": 90.0, "O5": 110.0,
     }
 
     # Big M
     solve_dto.M = 1000.0
 
-    # FIXED batch assignments (Bn parameter)
+    # FIXED batch assignments (B_nb parameter)
     # This is the key difference: routes are optimized WITHIN these fixed assignments
-    solve_dto.Bn = {
+    solve_dto.B_nb = {
         ("O1", "B1"): 1, ("O2", "B1"): 1, ("O3", "B1"): 0,
         ("O4", "B2"): 1, ("O5", "B2"): 1, ("O3", "B2"): 1,
         # All other combinations are 0 (implicit)

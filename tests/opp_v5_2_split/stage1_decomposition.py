@@ -3,38 +3,38 @@ Per-batch decomposition of opp_v5_2_split's Stage 1 (opp_model_v5_2_split_stage1
 
 opp_model_v5_2_split_stage1_routing.zpl's own header says batches never interact (every
 constraint is `forall <b> in B: ...`, and the objective is a plain sum of
-independent R_b_time[b] terms) -- solving all of them together in one MIP
+independent r_b[b] terms) -- solving all of them together in one MIP
 wastes work a MIP branch-and-bound tree doesn't give back. Measured
 empirically (2026-09-10/11 audit): the joint solve is ~3x SLOWER than the
 sum of solving each batch alone at just 10 batches, and doesn't even
 finish within 14 minutes at 20 batches (where the decomposed sum takes a
 few seconds) -- MIP solve time grows highly non-linearly with the number
-of integer variables (z_ijb/f_ijb, one full set per batch), so keeping
+of integer variables (z_ijb/q_ijb, one full set per batch), so keeping
 every batch's variables in one model multiplies that cost for nothing:
 nothing in the objective or constraints ever links two different batches'
 variables.
 
 No change to opp_model_v5_2_split_stage1_routing.zpl itself was needed: it only ever reads
-whatever data_B.dat/Bn.dat a caller has written, so calling the exact
+whatever data_B.dat/B_nb.dat a caller has written, so calling the exact
 same file once per batch (with just those two narrowed to that one
 batch) is enough. data_N.dat/a_ni.dat are deliberately left UNTOUCHED
 (not just restored after -- never rewritten at all): the model only ever
-uses N to sum `A_ni[n,i] * Bn[n,b]` (a plain parameter computation, not a
+uses N to sum `A_ni[n,i] * B_nb[n,b]` (a plain parameter computation, not a
 decision variable), so narrowing N buys nothing and isn't worth the risk
 -- an earlier version of this file did narrow it, and a batch with zero
-orders assigned (Bn[n,b] == 0 for every n -- a real scenario in this
+orders assigned (B_nb[n,b] == 0 for every n -- a real scenario in this
 test suite) turned a_ni.dat into a genuinely empty file, which ZIMPL
 rejects at compile time ("Symbol A_ni not initialised"), not the harmless
 "parameter with zero rows" it looks like. Keeping data_N.dat/a_ni.dat at
 their original (always non-empty, whole-scenario) size sidesteps that
 entirely, and costs nothing that matters: the actual combinatorial
-complexity driver is z_ijb/f_ijb (indexed by E * B), not the N-indexed
+complexity driver is z_ijb/q_ijb (indexed by E * B), not the N-indexed
 sums, so narrowing B alone already captures the decomposition's benefit.
 
 Parallel mode is OPT-IN, via OPP_STAGE1_WORKERS=<n> (default: sequential).
 Each batch is then solved in its own temporary directory by a separate OS
 process via ProcessPoolExecutor. Each worker gets a copy of the dat_files/
-directory with data_B.dat/Bn.dat narrowed to its batch, plus a copy of the
+directory with data_B.dat/B_nb.dat narrowed to its batch, plus a copy of the
 ZPL file so that ZIMPL's relative-path reads (../dat_files/...) resolve
 into the worker's own directory regardless of whether ZIMPL resolves paths
 relative to CWD or to the ZPL file's location.
@@ -110,12 +110,12 @@ def solve_stage1_decomposed(dat_dir, max_workers=None, time_budget_seconds=None)
     to `dat_dir` (however the caller normally does that -- build_dat_files(),
     or a migrated v4 fixture's own scenario construction). Decomposes
     Stage 1 into one solve per batch instead of one joint solve for every
-    batch together, by temporarily narrowing ONLY data_B.dat/Bn.dat to
+    batch together, by temporarily narrowing ONLY data_B.dat/B_nb.dat to
     each batch's own column in turn (see module docstring for why
     data_N.dat/a_ni.dat are left untouched), then restoring the ORIGINAL
     (full) contents of those two files before returning -- guaranteed
     even if a solve raises, via `finally` -- so a caller that goes on to
-    invoke Stage 2 (which also reads data_B.dat/Bn.dat) sees the correct
+    invoke Stage 2 (which also reads data_B.dat/B_nb.dat) sees the correct
     full scenario, not whichever batch was solved last.
 
     Sequential by default. Set OPP_STAGE1_WORKERS=<n> (or pass max_workers)
@@ -141,7 +141,7 @@ def solve_stage1_decomposed(dat_dir, max_workers=None, time_budget_seconds=None)
     its share ends Stage 1 with that status and no complete solution.
     """
     data_B_path = os.path.join(dat_dir, "data_B.dat")
-    bn_path = os.path.join(dat_dir, "Bn.dat")
+    bn_path = os.path.join(dat_dir, "B_nb.dat")
 
     batches = _read_set_dat(data_B_path)
     bn = _read_indexed_dat_pairs(bn_path)
@@ -210,7 +210,7 @@ def _solve_parallel(dat_dir, batches, bn, max_workers):
 
             write_set_dat(os.path.join(worker_dat, "data_B.dat"), {batch})
             write_indexed_dat(
-                os.path.join(worker_dat, "Bn.dat"),
+                os.path.join(worker_dat, "B_nb.dat"),
                 {k: v for k, v in bn.items() if k[1] == batch},
             )
 

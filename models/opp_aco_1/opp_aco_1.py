@@ -40,7 +40,7 @@ class OPPAntColonyOptimization(Model):
         start_time = time.time()
 
         # Initial validation analogous to opp_v3 / opp_hc_1
-        if params.Bn is None:
+        if params.B_nb is None:
             self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
 
@@ -126,14 +126,14 @@ class OPPAntColonyOptimization(Model):
             elapsed=elapsed,
             params={
                 "obj_val": best_global_cost,
-                "W_full": params.W_full,
-                "W_ea_ta": params.W_ea_ta,
-                "W_ea": params.W_ea,
-                "W_ta": params.W_ta,
+                "W_c": params.W_c,
+                "W_pen": params.W_pen,
+                "W_e": params.W_e,
+                "W_t": params.W_t,
                 "C_v": params.C_v,
-                "B_time": params.B_time,
-                "B_setup": params.B_setup,
-                "B_picking": params.B_picking,
+                "T_travel": params.T_travel,
+                "T_setup": params.T_setup,
+                "T_pick": params.T_pick,
                 "M": params.M,
                 "N": len(self.N),
                 "B": len(self.B),
@@ -153,14 +153,14 @@ class OPPAntColonyOptimization(Model):
             output=None,
             elapsed=elapsed,
             params={
-                "W_full": getattr(params, "W_full", None),
-                "W_ea_ta": getattr(params, "W_ea_ta", None),
-                "W_ea": getattr(params, "W_ea", None),
-                "W_ta": getattr(params, "W_ta", None),
+                "W_c": getattr(params, "W_c", None),
+                "W_pen": getattr(params, "W_pen", None),
+                "W_e": getattr(params, "W_e", None),
+                "W_t": getattr(params, "W_t", None),
                 "C_v": getattr(params, "C_v", None),
-                "B_time": params.B_time,
-                "B_setup": params.B_setup,
-                "B_picking": params.B_picking,
+                "T_travel": params.T_travel,
+                "T_setup": params.T_setup,
+                "T_pick": params.T_pick,
                 "M": getattr(params, "M", None),
                 "N": len(self.N),
                 "B": len(self.B),
@@ -399,8 +399,8 @@ class OPPAntColonyOptimization(Model):
         advance_time = sum(info["earliness"].values())
         delay_time = sum(info["tardiness"].values())
 
-        penalty = params.W_ea * advance_time + params.W_ta * delay_time
-        return params.W_full * recollection_time + params.W_ea_ta * penalty
+        penalty = params.W_e * advance_time + params.W_t * delay_time
+        return params.W_c * recollection_time + params.W_pen * penalty
 
     def _build_solution_info(
         self, solution: Dict[str, List[str]], cost: float, params: SolveAcoModelDTO
@@ -449,15 +449,15 @@ class OPPAntColonyOptimization(Model):
                 service_time = sum(params.S.get(loc, 0) for loc in visited_locations)
 
             # EXACT V3 t_exec formula (Constraint 18 replication)
-            t_exec_b = (
-                params.B_setup
-                + (params.B_picking * picking_time)
-                + (params.B_time * travel_time)
+            d_b = (
+                params.T_setup
+                + (params.T_pick * picking_time)
+                + (params.T_travel * travel_time)
                 + service_time
             )
 
-            current_time += t_exec_b
-            solution_info["batch_times"][batch] = t_exec_b
+            current_time += d_b
+            solution_info["batch_times"][batch] = d_b
             solution_info["batch_completions"][batch] = current_time
 
         # Earliness and Tardiness calculations
@@ -466,11 +466,11 @@ class OPPAntColonyOptimization(Model):
                 (b for b, orders in batch_assignments.items() if order in orders), None
             )
             if order_batch and order_batch in solution_info["batch_completions"]:
-                v_b = solution_info["batch_completions"][order_batch]
-                due_date = params.Dd.get(order, float("inf"))
+                c_b = solution_info["batch_completions"][order_batch]
+                due_date = params.T_due_n.get(order, float("inf"))
 
-                solution_info["tardiness"][order] = max(0, v_b - due_date)
-                solution_info["earliness"][order] = max(0, due_date - v_b)
+                solution_info["tardiness"][order] = max(0, c_b - due_date)
+                solution_info["earliness"][order] = max(0, due_date - c_b)
 
         return solution_info
 

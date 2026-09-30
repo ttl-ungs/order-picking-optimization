@@ -10,7 +10,7 @@ from tests.shared_scenarios.functional.two_stage_scenarios_v5 import (
 )
 from tests.opp_v5_1_mono.opp_test_case_v5_1_mono import OPPTestCaseMono
 
-ROUTE_VIA_B = 14.0  # R_b_time of a batch whose only location is B (see the scenario builders)
+ROUTE_VIA_B = 14.0  # R_b of a batch whose only location is B (see the scenario builders)
 
 
 class TestOPPMonoColdChainCoverage(OPPTestCaseMono):
@@ -19,10 +19,10 @@ class TestOPPMonoColdChainCoverage(OPPTestCaseMono):
     with the documented 1e-9 tolerance."""
 
     def test_fixed_time_counts_toward_the_cold_limit(self):
-        """P_fast's route share (14 / 2 = 7) fits under T_frio_max = 8, but its
+        """P_fast's route share (14 / 2 = 7) fits under T_cold = 8, but its
         execution time (2 + 7 = 9) does not, so no picker is eligible."""
         scenario = cold_limit_between_route_and_total()
-        self.assertLessEqual(ROUTE_VIA_B / scenario["V_p"]["P_fast"], scenario["T_frio_max"])
+        self.assertLessEqual(ROUTE_VIA_B / scenario["V_p"]["P_fast"], scenario["T_cold"])
 
         _, _, status, values = self.run_pipeline(scenario)
         self.assertEqual(status, "infeasible")
@@ -32,7 +32,7 @@ class TestOPPMonoColdChainCoverage(OPPTestCaseMono):
         """Only P_fast is eligible for either batch (9 <= 10 < 16), so it runs
         both back to back. The second completes at 18, past the limit, and that
         is valid: the limit bounds each batch's execution, not the waiting before
-        it. Objective = W_full * (9 + 18) = 27."""
+        it. Objective = W_c * (9 + 18) = 27."""
         scenario = two_cold_batches()
         _, route_times, status, values = self.run_pipeline(scenario)
 
@@ -42,12 +42,12 @@ class TestOPPMonoColdChainCoverage(OPPTestCaseMono):
         ends = sorted(completions[("P_fast", batch)] for batch in scenario["B"])
         self.assertAlmostEqual(ends[0], 9.0, places=5)
         self.assertAlmostEqual(ends[1], 18.0, places=5)
-        self.assertGreater(ends[1], scenario["T_frio_max"])
+        self.assertGreater(ends[1], scenario["T_cold"])
         self.assertAlmostEqual(self.objective_value(), 27.0, places=5)
         self.assert_no_overlap(values, scenario, route_times)
 
     def test_cold_limit_tolerance_keeps_a_picker_within_rounding_noise(self):
-        """t_exec_pb(P_fast, B1) = 9.0 exceeds T_frio_max = 9.0 - 5e-10 by less
+        """T_exec_pb(P_fast, B1) = 9.0 exceeds T_cold = 9.0 - 5e-10 by less
         than the 1e-9 tolerance, so P_fast must stay eligible and take the batch."""
         scenario = cold_limit_within_tolerance()
         _, route_times, status, values = self.run_pipeline(scenario)

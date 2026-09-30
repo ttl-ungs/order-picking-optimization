@@ -3,7 +3,7 @@ import os
 # Cold-chain limit written when a scenario does not define one: large enough
 # that no batch is ever excluded (same value the opp_v5_2_split migrated tests use to
 # neutralize the cold chain for the v4 baseline).
-DEFAULT_T_FRIO_MAX = 1_000_000_000.0
+DEFAULT_T_COLD = 1_000_000_000.0
 
 
 def write_set_dat(path, elements):
@@ -56,25 +56,25 @@ def write_indexed_dat(path, data):
 def _compute_m_seq(scenario_data):
     """Upper bound on max completion time: safe Big-M for non-overlap constraints.
 
-    M_seq must exceed the latest possible v_pb.  In the worst case every batch
-    is assigned to one picker sequentially, so v_pb_max ≈ Σ_b t_exec_pb_max.
-    We approximate max route time per batch as |V|*max(d_ij)*B_time (every
+    M_seq must exceed the latest possible c_pb.  In the worst case every batch
+    is assigned to one picker sequentially, so c_pb_max ≈ Σ_b T_exec_pb_max.
+    We approximate max route time per batch as |V|*max(D_ij)*T_travel (every
     location visited) and use min(V_p) for the slowest picker.
     """
     B, N, V = scenario_data["B"], scenario_data["N"], scenario_data["V"]
-    C_n, Bn = scenario_data["C_n"], scenario_data["Bn"]
-    B_setup, B_picking, B_time = scenario_data["B_setup"], scenario_data["B_picking"], scenario_data["B_time"]
-    d_ij = scenario_data["d_ij"]
+    C_n, B_nb = scenario_data["C_n"], scenario_data["B_nb"]
+    T_setup, T_pick, T_travel = scenario_data["T_setup"], scenario_data["T_pick"], scenario_data["T_travel"]
+    D_ij = scenario_data["D_ij"]
     speeds = scenario_data.get("V_p") or {p: 1.0 for p in scenario_data["P"]}
     min_speed = min(speeds.values())
-    max_dist = max(d_ij.values()) if d_ij else 1.0
+    max_dist = max(D_ij.values()) if D_ij else 1.0
     max_service = max(scenario_data["S_i"].values()) if scenario_data["S_i"] else 0.0
-    max_route_time = B_time * len(V) * max_dist + len(V) * max_service
+    max_route_time = T_travel * len(V) * max_dist + len(V) * max_service
 
     total = 0.0
     for b in B:
-        fijo = B_setup + B_picking * sum(C_n[n] * Bn[(n, b)] for n in N)
-        total += fijo + max_route_time / min_speed
+        fixed_time = T_setup + T_pick * sum(C_n[n] * B_nb[(n, b)] for n in N)
+        total += fixed_time + max_route_time / min_speed
 
     return max(500.0, round(total + 1.0))
 
@@ -112,24 +112,24 @@ def build_dat_files(tmpdir, scenario_data):
 
     write_scalar_params(
         os.path.join(tmpdir, "params.dat"),
-        W_full    = scenario_data["W_full"],
-        W_ea_ta   = scenario_data["W_ea_ta"],
-        W_ea      = scenario_data["W_ea"],
-        W_ta      = scenario_data["W_ta"],
-        B_time    = scenario_data["B_time"],
-        B_setup   = scenario_data["B_setup"],
-        B_picking = scenario_data["B_picking"],
+        W_c    = scenario_data["W_c"],
+        W_pen   = scenario_data["W_pen"],
+        W_e      = scenario_data["W_e"],
+        W_t      = scenario_data["W_t"],
+        T_travel    = scenario_data["T_travel"],
+        T_setup   = scenario_data["T_setup"],
+        T_pick = scenario_data["T_pick"],
         C_v       = scenario_data["C_v"],
         M         = scenario_data["M"],
         M_seq     = m_seq,
     )
 
     write_indexed_dat(os.path.join(tmpdir, "cap_n.dat"),       scenario_data["C_n"])
-    write_indexed_dat(os.path.join(tmpdir, "due_date.dat"),    scenario_data["Dd"])
-    write_indexed_dat(os.path.join(tmpdir, "distances.dat"),   scenario_data["d_ij"])
+    write_indexed_dat(os.path.join(tmpdir, "due_date.dat"),    scenario_data["T_due_n"])
+    write_indexed_dat(os.path.join(tmpdir, "distances.dat"),   scenario_data["D_ij"])
     write_indexed_dat(os.path.join(tmpdir, "service_time.dat"),scenario_data["S_i"])
     write_indexed_dat(os.path.join(tmpdir, "a_ni.dat"),        scenario_data["A_ni"])
-    write_indexed_dat(os.path.join(tmpdir, "Bn.dat"),          scenario_data["Bn"])
+    write_indexed_dat(os.path.join(tmpdir, "B_nb.dat"),          scenario_data["B_nb"])
     if "X_pb" in scenario_data:
         write_indexed_dat(os.path.join(tmpdir, "x_pb.dat"), scenario_data["X_pb"])
 
@@ -139,8 +139,8 @@ def build_dat_files(tmpdir, scenario_data):
     speeds = scenario_data.get("V_p") or {p: 1.0 for p in scenario_data["P"]}
     write_indexed_dat(os.path.join(tmpdir, "velocities.dat"), speeds)
     write_scalar_dat(
-        os.path.join(tmpdir, "frio.dat"),
-        scenario_data.get("T_frio_max", DEFAULT_T_FRIO_MAX),
+        os.path.join(tmpdir, "cold.dat"),
+        scenario_data.get("T_cold", DEFAULT_T_COLD),
     )
 
     return tmpdir

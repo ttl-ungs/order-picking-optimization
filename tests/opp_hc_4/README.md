@@ -6,25 +6,25 @@ built on top of `opp_hc_2` (multi-picker, no congestion).
 
 ## What's different vs. opp_hc_2
 
-A batch's execution time is no longer a single `t_exec_b` shared by every
+A batch's execution time is no longer a single `d_b` shared by every
 picker. Instead:
 
 ```
-t_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]
-fixed_time(b)   = B_setup + B_picking * sum(C_n over b's orders)   # speed-independent
-route_time(b)   = B_time * travel_distance + service_time          # scaled by speed
+T_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]
+fixed_time(b)   = T_setup + T_pick * sum(C_n over b's orders)   # speed-independent
+route_time(b)   = T_travel * travel_distance + service_time          # scaled by speed
 ```
 
 - **Picker speed (`V_p`)**: a `{picker: speed}` dict. A picker missing from
   it defaults to speed `1.0` (no-op).
-- **Cold chain (`T_frio_max`)**: a `(picker, batch)` pair is only eligible
-  if `t_exec_pb[p, b] <= T_frio_max`. This restricts which picker a batch
-  can be assigned to (X_pb's domain), mirroring
+- **Cold chain (`T_cold`)**: a `(picker, batch)` pair is only eligible
+  if `T_exec_pb[p, b] <= T_cold`. This restricts which picker a batch
+  can be assigned to (x_pb's domain), mirroring
   `opp_model_v5_2_split_stage2_scheduling.zpl`'s `PB_elig`. A batch left with zero eligible
   pickers makes the instance `"infeasible"`, short-circuited up front via
   `models/opp_v5_2_split/utils/cold_chain_validation.py::batches_without_eligible_picker`
   (reused directly, not re-implemented).
-- Default `T_frio_max = +inf` and unset `V_p` make `opp_hc_4` behave
+- Default `T_cold = +inf` and unset `V_p` make `opp_hc_4` behave
   exactly like `opp_hc_2` (see `test_case_equivalence.py`).
 
 **Deliberately no congestion** (unlike `opp_hc_3`): congestion and
@@ -43,7 +43,7 @@ tests/opp_hc_4/
 │   ├── test_case_cold_chain_infeasible.py  # dedicated: unreachable deadline -> infeasible
 │   ├── test_case_cold_chain_eligibility.py # dedicated: forced onto the eligible picker
 │   ├── test_case_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
-│   └── test_case_NN.py                     # ported 1:1 from opp_hc_2 (V_p unset, T_frio_max=+inf)
+│   └── test_case_NN.py                     # ported 1:1 from opp_hc_2 (V_p unset, T_cold=+inf)
 └── stress/
     ├── v5_stress_test_case.py      # base: runs a v5 stress scenario through this model
     └── test_case_{01..19}.py       # v5's 19 stress scenarios, same numbering and method names as opp_v5_2_split
@@ -51,7 +51,7 @@ tests/opp_hc_4/
 
 The ported functional files are literal copies of their `opp_hc_2`
 counterpart -- same scenario builder, same numeric parameters -- with `V_p`
-unset and `T_frio_max` left at its default (`+inf`), so they are pure
+unset and `T_cold` left at its default (`+inf`), so they are pure
 equivalence checks. The stress suite runs `opp_v5_2_split`'s 19 stress
 scenarios instead, file-for-file and with the same method names, so
 `analysis/` joins them against v5 by instance name (see

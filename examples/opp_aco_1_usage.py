@@ -49,10 +49,10 @@ def run_aco_example():
     solve_dto = SolveAcoModelDTO()
 
     # Objective function scaling weights (aligned with opp_v3 objective layout)
-    solve_dto.W_full = 1.0
-    solve_dto.W_ea_ta = 1.0
-    solve_dto.W_ea = 0.5
-    solve_dto.W_ta = 2.0
+    solve_dto.W_c = 1.0
+    solve_dto.W_pen = 1.0
+    solve_dto.W_e = 0.5
+    solve_dto.W_t = 2.0
 
     # Vehicle and order capacity configurations
     solve_dto.C_v = 100.0
@@ -67,17 +67,17 @@ def run_aco_example():
     }
 
     # Operational processing time variables
-    solve_dto.B_time = 1.0  # Travel time factor per distance unit
-    solve_dto.B_setup = 20.0  # Fixed setup time per batch execution
-    solve_dto.B_picking = 2.0  # Time coefficient per picked item volume unit
+    solve_dto.T_travel = 1.0  # Travel time factor per distance unit
+    solve_dto.T_setup = 20.0  # Fixed setup time per batch execution
+    solve_dto.T_pick = 2.0  # Time coefficient per picked item volume unit
     solve_dto.S = {"loc_1": 5.0, "loc_2": 5.0}  # Fixed service time at nodes
 
     # Temporal constraints (Due dates and Big-M penalty factor)
-    solve_dto.Dd = {"order_1": 60.0, "order_2": 80.0}
+    solve_dto.T_due_n = {"order_1": 60.0, "order_2": 80.0}
     solve_dto.M = 1000.0
 
-    # Structural initial batch assignments matrix (Bn)
-    solve_dto.Bn = {
+    # Structural initial batch assignments matrix (B_nb)
+    solve_dto.B_nb = {
         ("order_1", "batch_1"): 1,
         ("order_2", "batch_1"): 1,
     }

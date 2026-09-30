@@ -5,7 +5,7 @@
 This directory contains a **Hill Climbing** heuristic solver that solves the **exact same problem as `opp_model_v4.zpl`**, with the **same constraints**, but using a heuristic approach instead of exact integer linear programming.
 
 The key feature added on top of `opp_hc_1` (v3): orders are grouped into batches
-and **batches are assigned to different pickers (X_pb)** so that the work can
+and **batches are assigned to different pickers (x_pb)** so that the work can
 be **parallelized** — batches on different pickers execute at the same time,
 while batches on the same picker are sequenced one after another.
 
@@ -13,7 +13,7 @@ while batches on the same picker are sequenced one after another.
 
 **Same Input:**
 - Receives all parameters from `SolveModelDTO`
-- Fixed batch assignments `Bn` (parameter)
+- Fixed batch assignments `B_nb` (parameter)
 - Set of pickers `P` (via `ModelDTO.P`); when omitted, falls back to a single
   implicit picker, matching the old non-parallel behaviour
 
@@ -46,7 +46,7 @@ while batches on the same picker are sequenced one after another.
 
 1. **Generate Initial FEASIBLE Solution**
    - For each batch, build route using BFS (shortest path visiting all required locations)
-   - Assign batches to pickers round-robin (X_pb), distributing the work
+   - Assign batches to pickers round-robin (x_pb), distributing the work
    - Verify all constraints before accepting
 
 2. **Main Loop** - generate a neighbor via one of:
