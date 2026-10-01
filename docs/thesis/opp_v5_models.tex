@@ -518,7 +518,7 @@ ALGORITMO HC4(params)
         retornar infeasible                       # chequeo exacto
 
     S <- SolucionInicial()
-    si S es None: retornar infeasible             # algún lote no se puede rutear
+    si S es None: retornar infeasible             # lote no ruteable
     mejor <- S si Delta_cold(S) = 0 si_no None
     iteracion <- 0 ; sin_mejora <- 0
 
@@ -539,8 +539,9 @@ SUBRUTINA SolucionInicial()
     para cada lote b con órdenes:
         candidatas <- { vecino más cercano (Dijkstra),
                         inserción más lejana, hacia adelante y hacia atrás,
-                        20 construcciones pick-to-pick al azar con peso (1/d)^2.5,
-                          alternando el sentido, cada una mejorada con 2-opt }
+                        20 construcciones pick-to-pick al azar,
+                          con peso (1/d)^2.5, alternando el sentido,
+                          cada una mejorada con 2-opt }
         si no hay candidatas: candidatas <- { búsqueda best-first acotada }
         rho_b <- pulir(la candidata más corta)    # 2-opt, or-opt, re-ruteo
     asignar cada lote al picker elegible con menos lotes
@@ -659,8 +660,8 @@ resto queda para pulir y para la búsqueda local.
 \startsection[title={Comparación de v5 con las heurísticas}, reference=sec:comparacion]
 
 Esta sección resume los resultados. El detalle instancia por instancia está en
-\type{opp_v5_2_split_vs_heuristics_comparison.tex} (split contra las heurísticas) y en
-\type{opp_v5_1_mono_vs_opp_v5_2_split_comparison.tex} (mono contra split).
+\hyphenatedurl{opp_v5_2_split_vs_heuristics_comparison.tex} (split contra las heurísticas) y en
+\hyphenatedurl{opp_v5_1_mono_vs_opp_v5_2_split_comparison.tex} (mono contra split).
 
 \startsubsection[title={Comparabilidad}]
 
