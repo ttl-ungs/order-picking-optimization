@@ -789,6 +789,43 @@ generador y los mismos argumentos. Las reglas están en
 \eTABLE
 \blank[medium]
 
+{\bf Qué prueba cada suite.} La suite funcional son tests chicos, de pocos lotes y
+locaciones, y cada uno verifica una regla del problema: que se respete la capacidad del carro, que
+la ruta pase por todas las locaciones requeridas sin repetir ninguna, que se elija la ruta o el
+picker que conviene según las fechas de entrega, que se cumpla la cadena de frío, y que las
+instancias imposibles (una orden más grande que el carro, una locación inalcanzable, un lote sin
+picker que cumpla el frío) se detecten como infactibles. La suite de stress mide hasta qué tamaño
+llega cada método. Sus escenarios crecen en una dirección por vez: el tamaño del almacén (04 a 08),
+su forma (09), la cantidad de lotes y pickers (12 a 14 y 16 a 19), y casos particulares de la
+agenda (10, 11 y 15):
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\setupTABLE[column][2][align=flushleft]
+\bTR \bTH Caso \eTH \bTH Qué se prueba \eTH \bTH Lotes \eTH \bTH Pickers \eTH \bTH Grilla \eTH \eTR
+\bTR \bTD 01 \eTD \bTD Heredado: almacén muy grande, un lote por picker \eTD \bTD 30 \eTD \bTD 30 \eTD \bTD 100×100 \eTD \eTR
+\bTR \bTD 02 \eTD \bTD Heredado: un lote por picker \eTD \bTD 10 \eTD \bTD 10 \eTD \bTD 10×10 \eTD \eTR
+\bTR \bTD 03 \eTD \bTD Heredado: un solo picker con 40 lotes \eTD \bTD 40 \eTD \bTD 1 \eTD \bTD 7×7 \eTD \eTR
+\bTR \bTD 04 \eTD \bTD Perfil realista en almacén chico \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 7×7 \eTD \eTR
+\bTR \bTD 05 \eTD \bTD Igual que 04 en un almacén más grande \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 13×13 \eTD \eTR
+\bTR \bTD 06 \eTD \bTD Igual que 04, almacén 14×14 \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 14×14 \eTD \eTR
+\bTR \bTD 07 \eTD \bTD Igual que 04, almacén 15×15 \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 15×15 \eTD \eTR
+\bTR \bTD 08 \eTD \bTD Igual que 04, almacén 16×16: techo del ruteo exacto \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 16×16 \eTD \eTR
+\bTR \bTD 09 \eTD \bTD Almacén alargado: ¿importa la forma? \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 8×21 \eTD \eTR
+\bTR \bTD 10 \eTD \bTD Peso en la agenda: ruteo barato, 4 pickers \eTD \bTD 6 \eTD \bTD 4 \eTD \bTD 7×7 \eTD \eTR
+\bTR \bTD 11 \eTD \bTD Cadena de frío activa: solo los pickers rápidos \eTD \bTD 6 \eTD \bTD 4 \eTD \bTD 13×13 \eTD \eTR
+\bTR \bTD 12 \eTD \bTD Más personal: 8 lotes, 4 pickers \eTD \bTD 8 \eTD \bTD 4 \eTD \bTD 7×7 \eTD \eTR
+\bTR \bTD 13 \eTD \bTD Más personal: 10 lotes, 5 pickers \eTD \bTD 10 \eTD \bTD 5 \eTD \bTD 7×7 \eTD \eTR
+\bTR \bTD 14 \eTD \bTD Más personal: 12 lotes, 6 pickers \eTD \bTD 12 \eTD \bTD 6 \eTD \bTD 7×7 \eTD \eTR
+\bTR \bTD 15 \eTD \bTD Más pickers que lotes: quién queda libre \eTD \bTD 6 \eTD \bTD 9 \eTD \bTD 10×10 \eTD \eTR
+\bTR \bTD 16 \eTD \bTD Una ola: un lote por picker \eTD \bTD 12 \eTD \bTD 12 \eTD \bTD 10×10 \eTD \eTR
+\bTR \bTD 17 \eTD \bTD 3 pickers toman un segundo lote \eTD \bTD 15 \eTD \bTD 12 \eTD \bTD 10×10 \eTD \eTR
+\bTR \bTD 18 \eTD \bTD La mitad toma un segundo lote \eTD \bTD 18 \eTD \bTD 12 \eTD \bTD 10×10 \eTD \eTR
+\bTR \bTD 19 \eTD \bTD Todos toman dos lotes \eTD \bTD 24 \eTD \bTD 12 \eTD \bTD 10×10 \eTD \eTR
+\eTABLE
+\blank[medium]
+
 En stress no hay espera que descartar: en los escenarios 04 a 19 el peso por lote completado
 ($W^{c} = 27$) es mayor que las órdenes por lote, así que esperar nunca conviene, y en los
 heredados 01 a 03 todas las órdenes llegan tarde. Los 10 no comparables son los que split no
@@ -833,19 +870,239 @@ En los escenarios de stress que split resuelve:
 
 \blank[medium]
 \bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[style=\tfx]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
-\bTR \bTH Caso \eTH \bTH Lotes \eTH \bTH Grilla \eTH \bTH Split (s) \eTH \bTH HC-4 (s) \eTH \bTH Brecha \eTH \bTH ACO-4 (s) \eTH \bTH Brecha \eTH \eTR
-\bTR \bTD 02 \eTD \bTD 10 \eTD \bTD 10×10 \eTD \bTD 33 \eTD \bTD 0,9 \eTD \bTD 0,00 \% \eTD \bTD 93,5 \eTD \bTD 0,00 \% \eTD \eTR
-\bTR \bTD 04 \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 12 \eTD \bTD 0,5 \eTD \bTD 0,01 \% \eTD \bTD 12,9 \eTD \bTD 0,00 \% \eTD \eTR
-\bTR \bTD 05 \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 108 \eTD \bTD 2,8 \eTD \bTD 0,05 \% \eTD \bTD 84,1 \eTD \bTD 0,01 \% \eTD \eTR
-\bTR \bTD 06 \eTD \bTD 6 \eTD \bTD 14×14 \eTD \bTD 202 \eTD \bTD 3,8 \eTD \bTD 0,04 \% \eTD \bTD 116,1 \eTD \bTD 0,01 \% \eTD \eTR
-\bTR \bTD 07 \eTD \bTD 6 \eTD \bTD 15×15 \eTD \bTD 904 \eTD \bTD 4,3 \eTD \bTD 0,04 \% \eTD \bTD 156,1 \eTD \bTD 0,01 \% \eTD \eTR
-\bTR \bTD 09 \eTD \bTD 6 \eTD \bTD 8×21 \eTD \bTD 224 \eTD \bTD 3,8 \eTD \bTD 0,06 \% \eTD \bTD 204,1 \eTD \bTD 0,00 \% \eTD \eTR
-\bTR \bTD 10 \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 86 \eTD \bTD 0,5 \eTD \bTD 0,02 \% \eTD \bTD 15,3 \eTD \bTD 0,00 \% \eTD \eTR
-\bTR \bTD 11 \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 139 \eTD \bTD 2,9 \eTD \bTD 0,21 \% \eTD \bTD 83,6 \eTD \bTD 0,06 \% \eTD \eTR
-\bTR \bTD 15 \eTD \bTD 6 \eTD \bTD 10×10 \eTD \bTD 244 \eTD \bTD 1,5 \eTD \bTD 0,07 \% \eTD \bTD 52,5 \eTD \bTD 0,00 \% \eTD \eTR
+\bTR \bTH Caso \eTH \bTH Escenario \eTH \bTH Lotes \eTH \bTH Grilla \eTH \bTH Split (s) \eTH \bTH HC-4 (s) \eTH \bTH Brecha \eTH \bTH ACO-4 (s) \eTH \bTH Brecha \eTH \eTR
+\bTR \bTD 02 \eTD \bTD heredado, 10 pickers \eTD \bTD 10 \eTD \bTD 10×10 \eTD \bTD 33 \eTD \bTD 0,9 \eTD \bTD 0,00 \% \eTD \bTD 93,5 \eTD \bTD 0,00 \% \eTD \eTR
+\bTR \bTD 04 \eTD \bTD realista, 7×7 \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 12 \eTD \bTD 0,5 \eTD \bTD 0,01 \% \eTD \bTD 12,9 \eTD \bTD 0,00 \% \eTD \eTR
+\bTR \bTD 05 \eTD \bTD realista, 13×13 \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 108 \eTD \bTD 2,8 \eTD \bTD 0,05 \% \eTD \bTD 84,1 \eTD \bTD 0,01 \% \eTD \eTR
+\bTR \bTD 06 \eTD \bTD realista, 14×14 \eTD \bTD 6 \eTD \bTD 14×14 \eTD \bTD 202 \eTD \bTD 3,8 \eTD \bTD 0,04 \% \eTD \bTD 116,1 \eTD \bTD 0,01 \% \eTD \eTR
+\bTR \bTD 07 \eTD \bTD realista, 15×15 \eTD \bTD 6 \eTD \bTD 15×15 \eTD \bTD 904 \eTD \bTD 4,3 \eTD \bTD 0,04 \% \eTD \bTD 156,1 \eTD \bTD 0,01 \% \eTD \eTR
+\bTR \bTD 09 \eTD \bTD almacén alargado \eTD \bTD 6 \eTD \bTD 8×21 \eTD \bTD 224 \eTD \bTD 3,8 \eTD \bTD 0,06 \% \eTD \bTD 204,1 \eTD \bTD 0,00 \% \eTD \eTR
+\bTR \bTD 10 \eTD \bTD agenda pesada \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 86 \eTD \bTD 0,5 \eTD \bTD 0,02 \% \eTD \bTD 15,3 \eTD \bTD 0,00 \% \eTD \eTR
+\bTR \bTD 11 \eTD \bTD cadena de frío \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 139 \eTD \bTD 2,9 \eTD \bTD 0,21 \% \eTD \bTD 83,6 \eTD \bTD 0,06 \% \eTD \eTR
+\bTR \bTD 15 \eTD \bTD sobran pickers \eTD \bTD 6 \eTD \bTD 10×10 \eTD \bTD 244 \eTD \bTD 1,5 \eTD \bTD 0,07 \% \eTD \bTD 52,5 \eTD \bTD 0,00 \% \eTD \eTR
 \eTABLE
 \blank[medium]
+
+La figura \in[fig:tiempos] muestra el tiempo de cada método en los 19 escenarios, la
+\in[fig:brecha] la brecha de cada heurística donde hay óptimo, y la \in[fig:tradeoff] las dos
+cosas juntas.
+
+\placefigure[force][fig:tiempos]{Tiempo total por escenario de stress (escala logarítmica). Las barras sin relleno son los timeouts de split.}
+{\startMPcode
+numeric w, h; w := 12cm; h := 6.5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+label.bot(textext("\tfx 01"), (0.316cm,-0.100cm));
+label.bot(textext("\tfx 02"), (0.947cm,-0.100cm));
+label.bot(textext("\tfx 03"), (1.579cm,-0.100cm));
+label.bot(textext("\tfx 04"), (2.211cm,-0.100cm));
+label.bot(textext("\tfx 05"), (2.842cm,-0.100cm));
+label.bot(textext("\tfx 06"), (3.474cm,-0.100cm));
+label.bot(textext("\tfx 07"), (4.105cm,-0.100cm));
+label.bot(textext("\tfx 08"), (4.737cm,-0.100cm));
+label.bot(textext("\tfx 09"), (5.368cm,-0.100cm));
+label.bot(textext("\tfx 10"), (6.000cm,-0.100cm));
+label.bot(textext("\tfx 11"), (6.632cm,-0.100cm));
+label.bot(textext("\tfx 12"), (7.263cm,-0.100cm));
+label.bot(textext("\tfx 13"), (7.895cm,-0.100cm));
+label.bot(textext("\tfx 14"), (8.526cm,-0.100cm));
+label.bot(textext("\tfx 15"), (9.158cm,-0.100cm));
+label.bot(textext("\tfx 16"), (9.789cm,-0.100cm));
+label.bot(textext("\tfx 17"), (10.421cm,-0.100cm));
+label.bot(textext("\tfx 18"), (11.053cm,-0.100cm));
+label.bot(textext("\tfx 19"), (11.684cm,-0.100cm));
+draw (0.000cm,0.805cm)--(-0.120cm,0.805cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1"), (-0.120cm,0.805cm));
+draw (0.000cm,2.345cm)--(-0.120cm,2.345cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10"), (-0.120cm,2.345cm));
+draw (0.000cm,3.884cm)--(-0.120cm,3.884cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100"), (-0.120cm,3.884cm));
+draw (0.000cm,5.424cm)--(-0.120cm,5.424cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1.000"), (-0.120cm,5.424cm));
+label.lft(textext("Tiempo total (s, escala log.)") rotated 90, (-1.25cm,h/2));
+draw (0.000cm,6.009cm)--(12.000cm,6.009cm) withpen pencircle scaled .5pt dashed evenly;
+label.rt(textext("\tfxx tope de 40 min"), (0.100cm,6.209cm));
+draw (0.063cm,0.000cm)--(0.227cm,0.000cm)--(0.227cm,6.009cm)--(0.063cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (0.234cm,0.000cm)--(0.398cm,0.000cm)--(0.398cm,5.443cm)--(0.234cm,5.443cm)--cycle withcolor \MPcolor{greenline};
+fill (0.404cm,0.000cm)--(0.568cm,0.000cm)--(0.568cm,5.918cm)--(0.404cm,5.918cm)--cycle withcolor \MPcolor{redline};
+fill (0.695cm,0.000cm)--(0.859cm,0.000cm)--(0.859cm,3.138cm)--(0.695cm,3.138cm)--cycle withcolor \MPcolor{darkblue};
+fill (0.865cm,0.000cm)--(1.029cm,0.000cm)--(1.029cm,0.745cm)--(0.865cm,0.745cm)--cycle withcolor \MPcolor{greenline};
+fill (1.036cm,0.000cm)--(1.200cm,0.000cm)--(1.200cm,3.840cm)--(1.036cm,3.840cm)--cycle withcolor \MPcolor{redline};
+draw (1.326cm,0.000cm)--(1.491cm,0.000cm)--(1.491cm,6.009cm)--(1.326cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (1.497cm,0.000cm)--(1.661cm,0.000cm)--(1.661cm,1.177cm)--(1.497cm,1.177cm)--cycle withcolor \MPcolor{greenline};
+fill (1.667cm,0.000cm)--(1.832cm,0.000cm)--(1.832cm,4.634cm)--(1.667cm,4.634cm)--cycle withcolor \MPcolor{redline};
+fill (1.958cm,0.000cm)--(2.122cm,0.000cm)--(2.122cm,2.484cm)--(1.958cm,2.484cm)--cycle withcolor \MPcolor{darkblue};
+fill (2.128cm,0.000cm)--(2.293cm,0.000cm)--(2.293cm,0.380cm)--(2.128cm,0.380cm)--cycle withcolor \MPcolor{greenline};
+fill (2.299cm,0.000cm)--(2.463cm,0.000cm)--(2.463cm,2.513cm)--(2.299cm,2.513cm)--cycle withcolor \MPcolor{redline};
+fill (2.589cm,0.000cm)--(2.754cm,0.000cm)--(2.754cm,3.934cm)--(2.589cm,3.934cm)--cycle withcolor \MPcolor{darkblue};
+fill (2.760cm,0.000cm)--(2.924cm,0.000cm)--(2.924cm,1.501cm)--(2.760cm,1.501cm)--cycle withcolor \MPcolor{greenline};
+fill (2.931cm,0.000cm)--(3.095cm,0.000cm)--(3.095cm,3.769cm)--(2.931cm,3.769cm)--cycle withcolor \MPcolor{redline};
+fill (3.221cm,0.000cm)--(3.385cm,0.000cm)--(3.385cm,4.353cm)--(3.221cm,4.353cm)--cycle withcolor \MPcolor{darkblue};
+fill (3.392cm,0.000cm)--(3.556cm,0.000cm)--(3.556cm,1.698cm)--(3.392cm,1.698cm)--cycle withcolor \MPcolor{greenline};
+fill (3.562cm,0.000cm)--(3.726cm,0.000cm)--(3.726cm,3.984cm)--(3.562cm,3.984cm)--cycle withcolor \MPcolor{redline};
+fill (3.853cm,0.000cm)--(4.017cm,0.000cm)--(4.017cm,5.356cm)--(3.853cm,5.356cm)--cycle withcolor \MPcolor{darkblue};
+fill (4.023cm,0.000cm)--(4.187cm,0.000cm)--(4.187cm,1.773cm)--(4.023cm,1.773cm)--cycle withcolor \MPcolor{greenline};
+fill (4.194cm,0.000cm)--(4.358cm,0.000cm)--(4.358cm,4.182cm)--(4.194cm,4.182cm)--cycle withcolor \MPcolor{redline};
+draw (4.484cm,0.000cm)--(4.648cm,0.000cm)--(4.648cm,6.009cm)--(4.484cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (4.655cm,0.000cm)--(4.819cm,0.000cm)--(4.819cm,1.853cm)--(4.655cm,1.853cm)--cycle withcolor \MPcolor{greenline};
+fill (4.825cm,0.000cm)--(4.989cm,0.000cm)--(4.989cm,4.002cm)--(4.825cm,4.002cm)--cycle withcolor \MPcolor{redline};
+fill (5.116cm,0.000cm)--(5.280cm,0.000cm)--(5.280cm,4.423cm)--(5.116cm,4.423cm)--cycle withcolor \MPcolor{darkblue};
+fill (5.286cm,0.000cm)--(5.451cm,0.000cm)--(5.451cm,1.699cm)--(5.286cm,1.699cm)--cycle withcolor \MPcolor{greenline};
+fill (5.457cm,0.000cm)--(5.621cm,0.000cm)--(5.621cm,4.361cm)--(5.457cm,4.361cm)--cycle withcolor \MPcolor{redline};
+fill (5.747cm,0.000cm)--(5.912cm,0.000cm)--(5.912cm,3.780cm)--(5.747cm,3.780cm)--cycle withcolor \MPcolor{darkblue};
+fill (5.918cm,0.000cm)--(6.082cm,0.000cm)--(6.082cm,0.402cm)--(5.918cm,0.402cm)--cycle withcolor \MPcolor{greenline};
+fill (6.088cm,0.000cm)--(6.253cm,0.000cm)--(6.253cm,2.627cm)--(6.088cm,2.627cm)--cycle withcolor \MPcolor{redline};
+fill (6.379cm,0.000cm)--(6.543cm,0.000cm)--(6.543cm,4.106cm)--(6.379cm,4.106cm)--cycle withcolor \MPcolor{darkblue};
+fill (6.549cm,0.000cm)--(6.714cm,0.000cm)--(6.714cm,1.528cm)--(6.549cm,1.528cm)--cycle withcolor \MPcolor{greenline};
+fill (6.720cm,0.000cm)--(6.884cm,0.000cm)--(6.884cm,3.764cm)--(6.720cm,3.764cm)--cycle withcolor \MPcolor{redline};
+draw (7.011cm,0.000cm)--(7.175cm,0.000cm)--(7.175cm,6.009cm)--(7.011cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (7.181cm,0.000cm)--(7.345cm,0.000cm)--(7.345cm,0.557cm)--(7.181cm,0.557cm)--cycle withcolor \MPcolor{greenline};
+fill (7.352cm,0.000cm)--(7.516cm,0.000cm)--(7.516cm,4.048cm)--(7.352cm,4.048cm)--cycle withcolor \MPcolor{redline};
+draw (7.642cm,0.000cm)--(7.806cm,0.000cm)--(7.806cm,6.009cm)--(7.642cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (7.813cm,0.000cm)--(7.977cm,0.000cm)--(7.977cm,0.589cm)--(7.813cm,0.589cm)--cycle withcolor \MPcolor{greenline};
+fill (7.983cm,0.000cm)--(8.147cm,0.000cm)--(8.147cm,4.006cm)--(7.983cm,4.006cm)--cycle withcolor \MPcolor{redline};
+draw (8.274cm,0.000cm)--(8.438cm,0.000cm)--(8.438cm,6.009cm)--(8.274cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (8.444cm,0.000cm)--(8.608cm,0.000cm)--(8.608cm,0.726cm)--(8.444cm,0.726cm)--cycle withcolor \MPcolor{greenline};
+fill (8.615cm,0.000cm)--(8.779cm,0.000cm)--(8.779cm,3.698cm)--(8.615cm,3.698cm)--cycle withcolor \MPcolor{redline};
+fill (8.905cm,0.000cm)--(9.069cm,0.000cm)--(9.069cm,4.481cm)--(8.905cm,4.481cm)--cycle withcolor \MPcolor{darkblue};
+fill (9.076cm,0.000cm)--(9.240cm,0.000cm)--(9.240cm,1.086cm)--(9.076cm,1.086cm)--cycle withcolor \MPcolor{greenline};
+fill (9.246cm,0.000cm)--(9.411cm,0.000cm)--(9.411cm,3.454cm)--(9.246cm,3.454cm)--cycle withcolor \MPcolor{redline};
+draw (9.537cm,0.000cm)--(9.701cm,0.000cm)--(9.701cm,6.009cm)--(9.537cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (9.707cm,0.000cm)--(9.872cm,0.000cm)--(9.872cm,1.262cm)--(9.707cm,1.262cm)--cycle withcolor \MPcolor{greenline};
+fill (9.878cm,0.000cm)--(10.042cm,0.000cm)--(10.042cm,4.066cm)--(9.878cm,4.066cm)--cycle withcolor \MPcolor{redline};
+draw (10.168cm,0.000cm)--(10.333cm,0.000cm)--(10.333cm,6.009cm)--(10.168cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (10.339cm,0.000cm)--(10.503cm,0.000cm)--(10.503cm,1.560cm)--(10.339cm,1.560cm)--cycle withcolor \MPcolor{greenline};
+fill (10.509cm,0.000cm)--(10.674cm,0.000cm)--(10.674cm,4.234cm)--(10.509cm,4.234cm)--cycle withcolor \MPcolor{redline};
+draw (10.800cm,0.000cm)--(10.964cm,0.000cm)--(10.964cm,6.009cm)--(10.800cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (10.971cm,0.000cm)--(11.135cm,0.000cm)--(11.135cm,1.618cm)--(10.971cm,1.618cm)--cycle withcolor \MPcolor{greenline};
+fill (11.141cm,0.000cm)--(11.305cm,0.000cm)--(11.305cm,4.559cm)--(11.141cm,4.559cm)--cycle withcolor \MPcolor{redline};
+draw (11.432cm,0.000cm)--(11.596cm,0.000cm)--(11.596cm,6.009cm)--(11.432cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (11.602cm,0.000cm)--(11.766cm,0.000cm)--(11.766cm,1.867cm)--(11.602cm,1.867cm)--cycle withcolor \MPcolor{greenline};
+fill (11.773cm,0.000cm)--(11.937cm,0.000cm)--(11.937cm,5.026cm)--(11.773cm,5.026cm)--cycle withcolor \MPcolor{redline};
+fill (12.400cm,3.380cm)--(12.800cm,3.380cm)--(12.800cm,3.620cm)--(12.400cm,3.620cm)--cycle withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx split"), (13.000cm,3.500cm));
+draw (12.400cm,2.960cm)--(12.800cm,2.960cm)--(12.800cm,3.200cm)--(12.400cm,3.200cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx split: timeout"), (13.000cm,3.080cm));
+fill (12.400cm,2.540cm)--(12.800cm,2.540cm)--(12.800cm,2.780cm)--(12.400cm,2.780cm)--cycle withcolor \MPcolor{greenline};
+label.rt(textext("\tfx HC-4"), (13.000cm,2.660cm));
+fill (12.400cm,2.120cm)--(12.800cm,2.120cm)--(12.800cm,2.360cm)--(12.400cm,2.360cm)--cycle withcolor \MPcolor{redline};
+label.rt(textext("\tfx ACO-4"), (13.000cm,2.240cm));
+\stopMPcode}
+
+\placefigure[force][fig:brecha]{Brecha contra el óptimo de split en cada escenario que split resuelve. Un 0 indica que la heurística encontró el óptimo.}
+{\startMPcode
+numeric w, h; w := 12cm; h := 5.5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+label.bot(textext("\tfx 02"), (0.667cm,-0.100cm));
+label.bot(textext("\tfx 04"), (2.000cm,-0.100cm));
+label.bot(textext("\tfx 05"), (3.333cm,-0.100cm));
+label.bot(textext("\tfx 06"), (4.667cm,-0.100cm));
+label.bot(textext("\tfx 07"), (6.000cm,-0.100cm));
+label.bot(textext("\tfx 09"), (7.333cm,-0.100cm));
+label.bot(textext("\tfx 10"), (8.667cm,-0.100cm));
+label.bot(textext("\tfx 11"), (10.000cm,-0.100cm));
+label.bot(textext("\tfx 15"), (11.333cm,-0.100cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,00 \%"), (-0.120cm,0.000cm));
+draw (0.000cm,1.100cm)--(-0.120cm,1.100cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,05 \%"), (-0.120cm,1.100cm));
+draw (0.000cm,2.200cm)--(-0.120cm,2.200cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,10 \%"), (-0.120cm,2.200cm));
+draw (0.000cm,3.300cm)--(-0.120cm,3.300cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,15 \%"), (-0.120cm,3.300cm));
+draw (0.000cm,4.400cm)--(-0.120cm,4.400cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,20 \%"), (-0.120cm,4.400cm));
+draw (0.000cm,5.500cm)--(-0.120cm,5.500cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,25 \%"), (-0.120cm,5.500cm));
+label.lft(textext("Brecha contra el óptimo de split") rotated 90, (-1.25cm,h/2));
+label.top(textext("\tfxx 0"), (0.413cm,0.020cm));
+label.top(textext("\tfxx 0"), (0.880cm,0.020cm));
+fill (1.533cm,0.000cm)--(1.973cm,0.000cm)--(1.973cm,0.289cm)--(1.533cm,0.289cm)--cycle withcolor \MPcolor{greenline};
+fill (2.000cm,0.000cm)--(2.440cm,0.000cm)--(2.440cm,0.049cm)--(2.000cm,0.049cm)--cycle withcolor \MPcolor{redline};
+fill (2.867cm,0.000cm)--(3.307cm,0.000cm)--(3.307cm,1.056cm)--(2.867cm,1.056cm)--cycle withcolor \MPcolor{greenline};
+fill (3.333cm,0.000cm)--(3.773cm,0.000cm)--(3.773cm,0.319cm)--(3.333cm,0.319cm)--cycle withcolor \MPcolor{redline};
+fill (4.200cm,0.000cm)--(4.640cm,0.000cm)--(4.640cm,0.915cm)--(4.200cm,0.915cm)--cycle withcolor \MPcolor{greenline};
+fill (4.667cm,0.000cm)--(5.107cm,0.000cm)--(5.107cm,0.200cm)--(4.667cm,0.200cm)--cycle withcolor \MPcolor{redline};
+fill (5.533cm,0.000cm)--(5.973cm,0.000cm)--(5.973cm,0.779cm)--(5.533cm,0.779cm)--cycle withcolor \MPcolor{greenline};
+fill (6.000cm,0.000cm)--(6.440cm,0.000cm)--(6.440cm,0.317cm)--(6.000cm,0.317cm)--cycle withcolor \MPcolor{redline};
+fill (6.867cm,0.000cm)--(7.307cm,0.000cm)--(7.307cm,1.223cm)--(6.867cm,1.223cm)--cycle withcolor \MPcolor{greenline};
+fill (7.333cm,0.000cm)--(7.773cm,0.000cm)--(7.773cm,0.090cm)--(7.333cm,0.090cm)--cycle withcolor \MPcolor{redline};
+fill (8.200cm,0.000cm)--(8.640cm,0.000cm)--(8.640cm,0.433cm)--(8.200cm,0.433cm)--cycle withcolor \MPcolor{greenline};
+label.top(textext("\tfxx 0"), (8.880cm,0.020cm));
+fill (9.533cm,0.000cm)--(9.973cm,0.000cm)--(9.973cm,4.718cm)--(9.533cm,4.718cm)--cycle withcolor \MPcolor{greenline};
+fill (10.000cm,0.000cm)--(10.440cm,0.000cm)--(10.440cm,1.298cm)--(10.000cm,1.298cm)--cycle withcolor \MPcolor{redline};
+fill (10.867cm,0.000cm)--(11.307cm,0.000cm)--(11.307cm,1.554cm)--(10.867cm,1.554cm)--cycle withcolor \MPcolor{greenline};
+fill (11.333cm,0.000cm)--(11.773cm,0.000cm)--(11.773cm,0.103cm)--(11.333cm,0.103cm)--cycle withcolor \MPcolor{redline};
+fill (0.400cm,5.180cm)--(0.800cm,5.180cm)--(0.800cm,5.420cm)--(0.400cm,5.420cm)--cycle withcolor \MPcolor{greenline};
+label.rt(textext("\tfx HC-4"), (1.000cm,5.300cm));
+fill (0.400cm,4.760cm)--(0.800cm,4.760cm)--(0.800cm,5.000cm)--(0.400cm,5.000cm)--cycle withcolor \MPcolor{redline};
+label.rt(textext("\tfx ACO-4"), (1.000cm,4.880cm));
+\stopMPcode}
+
+\placefigure[force][fig:tradeoff]{Brecha contra tiempo total en los escenarios de stress que split resuelve (tiempo en escala logarítmica).}
+{\startMPcode
+numeric w, h; w := 11cm; h := 6cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+draw (1.438cm,0.000cm)--(1.438cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 1"), (1.438cm,-0.120cm));
+draw (4.188cm,0.000cm)--(4.188cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 10"), (4.188cm,-0.120cm));
+draw (6.938cm,0.000cm)--(6.938cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 100"), (6.938cm,-0.120cm));
+draw (9.688cm,0.000cm)--(9.688cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 1.000"), (9.688cm,-0.120cm));
+draw (0.000cm,0.231cm)--(-0.120cm,0.231cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,00 \%"), (-0.120cm,0.231cm));
+draw (0.000cm,1.385cm)--(-0.120cm,1.385cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,05 \%"), (-0.120cm,1.385cm));
+draw (0.000cm,2.538cm)--(-0.120cm,2.538cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,10 \%"), (-0.120cm,2.538cm));
+draw (0.000cm,3.692cm)--(-0.120cm,3.692cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,15 \%"), (-0.120cm,3.692cm));
+draw (0.000cm,4.846cm)--(-0.120cm,4.846cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,20 \%"), (-0.120cm,4.846cm));
+draw (0.000cm,6.000cm)--(-0.120cm,6.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,25 \%"), (-0.120cm,6.000cm));
+label.bot(textext("Tiempo total (s, escala log.)"), (w/2,-0.85cm));
+label.lft(textext("Brecha contra el óptimo") rotated 90, (-1.25cm,h/2));
+fill fullcircle scaled 4pt shifted (5.605cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.330cm,0.231cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (6.858cm,0.231cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (4.437cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (0.678cm,0.534cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (4.489cm,0.282cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.027cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (2.681cm,1.339cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (6.731cm,0.566cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.776cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (3.032cm,1.190cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (7.116cm,0.441cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (9.567cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (3.166cm,1.048cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (7.470cm,0.563cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.900cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (3.035cm,1.514cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (7.790cm,0.325cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (6.752cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (0.718cm,0.685cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (4.693cm,0.231cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.333cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (2.729cm,5.179cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (6.724cm,1.592cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (8.004cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.940cm,1.861cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (6.169cm,0.339cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.100cm,5.700cm) withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx split (óptimo)"), (7.500cm,5.700cm));
+fill fullcircle scaled 4pt shifted (7.100cm,5.280cm) withcolor \MPcolor{greenline};
+label.rt(textext("\tfx HC-4"), (7.500cm,5.280cm));
+fill fullcircle scaled 4pt shifted (7.100cm,4.860cm) withcolor \MPcolor{redline};
+label.rt(textext("\tfx ACO-4"), (7.500cm,4.860cm));
+\stopMPcode}
 
 En los otros 10 escenarios (8 lotes o más, la grilla de 16×16 y el 100×100) split no termina
 en 40 minutos y las dos heurísticas dan una solución válida: HC-4 en menos de 5~s y ACO-4 en
@@ -887,29 +1144,101 @@ usa para dar una solución a menos de 0,21~\% del óptimo, v5 no da ninguna.
 
 \blank[medium]
 \bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[style=\tfx]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
-\bTR \bTH Caso \eTH \bTH Tiempo (s) \eTH \bTH ACO-4 \eTH \bTH Split \eTH \bTH ACO-4 contra split \eTH \bTH Mono \eTH \bTH ACO-4 contra mono \eTH \eTR
-\bTR \bTD 01 \eTD \bTD 1.877,8 \eTD \bTD 917.328,0 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 02 \eTD \bTD 31,3 \eTD \bTD 29.034,0 \eTD \bTD 29.262,0 \eTD \bTD -0,78 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 03 \eTD \bTD 412,1 \eTD \bTD 1.752.076,0 \eTD \bTD 1.763.704,0 \eTD \bTD -0,66 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 04 \eTD \bTD 15,1 \eTD \bTD 149.221,0 \eTD \bTD 149.218,9 \eTD \bTD 0,001 \% \eTD \bTD 157.569,7 \eTD \bTD -5,30 \% \eTD \eTR
-\bTR \bTD 05 \eTD \bTD 95,0 \eTD \bTD 241.273,5 \eTD \bTD 241.398,5 \eTD \bTD -0,05 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 06 \eTD \bTD 109,8 \eTD \bTD 256.642,2 \eTD \bTD 256.791,0 \eTD \bTD -0,06 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 07 \eTD \bTD 194,6 \eTD \bTD 271.914,3 \eTD \bTD 272.016,8 \eTD \bTD -0,04 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 08 \eTD \bTD 129,5 \eTD \bTD 287.199,8 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 09 \eTD \bTD 223,9 \eTD \bTD 275.046,8 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 10 \eTD \bTD 15,2 \eTD \bTD 112.082,8 \eTD \bTD 112.083,2 \eTD \bTD -0,0004 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 11 \eTD \bTD 94,1 \eTD \bTD 182.338,5 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 12 \eTD \bTD 29,8 \eTD \bTD 198.905,5 \eTD \bTD 198.918,8 \eTD \bTD -0,007 \% \eTD \bTD 222.183,9 \eTD \bTD -10,48 \% \eTD \eTR
-\bTR \bTD 13 \eTD \bTD 42,0 \eTD \bTD 248.696,3 \eTD \bTD 248.715,4 \eTD \bTD -0,008 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 14 \eTD \bTD 43,8 \eTD \bTD 298.381,2 \eTD \bTD 426.194,9 \eTD \bTD -29,99 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 15 \eTD \bTD 52,9 \eTD \bTD 97.922,8 \eTD \bTD 98.018,5 \eTD \bTD -0,10 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 16 \eTD \bTD 97,1 \eTD \bTD 195.901,5 \eTD \bTD 393.929,1 \eTD \bTD -50,27 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 17 \eTD \bTD 137,1 \eTD \bTD 305.798,8 \eTD \bTD 711.264,6 \eTD \bTD -57,01 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 18 \eTD \bTD 188,2 \eTD \bTD 439.821,4 \eTD \bTD 1.149.998,9 \eTD \bTD -61,75 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 19 \eTD \bTD 365,5 \eTD \bTD 780.799,0 \eTD \bTD 1.879.853,9 \eTD \bTD -58,47 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTH Caso \eTH \bTH Escenario \eTH \bTH Tiempo (s) \eTH \bTH ACO-4 \eTH \bTH Split \eTH \bTH ACO-4 contra split \eTH \bTH Mono \eTH \bTH ACO-4 contra mono \eTH \eTR
+\bTR \bTD 01 \eTD \bTD heredado, 100×100 \eTD \bTD 1.877,8 \eTD \bTD 917.328,0 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 02 \eTD \bTD heredado, 10 pickers \eTD \bTD 31,3 \eTD \bTD 29.034,0 \eTD \bTD 29.262,0 \eTD \bTD -0,78 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 03 \eTD \bTD heredado, 1 picker \eTD \bTD 412,1 \eTD \bTD 1.752.076,0 \eTD \bTD 1.763.704,0 \eTD \bTD -0,66 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 04 \eTD \bTD realista, 7×7 \eTD \bTD 15,1 \eTD \bTD 149.221,0 \eTD \bTD 149.218,9 \eTD \bTD 0,001 \% \eTD \bTD 157.569,7 \eTD \bTD -5,30 \% \eTD \eTR
+\bTR \bTD 05 \eTD \bTD realista, 13×13 \eTD \bTD 95,0 \eTD \bTD 241.273,5 \eTD \bTD 241.398,5 \eTD \bTD -0,05 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 06 \eTD \bTD realista, 14×14 \eTD \bTD 109,8 \eTD \bTD 256.642,2 \eTD \bTD 256.791,0 \eTD \bTD -0,06 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 07 \eTD \bTD realista, 15×15 \eTD \bTD 194,6 \eTD \bTD 271.914,3 \eTD \bTD 272.016,8 \eTD \bTD -0,04 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 08 \eTD \bTD realista, 16×16 \eTD \bTD 129,5 \eTD \bTD 287.199,8 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 09 \eTD \bTD almacén alargado \eTD \bTD 223,9 \eTD \bTD 275.046,8 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 10 \eTD \bTD agenda pesada \eTD \bTD 15,2 \eTD \bTD 112.082,8 \eTD \bTD 112.083,2 \eTD \bTD -0,0004 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 11 \eTD \bTD cadena de frío \eTD \bTD 94,1 \eTD \bTD 182.338,5 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 12 \eTD \bTD 8 lotes, 4 pickers \eTD \bTD 29,8 \eTD \bTD 198.905,5 \eTD \bTD 198.918,8 \eTD \bTD -0,007 \% \eTD \bTD 222.183,9 \eTD \bTD -10,48 \% \eTD \eTR
+\bTR \bTD 13 \eTD \bTD 10 lotes, 5 pickers \eTD \bTD 42,0 \eTD \bTD 248.696,3 \eTD \bTD 248.715,4 \eTD \bTD -0,008 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 14 \eTD \bTD 12 lotes, 6 pickers \eTD \bTD 43,8 \eTD \bTD 298.381,2 \eTD \bTD 426.194,9 \eTD \bTD -29,99 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 15 \eTD \bTD sobran pickers \eTD \bTD 52,9 \eTD \bTD 97.922,8 \eTD \bTD 98.018,5 \eTD \bTD -0,10 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 16 \eTD \bTD un lote por picker \eTD \bTD 97,1 \eTD \bTD 195.901,5 \eTD \bTD 393.929,1 \eTD \bTD -50,27 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 17 \eTD \bTD 3 con segundo lote \eTD \bTD 137,1 \eTD \bTD 305.798,8 \eTD \bTD 711.264,6 \eTD \bTD -57,01 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 18 \eTD \bTD 6 con segundo lote \eTD \bTD 188,2 \eTD \bTD 439.821,4 \eTD \bTD 1.149.998,9 \eTD \bTD -61,75 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 19 \eTD \bTD todos con 2 lotes \eTD \bTD 365,5 \eTD \bTD 780.799,0 \eTD \bTD 1.879.853,9 \eTD \bTD -58,47 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
 \eTABLE
 \blank[medium]
+
+La figura \in[fig:igual_tiempo] muestra la misma comparación en escala logarítmica.
+
+\placefigure[force][fig:igual_tiempo]{A igual tiempo que ACO-4: cuánto peor queda la solución de split, en porcentaje sobre el objetivo de ACO-4, $100 \cdot (z_{\rm split} - z_{\rm ACO}) / z_{\rm ACO}$ (escala logarítmica). Más alto es peor para split.}
+{\startMPcode
+numeric w, h; w := 12.35cm; h := 7.0cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+draw (0cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,0001 \%"), (-0.120cm,0.000cm));
+draw (0cm,1.000cm)--(-0.120cm,1.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,001 \%"), (-0.120cm,1.000cm));
+draw (0cm,1.000cm)--(w,1.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,2.000cm)--(-0.120cm,2.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,01 \%"), (-0.120cm,2.000cm));
+draw (0cm,2.000cm)--(w,2.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,3.000cm)--(-0.120cm,3.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,1 \%"), (-0.120cm,3.000cm));
+draw (0cm,3.000cm)--(w,3.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,4.000cm)--(-0.120cm,4.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1 \%"), (-0.120cm,4.000cm));
+draw (0cm,4.000cm)--(w,4.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,5.000cm)--(-0.120cm,5.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10 \%"), (-0.120cm,5.000cm));
+draw (0cm,5.000cm)--(w,5.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,6.000cm)--(-0.120cm,6.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100 \%"), (-0.120cm,6.000cm));
+draw (0cm,6.000cm)--(w,6.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,7.000cm)--(-0.120cm,7.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1000 \%"), (-0.120cm,7.000cm));
+draw (0cm,7.000cm)--(w,7.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+label.lft(textext("Split peor que ACO-4") rotated 90, (-1.55cm,h/2));
+label.bot(textext("\tfx 01"), (0.325cm,-0.100cm));
+label.top(textext("\tfxx sin solución") rotated 90, (0.325cm,0.100cm));
+label.bot(textext("\tfx 02"), (0.975cm,-0.100cm));
+fill (0.755cm,0cm)--(1.195cm,0cm)--(1.195cm,3.895cm)--(0.755cm,3.895cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\tfx 03"), (1.625cm,-0.100cm));
+fill (1.405cm,0cm)--(1.845cm,0cm)--(1.845cm,3.822cm)--(1.405cm,3.822cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\tfx 04"), (2.275cm,-0.100cm));
+label.top(textext("\tfxx split mejor") rotated 90, (2.275cm,0.100cm));
+label.bot(textext("\tfx 05"), (2.925cm,-0.100cm));
+fill (2.705cm,0cm)--(3.145cm,0cm)--(3.145cm,2.714cm)--(2.705cm,2.714cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\tfx 06"), (3.575cm,-0.100cm));
+fill (3.355cm,0cm)--(3.795cm,0cm)--(3.795cm,2.763cm)--(3.355cm,2.763cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\tfx 07"), (4.225cm,-0.100cm));
+fill (4.005cm,0cm)--(4.445cm,0cm)--(4.445cm,2.576cm)--(4.005cm,2.576cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\tfx 08"), (4.875cm,-0.100cm));
+label.top(textext("\tfxx sin solución") rotated 90, (4.875cm,0.100cm));
+label.bot(textext("\tfx 09"), (5.525cm,-0.100cm));
+label.top(textext("\tfxx sin solución") rotated 90, (5.525cm,0.100cm));
+label.bot(textext("\tfx 10"), (6.175cm,-0.100cm));
+fill (5.955cm,0cm)--(6.395cm,0cm)--(6.395cm,0.570cm)--(5.955cm,0.570cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\tfx 11"), (6.825cm,-0.100cm));
+label.top(textext("\tfxx sin solución") rotated 90, (6.825cm,0.100cm));
+label.bot(textext("\tfx 12"), (7.475cm,-0.100cm));
+fill (7.255cm,0cm)--(7.695cm,0cm)--(7.695cm,1.826cm)--(7.255cm,1.826cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\tfx 13"), (8.125cm,-0.100cm));
+fill (7.905cm,0cm)--(8.345cm,0cm)--(8.345cm,1.887cm)--(7.905cm,1.887cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\tfx 14"), (8.775cm,-0.100cm));
+fill (8.555cm,0cm)--(8.995cm,0cm)--(8.995cm,5.632cm)--(8.555cm,5.632cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\tfx 15"), (9.425cm,-0.100cm));
+fill (9.205cm,0cm)--(9.645cm,0cm)--(9.645cm,2.990cm)--(9.205cm,2.990cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\tfx 16"), (10.075cm,-0.100cm));
+fill (9.855cm,0cm)--(10.295cm,0cm)--(10.295cm,6.005cm)--(9.855cm,6.005cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\tfx 17"), (10.725cm,-0.100cm));
+fill (10.505cm,0cm)--(10.945cm,0cm)--(10.945cm,6.123cm)--(10.505cm,6.123cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\tfx 18"), (11.375cm,-0.100cm));
+fill (11.155cm,0cm)--(11.595cm,0cm)--(11.595cm,6.208cm)--(11.155cm,6.208cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\tfx 19"), (12.025cm,-0.100cm));
+fill (11.805cm,0cm)--(12.245cm,0cm)--(12.245cm,6.148cm)--(11.805cm,6.148cm)--cycle withcolor \MPcolor{darkblue};
+\stopMPcode}
 
 \startitemize
 \item {\bf Split} da solución en 15 de los 19 escenarios. ACO-4 es igual o mejor en 14 de esos
