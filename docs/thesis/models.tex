@@ -871,7 +871,7 @@ En los escenarios de stress que split resuelve:
 \blank[medium]
 \bTABLE[split=yes, align=middle, frame=on, width=fit]
 \setupTABLE[style=\tfx]
-\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style={\tfx\bf}]
 \bTR \bTH Caso \eTH \bTH Escenario \eTH \bTH Lotes \eTH \bTH Grilla \eTH \bTH Split (s) \eTH \bTH HC-4 (s) \eTH \bTH Brecha \eTH \bTH ACO-4 (s) \eTH \bTH Brecha \eTH \eTR
 \bTR \bTD 02 \eTD \bTD heredado, 10 pickers \eTD \bTD 10 \eTD \bTD 10×10 \eTD \bTD 33 \eTD \bTD 0,9 \eTD \bTD 0,00 \% \eTD \bTD 93,5 \eTD \bTD 0,00 \% \eTD \eTR
 \bTR \bTD 04 \eTD \bTD realista, 7×7 \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 12 \eTD \bTD 0,5 \eTD \bTD 0,01 \% \eTD \bTD 12,9 \eTD \bTD 0,00 \% \eTD \eTR
@@ -889,7 +889,7 @@ La figura \in[fig:tiempos] muestra el tiempo de cada método en los 19 escenario
 \in[fig:brecha] la brecha de cada heurística donde hay óptimo, y la \in[fig:tradeoff] las dos
 cosas juntas.
 
-\placefigure[force][fig:tiempos]{Tiempo total por escenario de stress (escala logarítmica). Las barras sin relleno son los timeouts de split.}
+\placefigure[here][fig:tiempos]{Tiempo total por escenario de stress (escala logarítmica). Las barras sin relleno son los timeouts de split.}
 {\startMPcode
 numeric w, h; w := 12cm; h := 6.5cm;
 drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
@@ -991,7 +991,7 @@ fill (12.400cm,2.120cm)--(12.800cm,2.120cm)--(12.800cm,2.360cm)--(12.400cm,2.360
 label.rt(textext("\tfx ACO-4"), (13.000cm,2.240cm));
 \stopMPcode}
 
-\placefigure[force][fig:brecha]{Brecha contra el óptimo de split en cada escenario que split resuelve. Un 0 indica que la heurística encontró el óptimo.}
+\placefigure[here][fig:brecha]{Brecha contra el óptimo de split en cada escenario que split resuelve. Un 0 indica que la heurística encontró el óptimo.}
 {\startMPcode
 numeric w, h; w := 12cm; h := 5.5cm;
 drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
@@ -1042,7 +1042,7 @@ fill (0.400cm,4.760cm)--(0.800cm,4.760cm)--(0.800cm,5.000cm)--(0.400cm,5.000cm)-
 label.rt(textext("\tfx ACO-4"), (1.000cm,4.880cm));
 \stopMPcode}
 
-\placefigure[force][fig:tradeoff]{Brecha contra tiempo total en los escenarios de stress que split resuelve (tiempo en escala logarítmica).}
+\placefigure[here][fig:tradeoff]{Brecha contra tiempo total en los escenarios de stress que split resuelve (tiempo en escala logarítmica).}
 {\startMPcode
 numeric w, h; w := 11cm; h := 6cm;
 drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
@@ -1067,7 +1067,7 @@ draw (0.000cm,4.846cm)--(-0.120cm,4.846cm) withpen pencircle scaled .5pt;
 label.lft(textext("\tfx 0,20 \%"), (-0.120cm,4.846cm));
 draw (0.000cm,6.000cm)--(-0.120cm,6.000cm) withpen pencircle scaled .5pt;
 label.lft(textext("\tfx 0,25 \%"), (-0.120cm,6.000cm));
-label.bot(textext("Tiempo total (s, escala log.)"), (w/2,-0.85cm));
+label.bot(textext("Tiempo total (s, escala log.)"), (w/2,-0.55cm));
 label.lft(textext("Brecha contra el óptimo") rotated 90, (-1.25cm,h/2));
 fill fullcircle scaled 4pt shifted (5.605cm,0.231cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (1.330cm,0.231cm) withcolor \MPcolor{greenline};
@@ -1145,7 +1145,7 @@ usa para dar una solución a menos de 0,21~\% del óptimo, v5 no da ninguna.
 \blank[medium]
 \bTABLE[split=yes, align=middle, frame=on, width=fit]
 \setupTABLE[style=\tfx]
-\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style={\tfx\bf}]
 \bTR \bTH Caso \eTH \bTH Escenario \eTH \bTH Tiempo (s) \eTH \bTH ACO-4 \eTH \bTH Split \eTH \bTH ACO-4 contra split \eTH \bTH Mono \eTH \bTH ACO-4 contra mono \eTH \eTR
 \bTR \bTD 01 \eTD \bTD heredado, 100×100 \eTD \bTD 1.877,8 \eTD \bTD 917.328,0 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
 \bTR \bTD 02 \eTD \bTD heredado, 10 pickers \eTD \bTD 31,3 \eTD \bTD 29.034,0 \eTD \bTD 29.262,0 \eTD \bTD -0,78 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
@@ -1169,75 +1169,72 @@ usa para dar una solución a menos de 0,21~\% del óptimo, v5 no da ninguna.
 \eTABLE
 \blank[medium]
 
-La figura \in[fig:igual_tiempo] muestra la misma comparación en escala logarítmica.
+La figura \in[fig:igual_tiempo] muestra la columna {\em ACO-4 contra split} con el signo cambiado y en escala logarítmica, para que se vean juntas las diferencias chicas y las grandes.
 
-\placefigure[force][fig:igual_tiempo]{A igual tiempo que ACO-4: cuánto peor queda la solución de split, en porcentaje sobre el objetivo de ACO-4, $100 \cdot (z_{\rm split} - z_{\rm ACO}) / z_{\rm ACO}$ (escala logarítmica). Más alto es peor para split.}
+\placefigure[here][fig:igual_tiempo]{A igual tiempo que ACO-4: cuánto mejor es la solución de ACO-4 que la de split, $100 \cdot (z_{\rm split} - z_{\rm ACO}) / z_{\rm split}$. Es la columna {\em ACO-4 contra split} de la tabla, con el signo cambiado (escala logarítmica). Más alto es más ventaja para ACO-4.}
 {\startMPcode
 numeric w, h; w := 12.35cm; h := 7.0cm;
 drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
 drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
 draw (0cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
 label.lft(textext("\tfx 0,0001 \%"), (-0.120cm,0.000cm));
-draw (0cm,1.000cm)--(-0.120cm,1.000cm) withpen pencircle scaled .5pt;
-label.lft(textext("\tfx 0,001 \%"), (-0.120cm,1.000cm));
-draw (0cm,1.000cm)--(w,1.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
-draw (0cm,2.000cm)--(-0.120cm,2.000cm) withpen pencircle scaled .5pt;
-label.lft(textext("\tfx 0,01 \%"), (-0.120cm,2.000cm));
-draw (0cm,2.000cm)--(w,2.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
-draw (0cm,3.000cm)--(-0.120cm,3.000cm) withpen pencircle scaled .5pt;
-label.lft(textext("\tfx 0,1 \%"), (-0.120cm,3.000cm));
-draw (0cm,3.000cm)--(w,3.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
-draw (0cm,4.000cm)--(-0.120cm,4.000cm) withpen pencircle scaled .5pt;
-label.lft(textext("\tfx 1 \%"), (-0.120cm,4.000cm));
-draw (0cm,4.000cm)--(w,4.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
-draw (0cm,5.000cm)--(-0.120cm,5.000cm) withpen pencircle scaled .5pt;
-label.lft(textext("\tfx 10 \%"), (-0.120cm,5.000cm));
-draw (0cm,5.000cm)--(w,5.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
-draw (0cm,6.000cm)--(-0.120cm,6.000cm) withpen pencircle scaled .5pt;
-label.lft(textext("\tfx 100 \%"), (-0.120cm,6.000cm));
-draw (0cm,6.000cm)--(w,6.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,1.167cm)--(-0.120cm,1.167cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,001 \%"), (-0.120cm,1.167cm));
+draw (0cm,1.167cm)--(w,1.167cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,2.333cm)--(-0.120cm,2.333cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,01 \%"), (-0.120cm,2.333cm));
+draw (0cm,2.333cm)--(w,2.333cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,3.500cm)--(-0.120cm,3.500cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,1 \%"), (-0.120cm,3.500cm));
+draw (0cm,3.500cm)--(w,3.500cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,4.667cm)--(-0.120cm,4.667cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1 \%"), (-0.120cm,4.667cm));
+draw (0cm,4.667cm)--(w,4.667cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,5.833cm)--(-0.120cm,5.833cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10 \%"), (-0.120cm,5.833cm));
+draw (0cm,5.833cm)--(w,5.833cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
 draw (0cm,7.000cm)--(-0.120cm,7.000cm) withpen pencircle scaled .5pt;
-label.lft(textext("\tfx 1000 \%"), (-0.120cm,7.000cm));
+label.lft(textext("\tfx 100 \%"), (-0.120cm,7.000cm));
 draw (0cm,7.000cm)--(w,7.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
-label.lft(textext("Split peor que ACO-4") rotated 90, (-1.55cm,h/2));
+label.lft(textext("Ventaja de ACO-4 sobre split") rotated 90, (-1.55cm,h/2));
 label.bot(textext("\tfx 01"), (0.325cm,-0.100cm));
 label.top(textext("\tfxx sin solución") rotated 90, (0.325cm,0.100cm));
 label.bot(textext("\tfx 02"), (0.975cm,-0.100cm));
-fill (0.755cm,0cm)--(1.195cm,0cm)--(1.195cm,3.895cm)--(0.755cm,3.895cm)--cycle withcolor \MPcolor{darkblue};
+fill (0.755cm,0cm)--(1.195cm,0cm)--(1.195cm,4.540cm)--(0.755cm,4.540cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\tfx 03"), (1.625cm,-0.100cm));
-fill (1.405cm,0cm)--(1.845cm,0cm)--(1.845cm,3.822cm)--(1.405cm,3.822cm)--cycle withcolor \MPcolor{darkblue};
+fill (1.405cm,0cm)--(1.845cm,0cm)--(1.845cm,4.456cm)--(1.405cm,4.456cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\tfx 04"), (2.275cm,-0.100cm));
 label.top(textext("\tfxx split mejor") rotated 90, (2.275cm,0.100cm));
 label.bot(textext("\tfx 05"), (2.925cm,-0.100cm));
-fill (2.705cm,0cm)--(3.145cm,0cm)--(3.145cm,2.714cm)--(2.705cm,2.714cm)--cycle withcolor \MPcolor{darkblue};
+fill (2.705cm,0cm)--(3.145cm,0cm)--(3.145cm,3.167cm)--(2.705cm,3.167cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\tfx 06"), (3.575cm,-0.100cm));
-fill (3.355cm,0cm)--(3.795cm,0cm)--(3.795cm,2.763cm)--(3.355cm,2.763cm)--cycle withcolor \MPcolor{darkblue};
+fill (3.355cm,0cm)--(3.795cm,0cm)--(3.795cm,3.223cm)--(3.355cm,3.223cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\tfx 07"), (4.225cm,-0.100cm));
-fill (4.005cm,0cm)--(4.445cm,0cm)--(4.445cm,2.576cm)--(4.005cm,2.576cm)--cycle withcolor \MPcolor{darkblue};
+fill (4.005cm,0cm)--(4.445cm,0cm)--(4.445cm,3.005cm)--(4.005cm,3.005cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\tfx 08"), (4.875cm,-0.100cm));
 label.top(textext("\tfxx sin solución") rotated 90, (4.875cm,0.100cm));
 label.bot(textext("\tfx 09"), (5.525cm,-0.100cm));
 label.top(textext("\tfxx sin solución") rotated 90, (5.525cm,0.100cm));
 label.bot(textext("\tfx 10"), (6.175cm,-0.100cm));
-fill (5.955cm,0cm)--(6.395cm,0cm)--(6.395cm,0.570cm)--(5.955cm,0.570cm)--cycle withcolor \MPcolor{darkblue};
+fill (5.955cm,0cm)--(6.395cm,0cm)--(6.395cm,0.665cm)--(5.955cm,0.665cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\tfx 11"), (6.825cm,-0.100cm));
 label.top(textext("\tfxx sin solución") rotated 90, (6.825cm,0.100cm));
 label.bot(textext("\tfx 12"), (7.475cm,-0.100cm));
-fill (7.255cm,0cm)--(7.695cm,0cm)--(7.695cm,1.826cm)--(7.255cm,1.826cm)--cycle withcolor \MPcolor{darkblue};
+fill (7.255cm,0cm)--(7.695cm,0cm)--(7.695cm,2.131cm)--(7.255cm,2.131cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\tfx 13"), (8.125cm,-0.100cm));
-fill (7.905cm,0cm)--(8.345cm,0cm)--(8.345cm,1.887cm)--(7.905cm,1.887cm)--cycle withcolor \MPcolor{darkblue};
+fill (7.905cm,0cm)--(8.345cm,0cm)--(8.345cm,2.201cm)--(7.905cm,2.201cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\tfx 14"), (8.775cm,-0.100cm));
-fill (8.555cm,0cm)--(8.995cm,0cm)--(8.995cm,5.632cm)--(8.555cm,5.632cm)--cycle withcolor \MPcolor{darkblue};
+fill (8.555cm,0cm)--(8.995cm,0cm)--(8.995cm,6.390cm)--(8.555cm,6.390cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\tfx 15"), (9.425cm,-0.100cm));
-fill (9.205cm,0cm)--(9.645cm,0cm)--(9.645cm,2.990cm)--(9.205cm,2.990cm)--cycle withcolor \MPcolor{darkblue};
+fill (9.205cm,0cm)--(9.645cm,0cm)--(9.645cm,3.487cm)--(9.205cm,3.487cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\tfx 16"), (10.075cm,-0.100cm));
-fill (9.855cm,0cm)--(10.295cm,0cm)--(10.295cm,6.005cm)--(9.855cm,6.005cm)--cycle withcolor \MPcolor{darkblue};
+fill (9.855cm,0cm)--(10.295cm,0cm)--(10.295cm,6.652cm)--(9.855cm,6.652cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\tfx 17"), (10.725cm,-0.100cm));
-fill (10.505cm,0cm)--(10.945cm,0cm)--(10.945cm,6.123cm)--(10.505cm,6.123cm)--cycle withcolor \MPcolor{darkblue};
+fill (10.505cm,0cm)--(10.945cm,0cm)--(10.945cm,6.715cm)--(10.505cm,6.715cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\tfx 18"), (11.375cm,-0.100cm));
-fill (11.155cm,0cm)--(11.595cm,0cm)--(11.595cm,6.208cm)--(11.155cm,6.208cm)--cycle withcolor \MPcolor{darkblue};
+fill (11.155cm,0cm)--(11.595cm,0cm)--(11.595cm,6.756cm)--(11.155cm,6.756cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\tfx 19"), (12.025cm,-0.100cm));
-fill (11.805cm,0cm)--(12.245cm,0cm)--(12.245cm,6.148cm)--(11.805cm,6.148cm)--cycle withcolor \MPcolor{darkblue};
+fill (11.805cm,0cm)--(12.245cm,0cm)--(12.245cm,6.728cm)--(11.805cm,6.728cm)--cycle withcolor \MPcolor{darkblue};
 \stopMPcode}
 
 \startitemize
