@@ -62,7 +62,7 @@ SCENARIOS = {
     "08": ("test_realistic_crew_16x16_warehouse", lambda: realistic_crew_scenario(16)),
     "09": ("test_realistic_crew_rectangular_warehouse", lambda: realistic_crew_scenario(8, 21)),
     "10": ("test_realistic_crew_scheduling_heavy", lambda: realistic_crew_scenario(7, pickers=4)),
-    "11": ("test_realistic_crew_cold_chain", lambda: realistic_crew_scenario(13, pickers=4, t_frio_max=280)),
+    "11": ("test_realistic_crew_cold_chain", lambda: realistic_crew_scenario(13, pickers=4, t_cold=280)),
     "12": ("test_larger_crew_8_batches_4_pickers", lambda: realistic_crew_scenario(7, batches=8, pickers=4)),
     "13": ("test_larger_crew_10_batches_5_pickers", lambda: realistic_crew_scenario(7, batches=10, pickers=5)),
     "14": ("test_larger_crew_12_batches_6_pickers", lambda: realistic_crew_scenario(7, batches=12, pickers=6)),
@@ -85,12 +85,16 @@ def latest_heuristic_results(model_label):
         glob.glob(os.path.join(OUTPUTS_ROOT, model_label, "stress", f"output_{model_label}_stress_tests_*.csv")),
         key=os.path.getmtime, reverse=True,
     )
+    # Matched by method name, not file name: the v5 ports were test_case_v5_*.py
+    # in older CSVs and test_case_NN.py (v5's own numbering) since the legacy
+    # stress tests were removed; no legacy method name collides with v5's.
+    v5_methods = {name for name, _ in SCENARIOS.values()}
     for path in paths:
         with open(path, newline="", encoding="utf-8") as f:
-            rows = [r for r in csv.DictReader(f) if r["test"].startswith("test_case_v5_")]
+            rows = [r for r in csv.DictReader(f) if r["test"].split(".")[-1] in v5_methods]
         if rows:
             return path, {r["test"].split(".")[-1]: r for r in rows}
-    raise SystemExit(f"No stress CSV with test_case_v5_* rows under results/{model_label}/stress/")
+    raise SystemExit(f"No stress CSV with v5-ported rows under results/{model_label}/stress/")
 
 
 def _last_solve_info():
@@ -116,18 +120,18 @@ def run_split(scenario, budget):
     route_times = {
         name.split("$")[-1]: value
         for name, value in stage1_values.items()
-        if name.lower().startswith("r_b_time$") and name.split("$")[-1] in scenario["B"]
+        if name.lower().startswith("r_b$") and name.split("$")[-1] in scenario["B"]
     }
     if set(route_times) != set(scenario["B"]):
         return f"stage1_{stage1_status}", None, None, None, time.time() - start
 
     write_indexed_dat(os.path.join(DAT_DIR, "route_time_b.dat"), route_times)
     write_indexed_dat(os.path.join(DAT_DIR, "velocities.dat"), scenario["V_p"])
-    write_scalar_dat(os.path.join(DAT_DIR, "frio.dat"), scenario["T_frio_max"])
+    write_scalar_dat(os.path.join(DAT_DIR, "cold.dat"), scenario["T_cold"])
 
     stuck = batches_without_eligible_picker(
-        scenario["P"], scenario["B"], scenario["N"], scenario["C_n"], scenario["Bn"],
-        scenario["B_setup"], scenario["B_picking"], route_times, scenario["V_p"], scenario["T_frio_max"],
+        scenario["P"], scenario["B"], scenario["N"], scenario["C_n"], scenario["B_nb"],
+        scenario["T_setup"], scenario["T_pick"], route_times, scenario["V_p"], scenario["T_cold"],
     )
     if stuck:
         # Stage 1's time-limited routes may be too long for the cold-chain

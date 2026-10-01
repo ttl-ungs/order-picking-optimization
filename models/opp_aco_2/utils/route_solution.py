@@ -2,7 +2,7 @@
 Route-based solution representation for OPP v4 heuristics.
 
 Represents a solution as a collection of routes for each batch, plus the
-assignment of each batch to a picker (X_pb) and the processing order (sequence)
+assignment of each batch to a picker (x_pb) and the processing order (sequence)
 of the batches assigned to each picker. Batches assigned to different pickers
 run in parallel; batches assigned to the same picker run one after another,
 in sequence order.
@@ -39,7 +39,7 @@ class RouteSolution:
         # routes[batch] = list of location IDs in order
         self.routes: Dict[str, List] = {batch: [] for batch in batches}
 
-        # picker_of[batch] = picker assigned to that batch (X_pb == 1)
+        # picker_of[batch] = picker assigned to that batch (x_pb == 1)
         self.picker_of: Dict[str, str] = {}
 
         # sequence[picker] = ordered list of batches processed by that picker

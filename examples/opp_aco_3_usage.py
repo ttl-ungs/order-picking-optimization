@@ -2,7 +2,7 @@
 Example usage of the OPP Ant Colony Optimization v3 heuristic
 (congestion-aware, multi-pheromone m-ACO4).
 
-Same input format as opp_aco_2 (fixed Bn batches + set of pickers P), plus
+Same input format as opp_aco_2 (fixed B_nb batches + set of pickers P), plus
 new congestion/multi-pheromone hyperparameters exposed by SolveAco3ModelDTO.
 This example purposefully forces two pickers through the SAME bottleneck
 location (L2) so the congestion wait time is non-zero and visible in the
@@ -53,10 +53,10 @@ def example_bottleneck_instance():
     model_dto.start_time = 0.0
 
     solve_dto = SolveAco3ModelDTO()
-    solve_dto.W_full = 1.0
-    solve_dto.W_ea_ta = 1.0
-    solve_dto.W_ea = 0.1
-    solve_dto.W_ta = 0.5
+    solve_dto.W_c = 1.0
+    solve_dto.W_pen = 1.0
+    solve_dto.W_e = 0.1
+    solve_dto.W_t = 0.5
 
     solve_dto.C_n = {"O1": 3, "O2": 3, "O3": 3, "O4": 3}
     solve_dto.C_v = 10.0
@@ -69,17 +69,17 @@ def example_bottleneck_instance():
         ("O4", "L1"): 0, ("O4", "L2"): 1, ("O4", "L3"): 0,
     }
 
-    solve_dto.B_time = 1.0
-    solve_dto.B_setup = 2.0
-    solve_dto.B_picking = 0.5
+    solve_dto.T_travel = 1.0
+    solve_dto.T_setup = 2.0
+    solve_dto.T_pick = 0.5
     # L2's high service time makes it a realistic bottleneck: while one
     # picker services it, the other must wait.
     solve_dto.S = {"L1": 1.0, "L2": 6.0, "L3": 1.0}
 
-    solve_dto.Dd = {"O1": 60.0, "O2": 60.0, "O3": 60.0, "O4": 60.0}
+    solve_dto.T_due_n = {"O1": 60.0, "O2": 60.0, "O3": 60.0, "O4": 60.0}
     solve_dto.M = 1000.0
 
-    solve_dto.Bn = {
+    solve_dto.B_nb = {
         ("O1", "B1"): 1, ("O2", "B1"): 1,
         ("O3", "B2"): 1, ("O4", "B2"): 1,
     }

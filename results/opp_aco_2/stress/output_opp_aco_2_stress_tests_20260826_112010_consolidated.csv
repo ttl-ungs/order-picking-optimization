@@ -1,4 +1,4 @@
-test,status,total_time,model_time,obj_val,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,A_ants,Max_it,Alpha,Beta,Max_route_attempts_per_batch,_source_file
+test,status,total_time,model_time,obj_val,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,P,V,A_ants,Max_it,Alpha,Beta,Max_route_attempts_per_batch,_source_file
 test_opp_aco_2_model_01.TestOPPModel.test_100_locations,ok,35.71101999282837,35.059428691864014,5683.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12.0,6.0,3.0,100.0,15.0,60.0,1.0,2.5,,output_opp_aco_2_stress_tests_20260821_222735_consolidated.csv
 test_opp_aco_2_model_02.TestOPPModel.test_400_locations,ok,566.2156641483307,523.4594030380249,9423.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12.0,6.0,3.0,400.0,15.0,60.0,1.0,2.5,,output_opp_aco_2_stress_tests_20260821_222735_consolidated.csv
 test_opp_aco_2_model_03.TestOPPModel.test_625_locations,ok,1444.3947761058807,1300.7457439899445,11403.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12.0,6.0,3.0,625.0,15.0,60.0,1.0,2.5,,output_opp_aco_2_stress_tests_20260821_222735_consolidated.csv

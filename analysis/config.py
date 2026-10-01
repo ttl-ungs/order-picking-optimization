@@ -27,7 +27,7 @@ opp_v3 / opp_hc_1 / opp_aco_1) to the current model lineup:
               decomposition. No congestion (orthogonal to this model's
               addition, see models/opp_hc_4/opp_hc_4.py header). Most of
               its normal/stress tests are ports of opp_hc_2's (V_p unset /
-              T_frio_max default +inf -> pure equivalence, same pattern as
+              T_cold default +inf -> pure equivalence, same pattern as
               opp_v5_2_split's migrated_case.py), plus a handful of its own that
               actually exercise heterogeneous speeds and a binding
               cold-chain deadline (see tests/opp_hc_4/README.md). Kept OUT
@@ -40,7 +40,7 @@ opp_v3 / opp_hc_1 / opp_aco_1) to the current model lineup:
               header) -- opp_aco_3's incremental congestion reservation
               and multi-pheromone (m-ACO4) architecture are NOT adopted
               here. Same test strategy as opp_hc_4: most normal/stress
-              tests are ports of opp_aco_2's (V_p unset / T_frio_max
+              tests are ports of opp_aco_2's (V_p unset / T_cold
               default +inf -> pure equivalence), plus a handful of its own
               exercising heterogeneous speeds and a binding cold-chain
               deadline (see tests/opp_aco_4/README.md). Kept OUT of
@@ -82,10 +82,10 @@ EXACT_MODEL = "opp_v4"
 CONGESTION_AWARE_MODELS = {"opp_hc_3", "opp_aco_3"}
 
 # Columns that identify an instance's "shape" (used for grouping/correlation).
-PARAM_COLUMNS = ["N", "V", "B", "P", "C_v", "W_full", "W_ea_ta", "W_ea", "W_ta"]
+PARAM_COLUMNS = ["N", "V", "B", "P", "C_v", "W_c", "W_pen", "W_e", "W_t"]
 
 # Independent variables for the sensitivity / correlation analysis.
-CORRELATION_INDEPENDENTS = ["N", "V", "B", "C_v", "W_full", "W_ea_ta"]
+CORRELATION_INDEPENDENTS = ["N", "V", "B", "C_v", "W_c", "W_pen"]
 
 # Models covered by the seed-stability study (analysis/run_stability_study.py)
 # -- the 6 heuristics only, since it measures how much a model's OWN
@@ -98,7 +98,7 @@ STABILITY_MODELS = ["opp_hc_2", "opp_hc_3", "opp_hc_4", "opp_aco_2", "opp_aco_3"
 # docs/specs/model_analysis.md (e.g. a consolidated file that must win over any
 # later partial run, or a specific high-density stress run). Keyed by
 # v5 stress tests 01-03 (migrated_stress_scenario): the scenarios the
-# 2026-09-26 W_full change did NOT touch -- see the v5 stress overrides.
+# 2026-09-26 W_c change did NOT touch -- see the v5 stress overrides.
 MIGRATED_STRESS_INSTANCES = (
     "test_25_orders_per_batch_30_batches_100x100",
     "test_10_orders_per_batch",
@@ -136,31 +136,38 @@ LATEST_FILE_OVERRIDES = {
     # next to it. "_parallel": the split stress run with Stage 1 on 6 workers.
     ("opp_v5_1_mono", "functional"): "output_opp_v5_1_mono_functional_tests.csv",
     # 2026-09-28: stress runs of 04-19 (the designed realistic_crew family)
-    # after W_full changed from 9 to 27 in stress_scenarios_v5_designed.py
+    # after W_c changed from 9 to 27 in stress_scenarios_v5_designed.py
     # (2026-09-26, to rule out v5's voluntary-wait exploit) have a
     # DIFFERENT objective function than the consolidated files above, so
     # each stress entry now merges sources (list form, see
     # analysis/load.py): the new run for 04-19, plus the consolidated file
-    # ONLY for 01-03 (migrated_stress_scenario, unchanged -- W_full still
+    # ONLY for 01-03 (migrated_stress_scenario, unchanged -- W_c still
     # 9 there). Mono's new run was cut after 04 (timeout at 40 min, the
-    # smallest scenario); 05-19 were never run with W_full = 27, so they're
-    # left out and reported as missing rather than taken from the W_full = 9
-    # file.
+    # smallest scenario); 05-19 were never run with W_c = 27, so they're
+    # left out and reported as missing rather than taken from the W_c = 9
+    # file. 2026-09-29: unified in one file (04's row from the 2026-09-27
+    # run replaced the W_c = 9 one; 05-19 kept untouched as the W_c = 9
+    # record), so only 01-04 are read from it.
     ("opp_v5_1_mono", "stress"): [
-        "output_opp_v5_1_mono_stress_tests_20260927_124455.csv",
-        ("output_opp_v5_1_mono_stress_tests.csv", MIGRATED_STRESS_INSTANCES),
+        ("output_opp_v5_1_mono_stress_tests.csv",
+         MIGRATED_STRESS_INSTANCES + ("test_realistic_crew_7x7_warehouse",)),
     ],
     ("opp_v5_2_split", "functional"): "output_opp_v5_2_split_functional_tests.csv",
-    # 2026-09-28: opp_aco_4's 100x100 migrated scenario was re-run alone
-    # after the Max_time budget started covering post-processing (commit
-    # "Bound ACO post-processing by Max_time"): take that row from the
-    # single-test run and every other scenario from the full stress run.
-    ("opp_aco_4", "stress"): [
-        ("output_opp_aco_4_stress_tests_20260928_113625.csv", ("test_25_orders_per_batch_30_batches_100x100",)),
-        "output_opp_aco_4_stress_tests_20260927_135419.csv",
-    ],
-    ("opp_v5_2_split", "stress"): [
-        "output_opp_v5_2_split_stress_tests_20260926_225549.csv",
-        ("output_opp_v5_2_split_stress_tests_parallel.csv", MIGRATED_STRESS_INSTANCES),
-    ],
+    # 2026-09-29: opp_hc_4/opp_aco_4 results are unified runs under fixed
+    # names, like opp_v5's: one row per current test, every row taken from a
+    # run saved with WRITE_SOLUTIONS, so each links to its solution JSON
+    # (solution_file) and to its row in results/compliance/ (all verified
+    # against opp_v5_1_mono). opp_aco_4 stress merges three runs (8 + 10
+    # tests + the 100x100); its 100x100 row had a 4-min laptop suspension,
+    # so its objective (988,252) is 6.9% above the discarded 2026-09-28 run
+    # without a saved solution (924,536) -- see meta.md.
+    ("opp_hc_4", "functional"): "output_opp_hc_4_functional_tests.csv",
+    ("opp_hc_4", "stress"): "output_opp_hc_4_stress_tests.csv",
+    ("opp_aco_4", "functional"): "output_opp_aco_4_functional_tests.csv",
+    ("opp_aco_4", "stress"): "output_opp_aco_4_stress_tests.csv",
+    # 2026-09-29: split stress unified in one file. 02, 04-07, 09-11 and 15
+    # re-run with the current code (Stage 1 on 6 workers, same objectives as
+    # before); the 10 timeouts (40 min) kept from their previous runs: 01 and
+    # 03 from the 09-24 run, 08 and 12-19 from the 09-26 run (W_c = 27).
+    ("opp_v5_2_split", "stress"): "output_opp_v5_2_split_stress_tests_parallel.csv",
 }

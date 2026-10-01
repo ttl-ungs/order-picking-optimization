@@ -1,2 +1,2 @@
-test,status,total_time,model_time,obj_val,peak_rss_mb,obj_val_congestion,congestion_collisions,sla_on_time_pct,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,Max_it,Max_imp,Min_dwell,iterations_run,best_found_at_iteration
+test,status,total_time,model_time,obj_val,peak_rss_mb,obj_val_congestion,congestion_collisions,sla_on_time_pct,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,P,V,Max_it,Max_imp,Min_dwell,iterations_run,best_found_at_iteration
 test_case_04.TestOPPModel.test_4_orders_per_batch,ok,0.3684804439544678,0.34316420555114746,398817.0,23.765625,0.0,0,0.0,9.0,1.0,1.0,1.0,40.0,0.5,1.0,1.0,1000.0,100,25,1,100,500,30,0.0,104,74

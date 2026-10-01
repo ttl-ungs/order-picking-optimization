@@ -15,7 +15,7 @@ Toda tabla o gráfico que compare v5 con las heurísticas debe filtrar por sus c
 | Qué | Instancias de las heurísticas | Referencia de v5 |
 |---|---|---|
 | **Funcional** | `test_v5eq__<test de v5>[__<k>]` en `tests/opp_{aco,hc}_4/functional/test_case_v5_equivalence.py` | Estado y objetivo por instancia en `tests/shared_scenarios/functional/v5_equivalence_scenarios.json` |
-| **Estrés** | `test_case_v5_*` en `tests/opp_{aco,hc}_4/stress/`, con el mismo nombre de método que v5 | CSV de estrés de `opp_v5_2_split`, combinados por `analysis.load`: 04–19 con W_full = 27 y 01–03 de las corridas consolidadas |
+| **Estrés** | `test_case_NN` en `tests/opp_{aco,hc}_4/stress/`, con la misma numeración y el mismo nombre de método que v5 | CSV de estrés de `opp_v5_2_split`, combinados por `analysis.load`: 04–19 con W_c = 27 y 01–03 de las corridas consolidadas |
 | **Tiempo igual** | CSV de estrés de cada heurística | `results/equal_time/output_equal_time_<heurística>_*.csv`, donde v5 corre con el tiempo de la heurística como límite |
 
 **Los demás tests funcionales de aco_4 y hc_4 no son comparables con v5, aunque compartan el nombre.** La mayoría envuelve tests de aco_2 y hc_2 que no definen pickers y corren con uno solo, mientras que el test de v5 del mismo nombre usa dos. Para comparar funcionales se usan solo las instancias `test_v5eq__*`.
@@ -24,7 +24,7 @@ Toda tabla o gráfico que compare v5 con las heurísticas debe filtrar por sus c
 
 - **Funcional.** `tests/shared_scenarios/functional/export_v5_equivalence_scenarios.py` corre la suite funcional de `opp_v5_2_split` y captura cada escenario en el momento en que v5 escribe sus archivos `.dat`. Guarda también el estado y el objetivo finales de v5.
   - Las heurísticas resuelven exactamente ese escenario con `tests/infra/factories/v5_scenario_adapter.py`.
-  - Donde el escenario no define velocidades ni límite de frío, se completan con V_p = 1,0 y T_frio_max = 10⁹, igual que hace v5.
+  - Donde el escenario no define velocidades ni límite de frío, se completan con V_p = 1,0 y T_cold = 10⁹, igual que hace v5.
   - Hay que volver a correr el exportador si cambia un test o un escenario funcional de v5. Necesita zimpl y SCIP.
 - **Estrés.** Los tests de las dos heurísticas llaman al mismo constructor de escenario, con los mismos argumentos, que los de v5. Se verificó para los 19 el 2026-09-28.
 
@@ -35,18 +35,18 @@ Están implementadas en `tests/infra/factories/v5_equivalence.py` (`comparabilit
 | Situación | ¿Estado comparable? | ¿Objetivo comparable? | Motivo |
 |---|---|---|---|
 | v5 no terminó (timeout) | No | No | No hay referencia |
-| v5 fija la asignación batch→picker (`X_pb`) | No | No | Las heurísticas no admiten esa restricción. Hoy no hay ningún caso |
+| v5 fija la asignación batch→picker (`x_pb`) | No | No | Las heurísticas no admiten esa restricción. Hoy no hay ningún caso |
 | v5 infeasible | **Sí** | No | No hay objetivo; sí se compara que la heurística también dé infeasible |
 | v5 usa espera voluntaria | **Sí** | No | Ver abajo |
 | v5 óptimo, sin espera | **Sí** | **Sí** | Mismos datos, mismo objetivo |
 
-**Espera voluntaria.** En v5 la restricción es `v_pb >= t_exec_pb`, no una igualdad. Eso le permite reportar un batch como terminado más tarde de lo que termina físicamente, para reducir la earliness. Las heurísticas reportan tiempos reales y no pueden hacerlo, así que en esos casos el objetivo de v5 es menor por diseño del modelo, no por un mejor plan.
-- **Cómo se detecta.** Sobre la solución de v5: un batch espera si su `v_pb` supera la finalización del batch anterior del mismo picker más su `t_exec_pb`.
-- **Cuándo se cuenta.** Solo si la earliness tiene peso (`W_ea_ta · W_ea > 0`). Si no lo tiene, esperar no puede bajar el objetivo.
+**Espera voluntaria.** En v5 la restricción es `c_pb >= T_exec_pb`, no una igualdad. Eso le permite reportar un batch como terminado más tarde de lo que termina físicamente, para reducir la earliness. Las heurísticas reportan tiempos reales y no pueden hacerlo, así que en esos casos el objetivo de v5 es menor por diseño del modelo, no por un mejor plan.
+- **Cómo se detecta.** Sobre la solución de v5: un batch espera si su `c_pb` supera la finalización del batch anterior del mismo picker más su `T_exec_pb`.
+- **Cuándo se cuenta.** Solo si la earliness tiene peso (`W_pen · W_e > 0`). Si no lo tiene, esperar no puede bajar el objetivo.
 - **Verificación exacta del 2026-09-28.** En las 9 instancias marcadas, "rutas más cortas + espera óptima" reproduce exactamente el objetivo de v5. ACO, en esas mismas instancias, obtiene el mejor scheduling posible sin espera para sus rutas.
 
 **Estrés.** No hay espera que descartar:
-- En 04–19, W_full = 27 es mayor que las órdenes por batch, así que esperar nunca conviene.
+- En 04–19, W_c = 27 es mayor que las órdenes por batch, así que esperar nunca conviene.
 - En 01–03, todas las órdenes llegan tarde, así que no hay earliness que recortar.
 
 Los escenarios de estrés donde v5 hizo timeout no tienen referencia de objetivo. Se usan para comparar escala (la heurística resuelve y v5 no) y en el experimento de tiempo igual, no para calcular brechas.
@@ -121,4 +121,4 @@ Si hace falta armar el cruce a mano:
   - Unir el CSV funcional de la heurística con el registro por `instance` = `heuristic_instance`. `instance` es el nombre del método, el último segmento de la columna `test`.
   - El objetivo de v5 se toma de `v5_obj` del registro. No usar el CSV funcional de v5: guarda un solo objetivo por test, el de su última resolución, y algunos tests resuelven más de una instancia.
 - **Estrés.** Unir por nombre de método. En el registro, `v5_test` = `heuristic_instance`.
-- **v5_1_mono** resuelve las mismas instancias que v5_2_split, porque usa los mismos tests. Su referencia de estrés es parcial: 01–03 de la corrida consolidada, 04 de la corrida con W_full = 27, 05–10 en corrida al 2026-09-28 y 11–19 sin correr. En 04 hizo timeout, así que no aporta referencia de objetivo.
+- **v5_1_mono** resuelve las mismas instancias que v5_2_split, porque usa los mismos tests. Su referencia de estrés es parcial: 01–03 de la corrida consolidada, 04 de la corrida con W_c = 27, 05–10 en corrida al 2026-09-28 y 11–19 sin correr. En 04 hizo timeout, así que no aporta referencia de objetivo.

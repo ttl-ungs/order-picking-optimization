@@ -3,6 +3,8 @@ import subprocess
 import time
 import pyscipopt
 from dtos.opp.solve_result import SolveResult
+from dtos.opp.zimpl_solution_record_dto import ZimplSolutionRecordDTO
+from tests.infra.zimpl.dat_files_builder import last_scenario
 import models.utils.solve_registry as solve_registry
 from models.utils.input_validation import overloaded_batches, orders_without_exactly_one_batch
 
@@ -28,14 +30,14 @@ def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
     if params is None:
         params = {}
 
-    # opp_model_v4.zpl takes Bn/C_v as fixed parameters, not decision
+    # opp_model_v4.zpl takes B_nb/C_v as fixed parameters, not decision
     # variables, so it has no constraint left to reject a batch that
     # overflows the vehicle or an order assigned to zero/two+ batches --
     # it would just solve happily around garbage input (see
     # models/utils/input_validation.py). Enforce both here, before ever
     # calling zimpl/SCIP, so this input is rejected the same way
     # opp_hc_2/opp_aco_2/opp_hc_3/opp_aco_3 reject it for the same instance.
-    bn = params.get("Bn")
+    bn = params.get("B_nb")
     invalid_reasons = []
 
     overloaded = overloaded_batches(params.get("C_n"), bn, params.get("C_v"))
@@ -136,6 +138,11 @@ def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
         output=var_values,
         elapsed=elapsed,
         params={"obj_val": obj_val, **params},
+        # Instance + solution for verification/ (written only with
+        # WRITE_SOLUTIONS); references only, nothing is copied here.
+        solution_record=ZimplSolutionRecordDTO(
+            zpl_path=zpl_path, scenario=last_scenario(), status=status, objective=obj_val, values=var_values,
+        ),
     )
     solve_registry.register(solve_result)
 

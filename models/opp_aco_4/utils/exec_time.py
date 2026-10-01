@@ -1,10 +1,10 @@
 """
-Shared t_exec_pb formula for opp_aco_4:
+Shared T_exec_pb formula for opp_aco_4:
 
-    t_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]
+    T_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]
 
-where fixed_time(b) = B_setup + B_picking * sum(C_n over b's orders) does
-NOT depend on picker speed, and route_time(b) = B_time * travel_distance +
+where fixed_time(b) = T_setup + T_pick * sum(C_n over b's orders) does
+NOT depend on picker speed, and route_time(b) = T_travel * travel_distance +
 service_time is the part scaled by how fast the picker walks/scans.
 
 Previously computed independently (and verified to compute the exact same
@@ -36,21 +36,21 @@ def calculate_route_distance(location_graph, route: List[str]) -> float:
     return total
 
 
-def fixed_time(orders: Set[str], C_n: Dict, B_setup: float, B_picking: float) -> float:
-    """Setup + picking time -- the part of t_exec_pb that does NOT depend on picker speed."""
+def fixed_time(orders: Set[str], C_n: Dict, T_setup: float, T_pick: float) -> float:
+    """Setup + picking time -- the part of T_exec_pb that does NOT depend on picker speed."""
     picking_capacity = sum(C_n.get(o, 0) for o in orders) if isinstance(C_n, dict) else 0
-    return B_setup + B_picking * picking_capacity
+    return T_setup + T_pick * picking_capacity
 
 
 def route_time(
     location_graph,
     route: List[str],
-    B_time: float,
+    T_travel: float,
     S: Dict,
     distance: Optional[float] = None,
 ) -> float:
     """
-    Travel time (B_time * distance) + service time -- the part of t_exec_pb
+    Travel time (T_travel * distance) + service time -- the part of T_exec_pb
     scaled by picker speed. Pass `distance` when the caller already
     computed it, to avoid recomputing it again here (distance doesn't
     depend on picker at all).
@@ -60,25 +60,25 @@ def route_time(
     if distance is None:
         distance = calculate_route_distance(location_graph, route)
     service_time = sum(S.get(loc, 0) for loc in route) if isinstance(S, dict) else 0
-    return B_time * distance + service_time
+    return T_travel * distance + service_time
 
 
-def t_exec_pb(
+def T_exec_pb(
     location_graph,
     route: List[str],
     orders: Set[str],
     picker: str,
     C_n: Dict,
-    B_setup: float,
-    B_picking: float,
-    B_time: float,
+    T_setup: float,
+    T_pick: float,
+    T_travel: float,
     S: Dict,
     V_p: Dict[str, float],
     distance: Optional[float] = None,
 ) -> float:
-    """t_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]."""
+    """T_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]."""
     speed = (V_p or {}).get(picker, 1.0)
     return (
-        fixed_time(orders, C_n, B_setup, B_picking)
-        + route_time(location_graph, route, B_time, S, distance) / speed
+        fixed_time(orders, C_n, T_setup, T_pick)
+        + route_time(location_graph, route, T_travel, S, distance) / speed
     )

@@ -96,7 +96,7 @@ class OPPAntColonyOptimization(Model):
 
         start_time = time.time()
 
-        if params.Bn is None:
+        if params.B_nb is None:
             self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
 
@@ -137,23 +137,23 @@ class OPPAntColonyOptimization(Model):
             P=self.P,
             location_graph=self.location_graph,
             batch_assignments=batch_assignments,
-            W_full=params.W_full,
-            W_ea_ta=params.W_ea_ta,
-            W_ea=params.W_ea,
-            W_ta=params.W_ta,
+            W_c=params.W_c,
+            W_pen=params.W_pen,
+            W_e=params.W_e,
+            W_t=params.W_t,
             C_n=params.C_n,
             C_v=params.C_v,
             A=params.A,
-            B_time=params.B_time,
-            B_setup=params.B_setup,
-            B_picking=params.B_picking,
+            T_travel=params.T_travel,
+            T_setup=params.T_setup,
+            T_pick=params.T_pick,
             S=params.S,
-            Dd=params.Dd,
+            T_due_n=params.T_due_n,
             M=params.M,
         )
 
         # 1. Pheromone initialization: two matrices (time, congestion) per
-        # m-ACO4(1,m) [Alaya et al.], plus the unchanged X_pb assignment
+        # m-ACO4(1,m) [Alaya et al.], plus the unchanged x_pb assignment
         # pheromone. Initialized to tau_max (MAX-MIN Ant System convention:
         # start high to encourage early exploration, then evaporate down).
         pheromones_time = self._initialize_pheromones(tau_max)
@@ -271,14 +271,14 @@ class OPPAntColonyOptimization(Model):
                 "obj_val_congestion": best_global_congestion_cost,
                 "congestion_collisions": best_global_solution.get_total_collisions(),
                 "sla_on_time_pct": sla_on_time_pct(solution_info["tardiness"]),
-                "W_full": params.W_full,
-                "W_ea_ta": params.W_ea_ta,
-                "W_ea": params.W_ea,
-                "W_ta": params.W_ta,
+                "W_c": params.W_c,
+                "W_pen": params.W_pen,
+                "W_e": params.W_e,
+                "W_t": params.W_t,
                 "C_v": params.C_v,
-                "B_time": params.B_time,
-                "B_setup": params.B_setup,
-                "B_picking": params.B_picking,
+                "T_travel": params.T_travel,
+                "T_setup": params.T_setup,
+                "T_pick": params.T_pick,
                 "M": params.M,
                 "N": len(self.N),
                 "B": len(self.B),
@@ -305,14 +305,14 @@ class OPPAntColonyOptimization(Model):
             output=None,
             elapsed=elapsed,
             params={
-                "W_full": getattr(params, "W_full", None),
-                "W_ea_ta": getattr(params, "W_ea_ta", None),
-                "W_ea": getattr(params, "W_ea", None),
-                "W_ta": getattr(params, "W_ta", None),
+                "W_c": getattr(params, "W_c", None),
+                "W_pen": getattr(params, "W_pen", None),
+                "W_e": getattr(params, "W_e", None),
+                "W_t": getattr(params, "W_t", None),
                 "C_v": getattr(params, "C_v", None),
-                "B_time": getattr(params, "B_time", None),
-                "B_setup": getattr(params, "B_setup", None),
-                "B_picking": getattr(params, "B_picking", None),
+                "T_travel": getattr(params, "T_travel", None),
+                "T_setup": getattr(params, "T_setup", None),
+                "T_pick": getattr(params, "T_pick", None),
                 "M": getattr(params, "M", None),
                 "N": len(self.N),
                 "B": len(self.B),
@@ -363,7 +363,7 @@ class OPPAntColonyOptimization(Model):
             pheromones[edge] = initial_value
 
     def _initialize_picker_pheromones(self) -> Dict[Tuple[str, str], float]:
-        """Initializes the batch/picker assignment pheromone table (X_pb) with a base value of 1.0."""
+        """Initializes the batch/picker assignment pheromone table (x_pb) with a base value of 1.0."""
         return {(b, p): 1.0 for b in self.B for p in self.P}
 
     # ------------------------------------------------------------------
@@ -384,7 +384,7 @@ class OPPAntColonyOptimization(Model):
         p_objective_switch: float,
     ) -> Optional[RouteSolution]:
         """
-        Each ant first assigns every batch with orders to a picker (X_pb),
+        Each ant first assigns every batch with orders to a picker (x_pb),
         exactly like opp_aco_2, which fixes each picker's processing queue.
         Routes are then built round-by-round across pickers' queue slots
         (slot 0 of every picker, then slot 1, ...), so that a batch always
@@ -410,7 +410,7 @@ class OPPAntColonyOptimization(Model):
         # construction since the queue order here also drives the
         # congestion causal ordering (slot 0 of every picker before slot 1,
         # ...), not just final timing.
-        self._sort_picker_queues_by_due_date(solution, batch_assignments, params.Dd)
+        self._sort_picker_queues_by_due_date(solution, batch_assignments, params.T_due_n)
 
         tracker = CongestionTracker(min_dwell=min_dwell)
         picker_current_time: Dict[str, float] = {p: 0.0 for p in self.P}
@@ -444,7 +444,7 @@ class OPPAntColonyOptimization(Model):
                         tracker,
                         owner=picker,
                         start_time=picker_current_time[picker],
-                        b_time=params.B_time,
+                        b_time=params.T_travel,
                         S=params.S if isinstance(params.S, dict) else {},
                     )
                     if candidate is not None and len(candidate) == len(set(candidate)):
@@ -908,10 +908,10 @@ class OPPAntColonyOptimization(Model):
         """t_exec formula (Constraint 18 replication), excluding congestion wait
         (added separately by the caller, since it is simulated during construction)."""
         picking_capacity = sum(params.C_n.get(o, 0) for o in orders) if isinstance(params.C_n, dict) else 0
-        picking_time = params.B_picking * picking_capacity
-        travel_time = params.B_time * self._calculate_route_distance(route)
+        picking_time = params.T_pick * picking_capacity
+        travel_time = params.T_travel * self._calculate_route_distance(route)
         service_time = sum(params.S.get(loc, 0) for loc in route) if isinstance(params.S, dict) else 0
-        return params.B_setup + picking_time + travel_time + service_time
+        return params.T_setup + picking_time + travel_time + service_time
 
     def _build_solution_info(
         self,
@@ -943,11 +943,11 @@ class OPPAntColonyOptimization(Model):
                 route = solution.get_batch_route(batch)
                 orders = batch_assignments.get(batch, set())
 
-                t_exec_b = self._calculate_batch_execution_time(route, orders, params)
-                t_exec_b += solution.get_batch_congestion_wait(batch)
-                current_time += t_exec_b
+                d_b = self._calculate_batch_execution_time(route, orders, params)
+                d_b += solution.get_batch_congestion_wait(batch)
+                current_time += d_b
 
-                solution_info["batch_times"][batch] = t_exec_b
+                solution_info["batch_times"][batch] = d_b
                 solution_info["batch_completions"][batch] = current_time
                 solution_info["batch_congestion_wait"][batch] = solution.get_batch_congestion_wait(batch)
                 solution_info["picker_assignments"][batch] = picker
@@ -958,11 +958,11 @@ class OPPAntColonyOptimization(Model):
                 (b for b, orders in batch_assignments.items() if order in orders), None
             )
             if order_batch and order_batch in solution_info["batch_completions"]:
-                v_b = solution_info["batch_completions"][order_batch]
-                due_date = params.Dd.get(order, float("inf"))
+                c_b = solution_info["batch_completions"][order_batch]
+                due_date = params.T_due_n.get(order, float("inf"))
 
-                solution_info["tardiness"][order] = max(0, v_b - due_date)
-                solution_info["earliness"][order] = max(0, due_date - v_b)
+                solution_info["tardiness"][order] = max(0, c_b - due_date)
+                solution_info["earliness"][order] = max(0, due_date - c_b)
 
         return solution_info
 

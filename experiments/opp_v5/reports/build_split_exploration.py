@@ -71,7 +71,7 @@ def build_figures():
     c.line(curve, "blueline", dashed=True, smooth=True, markers=False)
     for x, y in zip(orders, sla_orders):
         c.dot(x, y, "darkblue")
-    c.legend([("blueline", "predicho: $(N_b + W_{full})/(2N_b)$, $W_{full}=9$", "dashed"),
+    c.legend([("blueline", "predicho: $(N_b + W^{c})/(2N_b)$, $W^{c}=9$", "dashed"),
               ("darkblue", "medido", "dot")], x=4.0)
     FIG["sla_formula"] = c.code()
 

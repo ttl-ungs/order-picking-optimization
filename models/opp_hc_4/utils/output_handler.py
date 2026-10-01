@@ -26,7 +26,7 @@ class OutputHandler(Observer):
                 - earliness: dict {order: earliness}
                 - routes: dict {batch: route_list}
                 - V_p: dict {picker: speed}
-                - T_frio_max: float
+                - T_cold: float
         """
         print("\n" + "=" * 50)
         print(" OPTIMIZATION RESULTS (Hill Climbing v4 - picker speed & cold chain)")
@@ -41,19 +41,19 @@ class OutputHandler(Observer):
             print("-" * 50)
 
             V_p = solution_info.get("V_p", {})
-            T_frio_max = solution_info.get("T_frio_max")
+            T_cold = solution_info.get("T_cold")
             if V_p:
                 print("Picker Speeds (V_p):")
                 for picker, speed in sorted(V_p.items()):
                     print(f"  {picker}: {speed}")
-            if T_frio_max is not None:
-                print(f"Cold Chain Limit (T_frio_max): {T_frio_max}")
-            if V_p or T_frio_max is not None:
+            if T_cold is not None:
+                print(f"Cold Chain Limit (T_cold): {T_cold}")
+            if V_p or T_cold is not None:
                 print("-" * 50)
 
             picker_assignments = solution_info.get("picker_assignments", {})
             if picker_assignments:
-                print("Picker Assignments (X_pb):")
+                print("Picker Assignments (x_pb):")
                 for picker in sorted(set(picker_assignments.values())):
                     batches = sorted(b for b, p in picker_assignments.items() if p == picker)
                     print(f"  {picker}: {', '.join(batches) if batches else '(idle)'}")
@@ -61,7 +61,7 @@ class OutputHandler(Observer):
 
             batch_times = solution_info.get("batch_times", {})
             if batch_times:
-                print("Batch Execution Times (t_exec_pb):")
+                print("Batch Execution Times (T_exec_pb):")
                 for batch, t_exec_val in sorted(batch_times.items()):
                     print(f"  t_exec_{batch} (Batch {batch}): {t_exec_val:.4f}")
                 print("-" * 50)

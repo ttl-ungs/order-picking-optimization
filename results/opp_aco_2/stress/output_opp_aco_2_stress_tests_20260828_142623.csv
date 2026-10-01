@@ -1,4 +1,4 @@
-test,status,total_time,model_time,obj_val,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,A_ants,Max_it,Alpha,Beta,Max_route_attempts_per_batch
+test,status,total_time,model_time,obj_val,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,P,V,A_ants,Max_it,Alpha,Beta,Max_route_attempts_per_batch
 test_opp_aco_2_model_01.TestOPPModel.test_100_locations,ok,2.487870931625366,1.8420989513397217,5683.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,100,15,60,1.0,2.5,100
 test_opp_aco_2_model_02.TestOPPModel.test_400_locations,ok,44.99689221382141,4.384593963623047,9423.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,400,15,60,1.0,2.5,100
 test_opp_aco_2_model_03.TestOPPModel.test_625_locations,ok,163.68742394447327,6.904160976409912,11403.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,625,15,60,1.0,2.5,100

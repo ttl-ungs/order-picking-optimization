@@ -1,4 +1,4 @@
-test,status,total_time,model_time,obj_val,peak_rss_mb,sla_on_time_pct,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,A_ants,Max_it,Alpha,Beta,Max_route_attempts_per_batch,iterations_run,best_found_at_iteration
+test,status,total_time,model_time,obj_val,peak_rss_mb,sla_on_time_pct,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,P,V,A_ants,Max_it,Alpha,Beta,Max_route_attempts_per_batch,iterations_run,best_found_at_iteration
 test_opp_aco_2_model_01.TestOPPModel.test_basic_two_orders_capacity_limit,ok,0.0394589900970459,0.03402900695800781,753.0,22.453125,50.0,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,1,4,15,60,1.0,2.5,100,60,1
 test_opp_aco_2_model_02.TestOPPModel.test_two_orders_two_aisles,ok,0.055307626724243164,0.04978585243225098,1968.0,22.390625,0.0,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,1,8,15,60,1.0,2.5,100,60,1
 test_opp_aco_2_model_02.TestOPPModel.test_two_orders_two_aisles_one_picking_point_per_order,ok,0.05379796028137207,0.04802274703979492,1968.0,21.6875,0.0,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,1,8,15,60,1.0,2.5,100,60,1

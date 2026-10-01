@@ -39,19 +39,19 @@ class TestServiceTimeEdgeCases(OPPTestCase):
         due_date = {"O1": 15.0, "O2": 15.0}
 
         base_params = {
-            "W_full": w1,
-            "W_ea_ta": w2,
-            "W_ea": gamma,
-            "W_ta": delta,
+            "W_c": w1,
+            "W_pen": w2,
+            "W_e": gamma,
+            "W_t": delta,
             "C_n": cap_n,
             "C_v": cap_vehicle,
             "A": a,
-            "B_time": beta_time,
-            "B_setup": beta_setup,
-            "B_picking": beta_picking,
-            "Dd": due_date,
+            "T_travel": beta_time,
+            "T_setup": beta_setup,
+            "T_pick": beta_picking,
+            "T_due_n": due_date,
             "M": M,
-            "Bn": y,
+            "B_nb": y,
         }
 
         model_dto = ModelDTO()

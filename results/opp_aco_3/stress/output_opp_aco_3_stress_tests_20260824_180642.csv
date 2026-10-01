@@ -1,4 +1,4 @@
-test,status,total_time,model_time,obj_val,obj_val_congestion,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,A_ants,Max_it,Alpha,Beta,Beta2,Min_dwell,Cataclysms_used,Max_route_attempts_per_batch
+test,status,total_time,model_time,obj_val,obj_val_congestion,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,P,V,A_ants,Max_it,Alpha,Beta,Beta2,Min_dwell,Cataclysms_used,Max_route_attempts_per_batch
 test_opp_aco_3_model_12.TestOPPModel.test_20_orders_10_batches_5x5,ok,15.797467947006226,15.776942253112793,24733.0,0.0,9.0,1.0,1.0,1.0,150.0,0.5,1.0,1.0,1000.0,20,10,1,25,15,60,1.0,2.0,2.0,0.0,2,100
 test_opp_aco_3_model_13.TestOPPModel.test_20_orders_10_batches_15x15,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,,,,,,,,,,,,,,,,,,,,,,
 test_opp_aco_3_model_14.TestOPPModel.test_20_orders_10_batches_20x20,timeout,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,Ejecución detenida por timeout - 40,,,,,,,,,,,,,,,,,,,,,,

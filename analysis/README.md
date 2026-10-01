@@ -284,7 +284,7 @@ buscando bugs y mejoras (no solo performance). Encontró y corrigió:
    reporte/`solution_info`, no para la búsqueda) tenía una fórmula rota**:
    indexaba el tiempo de servicio (`S`, por ubicación) usando IDs de orden,
    siempre devolviendo 0, y descartaba el término real de capacidad
-   (`B_picking * sum(C_n)`). El objetivo que realmente optimiza el hill
+   (`T_pick * sum(C_n)`). El objetivo que realmente optimiza el hill
    climbing (`RouteEvaluator`, y por lo tanto `obj_val`) nunca estuvo mal --
    `opp_hc_3` ya tenía la fórmula correcta (nunca se retro-portó a `hc_2`).
    Confirmado que `analysis/` no usa `batch_times`/`tardiness`/`earliness`
@@ -375,7 +375,7 @@ binario real de `zimpl`), las 4 DTOs completas, y el propio pipeline de
 **Sin hallazgos críticos en el código compartido/`opp_v4`** -- solo gaps
 defensivos latentes, sin disparador actual. Corregidos los dos más
 concretos en `models/utils/input_validation.py`:
-- `orders_without_exactly_one_batch` reportaba "sin problema" si `Bn`
+- `orders_without_exactly_one_batch` reportaba "sin problema" si `B_nb`
   estaba vacío pero `N` no (justo el caso que debería atrapar).
 - `overloaded_batches` trataba un `C_n` faltante como capacidad 0 en
   silencio (ahora lanza `ValueError` en vez de enmascarar el problema).
@@ -512,15 +512,15 @@ pickers, cadena de frío):
   "¿qué picker lo hace?"), se agregaron 3 tests que verifican la fórmula y
   los casos límite exactos:
   - Verifica numéricamente la fórmula documentada en
-    `opp_model_v5_2_split_stage2_scheduling.zpl` (`t_exec_pb = tiempo_fijo + R_b_time / V_p`,
-    donde `tiempo_fijo` NO se escala por velocidad) contra valores exactos
+    `opp_model_v5_2_split_stage2_scheduling.zpl` (`T_exec_pb = F_b + R_b / V_p`,
+    donde `F_b` NO se escala por velocidad) contra valores exactos
     calculados a mano, no solo "qué picker ganó".
-  - Verifica el límite exacto de `T_frio_max` (`<=`, no `<`) -- un picker
-    cuyo `t_exec_pb` coincide exactamente con el límite debe seguir siendo
+  - Verifica el límite exacto de `T_cold` (`<=`, no `<`) -- un picker
+    cuyo `T_exec_pb` coincide exactamente con el límite debe seguir siendo
     elegible.
   - **Encontró un bug real**: cuando ningún picker es elegible para un
     lote por cadena de frío, el comentario de `opp_model_v5_2_split_stage2_scheduling.zpl`
-    sobre `B_sin_picker_elegible` dice que "el modelo va a dar infactible
+    sobre `B_no_eligible_picker` dice que "el modelo va a dar infactible
     seguro" -- pero no es así. La restricción `assign_exactly_one_picker`
     queda con una suma vacía (`0 == 1`), y **ZIMPL la rechaza en tiempo de
     compilación** (`*** Error 106: Empty LHS, constraint trivially
@@ -598,10 +598,10 @@ con el dato completo (no parcial) respaldando esa decisión.
 
 ### Fix del bug de cadena de frío (2026-09-01)
 
-Se corrigió el bug documentado arriba (`B_sin_picker_elegible` crashea en
+Se corrigió el bug documentado arriba (`B_no_eligible_picker` crashea en
 vez de dar `infeasible` limpio): se agregó
 `models/opp_v5_2_split/utils/cold_chain_validation.py::batches_without_eligible_picker`,
-una réplica en Python de `PB_elig`/`t_exec_pb` (mismo patrón que
+una réplica en Python de `PB_elig`/`T_exec_pb` (mismo patrón que
 `models/utils/input_validation.py` usa para `opp_v4`), y se la conectó en
 `OPPTestCaseSplit.run_pipeline` para cortocircuitar a `status="infeasible"`
 **antes** de invocar ZIMPL para la Etapa 2, en vez de dejar que el error
@@ -662,7 +662,7 @@ inventa un cero ni se descarta en silencio.
    de mostrar un 0 engañoso). Esta es la comparación real que sustenta el
    aporte de v3, más allá del "extra" de tiempo bruto.
 6. **Sensibilidad paramétrica** — correlación de Pearson entre `total_time` y
-   `N, V, B, C_v, W_full, W_ea_ta`, a nivel global y por escenario. Aísla qué
+   `N, V, B, C_v, W_c, W_pen`, a nivel global y por escenario. Aísla qué
    variable es el cuello de botella de cada modelo (p. ej. si ACO sufre más
    por `V` — topología del almacén — que por `N` — cantidad de pedidos).
 

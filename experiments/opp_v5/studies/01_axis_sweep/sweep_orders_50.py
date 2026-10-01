@@ -62,7 +62,7 @@ with open(OUT, "w", newline="", encoding="utf-8") as handle:
         row = {"orders_per_batch": orders_per_batch, "orders": orders}
         per_batch = [
             len({v for v in scenario["V"]
-                 if any(scenario["A_ni"][(n, v)] * scenario["Bn"][(n, b)] for n in scenario["N"])})
+                 if any(scenario["A_ni"][(n, v)] * scenario["B_nb"][(n, b)] for n in scenario["N"])})
             for b in sorted(scenario["B"])
         ]
         row["batch_locations_min"], row["batch_locations_max"] = min(per_batch), max(per_batch)
@@ -80,14 +80,14 @@ with open(OUT, "w", newline="", encoding="utf-8") as handle:
 
         routes = {
             k.split("$")[-1]: v for k, v in values.items()
-            if k.lower().startswith("r_b_time$")
+            if k.lower().startswith("r_b$")
         }
         row["route_min"] = round(min(routes.values()), 1)
         row["route_max"] = round(max(routes.values()), 1)
 
         write_indexed_dat(os.path.join(DAT_DIR, "route_time_b.dat"), routes)
         write_indexed_dat(os.path.join(DAT_DIR, "velocities.dat"), scenario["V_p"])
-        write_scalar_dat(os.path.join(DAT_DIR, "frio.dat"), scenario["T_frio_max"])
+        write_scalar_dat(os.path.join(DAT_DIR, "cold.dat"), scenario["T_cold"])
 
         base = os.path.join(DAT_DIR, "orders50_stage2")
         subprocess.run(

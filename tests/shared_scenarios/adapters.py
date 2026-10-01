@@ -5,9 +5,9 @@ Adapts a plain instance dict (see instances.py) into a ready-to-solve
 One generic function covers all 6 heuristic models: every HC/ACO params
 DTO (SolveHCModelDTO, SolveHC3ModelDTO, SolveHC4ModelDTO, SolveAcoModelDTO,
 SolveAco3ModelDTO, SolveAco4ModelDTO) inherits the same common fields
-(W_full, W_ea_ta, W_ea, W_ta, C_n, C_v, A, B_time, B_setup, B_picking, Dd,
-M, Bn) from dtos/opp/solve_model_dto.py::SolveModelDTO -- only a handful
-of family-specific extras (Min_dwell, V_p, T_frio_max, ACO hyperparameters,
+(W_c, W_pen, W_e, W_t, C_n, C_v, A, T_travel, T_setup, T_pick, T_due_n,
+M, B_nb) from dtos/opp/solve_model_dto.py::SolveModelDTO -- only a handful
+of family-specific extras (Min_dwell, V_p, T_cold, ACO hyperparameters,
 ...) differ, and those already have sensible defaults in each DTO's own
 __init__, so callers only need to override one via `extra_fields` if they
 actually want to test something other than the default (e.g. cold chain
@@ -35,23 +35,23 @@ def build_params(instance: Dict, dto_cls: Type, **extra_fields):
     `dto_cls` is whichever SolveXModelDTO the target model family expects
     (e.g. SolveHC4ModelDTO for opp_hc_4). `extra_fields` are set via
     setattr AFTER the common fields, so a caller can override a family-
-    specific default (e.g. V_p=..., T_frio_max=... for hc_4/aco_4) without
+    specific default (e.g. V_p=..., T_cold=... for hc_4/aco_4) without
     this function needing to know about every family's extras up front.
     """
     params = dto_cls()
-    params.W_full = instance["W_full"]
-    params.W_ea_ta = instance["W_ea_ta"]
-    params.W_ea = instance["W_ea"]
-    params.W_ta = instance["W_ta"]
+    params.W_c = instance["W_c"]
+    params.W_pen = instance["W_pen"]
+    params.W_e = instance["W_e"]
+    params.W_t = instance["W_t"]
     params.C_n = instance["C_n"]
     params.C_v = instance["C_v"]
     params.A = instance["A"]
-    params.B_time = instance["B_time"]
-    params.B_setup = instance["B_setup"]
-    params.B_picking = instance["B_picking"]
-    params.Dd = instance["Dd"]
+    params.T_travel = instance["T_travel"]
+    params.T_setup = instance["T_setup"]
+    params.T_pick = instance["T_pick"]
+    params.T_due_n = instance["T_due_n"]
     params.M = instance["M"]
-    params.Bn = instance["Bn"]
+    params.B_nb = instance["B_nb"]
 
     for key, value in extra_fields.items():
         setattr(params, key, value)

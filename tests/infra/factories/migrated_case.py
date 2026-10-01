@@ -8,13 +8,14 @@ from tests.infra.zimpl.dat_files_builder import write_indexed_dat, write_scalar_
 from tests.opp_v5_2_split.config import DAT_DIR, STAGE1_ZPL_PATH, STAGE2_ZPL_PATH
 from tests.opp_v5_2_split.stage1_decomposition import solve_stage1_decomposed
 from tests.infra.zimpl.zpl_utils import solve_zpl
+from models.utils.solve_registry import get_last
 
 
 def _route_times(values, batches):
     return {
         name.split("$")[-1]: value
         for name, value in values.items()
-        if name.lower().startswith("r_b_time$") and name.split("$")[-1] in batches
+        if name.lower().startswith("r_b$") and name.split("$")[-1] in batches
     }
 
 
@@ -54,7 +55,7 @@ def solve_split_from_v4_data(_zpl_path, dat_dir=None, params=None):
     write_indexed_dat(os.path.join(dat_dir, "route_time_b.dat"), route_times)
     write_indexed_dat(os.path.join(dat_dir, "velocities.dat"), {picker: 1.0 for picker in pickers})
     # v4 had no cold-chain restriction; disable it for the migrated baseline.
-    write_scalar_dat(os.path.join(dat_dir, "frio.dat"), 1_000_000_000.0)
+    write_scalar_dat(os.path.join(dat_dir, "cold.dat"), 1_000_000_000.0)
 
     # Stash what assert_no_time_overlap needs to recompute each task's
     # duration itself (see that method's docstring for why: opp_v5_2_split has no u_pb).
@@ -62,6 +63,11 @@ def solve_split_from_v4_data(_zpl_path, dat_dir=None, params=None):
     _last_call_context["params"] = params or {}
 
     stage2_status, stage2_values = solve_zpl(STAGE2_ZPL_PATH, dat_dir=dat_dir, params=params)
+    # The saved solution (WRITE_SOLUTIONS) needs Stage 1 too: Stage 2 only
+    # sees the routes' times, not the routes themselves.
+    record = getattr(get_last(), "solution_record", None)
+    if record is not None:
+        record.add_stage1_values(stage1_values)
     return stage2_status, {**stage1_values, **stage2_values}
 
 
@@ -83,13 +89,13 @@ def make_split_compat_case(v4_module, v4_case):
         def assert_no_time_overlap(self, var_values, P, B):
             """
             Overrides opp_v4's OPPTestCaseV4.assert_no_time_overlap (which
-            reconstructs a task's duration as v_pb - u_pb): opp_model_v5_2_split_stage2_scheduling.zpl
+            reconstructs a task's duration as c_pb - u_pb): opp_model_v5_2_split_stage2_scheduling.zpl
             has no u_pb variable at all (opp_v5_2_split replaced it with the fixed
-            parameter t_exec_pb, see that file's header) -- var_values never
+            parameter T_exec_pb, see that file's header) -- var_values never
             contains a "u_pb$..." key, so u_pb.get(...) always returned 0
             there, silently turning the whole overlap check into a tautology
-            (duration always came out as 0, so "start" == "end" == v_pb, and
-            the sorted-by-v_pb comparison could never fail regardless of
+            (duration always came out as 0, so "start" == "end" == c_pb, and
+            the sorted-by-c_pb comparison could never fail regardless of
             whether batches actually overlapped). Found 2026-09-09 auditing
             opp_v5_2_split -- this let the migrated test_case_13/11 report
             "ok" without ever checking the very thing they're named for.
@@ -99,23 +105,23 @@ def make_split_compat_case(v4_module, v4_case):
             fixed_time(b) + route_time(b) / V_p[picker]. V_p is fixed to 1.0
             for every picker in this migrated baseline (see
             solve_split_from_v4_data), so this reduces to fixed_time(b) +
-            route_time(b) -- the same t_exec_b formula opp_v4 itself uses,
+            route_time(b) -- the same d_b formula opp_v4 itself uses,
             just computed independently instead of trusting a variable that
             no longer exists.
             """
             route_times = _last_call_context.get("route_times", {})
             params = _last_call_context.get("params") or {}
-            B_setup = params.get("B_setup", 0.0)
-            B_picking = params.get("B_picking", 0.0)
+            T_setup = params.get("T_setup", 0.0)
+            T_pick = params.get("T_pick", 0.0)
             C_n = params.get("C_n", {}) or {}
-            Bn = params.get("Bn", {}) or {}
+            B_nb = params.get("B_nb", {}) or {}
 
             def duration(batch):
-                orders_in_batch = [n for (n, b), assigned in Bn.items() if b == batch and assigned]
-                fixed_time = B_setup + B_picking * sum(C_n.get(n, 0.0) for n in orders_in_batch)
+                orders_in_batch = [n for (n, b), assigned in B_nb.items() if b == batch and assigned]
+                fixed_time = T_setup + T_pick * sum(C_n.get(n, 0.0) for n in orders_in_batch)
                 return fixed_time + route_times.get(batch, 0.0)
 
-            x_pb, v_pb = {}, {}
+            x_pb, c_pb = {}, {}
             for key, val in var_values.items():
                 k = key.lower()
                 p_match = [p for p in P if p in key]
@@ -124,12 +130,12 @@ def make_split_compat_case(v4_module, v4_case):
                     p, b = p_match[0], b_match[0]
                     if k.startswith("x_pb"):
                         x_pb[(p, b)] = val
-                    elif k.startswith("v_pb"):
-                        v_pb[(p, b)] = val
+                    elif k.startswith("c_pb"):
+                        c_pb[(p, b)] = val
 
             for p in P:
                 tasks = sorted(
-                    (v_pb.get((p, b), 0) - duration(b), v_pb.get((p, b), 0), b)
+                    (c_pb.get((p, b), 0) - duration(b), c_pb.get((p, b), 0), b)
                     for b in B if x_pb.get((p, b), 0) > 0.5
                 )
                 for i in range(len(tasks) - 1):

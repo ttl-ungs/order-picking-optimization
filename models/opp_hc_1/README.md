@@ -8,7 +8,7 @@ This directory contains a **Hill Climbing** heuristic solver that solves the **e
 
 **Same Input:**
 - Receives all parameters from `SolveModelDTO`
-- Fixed batch assignments `Bn` (parameter)
+- Fixed batch assignments `B_nb` (parameter)
 
 **Same Constraints:**
 - (6) Start from depot

@@ -1,4 +1,4 @@
-test,status,total_time,model_time,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,V,A_ants,Max_it,Alpha,Beta
+test,status,total_time,model_time,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,V,A_ants,Max_it,Alpha,Beta
 test_opp_aco_model_01.TestOPPModel.test_basic_two_orders_capacity_limit,ok,0.038497209548950195,0.03250312805175781,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,4,15,60,1.0,2.5
 test_opp_aco_model_02.TestOPPModel.test_two_orders_two_aisles,ok,0.07121396064758301,0.06445693969726562,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,8,15,60,1.0,2.5
 test_opp_aco_model_02.TestOPPModel.test_two_orders_two_aisles_one_picking_point_per_order,ok,0.0628662109375,0.05775785446166992,1.0,10.0,1.0,5.0,5.0,0.5,1.0,1.0,1000.0,2,2,8,15,60,1.0,2.5

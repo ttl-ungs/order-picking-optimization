@@ -8,19 +8,19 @@ counterpart of `models.opp_hc_4` (itself the Hill Climbing counterpart of
 ## What's different vs. opp_aco_2
 
 Same extension as `opp_hc_4` over `opp_hc_2` -- a batch's execution time
-is no longer a single `t_exec_b` shared by every picker:
+is no longer a single `d_b` shared by every picker:
 
 ```
-t_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]
-fixed_time(b)   = B_setup + B_picking * sum(C_n over b's orders)   # speed-independent
-route_time(b)   = B_time * travel_distance + service_time          # scaled by speed
+T_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]
+fixed_time(b)   = T_setup + T_pick * sum(C_n over b's orders)   # speed-independent
+route_time(b)   = T_travel * travel_distance + service_time          # scaled by speed
 ```
 
 - **Picker speed (`V_p`)**: a `{picker: speed}` dict. A picker missing from
   it defaults to speed `1.0` (no-op). Only `_select_picker`'s roulette is
   affected -- the (batch, picker) pheromone table itself is unchanged.
-- **Cold chain (`T_frio_max`)**: a `(picker, batch)` pair is only eligible
-  if `t_exec_pb[p, b] <= T_frio_max`. Since each ant builds a batch's
+- **Cold chain (`T_cold`)**: a `(picker, batch)` pair is only eligible
+  if `T_exec_pb[p, b] <= T_cold`. Since each ant builds a batch's
   route BEFORE picking its picker, `_select_picker`'s candidate pool is
   filtered to that ant's OWN just-built route's eligible pickers (exact,
   not an approximation). A globally infeasible batch (no eligible picker
@@ -30,7 +30,7 @@ route_time(b)   = B_time * travel_distance + service_time          # scaled by s
   route-time ESTIMATE (built from the same all-pairs shortest-path table
   `opp_aco_2` already precomputes) since ACO has no single deterministic
   route per batch the way `opp_hc_4`'s construction does.
-- Default `T_frio_max = +inf` and unset `V_p` make `opp_aco_4` behave
+- Default `T_cold = +inf` and unset `V_p` make `opp_aco_4` behave
   exactly like `opp_aco_2` (see `test_case_equivalence.py`).
 
 **Deliberately no congestion** (unlike `opp_aco_3`): congestion and
@@ -50,21 +50,18 @@ tests/opp_aco_4/
 │   ├── test_case_cold_chain_infeasible.py  # dedicated: unreachable deadline -> infeasible
 │   ├── test_case_cold_chain_eligibility.py # dedicated: forced onto the eligible picker
 │   ├── test_case_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
-│   └── test_case_NN.py                     # ported 1:1 from opp_aco_2 (V_p unset, T_frio_max=+inf)
+│   └── test_case_NN.py                     # ported 1:1 from opp_aco_2 (V_p unset, T_cold=+inf)
 └── stress/
-    ├── test_case_{01..20}.py       # ported 1:1 from opp_aco_2 (full parity)
-    ├── test_case_picker_speed.py   # dedicated: heterogeneous speeds at scale
-    └── test_case_cold_chain.py      # dedicated: binding T_frio_max at scale
+    ├── v5_stress_test_case.py      # base: runs a v5 stress scenario through this model
+    └── test_case_{01..19}.py       # v5's 19 stress scenarios, same numbering and method names as opp_v5_2_split
 ```
 
-The ported files (both normal and stress) are literal copies of their
-`opp_aco_2` counterpart -- same scenario builder, same numeric parameters
--- with `V_p` unset and `T_frio_max` left at its default (`+inf`), giving
-`analysis/`'s `quality_gap_table`/cross-model comparisons the same-named,
-same-shaped instances it needs to join `opp_aco_4` against
-`opp_aco_2`/`opp_aco_3`/`opp_v4` (same pattern `opp_v5_2_split` and `opp_hc_4`
-use). `opp_aco_2` only has 20 stress instances (vs. `opp_hc_2`'s 43), so
-all 20 were ported for full parity (`opp_aco_3` also has all 20).
+The ported functional files are literal copies of their `opp_aco_2`
+counterpart -- same scenario builder, same numeric parameters -- with `V_p`
+unset and `T_cold` left at its default (`+inf`). The stress suite runs
+`opp_v5_2_split`'s 19 stress scenarios instead, file-for-file and with the
+same method names, so `analysis/` joins them against v5 by instance name
+(see `docs/specs/comparabilidad_v5_heuristicas.md`).
 
 `opp_aco_4` is registered in `analysis/config.py`'s `MODEL_DIRS` (and
 deliberately left OUT of `CONGESTION_AWARE_MODELS`).

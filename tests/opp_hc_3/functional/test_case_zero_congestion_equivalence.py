@@ -56,10 +56,10 @@ class TestOPPHc3ZeroCongestionEquivalence(OPPTestCaseHC3):
         model_dto.start_time = self.start_time
 
         params = SolveHC3ModelDTO()
-        params.W_full = 1.0
-        params.W_ea_ta = 1.0
-        params.W_ea = 0.1
-        params.W_ta = 0.5
+        params.W_c = 1.0
+        params.W_pen = 1.0
+        params.W_e = 0.1
+        params.W_t = 0.5
 
         params.C_n = {"O1": 3, "O2": 3, "O3": 3, "O4": 3}
         params.C_v = 10.0
@@ -71,15 +71,15 @@ class TestOPPHc3ZeroCongestionEquivalence(OPPTestCaseHC3):
             ("O4", "L1"): 0, ("O4", "L2"): 1, ("O4", "L3"): 0,
         }
 
-        params.B_time = 1.0
-        params.B_setup = 2.0
-        params.B_picking = 0.5
+        params.T_travel = 1.0
+        params.T_setup = 2.0
+        params.T_pick = 0.5
         params.S = {"L1": 1.0, "L2": 6.0, "L3": 1.0}
 
-        params.Dd = {"O1": 60.0, "O2": 60.0, "O3": 60.0, "O4": 60.0}
+        params.T_due_n = {"O1": 60.0, "O2": 60.0, "O3": 60.0, "O4": 60.0}
         params.M = 1000.0
 
-        params.Bn = {
+        params.B_nb = {
             ("O1", "B1"): 1, ("O2", "B1"): 1,
             ("O3", "B2"): 1, ("O4", "B2"): 1,
         }

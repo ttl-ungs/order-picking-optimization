@@ -773,7 +773,7 @@ def stitch_route(
     never finished: measured 2026-09-27 on realistic_crew_scenario(13),
     batch B6 succeeded in 0/100 constructions (B5 in 15/100), which made
     opp_hc_4 report "infeasible" and left opp_aco_4 with only the long
-    best-first fallback route -- too long for T_frio_max = 280 in
+    best-first fallback route -- too long for T_cold = 280 in
     realistic_crew_cold_chain, so no ant ever came out compliant.
     Candidates already tried at a step stay removed after backtracking
     to it, so the search never repeats a branch.

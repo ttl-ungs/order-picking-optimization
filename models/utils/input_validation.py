@@ -1,7 +1,7 @@
 """
 Pre-solve input validation for opp_v4.
 
-opp_model_v4.zpl takes the batch assignment (Bn) and batch composition as
+opp_model_v4.zpl takes the batch assignment (B_nb) and batch composition as
 fixed *parameters*, not decision variables -- unlike opp_v2/opp_v3 (where
 "order n belongs to exactly one batch" and "the batch fits the vehicle" were
 constraints on decision variables and infeasible input was rejected by the
@@ -13,17 +13,17 @@ claimed by every model's README actually holds for opp_v4 too.
 """
 
 
-def overloaded_batches(C_n: dict, Bn: dict, C_v: float, tolerance: float = 1e-9) -> set:
+def overloaded_batches(C_n: dict, B_nb: dict, C_v: float, tolerance: float = 1e-9) -> set:
     """
     Returns the set of batch ids whose total required capacity (sum of
-    C_n[n] over every order n assigned to that batch via Bn[(n, b)] == 1)
+    C_n[n] over every order n assigned to that batch via B_nb[(n, b)] == 1)
     exceeds the vehicle capacity C_v. Empty set means every batch fits.
     """
-    if not C_n or not Bn or C_v is None:
+    if not C_n or not B_nb or C_v is None:
         return set()
 
     load_by_batch = {}
-    for (n, b), assigned in Bn.items():
+    for (n, b), assigned in B_nb.items():
         if not assigned:
             continue
         if n not in C_n:
@@ -31,11 +31,11 @@ def overloaded_batches(C_n: dict, Bn: dict, C_v: float, tolerance: float = 1e-9)
             # C_n.get(n, 0.0), so an order missing from C_n contributed
             # ZERO load -- exactly backwards for a validator whose whole
             # job is to catch batches that are too heavy. Missing capacity
-            # data for an order that IS assigned via Bn is itself a data
+            # data for an order that IS assigned via B_nb is itself a data
             # problem the caller needs to know about, not something this
             # check should paper over.
             raise ValueError(
-                f"overloaded_batches: order {n!r} is assigned to batch {b!r} via Bn "
+                f"overloaded_batches: order {n!r} is assigned to batch {b!r} via B_nb "
                 f"but has no entry in C_n -- can't validate vehicle capacity without "
                 f"a real capacity value for it."
             )
@@ -44,10 +44,10 @@ def overloaded_batches(C_n: dict, Bn: dict, C_v: float, tolerance: float = 1e-9)
     return {b for b, load in load_by_batch.items() if load > C_v + tolerance}
 
 
-def orders_without_exactly_one_batch(Bn: dict, N, tolerance: float = 1e-9) -> set:
+def orders_without_exactly_one_batch(B_nb: dict, N, tolerance: float = 1e-9) -> set:
     """
     Returns the set of orders n in N whose assignment across batches
-    (sum_b Bn[(n, b)]) is not exactly 1 -- i.e. left unassigned, or assigned
+    (sum_b B_nb[(n, b)]) is not exactly 1 -- i.e. left unassigned, or assigned
     to two or more batches at once. Mirrors the "sum_b y[n,b] == 1"
     constraint opp_v2/opp_v3/opp_hc_2/opp_aco_2 enforce on the batch
     assignment decision variable.
@@ -55,16 +55,16 @@ def orders_without_exactly_one_batch(Bn: dict, N, tolerance: float = 1e-9) -> se
     if not N:
         return set()
 
-    # Fix (2026-08-28, code audit): used to be `if not Bn or not N: return
-    # set()` -- an EMPTY Bn with a non-empty N means every order in N is
+    # Fix (2026-08-28, code audit): used to be `if not B_nb or not N: return
+    # set()` -- an EMPTY B_nb with a non-empty N means every order in N is
     # unassigned, exactly the condition this function exists to catch, but
     # the old short-circuit silently reported "nothing wrong" instead.
-    # Every order starts at count 0 regardless of whether Bn has any
+    # Every order starts at count 0 regardless of whether B_nb has any
     # entries at all; only bump the count for entries that are actually
     # there.
     assignment_count = {n: 0.0 for n in N}
-    if Bn:
-        for (n, _b), assigned in Bn.items():
+    if B_nb:
+        for (n, _b), assigned in B_nb.items():
             if n in assignment_count:
                 assignment_count[n] += assigned
 

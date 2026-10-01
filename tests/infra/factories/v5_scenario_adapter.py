@@ -28,25 +28,25 @@ def build_model_dto_and_params(scenario, dto_cls, seed=1):
         if vertex not in (scenario["depot"], scenario["final"]):
             location_graph.add_vertex(vertex, "picking")
     for (i, j) in scenario["E"]:
-        location_graph.add_edge(i, j, scenario["d_ij"][(i, j)])
+        location_graph.add_edge(i, j, scenario["D_ij"][(i, j)])
 
     params = dto_cls()
-    params.W_full = scenario["W_full"]
-    params.W_ea_ta = scenario["W_ea_ta"]
-    params.W_ea = scenario["W_ea"]
-    params.W_ta = scenario["W_ta"]
+    params.W_c = scenario["W_c"]
+    params.W_pen = scenario["W_pen"]
+    params.W_e = scenario["W_e"]
+    params.W_t = scenario["W_t"]
     params.C_n = scenario["C_n"]
     params.C_v = scenario["C_v"]
     params.A = scenario["A_ni"]
-    params.B_time = scenario["B_time"]
-    params.B_setup = scenario["B_setup"]
-    params.B_picking = scenario["B_picking"]
+    params.T_travel = scenario["T_travel"]
+    params.T_setup = scenario["T_setup"]
+    params.T_pick = scenario["T_pick"]
     params.S = scenario["S_i"]
-    params.Dd = scenario["Dd"]
+    params.T_due_n = scenario["T_due_n"]
     params.M = scenario["M"]
-    params.Bn = scenario["Bn"]
+    params.B_nb = scenario["B_nb"]
     params.V_p = scenario["V_p"]
-    params.T_frio_max = scenario["T_frio_max"]
+    params.T_cold = scenario["T_cold"]
     params.Seed = seed
 
     model_dto = ModelDTO()

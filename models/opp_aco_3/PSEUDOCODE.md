@@ -44,7 +44,7 @@ ALGORITHM OPPAntColonyOptimization.solve(params)                       (solve)
 SUBROUTINE BUILD_ANT_SOLUTION(tau1, tau2, tau_picker)                   (_build_ant_solution)
     S <- empty solution
 
-    # Pass 1: assign each batch with orders to a picker (X_pb), no
+    # Pass 1: assign each batch with orders to a picker (x_pb), no
     # congestion involved yet.
     for batch in B with orders (in fixed batch order):
         picker <- ROULETTE_PICK_PICKER(batch, tau_picker, picker_load)   (_select_picker)
@@ -77,8 +77,8 @@ SUBROUTINE BUILD_ANT_SOLUTION(tau1, tau2, tau_picker)                   (_build_
             S.set_batch_route(batch, route)
             S.set_batch_congestion_wait(batch, wait)
 
-            exec_time <- BASE_EXEC_TIME(route, batch.orders) + wait   # B_setup + B_picking*cap
-            picker_time[picker] <- picker_time[picker] + exec_time    # + B_time*dist + service + wait
+            exec_time <- BASE_EXEC_TIME(route, batch.orders) + wait   # T_setup + T_pick*cap
+            picker_time[picker] <- picker_time[picker] + exec_time    # + T_travel*dist + service + wait
 
     return S
 

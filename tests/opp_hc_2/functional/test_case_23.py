@@ -42,19 +42,19 @@ class TestSingleOrderExceedsVehicle(OPPTestCase):
         due_date = {"O1": 100.0}
 
         params = SolveHCModelDTO()
-        params.W_full = 1.0
-        params.W_ea_ta = 1.0
-        params.W_ea = 1.0
-        params.W_ta = 1.0
+        params.W_c = 1.0
+        params.W_pen = 1.0
+        params.W_e = 1.0
+        params.W_t = 1.0
         params.C_n = cap_n
         params.C_v = cap_vehicle
         params.A = a
-        params.B_time = 0.5
-        params.B_setup = 1.0
-        params.B_picking = 1.0
-        params.Dd = due_date
+        params.T_travel = 0.5
+        params.T_setup = 1.0
+        params.T_pick = 1.0
+        params.T_due_n = due_date
         params.M = 1000.0
-        params.Bn = y
+        params.B_nb = y
 
         model_dto = ModelDTO()
         model_dto.N = N

@@ -9,8 +9,8 @@ class TestOPPSplitStress11(OPPSplitStressTestCase):
         Same batches and orders as stress 05 (13x13), four pickers in two bands.
         Every other stress scenario leaves the limit off. With these route
         times a batch takes 249-259 for a fast picker and 308-324 for a slow
-        one, so T_frio_max = 280 excludes the slow band from every batch and
+        one, so T_cold = 280 excludes the slow band from every batch and
         the schedule must fit on the two fast pickers. The threshold depends on
         those route times: if the generator changes, re-derive it.
         """
-        self.assert_stress_pipeline(realistic_crew_scenario(13, pickers=4, t_frio_max=280))
+        self.assert_stress_pipeline(realistic_crew_scenario(13, pickers=4, t_cold=280))

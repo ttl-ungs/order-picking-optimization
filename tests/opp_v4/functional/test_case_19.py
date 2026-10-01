@@ -71,12 +71,12 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
         S_i = {v: 0.0 for v in V}
 
         E = set()
-        d_ij = {}
+        D_ij = {}
         for i in location_graph.get_vertices():
             for j in location_graph.get_vertices():
                 if location_graph.has_edge(i, j):
                     E.add((i, j))
-                    d_ij[(i, j)] = location_graph.get_distance(i, j)
+                    D_ij[(i, j)] = location_graph.get_distance(i, j)
 
         scenario_data = {
             "N": N,
@@ -86,21 +86,21 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
             "E": E,
             "depot": location_graph.get_depot(),
             "final": location_graph.get_final(),
-            "W_full": w1,
-            "W_ea_ta": w2,
-            "W_ea": gamma,
-            "W_ta": delta,
-            "B_time": 0.5,
-            "B_setup": 1.0,
-            "B_picking": 1.0,
+            "W_c": w1,
+            "W_pen": w2,
+            "W_e": gamma,
+            "W_t": delta,
+            "T_travel": 0.5,
+            "T_setup": 1.0,
+            "T_pick": 1.0,
             "C_v": cap_vehicle,
             "M": 10000.0,
             "C_n": cap_n,
-            "Dd": due_date_by_order,
-            "d_ij": d_ij,
+            "T_due_n": due_date_by_order,
+            "D_ij": D_ij,
             "S_i": S_i,
             "A_ni": a,
-            "Bn": y,
+            "B_nb": y,
         }
 
         build_dat_files(DAT_DIR, scenario_data)
@@ -114,20 +114,20 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
                     "B": len(B),
                     "V": len(set(location_graph.get_vertices())),
                     "P": len(P),
-                    "W_full": w1,
-                    "W_ea_ta": w2,
-                    "W_ea": gamma,
-                    "W_ta": delta,
-                    "B_time": 0.5,
-                    "B_setup": 1.0,
-                    "B_picking": 1.0,
+                    "W_c": w1,
+                    "W_pen": w2,
+                    "W_e": gamma,
+                    "W_t": delta,
+                    "T_travel": 0.5,
+                    "T_setup": 1.0,
+                    "T_pick": 1.0,
                     "C_v": cap_vehicle,
                     "C_n": cap_n,
-                    "Dd": due_date_by_order,
-                    "d_ij": d_ij,
+                    "T_due_n": due_date_by_order,
+                    "D_ij": D_ij,
                     "S_i": S_i,
                     "A_ni": a,
-                    "Bn": y,
+                    "B_nb": y,
                 },
             )
         except Exception as e:
@@ -157,8 +157,8 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
                 if not output_graph.has_edge(i, j):
                     output_graph.add_edge(i, j, location_graph.get_distance(i, j))
 
-        # The objective weighs earliness/tardiness (W_ea_ta=10) far more heavily
-        # than raw distance (W_full=1), so the model is free to prefer a longer
+        # The objective weighs earliness/tardiness (W_pen=10) far more heavily
+        # than raw distance (W_c=1), so the model is free to prefer a longer
         # route if it reduces earliness penalties. We only assert that the
         # result is a single valid depot->final path covering every required
         # location, not one specific set of edges.

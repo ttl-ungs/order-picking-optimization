@@ -18,9 +18,9 @@ docs/specs/comparabilidad_v5_heuristicas.md for the rules.
   when they share a test name: most run with one picker where the v5
   test has two (2026-09-28 audit).
 - stress: the 19 scenarios of tests/opp_v5_2_split/stress (ported to
-  aco_4/hc_4 as test_case_v5_*, same test method names). v5_2_split's
+  aco_4/hc_4 as test_case_NN.py with v5's numbering and method names). v5_2_split's
   reference outcome comes from its stress CSVs as merged by analysis.load
-  (04-19 with W_full = 27, 01-03 unchanged migrated scenarios).
+  (04-19 with W_c = 27, 01-03 unchanged migrated scenarios).
 
 Run:
 
@@ -95,7 +95,7 @@ def stress_rows():
             "v5_status": "optimal" if ok else row["status"],
             "v5_obj": pd.to_numeric(row["obj_val"], errors="coerce") if ok else None,
             # Same scenario builder call on both sides (verified 2026-09-28).
-            # No voluntary waiting to rule out: 04-19 have W_full = 27 >
+            # No voluntary waiting to rule out: 04-19 have W_c = 27 >
             # orders per batch (waiting never pays), 01-03 have every order
             # late (no earliness to cut).
             "comparable_status": ok,

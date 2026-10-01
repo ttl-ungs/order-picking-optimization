@@ -20,7 +20,7 @@ from tests.shared_scenarios.functional.scenario_01 import basic_two_orders_capac
 class TestOPPHillClimbing4Model1Equivalence(OPPTestCase):
     """
     Test HC4-1: Basic. Same scenario as test_case_01.
-    Purpose: with V_p unset (all speeds default to 1.0) and T_frio_max left
+    Purpose: with V_p unset (all speeds default to 1.0) and T_cold left
     at its default (+inf), opp_hc_4 must behave exactly like opp_hc_2 - the
     picker-speed/cold-chain extensions must be a no-op unless configured.
     """
@@ -47,20 +47,20 @@ class TestOPPHillClimbing4Model1Equivalence(OPPTestCase):
         due_date = {"O1": 15.0, "O2": 15.0}
 
         params = SolveHC4ModelDTO()
-        params.W_full = w1
-        params.W_ea_ta = w2
-        params.W_ea = gamma
-        params.W_ta = delta
+        params.W_c = w1
+        params.W_pen = w2
+        params.W_e = gamma
+        params.W_t = delta
         params.C_n = cap_n
         params.C_v = cap_vehicle
         params.A = a
-        params.B_time = beta_time
-        params.B_setup = beta_setup
-        params.B_picking = beta_picking
-        params.Dd = due_date
+        params.T_travel = beta_time
+        params.T_setup = beta_setup
+        params.T_pick = beta_picking
+        params.T_due_n = due_date
         params.M = M
-        params.Bn = y
-        # V_p and T_frio_max left at their defaults (speed 1.0, no cold chain).
+        params.B_nb = y
+        # V_p and T_cold left at their defaults (speed 1.0, no cold chain).
 
         model_dto = ModelDTO()
         model_dto.N = N

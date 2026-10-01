@@ -45,8 +45,8 @@ class OPPHillClimbing(Model):
         """
         start_time = self.T_0 if self.T_0 is not None else time.time()
 
-        # Guard: Bn=None means no batch assignments were provided
-        if params.Bn is None:
+        # Guard: B_nb=None means no batch assignments were provided
+        if params.B_nb is None:
             self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
 
@@ -56,7 +56,7 @@ class OPPHillClimbing(Model):
             self._register_infeasible(params, time.time() - start_time)
             return "infeasible", None
 
-        # Extract batch assignments from Bn parameter
+        # Extract batch assignments from B_nb parameter
         batch_assignments = params.extract_batch_assignments()
 
         # Create validator
@@ -76,18 +76,18 @@ class OPPHillClimbing(Model):
             B=self.B,
             location_graph=self.location_graph,
             batch_assignments=batch_assignments,
-            W_full=params.W_full,
-            W_ea_ta=params.W_ea_ta,
-            W_ea=params.W_ea,
-            W_ta=params.W_ta,
+            W_c=params.W_c,
+            W_pen=params.W_pen,
+            W_e=params.W_e,
+            W_t=params.W_t,
             C_n=params.C_n,
             C_v=params.C_v,
             A=params.A,
-            B_time=params.B_time,
-            B_setup=params.B_setup,
-            B_picking=params.B_picking,
+            T_travel=params.T_travel,
+            T_setup=params.T_setup,
+            T_pick=params.T_pick,
             S=params.S,
-            Dd=params.Dd,
+            T_due_n=params.T_due_n,
             M=params.M,
         )
 
@@ -151,14 +151,14 @@ class OPPHillClimbing(Model):
             elapsed=elapsed,
             params={
                 "obj_val": current_cost,
-                "W_full": params.W_full,
-                "W_ea_ta": params.W_ea_ta,
-                "W_ea": params.W_ea,
-                "W_ta": params.W_ta,
+                "W_c": params.W_c,
+                "W_pen": params.W_pen,
+                "W_e": params.W_e,
+                "W_t": params.W_t,
                 "C_v": params.C_v,
-                "B_time": params.B_time,
-                "B_setup": params.B_setup,
-                "B_picking": params.B_picking,
+                "T_travel": params.T_travel,
+                "T_setup": params.T_setup,
+                "T_pick": params.T_pick,
                 "M": params.M,
                 "N": len(self.N),
                 "B": len(self.B),
@@ -176,14 +176,14 @@ class OPPHillClimbing(Model):
             output=None,
             elapsed=elapsed,
             params={
-                "W_full": getattr(params, "W_full", None),
-                "W_ea_ta": getattr(params, "W_ea_ta", None),
-                "W_ea": getattr(params, "W_ea", None),
-                "W_ta": getattr(params, "W_ta", None),
+                "W_c": getattr(params, "W_c", None),
+                "W_pen": getattr(params, "W_pen", None),
+                "W_e": getattr(params, "W_e", None),
+                "W_t": getattr(params, "W_t", None),
                 "C_v": getattr(params, "C_v", None),
-                "B_time": getattr(params, "B_time", None),
-                "B_setup": getattr(params, "B_setup", None),
-                "B_picking": getattr(params, "B_picking", None),
+                "T_travel": getattr(params, "T_travel", None),
+                "T_setup": getattr(params, "T_setup", None),
+                "T_pick": getattr(params, "T_pick", None),
                 "M": getattr(params, "M", None),
                 "N": len(self.N),
                 "B": len(self.B),
@@ -490,10 +490,10 @@ class OPPHillClimbing(Model):
                 continue
 
             # Calculate execution time for this batch
-            t_exec_b = self._calculate_batch_execution_time(batch, route, params)
-            current_time += t_exec_b
+            d_b = self._calculate_batch_execution_time(batch, route, params)
+            current_time += d_b
 
-            solution_info["batch_times"][batch] = t_exec_b
+            solution_info["batch_times"][batch] = d_b
             solution_info["batch_completions"][batch] = current_time
             solution_info["routes"][batch] = route
 
@@ -509,7 +509,7 @@ class OPPHillClimbing(Model):
 
             if order_batch is not None and order_batch in solution_info["batch_completions"]:
                 completion_time = solution_info["batch_completions"][order_batch]
-                due_date = params.Dd.get(order, float('inf'))
+                due_date = params.T_due_n.get(order, float('inf'))
 
                 if completion_time > due_date:
                     solution_info["tardiness"][order] = completion_time - due_date
@@ -539,7 +539,7 @@ class OPPHillClimbing(Model):
             travel_time += self.location_graph.get_distance(current, final)
 
         # Setup time
-        setup_time = params.B_setup
+        setup_time = params.T_setup
 
         # Picking time (sum of service times for orders in this batch)
         picking_time = 0
@@ -548,7 +548,7 @@ class OPPHillClimbing(Model):
             picking_time += params.S.get(order, 0) if isinstance(params.S, dict) else 0
 
         # Capacity weight (from objective function)
-        capacity_weight = params.B_picking
+        capacity_weight = params.T_pick
 
-        total_time = params.B_time * travel_time + setup_time + capacity_weight * picking_time
+        total_time = params.T_travel * travel_time + setup_time + capacity_weight * picking_time
         return total_time

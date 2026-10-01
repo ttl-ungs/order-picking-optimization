@@ -1,4 +1,4 @@
-test,status,total_time,model_time,obj_val,peak_rss_mb,obj_val_congestion,congestion_collisions,sla_on_time_pct,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,Max_it,Max_imp,Min_dwell,iterations_run,best_found_at_iteration
+test,status,total_time,model_time,obj_val,peak_rss_mb,obj_val_congestion,congestion_collisions,sla_on_time_pct,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,P,V,Max_it,Max_imp,Min_dwell,iterations_run,best_found_at_iteration
 test_opp_hc_3_model_01.TestOPPModel.test_100_locations,ok,0.0920708179473877,0.07185506820678711,5947.0,20.953125,6.0,3,0.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,100,500,30,0.0,31,1
 test_opp_hc_3_model_02.TestOPPModel.test_400_locations,ok,0.26506495475769043,0.20312786102294922,9555.0,22.5625,6.0,2,0.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,400,500,30,0.0,30,0
 test_opp_hc_3_model_03.TestOPPModel.test_625_locations,ok,0.5220010280609131,0.39025425910949707,11535.0,23.03125,6.0,2,0.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,625,500,30,0.0,30,0

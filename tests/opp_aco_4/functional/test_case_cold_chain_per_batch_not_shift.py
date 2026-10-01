@@ -19,16 +19,16 @@ class TestOPPAntColonyOptimization4ColdChainPerBatchNotShift(OPPTestCaseACO4):
     """
     Ported from opp_v5_1_mono's test_case_35
     (TestOPPMonoColdChainCoverage.test_cold_limit_applies_to_each_batch_not_the_whole_shift):
-    T_frio_max bounds EACH batch's own execution time (t_exec_pb), not a
+    T_cold bounds EACH batch's own execution time (T_exec_pb), not a
     picker's cumulative time across batches. A single picker running two
     back-to-back batches, each individually within the limit, must stay
     eligible even though the SECOND batch's absolute completion time ends
-    up past T_frio_max.
+    up past T_cold.
 
-    Same geometry as test_case_cold_chain_boundary.py: t_exec_pb(P1) =
-    2.0 + 12.0/1.0 = 14.0 exactly for either batch. T_frio_max = 14.0 (the
+    Same geometry as test_case_cold_chain_boundary.py: T_exec_pb(P1) =
+    2.0 + 12.0/1.0 = 14.0 exactly for either batch. T_cold = 14.0 (the
     boundary): both batches individually comply, so P1 runs both, with the
-    second completing at 28.0 -- past T_frio_max, which is correct.
+    second completing at 28.0 -- past T_cold, which is correct.
     """
 
     def test_cold_limit_applies_to_each_batch_not_the_whole_shift(self):
@@ -47,21 +47,21 @@ class TestOPPAntColonyOptimization4ColdChainPerBatchNotShift(OPPTestCaseACO4):
         cap_n = {"O1": 1.0, "O2": 1.0}
 
         params = SolveAco4ModelDTO()
-        params.W_full = 1.0
-        params.W_ea_ta = 0.0
-        params.W_ea = 0.0
-        params.W_ta = 0.0
+        params.W_c = 1.0
+        params.W_pen = 0.0
+        params.W_e = 0.0
+        params.W_t = 0.0
         params.C_n = cap_n
         params.C_v = 10.0
         params.A = a
-        params.B_time = 1.0
-        params.B_setup = 1.0
-        params.B_picking = 1.0
-        params.Dd = {"O1": 1000.0, "O2": 1000.0}
+        params.T_travel = 1.0
+        params.T_setup = 1.0
+        params.T_pick = 1.0
+        params.T_due_n = {"O1": 1000.0, "O2": 1000.0}
         params.M = 1000.0
-        params.Bn = y
+        params.B_nb = y
         params.V_p = {"P1": 1.0}
-        params.T_frio_max = 14.0
+        params.T_cold = 14.0
         params.Seed = 1
 
         model_dto = ModelDTO()
@@ -79,7 +79,7 @@ class TestOPPAntColonyOptimization4ColdChainPerBatchNotShift(OPPTestCaseACO4):
 
         self.assertIn(result, ("optimal", "feasible"))
         self.assert_every_batch_has_one_picker(solution_info, {"P1"})
-        self.assert_cold_chain_respected(solution_info, params.T_frio_max)
+        self.assert_cold_chain_respected(solution_info, params.T_cold)
         self.assertEqual(
             solution_info["picker_assignments"], {"B1": "P1", "B2": "P1"}
         )
@@ -91,8 +91,8 @@ class TestOPPAntColonyOptimization4ColdChainPerBatchNotShift(OPPTestCaseACO4):
         self.assertAlmostEqual(ends[0], 14.0, places=4)
         self.assertAlmostEqual(ends[1], 28.0, places=4)
         self.assertGreater(
-            ends[1], params.T_frio_max,
-            "The second batch's absolute completion may exceed T_frio_max: "
+            ends[1], params.T_cold,
+            "The second batch's absolute completion may exceed T_cold: "
             "the limit bounds each batch's own execution time, not the "
             "picker's cumulative shift.",
         )

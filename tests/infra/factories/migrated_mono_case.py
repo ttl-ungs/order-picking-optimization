@@ -13,7 +13,7 @@ def make_mono_compat_case(v4_module, v4_case):
     only the .zpl they solve changes. Every v4 test module binds the model
     path as the module-level name ZPL_PATH, so pointing that name at the
     monolithic model for the duration of a test is enough. opp_v5_1_mono keeps
-    u_pb, so OPPTestCaseV4.assert_no_time_overlap (duration = v_pb - u_pb)
+    u_pb, so OPPTestCaseV4.assert_no_time_overlap (duration = c_pb - u_pb)
     keeps working as is.
     """
 

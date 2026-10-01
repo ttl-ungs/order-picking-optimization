@@ -81,21 +81,21 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
         M = 1000.0
         # Adaptación de variables para el formato ZIMPL V4
         A_ni = a if "a" in locals() else {}
-        Bn = y if "y" in locals() else {}
+        B_nb = y if "y" in locals() else {}
         C_n = cap_n if "cap_n" in locals() else {}
-        Dd = due_date if "due_date" in locals() else {n: 0.0 for n in N}
+        T_due_n = due_date if "due_date" in locals() else {n: 0.0 for n in N}
 
         # Tiempo de servicio por defecto (si V2 no lo tenía explícito)
         S_i = {v: 0.0 for v in self.V}
 
-        # Generación de conjunto de Arcos válidos E y distancias d_ij
+        # Generación de conjunto de Arcos válidos E y distancias D_ij
         E = set()
-        d_ij = {}
+        D_ij = {}
         for i in self.opp_location_graph.get_vertices():
             for j in self.opp_location_graph.get_vertices():
                 if self.opp_location_graph.has_edge(i, j):
                     E.add((i, j))
-                    d_ij[(i, j)] = self.opp_location_graph.get_distance(i, j)
+                    D_ij[(i, j)] = self.opp_location_graph.get_distance(i, j)
 
         scenario_data = {
             "N": N,
@@ -105,21 +105,21 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
             "E": E,
             "depot": self.opp_location_graph.get_depot(),
             "final": self.opp_location_graph.get_final(),
-            "W_full": w1,
-            "W_ea_ta": w2,
-            "W_ea": gamma,
-            "W_ta": delta,
-            "B_time": 0.5,
-            "B_setup": 1.0,
-            "B_picking": 1.0,
+            "W_c": w1,
+            "W_pen": w2,
+            "W_e": gamma,
+            "W_t": delta,
+            "T_travel": 0.5,
+            "T_setup": 1.0,
+            "T_pick": 1.0,
             "C_v": cap_vehicle,
             "M": 10000.0,
             "C_n": C_n,
-            "Dd": Dd,
-            "d_ij": d_ij,
+            "T_due_n": T_due_n,
+            "D_ij": D_ij,
             "S_i": S_i,
             "A_ni": A_ni,
-            "Bn": Bn,
+            "B_nb": B_nb,
         }
 
         build_dat_files(DAT_DIR, scenario_data)
@@ -133,20 +133,20 @@ class TestOPPModelZIMPL(OPPTestCaseV4):
                     "B": len(self.B),
                     "V": len(set(self.opp_location_graph.get_vertices())),
                     "P": len(self.P),
-                    "W_full": w1,
-                    "W_ea_ta": w2,
-                    "W_ea": gamma,
-                    "W_ta": delta,
-                    "B_time": 0.5,
-                    "B_setup": 1.0,
-                    "B_picking": 1.0,
+                    "W_c": w1,
+                    "W_pen": w2,
+                    "W_e": gamma,
+                    "W_t": delta,
+                    "T_travel": 0.5,
+                    "T_setup": 1.0,
+                    "T_pick": 1.0,
                     "C_v": cap_vehicle,
                     "C_n": C_n,
-                    "Dd": Dd,
-                    "d_ij": d_ij,
+                    "T_due_n": T_due_n,
+                    "D_ij": D_ij,
                     "S_i": S_i,
                     "A_ni": A_ni,
-                    "Bn": Bn,
+                    "B_nb": B_nb,
                 },
             )
         except Exception as e:

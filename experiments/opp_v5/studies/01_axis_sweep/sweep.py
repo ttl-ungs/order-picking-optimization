@@ -58,7 +58,7 @@ def measure(batches, pickers, orders_per_batch, side, phase):
     }
     per_batch = [
         len({v for v in scenario["V"]
-             if any(scenario["A_ni"][(n, v)] * scenario["Bn"][(n, b)] for n in scenario["N"])})
+             if any(scenario["A_ni"][(n, v)] * scenario["B_nb"][(n, b)] for n in scenario["N"])})
         for b in sorted(scenario["B"])
     ]
     row["batch_locations_min"], row["batch_locations_max"] = min(per_batch), max(per_batch)
@@ -69,10 +69,10 @@ def measure(batches, pickers, orders_per_batch, side, phase):
 
     routes = {
         k.split("$")[-1]: v for k, v in values.items()
-        if k.lower().startswith("r_b_time$")
+        if k.lower().startswith("r_b$")
     }
     row["route_min"], row["route_max"] = round(min(routes.values()), 1), round(max(routes.values()), 1)
-    fixed = scenario["B_setup"] + scenario["B_picking"] * orders_per_batch * scenario["C_n"][
+    fixed = scenario["T_setup"] + scenario["T_pick"] * orders_per_batch * scenario["C_n"][
         next(iter(scenario["N"]))
     ]
     depth = -(-batches // pickers)
@@ -85,7 +85,7 @@ def measure(batches, pickers, orders_per_batch, side, phase):
 
     write_indexed_dat(os.path.join(DAT_DIR, "route_time_b.dat"), routes)
     write_indexed_dat(os.path.join(DAT_DIR, "velocities.dat"), scenario["V_p"])
-    write_scalar_dat(os.path.join(DAT_DIR, "frio.dat"), scenario["T_frio_max"])
+    write_scalar_dat(os.path.join(DAT_DIR, "cold.dat"), scenario["T_cold"])
 
     base = os.path.join(DAT_DIR, "sweep_stage2")
     subprocess.run(

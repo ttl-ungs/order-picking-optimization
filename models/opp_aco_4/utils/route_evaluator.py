@@ -5,7 +5,7 @@ congestion).
 Identical to opp_aco_2's RouteEvaluator, except a batch's execution time
 now depends on WHICH picker runs it: the travel+service portion is divided
 by that picker's speed (V_p), while setup/picking time stays fixed (same
-split as opp_model_v5_2_split_stage2_scheduling.zpl's t_exec_pb -- see models/opp_aco_4/
+split as opp_model_v5_2_split_stage2_scheduling.zpl's T_exec_pb -- see models/opp_aco_4/
 opp_aco_4.py header). Batches on the same picker still run sequentially;
 batches on different pickers still run in parallel.
 """
@@ -25,18 +25,18 @@ class RouteEvaluator:
         P: List[str],
         location_graph,
         batch_assignments: Dict[str, Set[str]],
-        W_full: float,
-        W_ea_ta: float,
-        W_ea: float,
-        W_ta: float,
+        W_c: float,
+        W_pen: float,
+        W_e: float,
+        W_t: float,
         C_n: Dict,
         C_v: float,
         A: Dict,
-        B_time: float,
-        B_setup: float,
-        B_picking: float,
+        T_travel: float,
+        T_setup: float,
+        T_pick: float,
         S: Dict,
-        Dd: Dict,
+        T_due_n: Dict,
         M: float,
         V_p: Dict[str, float],
     ):
@@ -45,18 +45,18 @@ class RouteEvaluator:
         self.P = P
         self.location_graph = location_graph
         self.batch_assignments = batch_assignments
-        self.W_full = W_full
-        self.W_ea_ta = W_ea_ta
-        self.W_ea = W_ea
-        self.W_ta = W_ta
+        self.W_c = W_c
+        self.W_pen = W_pen
+        self.W_e = W_e
+        self.W_t = W_t
         self.C_n = C_n
         self.C_v = C_v
         self.A = A
-        self.B_time = B_time
-        self.B_setup = B_setup
-        self.B_picking = B_picking
+        self.T_travel = T_travel
+        self.T_setup = T_setup
+        self.T_pick = T_pick
         self.S = S if isinstance(S, dict) else {}
-        self.Dd = Dd
+        self.T_due_n = T_due_n
         self.M = M
         self.V_p = V_p or {}
 
@@ -68,7 +68,7 @@ class RouteEvaluator:
     def evaluate(self, solution) -> float:
         """
         Evaluate objective function:
-        W_full * sum(v_b) + W_ea_ta * (W_ea * sum(ea_n) + W_ta * sum(ta_n))
+        W_c * sum(c_b) + W_pen * (W_e * sum(ea_n) + W_t * sum(ta_n))
         """
         batch_times = self.compute_batch_completions(solution)
 
@@ -86,7 +86,7 @@ class RouteEvaluator:
                 continue
 
             completion_time = batch_times[batch]
-            due_date = self.Dd.get(order, float("inf"))
+            due_date = self.T_due_n.get(order, float("inf"))
 
             if completion_time < due_date:
                 earliness_total += due_date - completion_time
@@ -94,15 +94,15 @@ class RouteEvaluator:
                 tardiness_total += completion_time - due_date
 
         recollection_time = sum(batch_times.values()) if batch_times else 0.0
-        penalty = self.W_ea * earliness_total + self.W_ta * tardiness_total
+        penalty = self.W_e * earliness_total + self.W_t * tardiness_total
 
-        objective = self.W_full * recollection_time + self.W_ea_ta * penalty
+        objective = self.W_c * recollection_time + self.W_pen * penalty
 
         return objective
 
     def compute_batch_completions(self, solution) -> Dict[str, float]:
         """
-        Compute v_b[b]: the completion time of each batch, given the picker
+        Compute c_b[b]: the completion time of each batch, given the picker
         it is assigned to (which now also determines its speed) and its
         position within that picker's sequence. Pickers process their
         assigned batches sequentially starting from time zero; different
@@ -125,12 +125,12 @@ class RouteEvaluator:
         self, batch: str, route: list, orders: Set[str], picker: str
     ) -> float:
         """
-        t_exec_pb = B_setup + B_picking * sum(C_n)          [fixed, no speed]
-                  + (B_time * travel_distance + service_time) / V_p[picker]
+        T_exec_pb = T_setup + T_pick * sum(C_n)          [fixed, no speed]
+                  + (T_travel * travel_distance + service_time) / V_p[picker]
         """
-        return exec_time.t_exec_pb(
+        return exec_time.T_exec_pb(
             self.location_graph, route, orders, picker,
-            self.C_n, self.B_setup, self.B_picking, self.B_time, self.S, self.V_p,
+            self.C_n, self.T_setup, self.T_pick, self.T_travel, self.S, self.V_p,
         )
 
     def _calculate_route_distance(self, route: list) -> float:

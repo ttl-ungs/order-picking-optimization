@@ -54,13 +54,13 @@ class TestOPPMonoSpeedCoverage(OPPTestCaseMono):
         _, _, status, values = self.run_pipeline(scenario)
 
         self.assertIn(status, ("optimal", "feasible"))
-        self.assertAlmostEqual(values["v_b$B1"], 30.0, places=5)
+        self.assertAlmostEqual(values["c_b$B1"], 30.0, places=5)
         self.assertAlmostEqual(values.get("ta_n$O1", 0.0), 10.0, places=5)
         self.assertAlmostEqual(values.get("ea_n$O1", 0.0), 0.0, places=5)
         self.assertAlmostEqual(self.objective_value(), 310.0, places=5)
 
     def test_non_positive_speed_is_rejected_before_solving(self):
-        """A speed of 0 would divide by zero in t_exec_pb and a negative one would
+        """A speed of 0 would divide by zero in T_exec_pb and a negative one would
         yield a negative duration; both must be refused, naming the picker."""
         for speed in (0.0, -1.0):
             with self.subTest(speed=speed):

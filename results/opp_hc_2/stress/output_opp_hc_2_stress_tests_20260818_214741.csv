@@ -1,4 +1,4 @@
-test,status,total_time,model_time,obj_val,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,Max_it,Max_imp
+test,status,total_time,model_time,obj_val,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,P,V,Max_it,Max_imp
 test_opp_hc_2_model_01.TestOPPModel.test_100_locations,ok,0.23682284355163574,0.21974515914916992,5903.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,100,500,30
 test_opp_hc_2_model_02.TestOPPModel.test_400_locations,ok,2.375112771987915,2.319340705871582,9423.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,400,500,30
 test_opp_hc_2_model_03.TestOPPModel.test_625_locations,ok,5.726579189300537,5.61951470375061,11403.0,9.0,1.0,1.0,1.0,20.0,0.5,1.0,1.0,1000.0,12,6,3,625,500,30

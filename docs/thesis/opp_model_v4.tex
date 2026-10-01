@@ -32,7 +32,7 @@ Esta versión extiende modelos anteriores con:
 \startformula
 \startalign
     \NC \mathcal{N} \NC = \text{Órdenes de clientes} \NR
-    \NC \mathcal{V} \NC = \text{Locaciones del almacén, incluido } v_1 \text{ y } v_f \NR
+    \NC \mathcal{V} \NC = \text{Locaciones del almacén, incluido } v_{start} \text{ y } v_{end} \NR
     \NC \mathcal{P} \NC = \text{Pickers} \NR
     \NC \mathcal{B} \NC = \text{Lotes factibles de pedidos} \NR
     \NC \mathcal{E} \NC = \text{Arcos válidos del grafo de locaciones} \NR
@@ -43,29 +43,29 @@ Esta versión extiende modelos anteriores con:
 \startsection[title={Parámetros}]
 \startformula
 \startalign
-    \NC v_1 \NC = \text{Nodo depósito inicial} \NR
-    \NC v_f \NC = \text{Nodo final} \NR
-    \NC W_{full} \NC = \text{Peso del tiempo de completitud de los lotes} \NR
-    \NC W_{ea\_ta} \NC = \text{Peso de la penalización total por adelanto y tardanza} \NR
-    \NC W_{ea} \NC = \text{Peso del adelanto (gamma)} \NR
-    \NC W_{ta} \NC = \text{Peso de la tardanza (delta)} \NR
-    \NC B_{time} \NC = \text{Tiempo por unidad de distancia} \NR
-    \NC B_{setup} \NC = \text{Tiempo de preparación por lote} \NR
-    \NC B_{picking} \NC = \text{Tiempo de picking por unidad de capacidad} \NR
+    \NC v_{start} \NC = \text{Nodo depósito inicial} \NR
+    \NC v_{end} \NC = \text{Nodo final} \NR
+    \NC W^{c} \NC = \text{Peso del tiempo de completitud de los lotes} \NR
+    \NC W^{pen} \NC = \text{Peso de la penalización total por adelanto y tardanza} \NR
+    \NC W^{e} \NC = \text{Peso del adelanto} \NR
+    \NC W^{t} \NC = \text{Peso de la tardanza} \NR
+    \NC T^{travel} \NC = \text{Tiempo por unidad de distancia} \NR
+    \NC T^{setup} \NC = \text{Tiempo de preparación por lote} \NR
+    \NC T^{pick} \NC = \text{Tiempo de picking por unidad de capacidad} \NR
     \NC M \NC = \text{Constante Big-M suficientemente grande} \NR
     \NC C_{n} \NC = \text{Capacidad requerida por la orden } n \in \mathcal{N} \NR
-    \NC Dd_{n} \NC = \text{Due date de la orden } n \in \mathcal{N} \NR
-    \NC d_{ij} \NC = \text{Distancia entre locaciones } i,j \in \mathcal{V} \text{ con } (i,j) \in \mathcal{E} \NR
+    \NC T^{due}_{n} \NC = \text{Due date de la orden } n \in \mathcal{N} \NR
+    \NC D_{ij} \NC = \text{Distancia entre locaciones } i,j \in \mathcal{V} \text{ con } (i,j) \in \mathcal{E} \NR
     \NC S_{i} \NC = \text{Tiempo de servicio en la locación } i \in \mathcal{V} \NR
     \NC A_{ni} \NC = \startmathcases
                     \NC 1 \MC \text{si la orden } n \in \mathcal{N} \text{ requiere visitar } i \in \mathcal{V} \NR
                     \NC 0 \MC \text{en otro caso} \NR
                  \stopmathcases \NR
-    \NC Bn_{nb} \NC = \startmathcases
+    \NC B_{nb} \NC = \startmathcases
                     \NC 1 \MC \text{si la orden } n \in \mathcal{N} \text{ pertenece al lote } b \in \mathcal{B} \NR
                     \NC 0 \MC \text{en otro caso} \NR
                  \stopmathcases \NR
-    \NC R_{b} \NC = \left| \left\{ i \in \mathcal{V} \setminus \{v_1,v_f\} : \sum_{n \in \mathcal{N}} A_{ni} \cdot Bn_{nb} \ge 1 \right\} \right| \text{ (número de locaciones distintas requeridas por el lote } b \text{)} \NR
+    \NC L_{b} \NC = \left| \left\{ i \in \mathcal{V} \setminus \{v_{start},v_{end}\} : \sum_{n \in \mathcal{N}} A_{ni} \cdot B_{nb} \ge 1 \right\} \right| \text{ (número de locaciones distintas requeridas por el lote } b \text{)} \NR
 \stopalign
 \stopformula
 \stopsection
@@ -75,21 +75,20 @@ Esta versión extiende modelos anteriores con:
 \startalign
     \NC ta_{n} \NC = \text{Tardanza de la orden } n \in \mathcal{N} \NR
     \NC ea_{n} \NC = \text{Adelanto de la orden } n \in \mathcal{N} \NR
-    \NC t\_exec_{b} \NC = \text{Tiempo de ejecución del lote } b \in \mathcal{B} \NR
-    \NC w_{b} \NC = \text{Tiempo de espera o inactividad del lote } b \in \mathcal{B} \NR
-    \NC v_{b} \NC = \text{Tiempo de completitud del lote } b \in \mathcal{B} \NR
+    \NC d_{b} \NC = \text{Tiempo de ejecución del lote } b \in \mathcal{B} \NR
+    \NC c_{b} \NC = \text{Tiempo de completitud del lote } b \in \mathcal{B} \NR
     \NC u_{pb} \NC = \text{Tiempo de procesamiento del lote } b \in \mathcal{B} \text{ por el picker } p \in \mathcal{P} \NR
-    \NC v_{pb} \NC = \text{Tiempo de completitud del lote } b \in \mathcal{B} \text{ por el picker } p \in \mathcal{P} \NR
+    \NC c_{pb} \NC = \text{Tiempo de completitud del lote } b \in \mathcal{B} \text{ por el picker } p \in \mathcal{P} \NR
     \NC z_{ijb} \NC = \startmathcases
                     \NC 1 \MC \text{si el arco } (i,j) \in \mathcal{E} \text{ es usado en el lote } b \in \mathcal{B} \NR
                     \NC 0 \MC \text{en otro caso} \NR
                  \stopmathcases \NR
-    \NC f_{ijb} \NC = \text{Flujo de unidades sobre el arco } (i,j) \in \mathcal{E} \text{ en el lote } b \in \mathcal{B} \NR
-    \NC X_{pb} \NC = \startmathcases
+    \NC q_{ijb} \NC = \text{Flujo de carga (Gavish-Graves): locaciones requeridas del lote } b \in \mathcal{B} \text{ que faltan visitar al recorrer } (i,j) \in \mathcal{E} \NR
+    \NC x_{pb} \NC = \startmathcases
                     \NC 1 \MC \text{si el lote } b \in \mathcal{B} \text{ es asignado al picker } p \in \mathcal{P} \NR
                     \NC 0 \MC \text{en otro caso} \NR
                  \stopmathcases \NR
-    \NC Z_{bk} \NC = \startmathcases
+    \NC y_{bk} \NC = \startmathcases
                     \NC 1 \MC \text{variable auxiliar para pares } b < k \NR
                     \NC 0 \MC \text{en otro caso} \NR
                  \stopmathcases \NR
@@ -100,17 +99,17 @@ Esta versión extiende modelos anteriores con:
 \startsection[title={Función objetivo}]
 \placeformula
 \startformula
-\min \left( W_{full} \cdot \sum_{p \in \mathcal{P}} \sum_{b \in \mathcal{B}} v_{pb} + W_{ea\_ta} \cdot \left( W_{ea} \cdot \sum_{n \in \mathcal{N}} ea_{n} + W_{ta} \cdot \sum_{n \in \mathcal{N}} ta_{n} \right) \right)
+\min \left( W^{c} \cdot \sum_{b \in \mathcal{B}} c_{b} + W^{pen} \cdot \left( W^{e} \cdot \sum_{n \in \mathcal{N}} ea_{n} + W^{t} \cdot \sum_{n \in \mathcal{N}} ta_{n} \right) \right)
 \stopformula
 \stopsection
 
 \startsubsection[title={Rutas de lote}]
 \startformula
 \startalign[n=4, align={right,left,left,left}]
-    \NC (1) \NC \sum_{j:(v_1,j) \in \mathcal{E}} z_{v_1 j b} = 1; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Cada lote sale una vez del depósito)} \NR
-    \NC (2) \NC \sum_{i:(i,v_f) \in \mathcal{E}} z_{i v_f b} = 1; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Cada lote entra una vez al nodo final)} \NR
-    \NC (3) \NC \sum_{i:(i,v_1) \in \mathcal{E}} z_{i v_1 b} = 0; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(No hay retorno al depósito inicial)} \NR
-    \NC (4) \NC \sum_{j:(v_f,j) \in \mathcal{E}} z_{v_f j b} = 0; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(No hay salida desde el nodo final)} \NR
+    \NC (1) \NC \sum_{j:(v_{start},j) \in \mathcal{E}} z_{v_{start} j b} = 1; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Cada lote sale una vez del depósito)} \NR
+    \NC (2) \NC \sum_{i:(i,v_{end}) \in \mathcal{E}} z_{i v_{end} b} = 1; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Cada lote entra una vez al nodo final)} \NR
+    \NC (3) \NC \sum_{i:(i,v_{start}) \in \mathcal{E}} z_{i v_{start} b} = 0; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(No hay retorno al depósito inicial)} \NR
+    \NC (4) \NC \sum_{j:(v_{end},j) \in \mathcal{E}} z_{v_{end} j b} = 0; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(No hay salida desde el nodo final)} \NR
 \stopalign
 \stopformula
 \stopsubsection
@@ -118,11 +117,11 @@ Esta versión extiende modelos anteriores con:
 \startsubsection[title={Visita y conservación de flujo}]
 \startformula
 \startalign[n=4, align={right,left,left,left}]
-    \NC (5) \NC \sum_{i:(i,j) \in \mathcal{E}} z_{i j b} \ge \min\left(1, \sum_{n \in \mathcal{N}} A_{n j} \cdot Bn_{n b}\right); \NC \quad \forall b \in \mathcal{B},\ j \in \mathcal{V} \setminus \{v_1,v_f\} \NC \quad \text{(Entrada a locaciones requeridas)} \NR
-    \NC (6) \NC \sum_{i:(j,i) \in \mathcal{E}} z_{j i b} \ge \min\left(1, \sum_{n \in \mathcal{N}} A_{n j} \cdot Bn_{n b}\right); \NC \quad \forall b \in \mathcal{B},\ j \in \mathcal{V} \setminus \{v_1,v_f\} \NC \quad \text{(Salida de locaciones requeridas)} \NR
-    \NC (7) \NC \sum_{g:(g,i) \in \mathcal{E}} z_{g i b} - \sum_{j:(i,j) \in \mathcal{E}} z_{i j b} = 0; \NC \quad \forall b \in \mathcal{B},\ i \in \mathcal{V} \setminus \{v_1,v_f\} \NC \quad \text{(Conservación en nodos intermedios)} \NR
-    \NC (8) \NC \sum_{j:(j,i) \in \mathcal{E}} z_{j i b} \le 1; \NC \quad \forall b \in \mathcal{B},\ i \in \mathcal{V} \setminus \{v_1\} \NC \quad \text{(A lo sumo un arco de entrada por nodo)} \NR
-    \NC (9) \NC \sum_{j:(i,j) \in \mathcal{E}} z_{i j b} \le 1; \NC \quad \forall b \in \mathcal{B},\ i \in \mathcal{V} \setminus \{v_f\} \NC \quad \text{(A lo sumo un arco de salida por nodo)} \NR
+    \NC (5) \NC \sum_{i:(i,j) \in \mathcal{E}} z_{i j b} \ge \min\left(1, \sum_{n \in \mathcal{N}} A_{n j} \cdot B_{n b}\right); \NC \quad \forall b \in \mathcal{B},\ j \in \mathcal{V} \setminus \{v_{start},v_{end}\} \NC \quad \text{(Entrada a locaciones requeridas)} \NR
+    \NC (6) \NC \sum_{i:(j,i) \in \mathcal{E}} z_{j i b} \ge \min\left(1, \sum_{n \in \mathcal{N}} A_{n j} \cdot B_{n b}\right); \NC \quad \forall b \in \mathcal{B},\ j \in \mathcal{V} \setminus \{v_{start},v_{end}\} \NC \quad \text{(Salida de locaciones requeridas)} \NR
+    \NC (7) \NC \sum_{g:(g,i) \in \mathcal{E}} z_{g i b} - \sum_{j:(i,j) \in \mathcal{E}} z_{i j b} = 0; \NC \quad \forall b \in \mathcal{B},\ i \in \mathcal{V} \setminus \{v_{start},v_{end}\} \NC \quad \text{(Conservación en nodos intermedios)} \NR
+    \NC (8) \NC \sum_{j:(j,i) \in \mathcal{E}} z_{j i b} \le 1; \NC \quad \forall b \in \mathcal{B},\ i \in \mathcal{V} \setminus \{v_{start}\} \NC \quad \text{(A lo sumo un arco de entrada por nodo)} \NR
+    \NC (9) \NC \sum_{j:(i,j) \in \mathcal{E}} z_{i j b} \le 1; \NC \quad \forall b \in \mathcal{B},\ i \in \mathcal{V} \setminus \{v_{end}\} \NC \quad \text{(A lo sumo un arco de salida por nodo)} \NR
 \stopalign
 \stopformula
 \stopsubsection
@@ -130,9 +129,9 @@ Esta versión extiende modelos anteriores con:
 \startsubsection[title={Subtour elimination y flujo de carga}]
 \startformula
 \startalign[n=4, align={right,left,left,left}]
-    \NC (10) \NC f_{i j b} - R_{b} \cdot z_{i j b} \le 0; \NC \quad \forall b \in \mathcal{B},\ (i,j) \in \mathcal{E} \NC \quad \text{(Límite MTZ subtours)} \NR
-    \NC (11) \NC \sum_{j:\ (v_1,j) \in \mathcal{E}} f_{v_1 j b} = R_{b}; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Flujo total desde el depósito)} \NR
-    \NC (12) \NC \sum_{g:(g,i) \in \mathcal{E}} f_{g i b} - \sum_{j:(i,j) \in \mathcal{E}} f_{i j b} = \min\left(1, \sum_{n \in \mathcal{N}} A_{n i} \cdot Bn_{n b}\right); \NC \quad \forall b \in \mathcal{B},\ i \in \mathcal{V} \setminus \{v_1,v_f\} \NC \quad \text{(Balance Gavish-Graves)} \NR
+    \NC (10) \NC q_{i j b} - L_{b} \cdot z_{i j b} \le 0; \NC \quad \forall b \in \mathcal{B},\ (i,j) \in \mathcal{E} \NC \quad \text{(Flujo solo por arcos usados, Gavish-Graves)} \NR
+    \NC (11) \NC \sum_{j:\ (v_{start},j) \in \mathcal{E}} q_{v_{start} j b} = L_{b}; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Flujo total desde el depósito)} \NR
+    \NC (12) \NC \sum_{g:(g,i) \in \mathcal{E}} q_{g i b} - \sum_{j:(i,j) \in \mathcal{E}} q_{i j b} = \min\left(1, \sum_{n \in \mathcal{N}} A_{n i} \cdot B_{n b}\right); \NC \quad \forall b \in \mathcal{B},\ i \in \mathcal{V} \setminus \{v_{start},v_{end}\} \NC \quad \text{(Balance Gavish-Graves)} \NR
 \stopalign
 \stopformula
 \stopsubsection
@@ -140,8 +139,8 @@ Esta versión extiende modelos anteriores con:
 \startsubsection[title={Tiempo de ejecución y completitud}]
 \startformula
 \startalign[n=2, align={right,left}]
-    \NC (13) \NC t\_exec_{b} \ge B_{setup} + B_{picking} \cdot \left( \sum_{n \in \mathcal{N}} C_{n} \cdot Bn_{n b} \right) + B_{time} \cdot \left( \sum_{(i,j) \in \mathcal{E}} d_{ij} \cdot z_{i j b} \right) \NR
-    \NC \NC \quad + \sum_{i \in \mathcal{V} \setminus \{v_1,v_f\}} S_{i} \cdot \left( \sum_{j:(i,j) \in \mathcal{E}} z_{i j b} \right) + w_{b}; \quad \forall b \in \mathcal{B} \NR
+    \NC (13) \NC d_{b} \ge T^{setup} + T^{pick} \cdot \left( \sum_{n \in \mathcal{N}} C_{n} \cdot B_{n b} \right) + T^{travel} \cdot \left( \sum_{(i,j) \in \mathcal{E}} D_{ij} \cdot z_{i j b} \right) \NR
+    \NC \NC \quad + \sum_{i \in \mathcal{V} \setminus \{v_{start},v_{end}\}} S_{i} \cdot \left( \sum_{j:(i,j) \in \mathcal{E}} z_{i j b} \right); \quad \forall b \in \mathcal{B} \NR
 \stopalign
 \stopformula
 \stopsubsection
@@ -149,13 +148,13 @@ Esta versión extiende modelos anteriores con:
 \startsubsection[title={Asignación de lotes y secuenciación}]
 \startformula
 \startalign[n=4, align={right,left,left,left}]
-    \NC (14) \NC \sum_{p \in \mathcal{P}} X_{p b} = 1; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Asignación única por lote a un picker)} \NR
-    \NC (15) \NC t\_exec_{b} - M \cdot (1 - X_{p b}) \le u_{p b}; \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B} \NC \NR
+    \NC (14) \NC \sum_{p \in \mathcal{P}} x_{p b} = 1; \NC \quad \forall b \in \mathcal{B} \NC \quad \text{(Asignación única por lote a un picker)} \NR
+    \NC (15) \NC d_{b} - M \cdot (1 - x_{p b}) \le u_{p b}; \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B} \NC \NR
     \NC \NC \NC \NC \quad \text{(Ejecución acota procesamiento, cota inferior)} \NR
-    \NC (16) \NC u_{p b} \le t\_exec_{b} + M \cdot (1 - X_{p b}); \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B} \NC \NR
-    \NC \NC \NC \NC \quad \text{(cota superior; fija } u_{pb} = t\_exec_{b} \text{ cuando } X_{pb}=1\text{)} \NR
-    \NC (17) \NC u_{p b} \le v_{p b}; \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B} \NC \quad \text{(Procesamiento precede a completitud)} \NR
-    \NC (18) \NC v_{p b} - M \cdot (1 - X_{p b}) \le v_{b}; \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B} \NC \quad \text{(Completitud del lote vs picker)} \NR
+    \NC (16) \NC u_{p b} \le d_{b} + M \cdot (1 - x_{p b}); \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B} \NC \NR
+    \NC \NC \NC \NC \quad \text{(cota superior; fija } u_{pb} = d_{b} \text{ cuando } x_{pb}=1\text{)} \NR
+    \NC (17) \NC u_{p b} \le c_{p b}; \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B} \NC \quad \text{(Procesamiento precede a completitud)} \NR
+    \NC (18) \NC c_{p b} - M \cdot (1 - x_{p b}) \le c_{b}; \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B} \NC \quad \text{(Completitud del lote vs picker)} \NR
 \stopalign
 \stopformula
 \stopsubsection
@@ -163,19 +162,19 @@ Esta versión extiende modelos anteriores con:
 \startsubsection[title={Secuenciamiento sin solapamiento}]
 \startformula
 \startalign[n=3, align={right,left,left}]
-    \NC (19) \NC v_{p k} \ge v_{p b} + t\_exec_{k} - M_{seq} \cdot (3 - X_{p b} - X_{p k} - Z_{b k}); \NC \quad \forall p \in \mathcal{P},\ b,k \in \mathcal{B},\ b < k \NR
-    \NC (20) \NC v_{p b} \ge v_{p k} + t\_exec_{b} - M_{seq} \cdot (2 - X_{p b} - X_{p k} + Z_{b k}); \NC \quad \forall p \in \mathcal{P},\ b,k \in \mathcal{B},\ b < k \NR
+    \NC (19) \NC c_{p k} \ge c_{p b} + d_{k} - M^{seq} \cdot (3 - x_{p b} - x_{p k} - y_{b k}); \NC \quad \forall p \in \mathcal{P},\ b,k \in \mathcal{B},\ b < k \NR
+    \NC (20) \NC c_{p b} \ge c_{p k} + d_{b} - M^{seq} \cdot (2 - x_{p b} - x_{p k} + y_{b k}); \NC \quad \forall p \in \mathcal{P},\ b,k \in \mathcal{B},\ b < k \NR
 \stopalign
 \stopformula
 
-Donde $M_{seq}$ es una constante local de Big-M usada para linealizar el ordenamiento de lotes.
+Donde $M^{seq}$ es una constante local de Big-M usada para linealizar el ordenamiento de lotes.
 \stopsubsection
 
 \startsubsection[title={Earliness y tardiness}]
 \startformula
 \startalign[n=4, align={right,left,left,left}]
-    \NC (21) \NC v_{p b} - Dd_{n} - M \cdot (2 - X_{p b} - Bn_{n b}) \le ta_{n}; \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B},\ n \in \mathcal{N} \NC \quad \text{(Definición de tardanza)} \NR
-    \NC (22) \NC Dd_{n} - v_{p b} - M \cdot (2 - X_{p b} - Bn_{n b}) \le ea_{n}; \NC \quad \forall p \in \mathcal{P},\ b \in \mathcal{B},\ n \in \mathcal{N} \NC \quad \text{(Definición de adelanto)} \NR
+    \NC (21) \NC c_{p b} - T^{due}_{n} - M \cdot (1 - x_{p b}) \le ta_{n}; \NC \quad \forall p \in \mathcal{P},\ (n,b) : B_{n b} = 1 \NC \quad \text{(Definición de tardanza)} \NR
+    \NC (22) \NC T^{due}_{n} - c_{p b} - M \cdot (1 - x_{p b}) \le ea_{n}; \NC \quad \forall p \in \mathcal{P},\ (n,b) : B_{n b} = 1 \NC \quad \text{(Definición de adelanto)} \NR
 \stopalign
 \stopformula
 \stopsubsection
@@ -183,8 +182,8 @@ Donde $M_{seq}$ es una constante local de Big-M usada para linealizar el ordenam
 \startsubsection[title={Dominio de variables}]
 \startformula
 \startalign[n=3, align={right,left,left}]
-    \NC (23) \NC ta_{n}, ea_{n}, t\_exec_{b}, w_{b}, v_{b}, u_{p b}, v_{p b}, f_{i j b} \ge 0; \NC \quad \forall n \in \mathcal{N},\ b \in \mathcal{B},\ p \in \mathcal{P},\ (i,j) \in \mathcal{E} \NR
-    \NC (24) \NC z_{i j b}, X_{p b}, Z_{b k} \in \{0,1\}; \NC \quad \forall p \in \mathcal{P},\ b,k \in \mathcal{B},\ (i,j) \in \mathcal{E} \NR
+    \NC (23) \NC ta_{n}, ea_{n}, d_{b}, c_{b}, u_{p b}, c_{p b}, q_{i j b} \ge 0; \NC \quad \forall n \in \mathcal{N},\ b \in \mathcal{B},\ p \in \mathcal{P},\ (i,j) \in \mathcal{E} \NR
+    \NC (24) \NC z_{i j b}, x_{p b}, y_{b k} \in \{0,1\}; \NC \quad \forall p \in \mathcal{P},\ b,k \in \mathcal{B},\ (i,j) \in \mathcal{E} \NR
 \stopalign
 \stopformula
 \stopsubsection

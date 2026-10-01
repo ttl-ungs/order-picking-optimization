@@ -34,7 +34,7 @@ def instance_tiny_two_orders() -> Dict:
     A[("O1", "L2")] = 1
     A[("O2", "L3")] = 1
 
-    Bn = {("O1", "B1"): 1, ("O1", "B2"): 0, ("O2", "B1"): 0, ("O2", "B2"): 1}
+    B_nb = {("O1", "B1"): 1, ("O1", "B2"): 0, ("O2", "B1"): 0, ("O2", "B2"): 1}
 
     return {
         "name": "tiny_two_orders",
@@ -43,16 +43,16 @@ def instance_tiny_two_orders() -> Dict:
         "B": B,
         "P": {"P1"},
         "A": A,
-        "Bn": Bn,
+        "B_nb": B_nb,
         "C_n": {"O1": 3.0, "O2": 3.0},
-        "Dd": {"O1": 15.0, "O2": 15.0},
-        "W_full": w1,
-        "W_ea_ta": w2,
-        "W_ea": gamma,
-        "W_ta": delta,
-        "B_time": 0.5,
-        "B_setup": 1.0,
-        "B_picking": 1.0,
+        "T_due_n": {"O1": 15.0, "O2": 15.0},
+        "W_c": w1,
+        "W_pen": w2,
+        "W_e": gamma,
+        "W_t": delta,
+        "T_travel": 0.5,
+        "T_setup": 1.0,
+        "T_pick": 1.0,
         "C_v": cap_vehicle,
         "M": 1000.0,
     }
@@ -80,13 +80,13 @@ def instance_small_multi_picker() -> Dict:
     A[("O6", "V11")] = 1
     A[("O6", "V14")] = 1
 
-    Bn = {(n, b): 0 for n in N for b in B}
-    Bn[("O1", "B1")] = 1
-    Bn[("O2", "B1")] = 1
-    Bn[("O3", "B2")] = 1
-    Bn[("O4", "B2")] = 1
-    Bn[("O5", "B3")] = 1
-    Bn[("O6", "B3")] = 1
+    B_nb = {(n, b): 0 for n in N for b in B}
+    B_nb[("O1", "B1")] = 1
+    B_nb[("O2", "B1")] = 1
+    B_nb[("O3", "B2")] = 1
+    B_nb[("O4", "B2")] = 1
+    B_nb[("O5", "B3")] = 1
+    B_nb[("O6", "B3")] = 1
 
     return {
         "name": "small_multi_picker",
@@ -95,16 +95,16 @@ def instance_small_multi_picker() -> Dict:
         "B": B,
         "P": {"P1", "P2"},
         "A": A,
-        "Bn": Bn,
+        "B_nb": B_nb,
         "C_n": {n: 10.0 for n in N},
-        "Dd": {n: 30.0 for n in N},
-        "W_full": 9.0,
-        "W_ea_ta": 1.0,
-        "W_ea": 1.0,
-        "W_ta": 1.0,
-        "B_time": 0.5,
-        "B_setup": 1.0,
-        "B_picking": 1.0,
+        "T_due_n": {n: 30.0 for n in N},
+        "W_c": 9.0,
+        "W_pen": 1.0,
+        "W_e": 1.0,
+        "W_t": 1.0,
+        "T_travel": 0.5,
+        "T_setup": 1.0,
+        "T_pick": 1.0,
         "C_v": 25.0,
         "M": 1000.0,
     }
@@ -134,19 +134,19 @@ def instance_medium_multi_picker() -> Dict:
     A[("O11", "V9")] = 1
     A[("O12", "V14")] = 1
 
-    Bn = {(n, b): 0 for n in N for b in B}
-    Bn[("O1", "B1")] = 1
-    Bn[("O2", "B1")] = 1
-    Bn[("O3", "B2")] = 1
-    Bn[("O4", "B2")] = 1
-    Bn[("O5", "B3")] = 1
-    Bn[("O6", "B3")] = 1
-    Bn[("O7", "B4")] = 1
-    Bn[("O8", "B4")] = 1
-    Bn[("O9", "B5")] = 1
-    Bn[("O10", "B5")] = 1
-    Bn[("O11", "B6")] = 1
-    Bn[("O12", "B6")] = 1
+    B_nb = {(n, b): 0 for n in N for b in B}
+    B_nb[("O1", "B1")] = 1
+    B_nb[("O2", "B1")] = 1
+    B_nb[("O3", "B2")] = 1
+    B_nb[("O4", "B2")] = 1
+    B_nb[("O5", "B3")] = 1
+    B_nb[("O6", "B3")] = 1
+    B_nb[("O7", "B4")] = 1
+    B_nb[("O8", "B4")] = 1
+    B_nb[("O9", "B5")] = 1
+    B_nb[("O10", "B5")] = 1
+    B_nb[("O11", "B6")] = 1
+    B_nb[("O12", "B6")] = 1
 
     return {
         "name": "medium_multi_picker",
@@ -155,16 +155,16 @@ def instance_medium_multi_picker() -> Dict:
         "B": B,
         "P": {"P1", "P2", "P3"},
         "A": A,
-        "Bn": Bn,
+        "B_nb": B_nb,
         "C_n": {n: 10.0 for n in N},
-        "Dd": {n: 15.0 for n in N},
-        "W_full": 9.0,
-        "W_ea_ta": 1.0,
-        "W_ea": 1.0,
-        "W_ta": 1.0,
-        "B_time": 0.5,
-        "B_setup": 1.0,
-        "B_picking": 1.0,
+        "T_due_n": {n: 15.0 for n in N},
+        "W_c": 9.0,
+        "W_pen": 1.0,
+        "W_e": 1.0,
+        "W_t": 1.0,
+        "T_travel": 0.5,
+        "T_setup": 1.0,
+        "T_pick": 1.0,
         "C_v": 20.0,
         "M": 1000.0,
     }

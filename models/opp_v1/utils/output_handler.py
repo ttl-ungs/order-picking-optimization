@@ -15,8 +15,8 @@ class OutputHandler(Observer):
         K: set,
         ta: dict,
         ea: dict,
-        t_exec: dict,
-        v: dict,
+        d: dict,
+        c: dict,
         z: dict,
         depot_vertex,
         final_vertex,
@@ -30,17 +30,17 @@ class OutputHandler(Observer):
             print(f"Optimal Objective Function Value: {objval:.4f}")
             print("-" * 50)
 
-            print("Mission Execution Times (t_exec_h):")
+            print("Mission Execution Times (d_h):")
             for h in H:
-                val_t_exec = model.getVal(t_exec[h])
-                print(f"  t_exec_{h} (Mission {h}): {val_t_exec:.4f}")
+                val_d = model.getVal(d[h])
+                print(f"  d_{h} (Mission {h}): {val_d:.4f}")
             print("-" * 50)
 
-            print("Batch Completion Times (v_pk):")
+            print("Batch Completion Times (c_pk):")
             for p in P:
                 for k in K:
-                    val_v = model.getVal(v[p, k])
-                    print(f"  v_{p}_{k} (Picker {p}, Position {k}): {val_v:.4f}")
+                    val_c = model.getVal(c[p, k])
+                    print(f"  c_{p}_{k} (Picker {p}, Position {k}): {val_c:.4f}")
             print("-" * 50)
 
             print("Tardiness and Earliness per Order (ta_n, ea_n):")

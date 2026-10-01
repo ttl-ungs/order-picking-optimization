@@ -98,12 +98,12 @@ class TestSingleBatchInfeasibilityCheck(OPPTestCaseV4):
         beta_time, beta_setup, beta_picking, M = 0.5, 1.0, 1.0, 1000.0
 
         E = set()
-        d_ij = {}
+        D_ij = {}
         for i in opp_location_graph.get_vertices():
             for j in opp_location_graph.get_vertices():
                 if opp_location_graph.has_edge(i, j):
                     E.add((i, j))
-                    d_ij[(i, j)] = opp_location_graph.get_distance(i, j)
+                    D_ij[(i, j)] = opp_location_graph.get_distance(i, j)
 
         scenario_data = {
             "N": N,
@@ -113,21 +113,21 @@ class TestSingleBatchInfeasibilityCheck(OPPTestCaseV4):
             "E": E,
             "depot": opp_location_graph.get_depot(),
             "final": opp_location_graph.get_final(),
-            "W_full": w1,
-            "W_ea_ta": w2,
-            "W_ea": gamma,
-            "W_ta": delta,
-            "B_time": beta_time,
-            "B_setup": beta_setup,
-            "B_picking": beta_picking,
+            "W_c": w1,
+            "W_pen": w2,
+            "W_e": gamma,
+            "W_t": delta,
+            "T_travel": beta_time,
+            "T_setup": beta_setup,
+            "T_pick": beta_picking,
             "C_v": cap_vehicle,
             "M": M,
             "C_n": cap_n,
-            "Dd": due_date,
-            "d_ij": d_ij,
+            "T_due_n": due_date,
+            "D_ij": D_ij,
             "S_i": {v: 0.0 for v in V},
             "A_ni": a_ni,
-            "Bn": bn,
+            "B_nb": bn,
         }
 
         build_dat_files(DAT_DIR, scenario_data)
@@ -140,7 +140,7 @@ class TestSingleBatchInfeasibilityCheck(OPPTestCaseV4):
             dat_dir=DAT_DIR,
             params={
                 "N": len(N), "B": len(B), "V": len(V), "P": len(P),
-                "C_n": cap_n, "Bn": bn, "C_v": cap_vehicle,
+                "C_n": cap_n, "B_nb": bn, "C_v": cap_vehicle,
             },
             time_limit_seconds=TIME_LIMIT_SECONDS,
         )

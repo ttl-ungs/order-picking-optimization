@@ -1,4 +1,4 @@
-test,status,total_time,model_time,obj_val,peak_rss_mb,obj_val_congestion,congestion_collisions,sla_on_time_pct,W_full,W_ea_ta,W_ea,W_ta,C_v,B_time,B_setup,B_picking,M,N,B,P,V,A_ants,Max_it,Alpha,Beta,Beta2,Min_dwell,Cataclysms_used,Max_route_attempts_per_batch,iterations_run,best_found_at_iteration
+test,status,total_time,model_time,obj_val,peak_rss_mb,obj_val_congestion,congestion_collisions,sla_on_time_pct,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,P,V,A_ants,Max_it,Alpha,Beta,Beta2,Min_dwell,Cataclysms_used,Max_route_attempts_per_batch,iterations_run,best_found_at_iteration
 test_opp_aco_3_congestion_tracker.TestCongestionTracker.test_dwell_uses_min_dwell_floor,ok,0.0016701221466064453,,,22.15625,,,,,,,,,,,,,,,,,,,,,,,,,,
 test_opp_aco_3_congestion_tracker.TestCongestionTracker.test_edge_and_node_keys_do_not_collide,ok,0.0022389888763427734,,,23.203125,,,,,,,,,,,,,,,,,,,,,,,,,,
 test_opp_aco_3_congestion_tracker.TestCongestionTracker.test_edge_key_is_direction_agnostic,ok,0.0016560554504394531,,,21.28125,,,,,,,,,,,,,,,,,,,,,,,,,,

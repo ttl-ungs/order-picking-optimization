@@ -14,7 +14,7 @@ class OPPTestCaseV4(OPPTestCase):
             self.assertLessEqual(max(workloads) - min(workloads), max_difference, "Desbalanceo de carga")
 
     def assert_no_time_overlap(self, var_values, P, B):
-        x_pb, v_pb, u_pb = {}, {}, {}
+        x_pb, c_pb, u_pb = {}, {}, {}
         for key, val in var_values.items():
             k = key.lower()
             p_match = [p for p in P if p in key]
@@ -22,18 +22,18 @@ class OPPTestCaseV4(OPPTestCase):
             if p_match and b_match:
                 p, b = p_match[0], b_match[0]
                 if k.startswith("x_pb"): x_pb[(p, b)] = val
-                elif k.startswith("v_pb"): v_pb[(p, b)] = val
+                elif k.startswith("c_pb"): c_pb[(p, b)] = val
                 elif k.startswith("u_pb"): u_pb[(p, b)] = val
         for p in P:
-            tasks = sorted([(v_pb.get((p, b), 0)-u_pb.get((p, b), 0), v_pb.get((p, b), 0), b) for b in B if x_pb.get((p, b), 0) > 0.5])
+            tasks = sorted([(c_pb.get((p, b), 0)-u_pb.get((p, b), 0), c_pb.get((p, b), 0), b) for b in B if x_pb.get((p, b), 0) > 0.5])
             # if len(tasks) > 1:
             #     print(f"DEBUG picker {p} tasks (start, end, batch): {tasks}")
             #     batches_on_p = [b for b in B if x_pb.get((p, b), 0) > 0.5]
             #     for key, val in sorted(var_values.items()):
             #         kl = key.lower()
-            #         if kl.startswith("z_bk") and any(b in key for b in batches_on_p):
+            #         if kl.startswith("y_bk") and any(b in key for b in batches_on_p):
             #             print(f"DEBUG {key} = {val}")
             #     for b in batches_on_p:
-            #         print(f"DEBUG t_exec_b[{b}] = {var_values.get(f't_exec_b${b}', var_values.get(f't_exec_b[{b}]'))}")
+            #         print(f"DEBUG d_b[{b}] = {var_values.get(f'd_b${b}', var_values.get(f'd_b[{b}]'))}")
             for i in range(len(tasks) - 1):
                 self.assertGreaterEqual(tasks[i+1][0], tasks[i][1] - 1e-4, f"Solapamiento temporal en {p}")

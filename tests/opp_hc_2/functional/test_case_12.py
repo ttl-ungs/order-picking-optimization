@@ -26,7 +26,7 @@ class TestOPPHillClimbing2(OPPTestCaseHC2):
     Test 16: 6 orders, 3 missions, 2 pickers on a 4x4 grid with transversal aisles.
     Each order visits more than one location.
 
-    With 3 batches and 2 pickers, batches should be distributed (X_pb) across
+    With 3 batches and 2 pickers, batches should be distributed (x_pb) across
     both pickers, and batches on the same picker must not overlap in time.
     """
 
@@ -86,19 +86,19 @@ class TestOPPHillClimbing2(OPPTestCaseHC2):
         M = 1000.0
 
         params = SolveHCModelDTO()
-        params.W_full = w1
-        params.W_ea_ta = w2
-        params.W_ea = gamma
-        params.W_ta = delta
+        params.W_c = w1
+        params.W_pen = w2
+        params.W_e = gamma
+        params.W_t = delta
         params.C_n = cap_n
         params.C_v = cap_vehicle
         params.A = a
-        params.B_time = beta_time
-        params.B_setup = beta_setup
-        params.B_picking = beta_picking
-        params.Dd = due_date
+        params.T_travel = beta_time
+        params.T_setup = beta_setup
+        params.T_pick = beta_picking
+        params.T_due_n = due_date
         params.M = M
-        params.Bn = y
+        params.B_nb = y
 
         P = {"P1", "P2"}
 

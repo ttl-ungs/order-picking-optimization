@@ -20,9 +20,9 @@ class TestOPPHillClimbing4Model5MixedEligibility(OPPTestCaseHC4):
     Test HC4-5: Mixed cold-chain eligibility across batches. Three
     single-order batches, each on its own branch off the depot, with
     increasingly long branches (and therefore increasingly long
-    t_exec_pb). Two pickers: P1 (slow) and P2 (fast).
+    T_exec_pb). Two pickers: P1 (slow) and P2 (fast).
     Purpose: cold chain is a PER-(picker, batch) restriction, not a global
-    on/off switch -- a T_frio_max that both pickers satisfy for the short
+    on/off switch -- a T_cold that both pickers satisfy for the short
     batches but only the fast picker satisfies for the long one must force
     JUST that batch onto the fast picker, leaving the others free.
     """
@@ -75,25 +75,25 @@ class TestOPPHillClimbing4Model5MixedEligibility(OPPTestCaseHC4):
         cap_n = {"O1": 2.0, "O2": 2.0, "O3": 2.0}
 
         params = SolveHC4ModelDTO()
-        params.W_full = 1.0
-        params.W_ea_ta = 0.0
-        params.W_ea = 0.0
-        params.W_ta = 0.0
+        params.W_c = 1.0
+        params.W_pen = 0.0
+        params.W_e = 0.0
+        params.W_t = 0.0
         params.C_n = cap_n
         params.C_v = 10.0
         params.A = a
-        params.B_time = 1.0
-        params.B_setup = 1.0
-        params.B_picking = 1.0
-        params.Dd = {n: 1000.0 for n in N}
+        params.T_travel = 1.0
+        params.T_setup = 1.0
+        params.T_pick = 1.0
+        params.T_due_n = {n: 1000.0 for n in N}
         params.M = 1000.0
-        params.Bn = y
+        params.B_nb = y
         params.V_p = {"P1": 1.0, "P2": 5.0}
         # fixed_time = 1 + 1*2 = 3 for every batch (single order, cap_n=2).
-        # t_exec_pb(P1): B1=3+4=7,  B2=3+15=18, B3=3+40=43
-        # t_exec_pb(P2): B1=3+4/5=3.8, B2=3+15/5=6.0, B3=3+40/5=11.0
-        # T_frio_max=20: B1/B2 eligible for BOTH pickers; B3 eligible ONLY for P2.
-        params.T_frio_max = 20.0
+        # T_exec_pb(P1): B1=3+4=7,  B2=3+15=18, B3=3+40=43
+        # T_exec_pb(P2): B1=3+4/5=3.8, B2=3+15/5=6.0, B3=3+40/5=11.0
+        # T_cold=20: B1/B2 eligible for BOTH pickers; B3 eligible ONLY for P2.
+        params.T_cold = 20.0
         params.Seed = 3
         params.Max_it = 200
         params.Max_imp = 60
@@ -115,7 +115,7 @@ class TestOPPHillClimbing4Model5MixedEligibility(OPPTestCaseHC4):
         self.assertIn(result, ("optimal", "feasible"))
         self.assert_every_batch_has_one_picker(solution_info, {"P1", "P2"})
         self.assert_no_time_overlap(solution_info, {"P1", "P2"})
-        self.assert_cold_chain_respected(solution_info, params.T_frio_max)
+        self.assert_cold_chain_respected(solution_info, params.T_cold)
 
         # Only the long batch is actually FORCED onto the fast picker.
         self.assertEqual(solution_info["picker_assignments"]["B3"], "P2")
