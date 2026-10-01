@@ -51,25 +51,16 @@ Las dos heurísticas (sección \in[sec:heuristicas]) buscan sobre el mismo espac
 soluciones (una ruta por lote, una asignación de lotes a pickers y una secuencia por picker)
 con el mismo objetivo, pero sin garantía de optimalidad:
 \startitemize
-\item {\bf OPP\_hc\_4 (HC-4)}: búsqueda local estocástica ({\em Hill Climbing}) que parte de
+\item {\bf HC-4}: búsqueda local estocástica ({\em Hill Climbing}) que parte de
 rutas construidas por varios métodos y mejora rutas, asignación y secuencia con movimientos
 aleatorios.
-\item {\bf OPP\_aco\_4 (ACO-4)}: colonia de hormigas ({\em Ant Colony Optimization}) que
+\item {\bf ACO-4}: colonia de hormigas ({\em Ant Colony Optimization}) que
 construye rutas y asignaciones con feromonas y aplica búsqueda local a la mejor solución.
 \stopitemize
 
 La sección \in[sec:comparacion] compara los cuatro métodos: qué instancias son comparables,
 cuánto se alejan las heurísticas del óptimo, cuánto tardan, y qué obtiene el modelo exacto si
 recibe el mismo tiempo que usó la heurística.
-
-Los archivos fuente son:
-\startitemize
-\item \type{models/opp_v5_1_mono/opp_model_v5_1_mono.zpl}
-\item \type{models/opp_v5_2_split/opp_model_v5_2_split_stage1_routing.zpl}
-\item \type{models/opp_v5_2_split/opp_model_v5_2_split_stage2_scheduling.zpl}
-\item \type{models/opp_hc_4/opp_hc_4.py}
-\item \type{models/opp_aco_4/opp_aco_4.py}
-\stopitemize
 
 \stopsection
 
@@ -361,9 +352,7 @@ entrega y su adelanto, lo que le falta para llegar a ella:
 \stopalign
 \stopformula
 Como $ta_n, ea_n \ge 0$ y el objetivo los minimiza, en el óptimo
-$ta_n = \max(0,\, c_b - T^{due}_n)$ y $ea_n = \max(0,\, T^{due}_n - c_b)$. En el código ZIMPL el
-término se escribe $M \cdot (2 - x_{pb} - B_{nb})$, que es igual porque solo se generan las
-restricciones con $B_{nb} = 1$.
+$ta_n = \max(0,\, c_b - T^{due}_n)$ y $ea_n = \max(0,\, T^{due}_n - c_b)$.
 \stopsubsection
 
 \startsubsection[title={Espera voluntaria}]
@@ -526,10 +515,9 @@ Iguales a (21)--(22) del monolítico, para los pares elegibles:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \startsection[title={Heurísticas: HC-4 y ACO-4}, reference=sec:heuristicas]
 
-OPP\_hc\_4 y OPP\_aco\_4 resuelven el mismo problema que v5, con la misma notación de la
-sección anterior: ruteo de cada lote, asignación de lotes a pickers y secuencia de cada
-picker, con velocidades heterogéneas y cadena de frío. No agregan congestión entre pickers
-(a diferencia de OPP\_hc\_3 y OPP\_aco\_3), porque v5 tampoco la modela.
+HC-4 y ACO-4 resuelven el mismo problema que v5, con la misma notación de las secciones
+anteriores: ruteo de cada lote, asignación de lotes a pickers y secuencia de cada picker, con
+velocidades heterogéneas y cadena de frío. Como v5, no modelan congestión entre pickers.
 
 \startsubsection[title={Representación común de una solución}]
 
@@ -597,7 +585,7 @@ infactible. Por eso una heurística {\em no prueba} infactibilidad: solo no encu
 
 \stopsubsection
 
-\startsubsection[title={OPP\_hc\_4: Hill Climbing}]
+\startsubsection[title={HC-4: Hill Climbing}]
 
 Búsqueda local estocástica de primera mejora: en cada iteración se elige {\em un} movimiento y
 {\em un} vecino al azar, y se acepta si baja $g$. No se recorre toda la vecindad antes de
@@ -654,7 +642,7 @@ tope de tiempo se mira entre iteraciones, así que no corta una construcción in
 
 \stopsubsection
 
-\startsubsection[title={OPP\_aco\_4: Ant Colony Optimization}]
+\startsubsection[title={ACO-4: Ant Colony Optimization}]
 
 Cada hormiga construye una solución completa: para cada lote, primero la ruta y después el
 picker. Hay dos tablas de feromona: una de ruta, $\tau_{ij}$ entre pares de locaciones
@@ -750,19 +738,14 @@ resto queda para pulir y para la búsqueda local.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \startsection[title={Comparación de v5 con las heurísticas}, reference=sec:comparacion]
 
-Esta sección resume los resultados. El detalle instancia por instancia está en
-\hyphenatedurl{opp_v5_2_split_vs_heuristics_comparison.tex} (split contra las heurísticas) y en
-\hyphenatedurl{opp_v5_1_mono_vs_opp_v5_2_split_comparison.tex} (mono contra split).
+Esta sección compara los cuatro métodos con los resultados de los experimentos.
 
 \startsubsection[title={Comparabilidad}]
 
 Se comparan solo instancias en que los cuatro métodos resuelven exactamente los mismos datos.
-En la suite funcional son las instancias \type{test_v5eq__*} de las heurísticas, que capturan
-el escenario de cada test funcional de v5 en el momento en que v5 escribe sus \type{.dat}. En
-stress son los 19 escenarios de la suite, que los cuatro métodos construyen con el mismo
-generador y los mismos argumentos. Las reglas están en
-\type{docs/specs/comparabilidad_v5_heuristicas.md} y la fuente de verdad es
-\type{results/comparability/comparability_v5_vs_heuristics.csv}.
+En la suite funcional, las heurísticas reciben exactamente los datos que resuelve v5 en cada
+test. En stress son 19 escenarios que los cuatro métodos construyen con el mismo generador y los
+mismos argumentos. Según el resultado de v5, cada instancia se compara así:
 
 \blank[medium]
 \bTABLE[split=yes, align=middle, frame=on, width=fit]
@@ -804,9 +787,9 @@ agenda (10, 11 y 15):
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \setupTABLE[column][2][align=flushleft]
 \bTR \bTH Caso \eTH \bTH Qué se prueba \eTH \bTH Lotes \eTH \bTH Pickers \eTH \bTH Grilla \eTH \eTR
-\bTR \bTD 01 \eTD \bTD Heredado: almacén muy grande, un lote por picker \eTD \bTD 30 \eTD \bTD 30 \eTD \bTD 100×100 \eTD \eTR
-\bTR \bTD 02 \eTD \bTD Heredado: un lote por picker \eTD \bTD 10 \eTD \bTD 10 \eTD \bTD 10×10 \eTD \eTR
-\bTR \bTD 03 \eTD \bTD Heredado: un solo picker con 40 lotes \eTD \bTD 40 \eTD \bTD 1 \eTD \bTD 7×7 \eTD \eTR
+\bTR \bTD 01 \eTD \bTD Almacén muy grande, un lote por picker, órdenes atrasadas \eTD \bTD 30 \eTD \bTD 30 \eTD \bTD 100×100 \eTD \eTR
+\bTR \bTD 02 \eTD \bTD Un lote por picker, órdenes atrasadas \eTD \bTD 10 \eTD \bTD 10 \eTD \bTD 10×10 \eTD \eTR
+\bTR \bTD 03 \eTD \bTD Un solo picker con 40 lotes, órdenes atrasadas \eTD \bTD 40 \eTD \bTD 1 \eTD \bTD 7×7 \eTD \eTR
 \bTR \bTD 04 \eTD \bTD Perfil realista en almacén chico \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 7×7 \eTD \eTR
 \bTR \bTD 05 \eTD \bTD Igual que 04 en un almacén más grande \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 13×13 \eTD \eTR
 \bTR \bTD 06 \eTD \bTD Igual que 04, almacén 14×14 \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 14×14 \eTD \eTR
@@ -828,7 +811,7 @@ agenda (10, 11 y 15):
 
 En stress no hay espera que descartar: en los escenarios 04 a 19 el peso por lote completado
 ($W^{c} = 27$) es mayor que las órdenes por lote, así que esperar nunca conviene, y en los
-heredados 01 a 03 todas las órdenes llegan tarde. Los 10 no comparables son los que split no
+escenarios 01 a 03 todas las órdenes llegan tarde. Los 10 no comparables son los que split no
 termina en 40 minutos. El monolítico resuelve las mismas instancias que split y llega al mismo
 óptimo en los 49 pares funcionales que resuelven los dos, pero en stress no termina ninguno de
 los 19 en 40 minutos, así que la referencia de stress es split.
@@ -837,9 +820,8 @@ los 19 en 40 minutos, así que la referencia de stress es split.
 
 \startsubsection[title={Validez y estado}]
 
-Cada solución de las heurísticas se verificó contra OPP\_v5\_1\_mono: se fijan sus valores en las
-variables del monolítico y SCIP decide si son factibles, sin reescribir ninguna restricción
-(\type{verification/run_compliance.py}). Ninguna de las 150 soluciones verificadas (56
+Cada solución de las heurísticas se verificó contra el modelo monolítico: se fijan sus valores
+en las variables del modelo y SCIP decide si son factibles, sin reescribir ninguna restricción. Ninguna de las 150 soluciones verificadas (56
 funcionales y 19 de stress por heurística) viola una restricción de v5, y el objetivo
 recalculado coincide con el reportado en todas.
 
@@ -873,7 +855,7 @@ En los escenarios de stress que split resuelve:
 \setupTABLE[style=\tfx]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style={\tfx\bf}]
 \bTR \bTH Caso \eTH \bTH Escenario \eTH \bTH Lotes \eTH \bTH Grilla \eTH \bTH Split (s) \eTH \bTH HC-4 (s) \eTH \bTH Brecha \eTH \bTH ACO-4 (s) \eTH \bTH Brecha \eTH \eTR
-\bTR \bTD 02 \eTD \bTD heredado, 10 pickers \eTD \bTD 10 \eTD \bTD 10×10 \eTD \bTD 33 \eTD \bTD 0,9 \eTD \bTD 0,00 \% \eTD \bTD 93,5 \eTD \bTD 0,00 \% \eTD \eTR
+\bTR \bTD 02 \eTD \bTD 10 pickers, atrasadas \eTD \bTD 10 \eTD \bTD 10×10 \eTD \bTD 33 \eTD \bTD 0,9 \eTD \bTD 0,00 \% \eTD \bTD 93,5 \eTD \bTD 0,00 \% \eTD \eTR
 \bTR \bTD 04 \eTD \bTD realista, 7×7 \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 12 \eTD \bTD 0,5 \eTD \bTD 0,01 \% \eTD \bTD 12,9 \eTD \bTD 0,00 \% \eTD \eTR
 \bTR \bTD 05 \eTD \bTD realista, 13×13 \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 108 \eTD \bTD 2,8 \eTD \bTD 0,05 \% \eTD \bTD 84,1 \eTD \bTD 0,01 \% \eTD \eTR
 \bTR \bTD 06 \eTD \bTD realista, 14×14 \eTD \bTD 6 \eTD \bTD 14×14 \eTD \bTD 202 \eTD \bTD 3,8 \eTD \bTD 0,04 \% \eTD \bTD 116,1 \eTD \bTD 0,01 \% \eTD \eTR
@@ -1117,7 +1099,7 @@ cerrar la cota dual después de haber encontrado ya la mejor solución.
 \startsubsection[title={A igual tiempo}, reference=sec:igual_tiempo]
 
 La forma estándar de comparar una metaheurística con un solver exacto es darles el mismo
-tiempo. En este experimento (\type{analysis/run_equal_time_study.py}) cada modelo de v5 recibe,
+tiempo. En este experimento cada modelo de v5 recibe,
 en cada escenario de stress, exactamente el tiempo total que tardó la heurística en ese
 escenario, como límite de reloj de SCIP, y se registra la mejor solución que tiene al vencer
 ese límite:
@@ -1129,10 +1111,9 @@ necesariamente la mínima.
 \item {\bf Mono}: una sola resolución con todo el tiempo.
 \stopitemize
 
-El tiempo se mide desde el inicio del pipeline (escribir los \type{.dat}, compilar con ZIMPL
-y resolver), igual que el de la heurística; como el límite de SCIP cubre solo su resolución, el
-tiempo transcurrido puede pasar un poco el presupuesto. Los resultados están en
-\type{results/equal_time/}. La columna es $100 \cdot (z_{\rm heur} - z_{\rm v5}) / z_{\rm v5}$:
+El tiempo se mide desde que se arma el modelo hasta que el solver termina, igual que el de la
+heurística; como el límite de SCIP cubre solo la resolución, el tiempo transcurrido puede pasar un
+poco el presupuesto. La columna es $100 \cdot (z_{\rm heur} - z_{\rm v5}) / z_{\rm v5}$:
 negativa significa que la heurística es mejor.
 
 {\bf Con el tiempo de HC-4} (entre 0,5 y 5,7~s, salvo 1.209~s en el 01), ni split ni mono
@@ -1147,9 +1128,9 @@ usa para dar una solución a menos de 0,21~\% del óptimo, v5 no da ninguna.
 \setupTABLE[style=\tfx]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style={\tfx\bf}]
 \bTR \bTH Caso \eTH \bTH Escenario \eTH \bTH Tiempo (s) \eTH \bTH ACO-4 \eTH \bTH Split \eTH \bTH ACO-4 contra split \eTH \bTH Mono \eTH \bTH ACO-4 contra mono \eTH \eTR
-\bTR \bTD 01 \eTD \bTD heredado, 100×100 \eTD \bTD 1.877,8 \eTD \bTD 917.328,0 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 02 \eTD \bTD heredado, 10 pickers \eTD \bTD 31,3 \eTD \bTD 29.034,0 \eTD \bTD 29.262,0 \eTD \bTD -0,78 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
-\bTR \bTD 03 \eTD \bTD heredado, 1 picker \eTD \bTD 412,1 \eTD \bTD 1.752.076,0 \eTD \bTD 1.763.704,0 \eTD \bTD -0,66 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 01 \eTD \bTD 100×100, atrasadas \eTD \bTD 1.877,8 \eTD \bTD 917.328,0 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 02 \eTD \bTD 10 pickers, atrasadas \eTD \bTD 31,3 \eTD \bTD 29.034,0 \eTD \bTD 29.262,0 \eTD \bTD -0,78 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 03 \eTD \bTD 1 picker, 40 lotes \eTD \bTD 412,1 \eTD \bTD 1.752.076,0 \eTD \bTD 1.763.704,0 \eTD \bTD -0,66 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
 \bTR \bTD 04 \eTD \bTD realista, 7×7 \eTD \bTD 15,1 \eTD \bTD 149.221,0 \eTD \bTD 149.218,9 \eTD \bTD 0,001 \% \eTD \bTD 157.569,7 \eTD \bTD -5,30 \% \eTD \eTR
 \bTR \bTD 05 \eTD \bTD realista, 13×13 \eTD \bTD 95,0 \eTD \bTD 241.273,5 \eTD \bTD 241.398,5 \eTD \bTD -0,05 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
 \bTR \bTD 06 \eTD \bTD realista, 14×14 \eTD \bTD 109,8 \eTD \bTD 256.642,2 \eTD \bTD 256.791,0 \eTD \bTD -0,06 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
@@ -1250,8 +1231,8 @@ límite se aplica a cada resolución y no al proceso completo.
 \item {\bf Mono} da solución solo en el 04 y el 12, entre 5~\% y 10~\% por encima de ACO-4.
 \stopitemize
 
-Los presupuestos son los tiempos de la corrida de ACO-4 del 27 de septiembre, que no es la
-misma corrida que la tabla anterior: por eso el tiempo y el objetivo de ACO-4 difieren un poco
+Los presupuestos son los tiempos de otra ejecución de ACO-4, distinta de la de la tabla de
+stress: por eso el tiempo y el objetivo de ACO-4 difieren un poco
 (por ejemplo, 15,1~s contra 12,9~s en el 04, y 917.328 contra 988.252 en el 01).
 
 \stopsubsection
