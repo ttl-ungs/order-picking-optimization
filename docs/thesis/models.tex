@@ -7,746 +7,1257 @@
 \definecolor[greenline][h=5cb85c]
 
 \setuphead[section][style=\bfa, color=darkblue, before=\blank, after=\blank]
-\setuphead[subsection][style=\bf, color=black, before=\blank, after=\blank]
+\setuphead[subsection][style=\bf, color=black, before={\blank[2*big]}, after=\blank]
+\setuphead[subsubsection][style=\bf, color=darkblue, before=\blank, after=\blank]
 \setuppapersize[A4][A4]
 \setupbodyfont[11pt]
 \setuplayout[width=middle, height=middle, topspace=2cm, bottomspace=2cm]
+\mainlanguage[es]
 
 \starttext
 
-\define[1]\Cond{\framed[width=2.8cm, frame=off, align=normal, offset=0pt, location=middle]{\tfx #1}}
-\define[1]\Desc{\framed[width=4.5cm, frame=off, align=normal, offset=0pt, location=middle]{\tfx #1}}
-
-\title{\bf Modelos Definidos Para el Problema de Orden Picking Problem}
+\title{\bf Modelos exactos y heurísticas HC y ACO para order-picking:\crlf definiciones y comparación}
 \blank[big]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \startsection[title={Introducción}]
-En el presente documento, hacemos una descripción de los modelos implementados con la finalidad de optimizar el problema de Orden Picking. Trabajamos con tres versiones de un modelo de optimización lineal, al cual sometimos a distintas iteraciones y evaluaciones, y también con dos metaheurísticas: Hill Climbing y Ant Colony Optimization.
 
-En cada no de los modelos describimos variables y parámetros. En el modelo de optimización lineal también describimos restricciones, y en cada metaheurística se presenta un pseudocódigo y una breve descripción.
+Este documento define dos modelos exactos y las dos heurísticas que resuelven el
+mismo problema, y los compara con los resultados de los experimentos. Los cuatro métodos
+resuelven el mismo problema de {\em order-picking}: dado un conjunto de lotes
+de pedidos, un grafo de locaciones de almacén y un conjunto de pickers heterogéneos en
+velocidad, determinar simultáneamente la ruta de recolección de cada lote, la asignación de
+lotes a pickers y la secuenciación temporal, minimizando una función objetivo que combina
+tiempos de completitud con penalizaciones de tardanza y adelanto, sujeto a una restricción
+de cadena de frío.
 
-\startsection[title={Primera Versión: OPP con misiones}]
+Las dos formulaciones exactas difieren en la estrategia de resolución:
 
-Utilizamos el modelo completo y lo simplificamos, considerando las tareas relacionadas con el {\em batch} como parámetros y no como variables, que podrían ser obtenidas mediante metaheurísticas en un preprocesamiento por zonas. De esta forma, obtenemos el siguiente modelo:
-
-\startsubsection[title={Sean los conjuntos}]
-\startformula
-\startalign
-    \NC \mathcal{N} \NC = \text{Órdenes de clientes} \NR
-    \NC \mathcal{V} \NC = \text{Locaciones totales} \NR
-    \NC \mathcal{H} \NC = \text{Misiones que se pueden completar} \NR
-    \NC \mathcal{K} \NC = \text{Períodos por picker en los que se recolecta un lote} \NR
-    \NC \mathcal{P} \NC = \text{Pickers} \NR
-    \NC \mathcal{B} \NC = \text{Lotes de pedidos factibles} \NR
-\stopalign
-\stopformula
-\stopsubsection
-
-\startsubsection[title={Sean los parámetros}]
-\startformula
-\startalign
-    \NC W^{c} \NC = \text{Peso del tiempo de cumplimiento} \NR
-    \NC W^{pen} \NC = \text{Peso asociado a la suma pesada de demoras y adelantos} \NR
-    \NC W^{e} \NC = \text{Peso asociado al adelanto total} \NR
-    \NC W^{t} \NC = \text{Peso asociado a la demora total} \NR
-    \NC d_{i,j} \NC = \text{Distancia entre locaciones de picking } i \in V \text{ y } j \in V \NR
-    \NC C_{n} \NC = \text{Capacidad requerida para una orden } n \in N \NR
-    \NC C_{v} \NC = \text{Capacidad del vehículo de picking} \NR
-    \NC A_{ni} \NC = \startmathcases
-                    \NC 1 \MC \text{si la orden } n \text{ requiere visitar la locación } i \in V \NR
-                    \NC 0 \MC \text{en otro caso} \NR
-              \stopmathcases \NR
-    \NC T^{travel} \NC = \text{Tiempo requerido para viajar una unidad de distancia} \NR
-    \NC T^{setup} \NC = \text{Tiempo de preparación (setup) de una misión o lote} \NR
-    \NC T^{pick} \NC = \text{Tiempo requerido para recolectar una unidad de artículo} \NR
-    \NC M \NC = \text{Un número positivo suficientemente grande (Big M)} \NR
-    \NC T^{due}_{n} \NC = \text{Fecha de entrega de la orden } n \in N \NR
-    \NC X_{pkh} \NC = \startmathcases
-                    \NC 1 \MC \text{si la misión } h \in H \text{ es asignada a la posición } k \in K \text{ del picker } p \in P \NR
-                    \NC 0 \MC \text{en otro caso} \NR
-                \stopmathcases \NR
-    \NC B_{nh} \NC = \startmathcases
-                    \NC 1 \MC \text{si la la órden } n \in N \text{ es asignada a la misión } h \in H \NR
-                    \NC 0 \MC \text{en otro caso} \NR
-                \stopmathcases \NR
-\stopalign
-\stopformula
-\stopsubsection
-
-\startsubsection[title={Sean las variables}]
-\startformula
-\startalign
-    \NC ta_{n} \NC = \text{Tardanza de la orden } n \in N \NR
-    \NC ea_{n} \NC = \text{Adelanto de la orden } n \in N \NR
-    \NC d_{h} \NC = \text{Tiempo de ejecución de la misión } h \in H \NR
-    \NC u_{pk} \NC = \text{Tiempo de procesamiento del lote asignado a la posición } k \in K \text{ del picker } p \in P \NR
-    \NC c_{pk} \NC = \text{Tiempo de completitud para el lote asignado a la posición } k \in K \text{ del picker } p \in P \NR
-    \NC z_{ijh} \NC = \startmathcases
-                \NC 1 \MC \text{si el arco entre las locaciones } i \in V \text{ y } j \in V \text{ está en la misión } h \in H \NR
-                \NC 0 \MC \text{en otro caso} \NR
-              \stopmathcases \NR
-    \NC q_{ijh} \NC = \text{Número de unidades pasando por el arco } (i, j) \text{ en la misión } h \in H \NR
-\stopalign
-\stopformula
-\stopsubsection
-
-\startsubsection[title={Objetivo}]
-\placeformula
-\startformula
-\min \left( W^{c} \cdot \left( \sum_{p=1}^{N} \sum_{k=1}^{K} c_{pk} \right) + W^{pen} \cdot \left( W^{e} \cdot \sum_{n=1}^{N} ea_{n} + W^{t} \cdot \sum_{n=1}^{N} ta_{n} \right) \right)
-\stopformula
-
-{\bf Siendo}
-\startformula
-\startalign
-    \NC \text{Tiempo de recolección} \NC = \sum_{p=1}^{N} \sum_{k=1}^K c_{pk} \NR
-    \NC \text{Adelantos totales} \NC = \sum_{n=1}^{N} ea_n \NR
-    \NC \text{Peso de adelantos totales} \NC = W^{e} \cdot \sum_{n=1}^{N} ea_n \NR
-    \NC \text{Demoras totales} \NC = \sum_{n=1}^{N} ta_n \NR
-    \NC \text{Peso de demoras totales} \NC = W^{t} \cdot \sum_{n=1}^{N} ta_n \NR
-    \NC \text{Peso de penalizaciones} \NC = W^{pen} \cdot (\text{peso adelantos totales} + \text{peso de demoras totales}) \NR
-\stopalign
-\stopformula
-
-{\bf Esta función objetivo se traduce en}
-\startformula
-    \min W^{c} \cdot \text{\bf tiempo de recolección } + W^{pen} \cdot \text{\bf peso de penalizaciones} 
-\stopformula
-\stopsubsection
-
-\startsubsection[title={Restricciones}]
-\startformula 
-\startalign[n=3, align={left, left, left}, number=yes]
-    \NC \sum_{h\in H}X_{pkh}\le1; \NC \Cond{$\forall p \in P,$ \crlf $k \in K$} \NC \Desc{({\em Cada misión es asignada a lo sumo a un picker en un periodo})} \NR
-    
-    \NC \sum_{p\in P}\sum_{k\in K}X_{pkh}=1; \NC \Cond{$\forall h \in H$} \NC \Desc{({\em Cada misión es asignada exactamente una vez a un único picker en una única posición})} \NR
-    
-    \NC \sum_{h\in H}B_{nh}=1; \NC \Cond{$\forall n \in N$} \NC \Desc{({\em Cada órden es asignada a una misión})} \NR
-    
-    \NC \sum_{n\in N}C_{n} \cdot B_{nh} \le C_{v}; \NC \Cond{$\forall h \in H$} \NC \Desc{({\em La capacidad de las órdenes asignades a la misión $\le$ la del vehículo})} \NR
-    
-    \NC \sum_{j \in V \setminus \{v_{start}\}} z_{v_{start},j,h} = 1; \NC \Cond{$\forall h \in H$} \NC \Desc{(La ruta sale una vez del depósito inicial)} \NR
-    
-    \NC \sum_{i \in V \setminus \{v_{end}\}} z_{i, v_{end}, h} = 1; \NC \Cond{$\forall h \in H$} \NC \Desc{(La ruta entra una vez al depósito final)} \NR
-    
-    \NC \sum_{i \in V \setminus \{v_{start}\}, h} z_{i,v_{start},h} = 0; \NC \NC \Desc{(No se puede volver al inicio)} \NR
-    
-    \NC \sum_{j \in V \setminus \{v_{end}\}, h} z_{v_{end},j,h} = 0; \NC \NC \Desc{(No se puede ir a otro lado desde el final)} \NR
-    
-    \NC \sum_{i \in V, i \neq j} z_{ijh} \ge \sum_{n \in N} A_{nj} \cdot B_{nh}; \NC \Cond{$\forall h \in H,$ \crlf $j \in V \setminus \{v_{start}, v_{end}\}$} \NC \Desc{(Si una orden requiere pasar por una locación, la ruta de esa misión tiene un camino que entra a esa locación)} \NR
-\stopalign
-\stopformula
-
-\startformula 
-\startalign[n=3, align={left, left, left}, number=yes]
-    \NC \sum_{j \in V, j \neq i} z_{ijh} \ge \sum_{n \in N} A_{ni} \cdot B_{nh}; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_{start}, v_{end}\}$} \NC \Desc{(Si una orden requiere pasar por una locación, la ruta de esa misión tiene un camino que salga de esa locación)} \NR
-    
-    \NC q_{ijh} \le C_{v} \cdot z_{ijh}; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_{end}\},$ \crlf $j \in V \setminus \{v_{start}\}$} \NC \Desc{(Los artículos entran en el vehículo)} \NR
-    
-    \NC \sum_{g \in V, g \neq i} z_{gih} = \sum_{j \in V, j \neq i} z_{ijh}; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_{start}, v_{end}\}$} \NC \Desc{(Para cualquier nodo intermedio $i$, la suma de todos los arcos que entran debe ser igual a la suma de todos los arcos que salen)} \NR
-    
-    \NC \sum_{g \in V, g \neq i} z_{gih} \le 1; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_{start}, v_{end}\}$} \NC \Desc{(Se elige a lo sumo un arco por vecino de g)} \NR
-    
-    \NC \sum_{j \in V, j \neq i} z_{ijh} \le 1; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_{start}, v_{end}\}$} \NC \Desc{(Se elige a lo sumo un arco desde i a cualquier otro vértice)} \NR
-    
-    \NC \sum_{g \in V \setminus \{v_{end}\}} q_{gih} \ge A_{ni} \cdot B_{nh}; \NC \Cond{$\forall h \in H, n \in N,$ \crlf $i \in V \setminus \{v_{start}, v_{end}\}$} \NC \Desc{(El flujo que entra al nodo $i$ cubre la demanda de la misión. Evita subrutas y ciclos)} \NR
-    
-    \NC z_{iih} = 0; \NC \Cond{$\forall h \in H,$ \crlf $i \in V \setminus \{v_{start}, v_{end}\}$} \NC \Desc{(No hay ciclos)} \NR
-    
-    \NC d_{h} \ge T^{setup} + T^{pick} \cdot \left( \sum_{n \in N} C_n \cdot B_{nh} \right) \NC \NC \NR[-]
-    \NC \quad + T^{travel} \cdot \left( \sum_{i \in V, j \in V} D_{ij} \cdot z_{ijh} \right); \NC \Cond{$\forall h \in H$} \NC \Desc{(El tiempo de setup + picking + viaje definen el tiempo total de ejecución)} \NR
-    
-    \NC d_{h} - M \cdot (1 - X_{pkh}) \le u_{pk}; \NC \Cond{$\forall p, k, h$} \NC \Desc{({\em Cuando se asigna una mision a un picker, el tiempo de ejecución es $\le$ al lote})} \NR
-\stopalign
-\stopformula
-
-\startformula 
-\startalign[n=3, align={left, left, left}, number=yes]
-    \NC u_{p1} \le c_{p1}; \NC \Cond{$\forall p \in P$} \NC \Desc{(El tiempo de procesamiento es $\le$ al tiempo de completitud de un lote)} \NR
-    
-    \NC u_{pk} + c_{p,k-1} \le c_{pk}; \NC \Cond{$\forall p \in P, k \ge 2$} \NC \Desc{(El tiempo de procesamiento + completitud del lote previo es $\le$ al tiempo actual)} \NR
-    
-    \NC c_{pk} - T^{due}_{n} - M \cdot (2 - X_{pkh} - B_{nh}) \le ta_{n}; \NC \Cond{$\forall p, k, h, n$} \NC \Desc{(Si se completa después de la fecha de entrega, la diferencia es $ta_n$)} \NR
-    
-    \NC T^{due}_{n} - c_{pk} - M \cdot (2 - X_{pkh} - B_{nh}) \le ea_{n}; \NC \Cond{$\forall p, k, h, n$} \NC \Desc{(Si se completa antes de la fecha de entrega, la diferencia es $ea_n$)} \NR
-    
-    \NC X_{pkh}, B_{nh}, z_{ijh} \in \{0, 1\}; \NC \NC \Desc{(Variables binarias)} \NR
-    
-    \NC t\_exec, ta, ea, u, v, f \ge 0; \NC \NC \Desc{(Variables no negativas)} \NR
-\stopalign
-\stopformula
-\stopsubsection
-
-\stopsection
-
-\startsection[title={Segunda Versión: OPP sin misiones}]
-
-Simplificamos el modelo de la primera versión, eliminando las misiones y considerando directamente los lotes como variables de decisión. 
-De esta forma, obtenemos el siguiente modelo:
-
-\startsubsection[title={Sean los conjuntos}]
-\startformula
-\startalign
-    \NC \mathcal{N} \NC = \text{Órdenes de clientes} \NR
-    \NC \mathcal{V} \NC = \text{Locaciones totales} \NR
-    \NC \mathcal{P} \NC = \text{Pickers} \NR
-    \NC \mathcal{B} \NC = \text{Lotes de pedidos factibles} \NR
-\stopalign
-\stopformula
-\stopsubsection
-
-\startsubsection[title={Sean los parámetros}]
-\startformula
-\startalign
-    \NC W^{c} \NC = \text{Peso del tiempo de cumplimiento} \NR
-    \NC W^{pen} \NC = \text{Peso asociado a la suma pesada de demoras y adelantos} \NR
-    \NC W^{e} \NC = \text{Peso asociado al adelanto total} \NR
-    \NC W^{t} \NC = \text{Peso asociado a la demora total} \NR
-    \NC d_{i,j} \NC = \text{Distancia entre locaciones de picking } i \in V \text{ y } j \in V \NR
-    \NC C_{n} \NC = \text{Capacidad requerida para una orden } n \in N \NR
-    \NC C_{v} \NC = \text{Capacidad del vehículo de picking} \NR
-    \NC A_{ni} \NC = \startmathcases
-                    \NC 1 \MC \text{si la orden } n \text{ requiere visitar la locación } i \in V \NR
-                    \NC 0 \MC \text{en otro caso} \NR
-              \stopmathcases \NR
-    \NC T^{travel} \NC = \text{Tiempo requerido para viajar una unidad de distancia} \NR
-    \NC T^{setup} \NC = \text{Tiempo de preparación (setup) de una misión o lote} \NR
-    \NC T^{pick} \NC = \text{Tiempo requerido para recolectar una unidad de artículo} \NR
-    \NC M \NC = \text{Un número positivo suficientemente grande (Big M)} \NR
-    \NC T^{due}_{n} \NC = \text{Fecha de entrega de la orden } n \in N \NR
-    \NC X_{pb} \NC = \startmathcases
-                    \NC 1 \MC \text{si el lote } b \in B \text{ es asignado al picker } p \in P \NR
-                    \NC 0 \MC \text{en otro caso} \NR
-                \stopmathcases \NR
-    \NC B_{nb} \NC = \startmathcases
-                    \NC 1 \MC \text{si la orden } n \in N \text{ pertenece al lote } b \in B \NR
-                    \NC 0 \MC \text{en otro caso} \NR
-                \stopmathcases \NR
-\stopalign
-\stopformula
-\stopsubsection
-
-\startsubsection[title={Sean las variables}]
-\startformula
-\startalign
-    \NC ta_{n} \NC = \text{Tardanza de la orden } n \in N \NR
-    \NC ea_{n} \NC = \text{Adelanto de la orden } n \in N \NR
-    \NC d_{b} \NC = \text{Tiempo de ejecución del lote } b \in B \NR
-    \NC u_{pb} \NC = \text{Tiempo de procesamiento del lote } b \in B \text{ del picker } p \in P \NR
-    \NC c_{pb} \NC = \text{Tiempo de completitud para el lote } b \in B \text{ del picker } p \in P \NR
-    \NC z_{ijb} \NC = \startmathcases
-                \NC 1 \MC \text{si el arco entre las locaciones } i \in V \text{ y } j \in V \text{ están el el lote } b \in B \NR
-                \NC 0 \MC \text{en otro caso} \NR
-              \stopmathcases \NR
-    \NC q_{ijb} \NC = \text{Número de unidades pasando por el arco } (i, j) \text{ en el lote } b \in B \NR
-\stopalign
-\stopformula
-\stopsubsection
-
-\startsubsection[title={Objetivo}]
-
-{\bf El objetivo es el mismo que en la primera versión, pero con las variables de misión reemplazadas por las de lote.}
-\placeformula
-\startformula
-\min \left( W^{c} \cdot \left( \sum_{p=1}^{N} \sum_{b=1}^{B} c_{pb} \right) + W^{pen} \cdot \left( W^{e} \cdot \sum_{n=1}^{N} ea_{n} + W^{t} \cdot \sum_{n=1}^{N} ta_{n} \right) \right)
-\stopformula
-
-{\bf Siendo}
-\startformula
-\startalign
-    \NC \text{Tiempo de recolección} \NC = \sum_{p=1}^{N} \sum_{b=1}^{B} c_{pb} \NR
-    \NC \text{Adelantos totales} \NC = \sum_{n=1}^{N} ea_n \NR
-    \NC \text{Peso de adelantos totales} \NC = W^{e} \cdot \sum_{n=1}^{N} ea_n \NR
-    \NC \text{Demoras totales} \NC = \sum_{n=1}^{N} ta_n \NR
-    \NC \text{Peso de demoras totales} \NC = W^{t} \cdot \sum_{n=1}^{N} ta_n \NR
-    \NC \text{Peso de penalizaciones} \NC = W^{pen} \cdot (\text{peso adelantos totales} + \text{peso de demoras totales}) \NR
-\stopalign
-\stopformula
-\stopsubsection
-
-\startsubsection[title={Restricciones}]
-\startformula 
-\startalign[n=3, align={left, left, left}, number=yes]
-    \NC \sum_{b\in B}X_{pb}=1; \NC \Cond{$\forall p \in P$} \NC \Desc{({\em Cada lote es asignado a un picker})} \NR
-    
-    \NC \sum_{b\in B}B_{nb}=1; \NC \Cond{$\forall n \in N$} \NC \Desc{({\em Cada orden es asignada a un lote})} \NR
-    
-    \NC \sum_{j \in V \setminus \{v_{start}\}} z_{v_{start} j b} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta sale una vez del depósito inicial)} \NR
-    
-    \NC \sum_{i \in V \setminus \{v_{end}\}} z_{i,v_{end},b} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta entra una vez al depósito final)} \NR
-    \NC \sum_{i \in V \setminus \{v_{start}\}} \sum_{b \in B} z_{i v_{start} b} = 0; \NC \NC \Desc{(No se puede volver al inicio)} \NR
-    \NC \sum_{j \in V \setminus \{v_{end}\}} \sum_{b \in B} z_{v_{end},j,b} = 0; \NC \NC \Desc{(No se puede ir a otro lado desde el final)} \NR
-    \NC \sum_{i \in V, i \neq j} z_{ijb} \ge \min\left(1, \sum_{n \in N} A_{nj} \cdot B_{nb}\right); \NC \Cond{$\forall b \in B,$ \crlf $j \in V \setminus \{v_{start}, v_{end}\}$} \NC \Desc{(Si una orden del lote requiere una locación, la ruta debe entrar a ella)} \NR
-    \NC \sum_{i \in V, i \neq j} z_{jib} \ge \min(1, \sum_{n \in N} A_{nj} \cdot B_{nb}) \NC \NC \Desc{(Si una orden en el lote requiere una locación, la ruta debe salir de ella) } \NR
-    \NC q_{ijb} \le C_{v} \cdot z_{ijb} \NC \NC \Desc{(Los artículos deben caber en la capacidad del vehículo) } \NR
-    \NC \sum_{g \in V, g \neq i} z_{gib} = \sum_{j \in V, j \neq i} z_{ijb} \NC \NC \Desc{(Conservación de flujo: lo que entra a un nodo intermedio debe salir) } \NR
-    \NC \sum_{g \in V, g < num_loc} z_{gib} \le 1 \NC \NC \Desc{(Se elige a lo sumo un arco de entrada por cada nodo) } \NR
-    \NC \sum_{j \in V, j > 2} z_{ijb} \le 1 \NC \NC \Desc{(Se elige a lo sumo un arco de salida por cada nodo) } \NR
-    \NC \sum_{j \in V, j \neq v_{start}} q_{v_{start}jb} = L_{b} \NC \NC \Desc{(El flujo que sale del depósito es igual a las locaciones requeridas) } \NR
-    \NC \sum_{g \in V, g \neq v_{end}} q_{gib} - \sum_{j \in V, j \neq v_{start}} q_{ijb} = \text{Balance} \NC \NC \Desc{(Cada nodo requerido consume exactamente una unidad de flujo) } \NR
-    \NC z_{iib} = 0 \NC \NC \Desc{(No se permiten bucles o ciclos sobre el mismo nodo) } \NR
-    \NC d_{b} \ge T^{setup} + T^{pick} + T^{travel} \NC \NC \Desc{(El tiempo total es la suma de preparación, recolección y viaje) } \NR
-\stopalign
-\stopformula
-
-\startformula
-\startalign[n=3, align={left, left, left}, number=yes]
-    \NC d_{b} - M \cdot (1 - X_{pb}) \le u_{pb} \NC \NC \Desc{(Cuando se asigna un lote a un picker, su tiempo de ejecución es $\le$ al de procesamiento)}  \NR
-    \NC u_{pb} \le c_{pb}; \NC \Cond{$\forall p \in P, b \in B$} \NC \Desc{(El tiempo de procesamiento es menor o igual al tiempo de completitud de un lote)}  \NR
-    \NC u_{pb} + c_{pb-1} \le c_{pb} \NC \NC \Desc{({\em El tiempo de procesamiento + el del lote previo es $\le$ al tiempo de completitud del lote})}  \NR
-    \NC c_{pb} - T^{due}_{n} - M \cdot (2 - X_{pb} - B_{nb}) \le ta_{n} \NC \NC \Desc{(Si el lote termina después de la fecha de entrega, la diferencia se asigna a tardanza)}  \NR
-    \NC T^{due}_{n} - c_{pb} - M \cdot (2 - X_{pb} - B_{nb}) \le ea_{n} \NC \NC \Desc{(Si la fecha de entrega es mayor al tiempo de finalización, la diferencia se asigna a adelanto)}  \NR
-    \NC \sum_{n\in N}C_{n} \cdot B_{nb} \le C_{v}; \NC \Cond{$\forall b \in B$} \NC \Desc{(La capacidad de las órdenes asignades a un lote $\le$ la del vehículo)} \NR
-    \NC z_{ijb} = 0 \NC \Cond{$\forall b \in B,$ \crlf $i, j \in V$ \crlf $D_{ij} = \infty$} \NC \Desc{(Solo se pueden usar arcos entre locaciones conectadas)} \NR
-    \NC X_{pb} \in \{0, 1\} \NC \NC \Desc{($X_{pb}$ es binaria)} \NR \NC B_{nb} \in \{0, 1\} \NC \NC \Desc{($B_{nb}$ es binaria)} \NR
-    \NC z_{ijb} \in \{0, 1\} \NC \NC \Desc{($z$ es binaria)} \NR
-    \NC d_{b} \ge 0 \NC \Cond{$\forall b \in B$} \NC \Desc{(El tiempo de ejecución es positivo o 0)} \NR 
-    \NC ta_{n} \ge 0 \NC \NC \Desc{(La tardanza es positiva o 0)} \NR 
-    \NC ea_{n} \ge 0 \NC \NC \Desc{(El adelanto es positivo o 0)} \NR 
-    \NC u_{pb} \ge 0 \NC \NC \Desc{(El tiempo de procesamiento no es negativo)} \NR 
-    \NC c_{pb} \ge 0 \NC \NC \Desc{(El tiempo de completitud no es negativo)} \NR 
-    \NC q_{ijb} \ge 0 \NC \NC \Desc{(El número de unidades para los arcos internos no es negativo)} \NR
-
-\stopalign
-\stopformula
-\stopsubsection
-
-\stopsection
-
-\startsection[title={Tercera Versión: OPP sin pickers (OPP v3)}]
-
-En esta versión se elimina el concepto de picker y se trabaja con lotes predefinidos. El grafo de locaciones tiene un depósito inicial $v_{start}$ y un nodo final $v_{end}$.
-
-\startsubsection[title={Sean los conjuntos}]
-\startformula
-\startalign
-    \NC \mathcal{N} \NC = \text{Órdenes de clientes} \NR
-    \NC \mathcal{V} \NC = \text{Locaciones del almacén} \NR
-    \NC \mathcal{B} \NC = \text{Lotes factibles, ordenados como } b_1, \dots, b_{|B|} \NR
-    \NC \mathcal{E} \NC = \text{Arcos válidos del grafo de locaciones} \NR
-\stopalign
-\stopformula
-\stopsubsection
-
-\startsubsection[title={Sean los parámetros}]
-\startformula
-\startalign
-    \NC W^{c} \NC = \text{Peso del tiempo de cumplimiento} \NR
-    \NC W^{pen} \NC = \text{Peso asociado a la suma pesada de demoras y adelantos} \NR
-    \NC W^{e} \NC = \text{Peso asociado al adelanto total} \NR
-    \NC W^{t} \NC = \text{Peso asociado a la demora total} \NR
-    \NC D_{ij} \NC = \text{Distancia entre locaciones } i, j \in V \NR
-    \NC C_{n} \NC = \text{Capacidad requerida para una orden } n \in N \NR
-    \NC C_{v} \NC = \text{Capacidad del vehículo de picking} \NR
-    \NC A_{ni} \NC = \startmathcases
-                    \NC 1 \MC \text{si la orden } n \text{ requiere visitar la locación } i \in V \NR
-                    \NC 0 \MC \text{en otro caso} \NR
-              \stopmathcases \NR
-    \NC T^{travel} \NC = \text{Tiempo requerido para viajar una unidad de distancia} \NR
-    \NC T^{setup} \NC = \text{Tiempo de preparación (setup) del lote} \NR
-    \NC T^{pick} \NC = \text{Tiempo requerido para recolectar una unidad} \NR
-    \NC S_{i} \NC = \text{Tiempo de servicio en la locación } i \in V \NR
-    \NC T^{due}_{n} \NC = \text{Fecha de entrega de la orden } n \in N \NR
-    \NC M \NC = \text{Un número positivo suficientemente grande (Big M)} \NR
-    \NC B_{nb} \NC = \startmathcases
-                    \NC 1 \MC \text{si la orden } n \text{ pertenece al lote } b \in B \NR
-                    \NC 0 \MC \text{en otro caso} \NR
-                \stopmathcases \NR
-    \NC v_{start}, v_{end} \NC = \text{Depósito inicial y nodo final, respectivamente} \NR
-\stopalign
-\stopformula
-\stopsubsection
-
-\startsubsection[title={Sean las variables}]
-\startformula
-\startalign
-    \NC ta_{n} \NC = \text{Tardanza de la orden } n \in N \NR
-    \NC ea_{n} \NC = \text{Adelanto de la orden } n \in N \NR
-    \NC d_{b} \NC = \text{Tiempo de ejecución del lote } b \in B \NR
-    \NC c_{b} \NC = \text{Tiempo de completitud del lote } b \in B \NR
-    \NC z_{ijb} \NC = \startmathcases
-                \NC 1 \MC \text{si el arco } (i, j) \text{ está en el lote } b \NR
-                \NC 0 \MC \text{en otro caso} \NR
-              \stopmathcases \NR
-    \NC q_{ijb} \NC = \text{Unidades que pasan por el arco } (i, j) \text{ en el lote } b \NR
-\stopalign
-\stopformula
-\stopsubsection
-
-\startsubsection[title={Objetivo}]
-\placeformula
-\startformula
-\min \left( W^{c} \cdot \sum_{b \in B} c_{b} + W^{pen} \cdot \left( W^{e} \cdot \sum_{n \in N} ea_{n} + W^{t} \cdot \sum_{n \in N} ta_{n} \right) \right)
-\stopformula
-\stopsubsection
-
-\startsubsection[title={Restricciones}]
-\startformula
-\startalign[n=3, align={left, left, left}, number=yes]
-    \NC \sum_{j \in V \setminus \{v_{start}\}} z_{v_{start} j b} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta sale una vez del depósito)} \NR
-    \NC \sum_{i \in V \setminus \{v_{end}\}} z_{i v_{end} b} = 1; \NC \Cond{$\forall b \in B$} \NC \Desc{(La ruta entra una vez al nodo final)} \NR
-    \NC \sum_{i \in V \setminus \{v_{start}\}} z_{i v_{start} b} = 0; \NC \Cond{$\forall b \in B$} \NC \Desc{(No se puede volver al depósito)} \NR
-    \NC \sum_{j \in V \setminus \{v_{end}\}} z_{v_{end} j b} = 0; \NC \Cond{$\forall b \in B$} \NC \Desc{(No se puede salir del nodo final)} \NR
-    \NC \sum_{i \in V, i \neq j} z_{i j b} \ge \min(1, \sum_{n \in N} A_{n j} \cdot B_{n b}); \NC \Cond{$\forall b \in B,$ \crlf $j \in V \setminus \{v_{start}, v_{end}\}$} \NC \Desc{(Si una locación es requerida, debe tener arco de entrada)} \NR
-    \NC \sum_{i \in V, i \neq j} z_{j i b} \ge \min(1, \sum_{n \in N} A_{n j} \cdot B_{n b}); \NC \Cond{$\forall b \in B,$ \crlf $j \in V \setminus \{v_{start}, v_{end}\}$} \NC \Desc{(Si una locación es requerida, debe tener arco de salida)} \NR
-    \NC q_{i j b} \le C_{v} \cdot z_{i j b}; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_{end}\},$ \crlf $j \in V \setminus \{v_{start}\}$} \NC \Desc{(El flujo respeta la capacidad)} \NR
-    \NC \sum_{g \in V, g \neq i} z_{g i b} = \sum_{j \in V, j \neq i} z_{i j b}; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_{start}, v_{end}\}$} \NC \Desc{(Conservación de flujo en la ruta)} \NR
-    \NC \sum_{j \in V, j \neq i} z_{j i b} \le 1; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_{start}\}$} \NC \Desc{(A lo sumo un arco de entrada)} \NR
-    \NC \sum_{j \in V, j \neq i} z_{i j b} \le 1; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_{end}\}$} \NC \Desc{(A lo sumo un arco de salida)} \NR
-    \NC z_{i i b} = 0; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_{start}\}$} \NC \Desc{(No hay bucles)} \NR
-\stopalign
-\stopformula
-
-\startformula
-\startalign[n=3, align={left, left, left}, number=yes]
-    \NC L_{b} = \sum_{i \in V, i \notin \{v_{start}, v_{end}\}} \min(1, \sum_{n \in N} A_{n i} \cdot B_{n b}); \NC \Cond{$\forall b \in B$} \NC \Desc{(Locaciones requeridas)} \NR
-    \NC \sum_{j \in V \setminus \{v_{start}\}} q_{v_{start} j b} = L_{b}; \NC \Cond{$\forall b \in B$} \NC \Desc{(Flujo total desde el depósito)} \NR
-    \NC \sum_{g \in V \setminus \{v_{end}\}} q_{g i b} - \sum_{j \in V \setminus \{v_{start}\}} q_{i j b} = \min(1, \sum_{n \in N} A_{n i} \cdot B_{n b}); \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_{start}, v_{end}\}$} \NC \Desc{(Balance Gavish-Graves)} \NR
-    \NC z_{i i b} = 0; \NC \Cond{$\forall b \in B,$ \crlf $i \in V \setminus \{v_{start}\}$} \NC \Desc{(No se permiten bucles)} \NR
-    \NC d_{b} \ge T^{setup} + T^{pick} \cdot \left(\sum_{n \in N} C_n \cdot B_{n b}\right) + T^{travel} \cdot \left(\sum_{(i,j) \in \mathcal{E}} D_{ij} \cdot z_{i j b}\right) \NC \NR
-    \NC \quad + \sum_{i \in V, i \notin \{v_{start}, v_{end}\}} S_{i} \cdot \left( \sum_{j:\ (i,j) \in \mathcal{E}} z_{i j b} \right); \NC \Cond{$\forall b \in B$} \NC \Desc{(Tiempo de ejecución del lote: setup + picking + viaje + servicio)} \NR
-    \NC c_{b_1} \ge d_{b_1}; \NC \Cond{$b_1 \text{ es el primer lote}$} \NC \Desc{(Inicio de la secuencia)} \NR
-    \NC c_{b_k} \ge c_{b_{k-1}} + d_{b_k}; \NC \Cond{$\forall k \ge 2$} \NC \Desc{(Secuencia de lotes)} \NR
-    \NC c_{b} - T^{due}_{n} - M \cdot (1 - B_{n b}) \le ta_{n}; \NC \Cond{$\forall b \in B,$ \crlf $n \in N$} \NC \Desc{(Definición de tardanza)} \NR
-    \NC T^{due}_{n} - c_{b} - M \cdot (1 - B_{n b}) \le ea_{n}; \NC \Cond{$\forall b \in B,$ \crlf $n \in N$} \NC \Desc{(Definición de adelanto)} \NR
-    \NC \sum_{n \in N} C_n \cdot B_{n b} \le C_{v}; \NC \Cond{$\forall b \in B$} \NC \Desc{(Capacidad del lote)} \NR
-    \NC z_{i j b} = 0; \NC \Cond{$\forall b \in B,$ \crlf $(i, j) \notin \mathcal{E}$} \NC \Desc{(Solo arcos válidos)} \NR
-\stopalign
-\stopformula
-\stopsubsection
-
-\stopsection
-
-\startsection[title={Cuarta Versión: Heurística Hill Climbing para Optimización de Rutas (OPP HC V3)}]
-
-Además del modelo exacto OPP v3, se desarrolló una heurística de búsqueda local denominada \italic{Hill Climbing} (HC) que resuelve el \bold{mismo problema exacto}, pero mediante un enfoque heurístico más rápido.
-
-\startsubsection[title={Definición del Problema}]
-
-A diferencia de lo que se podría esperar, la heurística \bold{NO} asigna órdenes a lotes. En su lugar:
-
-\startitemize[bullet]
-    \item \bold{Input}: Asignación fija de órdenes a lotes (parámetro $B_{nb}$ del modelo exacto).
-    \item \bold{Variables de decisión}: Las rutas dentro de cada lote ($z_{ijb}$, arcos utilizados).
-    \item \bold{Objetivo}: Minimizar la función objetivo original.
-    \item \bold{Output}: Grafo de rutas compatible con el formato del solver exacto.
+\startitemize
+\item {\bf Modelo monolítico}: un único MIP que decide ruta, asignación y secuenciación
+en conjunto. El tiempo de ruta $r_b$ es una {\em variable} de decisión.
+\item {\bf Modelo en dos etapas}: la Etapa~1 resuelve el ruteo óptimo de cada lote de
+forma independiente (minimizando el tiempo de ruta); la Etapa~2 recibe el tiempo de ruta
+como {\em dato} fijo y resuelve asignación, secuenciación y cadena de frío.
 \stopitemize
 
-Es decir, el Hill Climbing optimiza \bold{dónde ir dentro de cada lote}, no \bold{qué órdenes van en cada lote}.
+Las dos formulaciones tienen el mismo valor óptimo: la ruta más corta domina cualquier otra porque el
+objetivo no contiene un término de tiempo de ruta y una ruta más corta solo relaja las
+restricciones de duración y cadena de frío. Sin embargo, el conjunto de soluciones óptimas
+difiere: el modelo monolítico puede devolver rutas no mínimas que alcanzan el mismo
+objetivo.
 
-\stopsubsection
-
-\startsubsection[title={Motivación}]
-
-El modelo exacto OPP v3 usa programación lineal entera con SCIP, garantizando optimalidad pero requiriendo tiempo computacional significativo. El Hill Climbing proporciona:
-
-\startitemize[bullet]
-    \item \bold{Velocidad}: Típicamente 10-100x más rápido que el solver exacto.
-    \item \bold{Escalabilidad}: Maneja instancias más grandes con tiempo predecible.
-    \item \bold{Compatibilidad}: Recibe y retorna el mismo formato que el solver exacto.
-    \item \bold{Anytime}: Se puede detener en cualquier momento con la mejor solución.
+Las dos heurísticas (sección \in[sec:heuristicas]) buscan sobre el mismo espacio de
+soluciones (una ruta por lote, una asignación de lotes a pickers y una secuencia por picker)
+con el mismo objetivo, pero sin garantía de optimalidad:
+\startitemize
+\item {\bf HC}: búsqueda local estocástica ({\em Hill Climbing}) que parte de
+rutas construidas por varios métodos y mejora rutas, asignación y secuencia con movimientos
+aleatorios.
+\item {\bf ACO}: colonia de hormigas ({\em Ant Colony Optimization}) que
+construye rutas y asignaciones con feromonas y aplica búsqueda local a la mejor solución.\footnote{En el código del proyecto, el modelo monolítico corresponde a OPP v5.1 (opp\_v5\_1\_mono), el modelo en dos etapas a OPP v5.2 (opp\_v5\_2\_split), HC a opp\_hc\_4 y ACO a opp\_aco\_4.}
 \stopitemize
 
+La sección \in[sec:comparacion] compara los cuatro métodos: qué instancias son comparables,
+cuánto se alejan las heurísticas del óptimo, cuánto tardan, y qué obtiene el modelo exacto si
+recibe el mismo tiempo que usó la heurística.
+
+\stopsection
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsection[title={Notación común}]
+
+Los dos modelos exactos usan los mismos datos. En esta sección se definen una sola vez.
+
+\startsubsection[title={Conjuntos}]
+\startformula
+\startalign[n=2, align={right,left}]
+    \NC \mathcal{N} \NC \quad \text{órdenes de clientes} \NR
+    \NC \mathcal{B} \NC \quad \text{lotes; cada orden pertenece a un único lote} \NR
+    \NC \mathcal{P} \NC \quad \text{pickers} \NR
+    \NC \mathcal{V} \NC \quad \text{locaciones del almacén, incluidos el depósito } v_{start} \text{ y el nodo final } v_{end} \NR
+    \NC \mathcal{E} \NC \quad \text{arcos del grafo de locaciones: pares } (i,j) \text{ por los que se puede ir de } i \text{ a } j \NR
+\stopalign
+\stopformula
+
+Para escribir las restricciones de forma compacta se usan además:
+\startformula
+\startalign[n=2, align={right,left}]
+    \NC \mathcal{V}^{int} \NC = \mathcal{V} \setminus \{v_{start}, v_{end}\} \quad \text{(locaciones intermedias)} \NR
+    \NC \delta^{+}(i) \NC = \{(i,j) \in \mathcal{E}\} \quad \text{(arcos que salen de } i\text{)} \NR
+    \NC \delta^{-}(i) \NC = \{(j,i) \in \mathcal{E}\} \quad \text{(arcos que entran a } i\text{)} \NR
+    \NC \mathcal{N}_b \NC = \{ n \in \mathcal{N} : B_{nb} = 1 \} \quad \text{(órdenes del lote } b\text{)} \NR
+\stopalign
+\stopformula
 \stopsubsection
 
-\startsubsection[title={Algoritmo}]
+\startsubsection[title={Parámetros}]
 
-El Hill Climbing es un algoritmo de búsqueda local que mejora iterativamente una solución inicial mediante movimientos a soluciones vecinas (en este caso, routes).
+{\bf Datos de órdenes, lotes y almacén}
+\startformula
+\startalign[n=2, align={right,left}]
+    \NC A_{ni} \in \{0,1\} \NC \quad 1 \text{ si la orden } n \text{ tiene productos en la locación } i \NR
+    \NC B_{nb} \in \{0,1\} \NC \quad 1 \text{ si la orden } n \text{ pertenece al lote } b \NR
+    \NC C_n \NC \quad \text{capacidad (cantidad a recoger) de la orden } n \NR
+    \NC T^{due}_n \NC \quad \text{fecha de entrega de la orden } n \NR
+    \NC D_{ij} \NC \quad \text{distancia del arco } (i,j) \in \mathcal{E} \NR
+    \NC S_i \NC \quad \text{tiempo de servicio en la locación } i \NR
+\stopalign
+\stopformula
 
-\startsubsection[title={Pseudocódigo}]
+{\bf Tiempos y pickers}
+\startformula
+\startalign[n=2, align={right,left}]
+    \NC T^{travel} \NC \quad \text{tiempo por unidad de distancia, a velocidad de referencia} \NR
+    \NC T^{setup} \NC \quad \text{tiempo de preparación de cada lote} \NR
+    \NC T^{pick} \NC \quad \text{tiempo de picking por unidad de capacidad} \NR
+    \NC V_p \NC \quad \text{factor de velocidad del picker } p \text{ (} 1{,}0 = \text{referencia; } 2{,}0 = \text{camina el doble de rápido)} \NR
+    \NC T^{cold} \NC \quad \text{tiempo máximo que un lote puede estar fuera de la cámara de frío} \NR
+    \NC \varepsilon \NC \quad \text{tolerancia numérica del chequeo de frío } (10^{-9}) \NR
+\stopalign
+\stopformula
 
-\starttyping
-procedure HillClimbing(B_nb_fijo)
-  // B_nb es la asignación fija de órdenes a lotes
+{\bf Pesos del objetivo}
+\startformula
+\startalign[n=2, align={right,left}]
+    \NC W^{c} \NC \quad \text{peso de los tiempos de completitud de los lotes} \NR
+    \NC W^{pen} \NC \quad \text{peso del total de penalizaciones} \NR
+    \NC W^{e},\; W^{t} \NC \quad \text{peso del adelanto y de la tardanza dentro de las penalizaciones} \NR
+\stopalign
+\stopformula
 
-  solución ← GenerarSoluciónInicial(B_nb_fijo)
-  costo ← Evaluar(solución)
+{\bf Constantes grandes (Big-M)}
+\startformula
+\startalign[n=2, align={right,left}]
+    \NC M \NC \quad \text{constante grande general, dato del escenario} \NR
+    \NC M^{seq} \NC \quad \text{constante grande de las restricciones de secuencia, calculada por instancia (ver abajo)} \NR
+\stopalign
+\stopformula
+\stopsubsection
 
-  iteración ← 0
-  sin_mejora ← 0
+\startsubsection[title={Parámetros derivados}]
 
-  mientras iteración < máx_iteraciones Y sin_mejora < máx_sin_mejora hacer
-    iteración ← iteración + 1
+Se calculan a partir de los datos, antes de resolver:
+\startformula
+\startalign[n=2, align={right,left}]
+    \NC a_{bi} \NC = \startmathcases
+                    \NC 1 \MC \text{si alguna orden del lote } b \text{ tiene productos en } i \text{, es decir, } \sum_{n \in \mathcal{N}_b} A_{ni} \ge 1 \NR
+                    \NC 0 \MC \text{en otro caso} \NR
+                 \stopmathcases \NR
+    \NC L_b \NC = \sum_{i \in \mathcal{V}^{int}} a_{bi} \quad \text{(cantidad de locaciones que el lote } b \text{ debe visitar)} \NR
+    \NC F_b \NC = T^{setup} + T^{pick} \cdot \sum_{n \in \mathcal{N}_b} C_n \quad \text{(tiempo fijo del lote: no depende de la ruta ni del picker)} \NR
+\stopalign
+\stopformula
 
-    vecino ← GenerarVecino(solución)  // Modifica rutas con 2-opt
-    costo_vecino ← Evaluar(vecino)
+El tiempo que tarda el picker $p$ en ejecutar el lote $b$ es su tiempo fijo más el tiempo de
+ruta ajustado por su velocidad:
+\startformula
+T^{exec}_{pb} = F_b + \frac{r_b}{V_p}
+\stopformula
+donde $r_b$ es el tiempo de ruta del lote (traslado + servicio a velocidad de referencia). En
+el modelo monolítico $r_b$ es una variable; en el de dos etapas es un dato.
 
-    si costo_vecino < costo entonces
-      solución ← vecino
-      costo ← costo_vecino
-      sin_mejora ← 0
-    sino
-      sin_mejora ← sin_mejora + 1
-    fin si
-  fin mientras
+$M^{seq}$ se calcula para cada instancia como una cota del tiempo total: lo que tardaría el
+picker más lento en ejecutar todos los lotes seguidos, con una ruta de peor caso. Se redondea al
+entero y tiene un piso de 500:
+\startformula
+\startalign[n=2, align={right,left}]
+    \NC M^{seq} \NC = \max\left(500,\; \sum_{b \in \mathcal{B}} \left( F_b + \frac{R^{max}}{\min_{p} V_p} \right) + 1 \right) \NR
+    \NC R^{max} \NC = T^{travel} \cdot |\mathcal{V}| \cdot \max_{(i,j) \in \mathcal{E}} D_{ij} \;+\; |\mathcal{V}| \cdot \max_{i \in \mathcal{V}} S_i \NR
+\stopalign
+\stopformula
+\stopsubsection
 
-  devolver solución
-fin procedure
+\startsubsection[title={Cómo leer las restricciones con Big-M}]
+
+Varias restricciones solo deben valer cuando una variable binaria vale 1, por ejemplo cuando
+el lote $b$ está asignado al picker $p$ ($x_{pb} = 1$). Se escriben así:
+\startformula
+\text{expresión} \;\le\; \text{cota} + M \cdot (1 - x_{pb})
+\stopformula
+\startitemize
+\item Si $x_{pb} = 1$, el término $M \cdot (1 - x_{pb})$ vale 0 y la restricción vale tal cual.
+\item Si $x_{pb} = 0$, se suma $M$, que es tan grande que la restricción se cumple siempre: queda
+desactivada.
+\stopitemize
+Cuando la condición involucra varias binarias, el término es $M \cdot (k - \text{suma de las
+binarias})$: vale 0 solo si las $k$ binarias valen 1.
+\stopsubsection
+
+\stopsection
+
+
+\page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsection[title={Modelo monolítico}]
+
+Un único MIP decide a la vez la ruta de cada lote, a qué picker se asigna y en qué orden lo
+ejecuta.
+
+\startsubsection[title={Variables}]
+
+{\bf Ruteo}
+\startformula
+\startalign[n=2, align={right,left}]
+    \NC z_{ijb} \in \{0,1\} \NC \quad 1 \text{ si la ruta del lote } b \text{ usa el arco } (i,j) \NR
+    \NC q_{ijb} \ge 0 \NC \quad \text{cuántas locaciones del lote } b \text{ quedan por visitar al recorrer el arco } (i,j) \NR
+    \NC r_b \ge 0 \NC \quad \text{tiempo de ruta del lote } b \text{ (traslado + servicio)} \NR
+\stopalign
+\stopformula
+
+{\bf Asignación y secuencia}
+\startformula
+\startalign[n=2, align={right,left}]
+    \NC x_{pb} \in \{0,1\} \NC \quad 1 \text{ si el lote } b \text{ se asigna al picker } p \NR
+    \NC y_{bk} \in \{0,1\} \NC \quad \text{para } b < k \text{: } 1 \text{ si } b \text{ se ejecuta antes que } k \text{ (si comparten picker)} \NR
+\stopalign
+\stopformula
+
+{\bf Tiempos}
+\startformula
+\startalign[n=2, align={right,left}]
+    \NC u_{pb} \in [0,\; T^{cold} + \varepsilon] \NC \quad \text{tiempo de ejecución del lote } b \text{ si lo hace el picker } p \NR
+    \NC c_{pb} \ge 0 \NC \quad \text{momento en que termina el lote } b \text{ en la agenda del picker } p \NR
+    \NC c_b \ge 0 \NC \quad \text{momento en que termina el lote } b \NR
+    \NC ta_n \ge 0,\; ea_n \ge 0 \NC \quad \text{tardanza y adelanto de la orden } n \text{ respecto de } T^{due}_n \NR
+\stopalign
+\stopformula
+
+La cota superior de $u_{pb}$ es la cadena de frío (ver (15)).
+\stopsubsection
+
+\startsubsection[title={Función objetivo}]
+
+Minimizar la suma ponderada de los tiempos de completitud de los lotes y de las penalizaciones
+por adelanto y tardanza de las órdenes:
+\startformula
+\min \;\; W^{c} \cdot \sum_{b \in \mathcal{B}} c_b \;+\; W^{pen} \cdot \left( W^{e} \cdot \sum_{n \in \mathcal{N}} ea_n + W^{t} \cdot \sum_{n \in \mathcal{N}} ta_n \right)
+\stopformula
+
+El tiempo de ruta no aparece en el objetivo: solo influye a través de los tiempos de
+completitud y de la cadena de frío.
+\stopsubsection
+
+\startsubsection[title={Restricciones de ruteo}]
+
+Cada lote $b$ recorre un camino simple desde $v_{start}$ hasta $v_{end}$ que pasa por todas sus
+locaciones requeridas ($a_{bi} = 1$). Puede atravesar otras locaciones, pero ninguna dos veces.
+
+\startsubsubsection[title={(1)--(4) Inicio y fin de la ruta}]
+La ruta sale una vez del depósito y llega una vez al nodo final. Si el depósito y el nodo final
+son distintos, además no se vuelve al depósito ni se sale del nodo final.
+\startformula
+\startalign[n=3, align={right,left,left}]
+    \NC (1) \NC \sum_{(i,j) \in \delta^{+}(v_{start})} z_{ijb} = 1 \NC \qquad \forall b \in \mathcal{B} \NR
+    \NC (2) \NC \sum_{(i,j) \in \delta^{-}(v_{end})} z_{ijb} = 1 \NC \qquad \forall b \in \mathcal{B} \NR
+    \NC (3) \NC \sum_{(i,j) \in \delta^{-}(v_{start})} z_{ijb} = 0 \NC \qquad \forall b \in \mathcal{B} \text{, si } v_{start} \ne v_{end} \NR
+    \NC (4) \NC \sum_{(i,j) \in \delta^{+}(v_{end})} z_{ijb} = 0 \NC \qquad \forall b \in \mathcal{B} \text{, si } v_{start} \ne v_{end} \NR
+\stopalign
+\stopformula
+\stopsubsubsection
+
+\startsubsubsection[title={(5)--(9) Visitas y continuidad}]
+(5) y (6): a cada locación requerida se entra y se sale. (7): en las locaciones intermedias, lo
+que entra sale. (8) y (9): a cada locación se entra y se sale como máximo una vez, así que
+ninguna se repite.
+\startformula
+\startalign[n=3, align={right,left,left}]
+    \NC (5) \NC \sum_{(i,j) \in \delta^{-}(j)} z_{ijb} \ge a_{bj} \NC \qquad \forall b \in \mathcal{B},\; j \in \mathcal{V}^{int} \NR
+    \NC (6) \NC \sum_{(j,i) \in \delta^{+}(j)} z_{jib} \ge a_{bj} \NC \qquad \forall b \in \mathcal{B},\; j \in \mathcal{V}^{int} \NR
+    \NC (7) \NC \sum_{(g,i) \in \delta^{-}(i)} z_{gib} = \sum_{(i,j) \in \delta^{+}(i)} z_{ijb} \NC \qquad \forall b \in \mathcal{B},\; i \in \mathcal{V}^{int} \NR
+    \NC (8) \NC \sum_{(j,i) \in \delta^{-}(i)} z_{jib} \le 1 \NC \qquad \forall b \in \mathcal{B},\; i \in \mathcal{V} \setminus \{v_{start}\} \NR
+    \NC (9) \NC \sum_{(i,j) \in \delta^{+}(i)} z_{ijb} \le 1 \NC \qquad \forall b \in \mathcal{B},\; i \in \mathcal{V} \setminus \{v_{end}\} \NR
+\stopalign
+\stopformula
+\stopsubsubsection
+
+\startsubsubsection[title={(10)--(12) Eliminación de ciclos sueltos (Gavish-Graves)}]
+(1)--(9) todavía permiten soluciones con un camino del depósito al final más un ciclo aparte
+que visita algunas locaciones requeridas sin conectarse con el depósito. Para evitarlo se
+envía un flujo $q$: sale del depósito con $L_b$ unidades, una por cada locación requerida, y
+cada locación requerida consume una. Como el flujo solo circula por arcos usados (10) y
+nace solo en el depósito (11), una locación requerida únicamente puede recibir su unidad si
+está conectada al depósito por la ruta.
+\startformula
+\startalign[n=3, align={right,left,left}]
+    \NC (10) \NC q_{ijb} \le L_b \cdot z_{ijb} \NC \qquad \forall b \in \mathcal{B},\; (i,j) \in \mathcal{E} \NR
+    \NC (11) \NC \sum_{(i,j) \in \delta^{+}(v_{start})} q_{ijb} = L_b \NC \qquad \forall b \in \mathcal{B} \NR
+    \NC (12) \NC \sum_{(g,i) \in \delta^{-}(i)} q_{gib} - \sum_{(i,j) \in \delta^{+}(i)} q_{ijb} = a_{bi} \NC \qquad \forall b \in \mathcal{B},\; i \in \mathcal{V}^{int} \NR
+\stopalign
+\stopformula
+\stopsubsubsection
+
+\startsubsubsection[title={(13) Tiempo de ruta}]
+El tiempo de ruta es la distancia recorrida por $T^{travel}$ más el tiempo de servicio de cada
+locación intermedia por la que se pasa (se cuenta una locación cuando la ruta sale de ella).
+Sea $\mathcal{E}^{r} = \{(i,j) \in \mathcal{E} : i \ne v_{end},\; j \ne v_{start}\}$:
+\startformula
+r_b = T^{travel} \cdot \sum_{(i,j) \in \mathcal{E}^{r}} D_{ij} \, z_{ijb}
+\;+\; \sum_{i \in \mathcal{V}^{int}} S_i \sum_{(i,j) \in \delta^{+}(i)} z_{ijb}
+\qquad \forall b \in \mathcal{B}
+\stopformula
+Es decir, no suman los arcos que entran al depósito o salen del nodo final. Si $v_{start} = v_{end}$, esto
+deja fuera también el primer y el último tramo de la ruta.
+\stopsubsubsection
+\stopsubsection
+
+\startsubsection[title={(14)--(18) Asignación y tiempo de ejecución}]
+(14): cada lote se asigna a exactamente un picker. (15) y (16): si el picker $p$ ejecuta el lote
+$b$, $u_{pb}$ es exactamente su tiempo de ejecución $F_b + r_b / V_p$; si no, quedan
+desactivadas. (17): el lote no termina antes de lo que tarda en ejecutarse. (18): el momento
+de terminación del lote es el de la agenda del picker que lo ejecuta.
+\startformula
+\startalign[n=3, align={right,left,left}]
+    \NC (14) \NC \sum_{p \in \mathcal{P}} x_{pb} = 1 \NC \qquad \forall b \in \mathcal{B} \NR
+    \NC (15) \NC u_{pb} \ge F_b + \frac{r_b}{V_p} - M \cdot (1 - x_{pb}) \NC \qquad \forall p \in \mathcal{P},\; b \in \mathcal{B} \NR
+    \NC (16) \NC u_{pb} \le F_b + \frac{r_b}{V_p} + M \cdot (1 - x_{pb}) \NC \qquad \forall p \in \mathcal{P},\; b \in \mathcal{B} \NR
+    \NC (17) \NC c_{pb} \ge u_{pb} \NC \qquad \forall p \in \mathcal{P},\; b \in \mathcal{B} \NR
+    \NC (18) \NC c_b \ge c_{pb} - M \cdot (1 - x_{pb}) \NC \qquad \forall p \in \mathcal{P},\; b \in \mathcal{B} \NR
+\stopalign
+\stopformula
+
+{\bf Cadena de frío.} No hace falta una restricción aparte: está en la cota de la variable,
+$u_{pb} \le T^{cold} + \varepsilon$. Si $x_{pb} = 1$, (15) obliga a
+$u_{pb} \ge F_b + r_b / V_p$, así que el picker $p$ solo puede ejecutar el lote $b$ si
+$F_b + r_b / V_p \le T^{cold} + \varepsilon$. Si $x_{pb} = 0$, $u_{pb}$ puede valer 0 y la cota
+no restringe nada.
+\stopsubsection
+
+\startsubsection[title={(19)--(20) Secuencia sin solapamiento}]
+Un picker ejecuta un lote por vez. Para cada picker $p$ y cada par de lotes $b < k$:
+\startformula
+\startalign[n=3, align={right,left,left}]
+    \NC (19) \NC c_{pk} \ge c_{pb} + F_k + \frac{r_k}{V_p} - M^{seq} \cdot (3 - x_{pb} - x_{pk} - y_{bk}) \NC \qquad \forall p \in \mathcal{P},\; b < k \NR
+    \NC (20) \NC c_{pb} \ge c_{pk} + F_b + \frac{r_b}{V_p} - M^{seq} \cdot (2 - x_{pb} - x_{pk} + y_{bk}) \NC \qquad \forall p \in \mathcal{P},\; b < k \NR
+\stopalign
+\stopformula
+\startitemize
+\item Si $p$ ejecuta los dos lotes y $y_{bk} = 1$ ($b$ va primero), solo vale (19): $k$ termina
+al menos su tiempo de ejecución después de que termina $b$.
+\item Si $p$ ejecuta los dos lotes y $y_{bk} = 0$ ($k$ va primero), solo vale (20), con los
+papeles invertidos.
+\item Si $p$ no ejecuta alguno de los dos, las dos quedan desactivadas.
+\stopitemize
+\stopsubsection
+
+\startsubsection[title={(21)--(22) Tardanza y adelanto}]
+Cada orden termina cuando termina su lote. Su tardanza es lo que se pasa de la fecha de
+entrega y su adelanto, lo que le falta para llegar a ella:
+\startformula
+\startalign[n=3, align={right,left,left}]
+    \NC (21) \NC ta_n \ge c_{pb} - T^{due}_n - M \cdot (1 - x_{pb}) \NC \qquad \forall p \in \mathcal{P},\; b \in \mathcal{B},\; n \in \mathcal{N}_b \NR
+    \NC (22) \NC ea_n \ge T^{due}_n - c_{pb} - M \cdot (1 - x_{pb}) \NC \qquad \forall p \in \mathcal{P},\; b \in \mathcal{B},\; n \in \mathcal{N}_b \NR
+\stopalign
+\stopformula
+Como $ta_n, ea_n \ge 0$ y el objetivo los minimiza, en el óptimo
+$ta_n = \max(0,\, c_b - T^{due}_n)$ y $ea_n = \max(0,\, T^{due}_n - c_b)$.
+\stopsubsection
+
+\startsubsection[title={Espera voluntaria}]
+(17) y (19)--(20) son desigualdades: piden que un lote termine {\em no antes} de lo que tarda,
+pero permiten declarar un $c_{pb}$ mayor. Cuando el adelanto pesa en el objetivo, al modelo le
+puede convenir declarar un lote terminado más tarde para acercarlo a la fecha de entrega. Es
+una propiedad de la formulación, compartida por los dos modelos exactos, y es la razón por la
+que algunas instancias no se comparan en objetivo con las heurísticas (sección
+\in[sec:comparacion]).
+\stopsubsection
+
+\stopsection
+
+
+\page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsection[title={Modelo en dos etapas}]
+
+El mismo problema se resuelve con dos MIP, uno después del otro:
+\startitemize[n]
+\item {\bf Etapa 1}: calcula la ruta más corta de cada lote.
+\item {\bf Etapa 2}: con esos tiempos de ruta como datos, decide asignación, secuencia y
+cadena de frío.
+\stopitemize
+
+Se puede separar porque la ruta de un lote no depende de qué picker lo ejecuta ni del orden
+entre lotes, y una ruta más corta nunca empeora el objetivo: solo adelanta las terminaciones y
+facilita cumplir la cadena de frío.
+
+\startsubsection[title={Etapa 1: ruteo de cada lote}]
+
+{\bf Variables:} $z_{ijb}$, $q_{ijb}$ y $r_b$, con el mismo significado que en el monolítico.
+
+{\bf Objetivo:} minimizar el tiempo total de ruta.
+\startformula
+\min \sum_{b \in \mathcal{B}} r_b
+\stopformula
+Como los lotes no comparten ninguna restricción, minimizar la suma es lo mismo que minimizar
+cada $r_b$ por separado, y en la práctica cada lote se resuelve como un MIP independiente.
+
+{\bf Restricciones:} exactamente (1)--(13) del monolítico. No usa pickers, pesos del objetivo
+ni tiempos de preparación o picking.
+
+{\bf Resultado:} el tiempo de ruta mínimo de cada lote, $R_b = r_b^{*}$, que pasa a la
+Etapa~2 como dato.
+\stopsubsection
+
+\startsubsection[title={Etapa 2: asignación, secuencia y cadena de frío}]
+
+\startsubsubsection[title={Datos que vienen de la Etapa 1}]
+Con $R_b$ fijo, el tiempo de ejecución de cada par (picker, lote) es un número conocido antes
+de resolver, y la cadena de frío se puede chequear de antemano:
+\startformula
+\startalign[n=2, align={right,left}]
+    \NC T^{exec}_{pb} \NC = F_b + \frac{R_b}{V_p} \NR
+    \NC \mathcal{PB}^{elig} \NC = \left\{ (p,b) \in \mathcal{P} \times \mathcal{B} : T^{exec}_{pb} \le T^{cold} + \varepsilon \right\} \NR
+\stopalign
+\stopformula
+$\mathcal{PB}^{elig}$ son los pares en que el picker puede ejecutar el lote sin violar la
+cadena de frío. Las variables $x_{pb}$ y $c_{pb}$ existen solo para esos pares, así que la
+cadena de frío se cumple por construcción y no necesita ninguna restricción.
+\stopsubsubsection
+
+\startsubsubsection[title={Variables}]
+\startformula
+\startalign[n=2, align={right,left}]
+    \NC x_{pb} \in \{0,1\} \NC \quad 1 \text{ si el lote } b \text{ se asigna al picker } p \text{, para } (p,b) \in \mathcal{PB}^{elig} \NR
+    \NC c_{pb} \ge 0 \NC \quad \text{momento en que termina el lote } b \text{ en la agenda de } p \text{, para } (p,b) \in \mathcal{PB}^{elig} \NR
+    \NC c_b \ge 0 \NC \quad \text{momento en que termina el lote } b \NR
+    \NC y_{bk} \in \{0,1\} \NC \quad \text{para } b < k \text{: } 1 \text{ si } b \text{ se ejecuta antes que } k \NR
+    \NC ta_n \ge 0,\; ea_n \ge 0 \NC \quad \text{tardanza y adelanto de la orden } n \NR
+\stopalign
+\stopformula
+No hace falta la variable $u_{pb}$ del monolítico, porque el tiempo de ejecución ya es un dato.
+\stopsubsubsection
+
+\startsubsubsection[title={Función objetivo}]
+La misma del monolítico:
+\startformula
+\min \;\; W^{c} \cdot \sum_{b \in \mathcal{B}} c_b \;+\; W^{pen} \cdot \left( W^{e} \cdot \sum_{n \in \mathcal{N}} ea_n + W^{t} \cdot \sum_{n \in \mathcal{N}} ta_n \right)
+\stopformula
+\stopsubsubsection
+
+\startsubsubsection[title={(1)--(3) Asignación y terminación}]
+(1): cada lote se asigna a exactamente un picker elegible. (2): si el picker $p$ ejecuta el lote
+$b$, el lote no termina antes de su tiempo de ejecución; si no lo ejecuta, el lado izquierdo es
+0 y no restringe. (3): el momento de terminación del lote es el de la agenda del picker que lo
+ejecuta.
+\startformula
+\startalign[n=3, align={right,left,left}]
+    \NC (1) \NC \sum_{p : (p,b) \in \mathcal{PB}^{elig}} x_{pb} = 1 \NC \qquad \forall b \in \mathcal{B} \NR
+    \NC (2) \NC c_{pb} \ge T^{exec}_{pb} \cdot x_{pb} \NC \qquad \forall (p,b) \in \mathcal{PB}^{elig} \NR
+    \NC (3) \NC c_b \ge c_{pb} - M \cdot (1 - x_{pb}) \NC \qquad \forall (p,b) \in \mathcal{PB}^{elig} \NR
+\stopalign
+\stopformula
+(2) reemplaza a (15)--(17) del monolítico: como $T^{exec}_{pb}$ es un número, el producto
+$T^{exec}_{pb} \cdot x_{pb}$ es lineal y no hace falta Big-M.
+\stopsubsubsection
+
+\startsubsubsection[title={(4)--(5) Secuencia sin solapamiento}]
+Iguales a (19)--(20) del monolítico, con $T^{exec}_{pb}$ como dato. Se generan para cada picker
+$p$ y cada par de lotes $b < k$ elegibles para $p$:
+\startformula
+\startalign[n=3, align={right,left,left}]
+    \NC (4) \NC c_{pk} \ge c_{pb} + T^{exec}_{pk} - M^{seq} \cdot (3 - x_{pb} - x_{pk} - y_{bk}) \NC \qquad (p,b),(p,k) \in \mathcal{PB}^{elig},\; b < k \NR
+    \NC (5) \NC c_{pb} \ge c_{pk} + T^{exec}_{pb} - M^{seq} \cdot (2 - x_{pb} - x_{pk} + y_{bk}) \NC \qquad (p,b),(p,k) \in \mathcal{PB}^{elig},\; b < k \NR
+\stopalign
+\stopformula
+Se leen igual que en el monolítico: solo una de las dos está activa, según qué lote va primero,
+y ambas se desactivan si $p$ no ejecuta los dos lotes.
+\stopsubsubsection
+
+\startsubsubsection[title={(6)--(7) Tardanza y adelanto}]
+Iguales a (21)--(22) del monolítico, para los pares elegibles:
+\startformula
+\startalign[n=3, align={right,left,left}]
+    \NC (6) \NC ta_n \ge c_{pb} - T^{due}_n - M \cdot (1 - x_{pb}) \NC \qquad \forall (p,b) \in \mathcal{PB}^{elig},\; n \in \mathcal{N}_b \NR
+    \NC (7) \NC ea_n \ge T^{due}_n - c_{pb} - M \cdot (1 - x_{pb}) \NC \qquad \forall (p,b) \in \mathcal{PB}^{elig},\; n \in \mathcal{N}_b \NR
+\stopalign
+\stopformula
+\stopsubsubsection
+
+\startsubsubsection[title={(8)--(9) Dominio de las variables}]
+\startformula
+\startalign[n=3, align={right,left,left}]
+    \NC (8) \NC ta_n,\; ea_n,\; c_b,\; c_{pb} \ge 0 \NC \qquad \forall n \in \mathcal{N},\; b \in \mathcal{B},\; (p,b) \in \mathcal{PB}^{elig} \NR
+    \NC (9) \NC x_{pb},\; y_{bk} \in \{0,1\} \NC \qquad \forall (p,b) \in \mathcal{PB}^{elig},\; b < k \NR
+\stopalign
+\stopformula
+\stopsubsubsection
+\stopsubsection
+
+\stopsection
+
+
+\page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsection[title={Diferencias entre las formulaciones}]
+
+\bTABLE[split=yes, align=middle, frame=on, width=broad]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Aspecto \eTH \bTH Monolítico \eTH \bTH Dos etapas \eTH \eTR
+\bTR \bTD Número de MIPs \eTD \bTD 1 \eTD \bTD 2 (secuenciales) \eTD \eTR
+\bTR \bTD Tiempo de ruta ($r_b$ / $R_b$) \eTD \bTD Variable de decisión \eTD \bTD Dato (resultado de Etapa 1) \eTD \eTR
+\bTR \bTD $T^{exec}_{pb}$ \eTD \bTD Expresión con variable ($F_b + r_b / V_p$) \eTD \bTD Parámetro precalculado \eTD \eTR
+\bTR \bTD Variable $u_{pb}$ \eTD \bTD Sí (con Big-M en (15)--(16)) \eTD \bTD No (innecesaria) \eTD \eTR
+\bTR \bTD Cadena de frío \eTD \bTD Cota superior: $u_{pb} \le T^{cold} + \varepsilon$ \eTD \bTD Dominio: $\mathcal{PB}^{elig}$ \eTD \eTR
+\bTR \bTD Dominio de $x_{pb}$ \eTD \bTD $\mathcal{P} \times \mathcal{B}$ (todos los pares) \eTD \bTD $\mathcal{PB}^{elig}$ (solo elegibles) \eTD \eTR
+\bTR \bTD Piso de completitud \eTD \bTD $u_{pb} \le c_{pb}$ (17) \eTD \bTD $T^{exec}_{pb} \cdot x_{pb} \le c_{pb}$ (2) \eTD \eTR
+\bTR \bTD Ruta garantizada mínima \eTD \bTD No (puede elegir ruta no mínima) \eTD \bTD Sí (Etapa 1 minimiza $r_b$) \eTD \eTR
+\bTR \bTD Tamaño del MIP principal \eTD \bTD Grande (ruteo + scheduling juntos) \eTD \bTD Menor (cada etapa por separado) \eTD \eTR
+\eTABLE
+
+\stopsection
+
+
+\page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsection[title={Heurísticas: HC y ACO}, reference=sec:heuristicas]
+
+HC y ACO resuelven el mismo problema que los modelos exactos, con la misma notación de las secciones
+anteriores: ruteo de cada lote, asignación de lotes a pickers y secuencia de cada picker, con
+velocidades heterogéneas y cadena de frío. Como los modelos exactos, no modelan congestión entre pickers.
+
+\startsubsection[title={Representación común de una solución}]
+
+Una solución $S$ de cualquiera de las dos heurísticas tiene tres componentes:
+\startitemize
+\item {\bf Ruta} $\rho_b$ de cada lote $b$: un camino simple de $v_{start}$ a $v_{end}$ por
+arcos de $\mathcal{E}$ que visita todas las locaciones requeridas del lote. Como en los modelos exactos, no se
+repite ningún vértice (restricciones (8)--(9) del monolítico).
+\item {\bf Asignación} $p(b) \in \mathcal{P}$ de cada lote a un picker (equivale a $x_{pb}$).
+\item {\bf Secuencia} $\sigma_p = (b_1, \dots, b_k)$ de los lotes asignados a cada picker
+(equivale a $y_{bk}$).
+\stopitemize
+
+El tiempo de ruta y el tiempo de ejecución se calculan como en los modelos exactos, pero sobre la ruta
+concreta de la heurística:
+\startformula
+\startalign
+    \NC R_b(\rho_b) \NC = T^{travel} \cdot \sum_{(i,j) \in \rho_b} D_{ij} \;+\; \sum_{i \in \rho_b \setminus \{v_{start},v_{end}\}} S_i \NR
+    \NC T^{exec}_{pb} \NC = F_b + \frac{R_b(\rho_b)}{V_p} \NR
+\stopalign
+\stopformula
+
+Los lotes de cada picker se ejecutan uno detrás del otro, sin esperas: si
+$\sigma_p = (b_1, \dots, b_k)$,
+\startformula
+c_{b_1} = T^{exec}_{p b_1}, \qquad c_{b_j} = c_{b_{j-1}} + T^{exec}_{p b_j} \quad (j = 2, \dots, k)
+\stopformula
+y para cada orden $n$ del lote $b$, $ta_n = \max(0,\, c_b - T^{due}_n)$ y
+$ea_n = \max(0,\, T^{due}_n - c_b)$. El objetivo $f(S)$ es exactamente el de los modelos exactos:
+\startformula
+f(S) = W^{c} \cdot \sum_{b \in \mathcal{B}} c_b + W^{pen} \cdot \left( W^{e} \cdot \sum_{n \in \mathcal{N}} ea_n + W^{t} \cdot \sum_{n \in \mathcal{N}} ta_n \right)
+\stopformula
+
+Esta es la única diferencia de modelado con los modelos exactos: en ellos la restricción de completitud es una
+desigualdad ($c_{pb} \ge T^{exec}_{pb}$ y las de secuenciación), así que el modelo puede
+declarar un lote terminado más tarde de lo que termina para reducir el adelanto
+({\em espera voluntaria}). Las heurísticas reportan el tiempo real de terminación.
+
+\stopsubsection
+
+\startsubsection[title={Cadena de frío: dura en la respuesta, blanda en la búsqueda}]
+
+Un par $(p,b)$ es elegible si $T^{exec}_{pb} \le T^{cold} + \varepsilon$, como en
+$\mathcal{PB}^{elig}$ del modelo en dos etapas. La solución que reporta una heurística cumple siempre esa
+condición para todos sus lotes. Durante la búsqueda, en cambio, se permite pasar por
+soluciones que la violan, penalizadas por el exceso total:
+\startformula
+\startalign
+    \NC \Delta^{cold}(S) \NC = \sum_{b \in \mathcal{B}} \max\left(0,\; T^{exec}_{p(b)\,b} - T^{cold} - \varepsilon\right) \NR
+    \NC g(S) \NC = f(S) + 1000 \cdot \Delta^{cold}(S) \NR
+\stopalign
+\stopformula
+
+$g$ decide qué movimientos se aceptan; la mejor solución se guarda aparte, solo entre las que
+tienen $\Delta^{cold}(S) = 0$, y se mide con $f$. Así una ruta inicial demasiado larga para el
+límite de frío no descarta la instancia: la búsqueda puede acortarla o pasar el lote a un
+picker más rápido.
+
+Antes de buscar, las dos heurísticas aplican un único chequeo de infactibilidad que es exacto,
+no una estimación: con $R_b = 0$, el mejor caso posible, $T^{exec}_{pb} = F_b$ para todo
+picker, así que si $F_b > T^{cold} + \varepsilon$ ninguna ruta ni ningún picker puede cumplir
+el frío y la instancia se declara infactible. En cualquier otro caso
+la búsqueda corre completa; si termina sin ninguna solución que cumpla el frío, reporta
+infactible. Por eso una heurística {\em no prueba} infactibilidad: solo no encuentra solución.
+
+\stopsubsection
+
+\startsubsection[title={HC: Hill Climbing}]
+
+Búsqueda local estocástica de primera mejora: en cada iteración se elige {\em un} movimiento y
+{\em un} vecino al azar, y se acepta si baja $g$. No se recorre toda la vecindad antes de
+moverse, salvo dentro del movimiento de ruta.
+
+\starttyping[option=none]
+ALGORITMO HC4(params)
+    si algún lote no es elegible para ningún picker con R_b = 0:
+        retornar infeasible                       # chequeo exacto
+
+    S <- SolucionInicial()
+    si S es None: retornar infeasible             # lote no ruteable
+    mejor <- S si Delta_cold(S) = 0 si_no None
+    iteracion <- 0 ; sin_mejora <- 0
+
+    mientras iteracion < Max_it y sin_mejora < Max_imp
+                                y tiempo < Max_time:
+        iteracion <- iteracion + 1
+        S' <- Vecino(S)
+        si S' es None o g(S') >= g(S):
+            sin_mejora <- sin_mejora + 1 ; continuar
+        S <- S' ; sin_mejora <- 0
+        si Delta_cold(S) = 0 y f(S) < f(mejor):
+            mejor <- S
+
+    retornar mejor (o infeasible si es None)
+
+
+SUBRUTINA SolucionInicial()
+    para cada lote b con órdenes:
+        candidatas <- { vecino más cercano (Dijkstra),
+                        inserción más lejana, hacia adelante y hacia atrás,
+                        20 construcciones pick-to-pick al azar,
+                          con peso (1/d)^2.5, alternando el sentido,
+                          cada una mejorada con 2-opt }
+        si no hay candidatas: candidatas <- { búsqueda best-first acotada }
+        rho_b <- pulir(la candidata más corta)    # 2-opt, or-opt, re-ruteo
+    asignar cada lote al picker elegible con menos lotes
+        (si no tiene ninguno elegible: al que minimiza T_exec_pb)
+    retornar S
+
+
+SUBRUTINA Vecino(S)
+    elegir al azar entre los movimientos aplicables:
+    Ruta:        lote al azar; aplicar la mejor inversión 2-opt factible
+                 de su ruta, medida por distancia + penalización de frío
+    Reasignar:   lote al azar; pasarlo a otro picker al azar
+    Intercambio: picker al azar con 2 o más lotes; intercambiar dos
+                 posiciones de su secuencia
 \stoptyping
 
-\stopsubsection
-
-\startsubsection[title={Componentes Principales}]
-
-{\bf 1. Representación de Solución}
-
-Una solución es un conjunto de rutas, una para cada lote:
-
-\startitemize[bullet]
-    \item \bold{routes[b]} = lista ordenada de locaciones a visitar en lote $b$.
-    \item Ejemplo: routes[``B1''] = [``L1'', ``L3'', ``L2''] significa: depósito → L1 → L3 → L2 → final.
-\stopitemize
-
-{\bf 2. Solución Inicial}
-
-Para cada lote, se genera una ruta usando heurística de vecino más cercano:
-
-\startitemize[bullet]
-    \item Identificar todas las locaciones que deben visitarse (aquellas requeridas por las órdenes del lote).
-    \item Comenzar en el depósito.
-    \item Iterativamente visitar la locación no visitada más cercana.
-    \item Terminar en el nodo final.
-\stopitemize
-
-{\bf 3. Generación de Vecinos}
-
-Los vecinos se generan mediante el operador \bold{2-opt}:
-
-\startitemize[bullet]
-    \item Seleccionar aleatoriamente un lote.
-    \item Seleccionar dos posiciones $i < j$ en su ruta.
-    \item Invertir el segmento entre $i$ y $j$: route[i:j+1] = reverse(route[i:j+1]).
-\stopitemize
-
-Esto es la operación estándar de mejora de rutas usada en TSP heurísticos.
-
-{\bf 4. Evaluación}
-
-La función objetivo es exactamente la misma del modelo exacto:
-
-\startformula
-\min \left( W^{c} \cdot \sum_{b \in B} c_{b} + W^{pen} \cdot \left( W^{e} \cdot \sum_{n \in N} ea_{n} + W^{t} \cdot \sum_{n \in N} ta_{n} \right) \right)
-\stopformula
-
-Donde:
-\startformula
-\startalign
-    \NC c_{b} \NC = \text{Tiempo de completitud del lote } b \NR
-    \NC d_b \NC = T^{setup} + T^{pick} \cdot \sum_{n} C_n + T^{travel} \cdot distancia(ruta) + servicio \NR
-\stopalign
-\stopformula
-
-Los tiempos de adelanto ($ea_n$) y tardanza ($ta_n$) se calculan respecto a las fechas de entrega de cada orden.
-
-{\bf 5. Criterio de Parada}
-
-El algoritmo termina cuando:
-\startitemize[bullet]
-    \item Se alcanza el número máximo de iteraciones (defecto: 500), O
-    \item No hay mejora en N iteraciones consecutivas (defecto: 30).
-\stopitemize
+Parámetros en la suite de stress: $Max\_it = 200$, $Max\_imp = 60$ y $Max\_time = 30$~s. El
+tope de tiempo se mira entre iteraciones, así que no corta una construcción inicial en curso.
 
 \stopsubsection
 
-\startsubsection[title={Arquitectura del Código}]
+\startsubsection[title={ACO: Ant Colony Optimization}]
 
-\starttyping
-models/opp_hill_climbing/
-  ├── __init__.py                    # Exporta OPPHillClimbingV3
-  ├── opp_hill_climbing.py           # Clase principal del solver
-  ├── README.md                      # Documentación completa
-  ├── example_usage.py               # Ejemplo de uso
-  └── utils/
-      ├── __init__.py
-      ├── route_solution.py          # Representación de rutas
-      └── route_evaluator.py         # Cálculo de objetivo
+Cada hormiga construye una solución completa: para cada lote, primero la ruta y después el
+picker. Hay dos tablas de feromona: una de ruta, $\tau_{ij}$ entre pares de locaciones
+requeridas, y una de asignación, $\tau^{P}_{bp}$ entre lotes y pickers.
+
+{\bf Construcción de la ruta.} Es {\em pick-to-pick} (Chen et al., 2013): desde la última
+locación visitada $i$, la hormiga elige la próxima locación requerida $r$ entre las que faltan
+con probabilidad
+\startformula
+P(r) = \frac{\tau_{ir}^{\alpha} \cdot \eta_{ir}^{\beta}}{\sum_{s \text{ pendiente}} \tau_{is}^{\alpha} \cdot \eta_{is}^{\beta}}, \qquad \eta_{ir} = \frac{1}{d(i,r)}
+\stopformula
+y camina hasta ella por el camino más corto. Como los modelos exactos no permiten repetir vértices, $d(i,r)$ y
+el camino se recalculan en cada paso con Dijkstra, evitando los vértices ya usados. Cada lote
+tiene hasta 10 intentos de construcción, alternando el sentido (desde $v_{start}$ o desde
+$v_{end}$); si todos fallan se usa una ruta de respaldo por búsqueda best-first. Cada ruta
+construida se mejora con 2-opt y re-ruteo de segmentos.
+
+{\bf Elección del picker.} Por ruleta entre los pickers elegibles para la ruta recién
+construida, con peso $(\tau^{P}_{bp})^{\alpha} \cdot (1 / (1 + \text{carga}_p))^{\beta}$, donde
+la carga es la cantidad de lotes que la hormiga ya le asignó. Si ningún picker es elegible, la
+ruleta usa todos. La secuencia de cada picker se ordena por la fecha de entrega más temprana
+de sus órdenes.
+
+{\bf Feromonas.} La feromona de ruta sigue el esquema MAX-MIN (Stützle y Hoos, 2000): empieza
+en $\tau_{max} = 2 / \rho$, en cada iteración se evapora y solo depositan, con
+$\Delta\tau = 1$, la ruta más corta de la iteración y la más corta hasta el momento de cada
+lote; se mantiene en $[\tau_{max}/50,\; \tau_{max}]$. Aprende de la longitud de la ruta, no
+del objetivo completo. La feromona de asignación se evapora y recibe $Q / g(S)$ de cada
+hormiga, solo en los lotes que cumplen el frío, más un depósito doble de la mejor solución.
+
+{\bf Búsqueda local sobre la mejor solución.} Dos agregados propios, no tomados de la
+bibliografía, que se aplican cuando cambia la mejor solución:
+\startitemize
+\item {\em Recombinación}: reemplazar la ruta de cada lote por la más corta que haya
+construido cualquier hormiga, manteniendo asignación y secuencia; se acepta si baja $f$.
+\item {\em Búsqueda local de agenda}: con las rutas fijas, mover un lote a otro picker en
+cualquier posición, intercambiar dos lotes de la misma secuencia o intercambiar dos lotes entre
+pickers, hasta que ningún movimiento mejore. Son las vecindades de HC, recorridas en forma
+exhaustiva.
+\stopitemize
+
+\starttyping[option=none]
+ALGORITMO ACO4(params)
+    si algún lote no es elegible para ningún picker con R_b = 0:
+        retornar infeasible                       # chequeo exacto
+    inicializar tau (MAX-MIN) y tau_P
+    mejor <- None
+
+    para iteracion en 1 .. Max_it, mientras tiempo < Max_time:
+        para hormiga en 1 .. K:
+            S <- ConstruirSolucion(tau, tau_P)
+            registrar la ruta más corta de cada lote
+        pulir las rutas que mejoraron su récord
+        S* <- la hormiga de menor f entre las que cumplen el frío
+        si f(S*) < f(mejor): mejor <- S*
+        mejor <- Recombinar(mejor) ; mejor <- BusquedaLocalAgenda(mejor)
+        actualizar tau (mejores rutas por lote) y tau_P (todas las hormigas)
+
+    retornar mejor (o infeasible si es None)
 \stoptyping
 
-\bold{Clases principales}:
-
-\startitemize[bullet]
-    \item \bold{OPPHillClimbingV3}: Solver principal (hereda de Model). Implementa `solve(params)`.
-    \item \bold{RouteSolution}: Representa una solución como rutas para cada lote. Incluye método `to_z_dict()` para convertir al formato de arcos.
-    \item \bold{RouteEvaluator}: Calcula la función objetivo exacta del modelo OPP v3 dada una solución de rutas.
-\stopitemize
+Parámetros en la suite de stress: $K = 15$ hormigas, $Max\_it = 60$, $\alpha = 1{,}0$,
+$\beta = 2{,}5$, $\rho = 0{,}15$, $Q = 100$ y $Max\_time = 30$~min. Como en HC, el tope de
+tiempo se mira entre hormigas e iteraciones; la construcción puede usar hasta la mitad y el
+resto queda para pulir y para la búsqueda local.
 
 \stopsubsection
 
-\startsubsection[title={Interfaz de Uso}]
+\startsubsection[title={Los cuatro métodos lado a lado}]
 
-La heurística utiliza los mismos DTOs que el modelo exacto:
-
-\starttyping
-from models.opp_hill_climbing import OPPHillClimbingV3
-from dtos.opp.model_dto import ModelDTO
-from dtos.opp.solve_model_dto import SolveModelDTO
-
-solver = OPPHillClimbingV3(model_dto)
-status, output_graph = solver.solve(solve_dto)
-\stoptyping
-
-\bold{Diferencia clave}: El parámetro `solve_dto.B_nb` debe contener la \bold{asignación fija} de órdenes a lotes. Este es un parámetro de entrada, no una variable de decisión.
-
-\stopsubsection
-
-\startsubsection[title={Formato de Salida}]
-
-La salida es un objeto `OPPLocationGraph` que contiene:
-\startitemize[bullet]
-    \item Todos los vértices (locaciones).
-    \item Todos los arcos $(i, j, b)$ donde $z_{ijb} = 1$ en la solución.
-\stopitemize
-
-Este formato es completamente compatible con el método `build_output()` del solver exacto, permitiendo comparación directa y visualización idéntica.
-
-\stopsubsection
-
-\startsubsection[title={Comparación con Solver Exacto}]
-
-\bold{Ventajas del Hill Climbing}:
-\startitemize[bullet]
-    \item \bold{Velocidad}: 10-100x más rápido.
-    \item \bold{Predecible}: Tiempo de ejecución controlable mediante parámetros.
-    \item \bold{Escalable}: Maneja instancias grandes sin problema.
-    \item \bold{Compatible}: Mismo formato de entrada/salida que el solver exacto.
-\stopitemize
-
-\bold{Desventajas del Hill Climbing}:
-\startitemize[bullet]
-    \item \bold{No óptimo}: Converge a óptimos locales, no globales.
-    \item \bold{Aleatorio}: Resultados varían entre ejecuciones (debido a selecciones aleatorias).
-    \item \bold{Sensible}: Calidad depende de la solución inicial y la estructura del vecindario.
-\stopitemize
-
-\bold{Recomendaciones de uso}:
-\startitemize[bullet]
-    \item Usar \bold{Exacto} para instancias pequeñas (< 50 órdenes, < 5 lotes).
-    \item Usar \bold{Hill Climbing} para instancias medianas-grandes (> 100 órdenes).
-    \item Usar \bold{Hill Climbing como baseline} para algoritmos más sofisticados.
-    \item Usar \bold{ambos} y comparar para entender trade-off calidad-tiempo.
-\stopitemize
-
-\stopsubsection
-
-\startsubsection[title={Posibles Mejoras}]
-
-\startitemize[bullet]
-    \item \bold{Inicial mejor}: Savings algorithm, Christofides, LKH.
-    \item \bold{Mejores movimientos}: 3-opt, Or-opt, Lin-Kernighan.
-    \item \bold{Escape de óptimos locales}: Simulated Annealing, Tabu Search, Variable Neighborhood Search.
-    \item \bold{Multi-start}: Ejecutar múltiples veces y retornar mejor.
-    \item \bold{Paralelización}: Ejecutar múltiples búsquedas locales en paralelo.
-    \item \bold{Perturbaciones controladas}: Iterated Local Search (ILS).
-\stopitemize
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=broad]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Aspecto \eTH \bTH Monolítico \eTH \bTH Dos etapas \eTH \bTH HC \eTH \bTH ACO \eTH \eTR
+\bTR \bTD Tipo \eTD \bTD MIP (ZIMPL + SCIP) \eTD \bTD Dos MIP (ZIMPL + SCIP) \eTD \bTD Búsqueda local \eTD \bTD Colonia de hormigas + búsqueda local \eTD \eTR
+\bTR \bTD Optimalidad \eTD \bTD Probada \eTD \bTD Probada \eTD \bTD No \eTD \bTD No \eTD \eTR
+\bTR \bTD Ruta \eTD \bTD Variable, junto con la agenda \eTD \bTD Mínima por lote (Etapa 1) \eTD \bTD Construcción + 2-opt \eTD \bTD Hormigas + 2-opt + recombinación \eTD \eTR
+\bTR \bTD Asignación y secuencia \eTD \bTD Variables $x_{pb}$, $y_{bk}$ \eTD \bTD Variables $x_{pb}$, $y_{bk}$ \eTD \bTD Movimientos aleatorios \eTD \bTD Ruleta + búsqueda local \eTD \eTR
+\bTR \bTD Cadena de frío \eTD \bTD Cota de $u_{pb}$ \eTD \bTD Dominio $\mathcal{PB}^{elig}$ \eTD \bTD Dura al reportar, penalizada al buscar \eTD \bTD Dura al reportar, penalizada al buscar \eTD \eTR
+\bTR \bTD Espera voluntaria \eTD \bTD Sí \eTD \bTD Sí \eTD \bTD No \eTD \bTD No \eTD \eTR
+\bTR \bTD Infactibilidad \eTD \bTD Probada \eTD \bTD Probada \eTD \bTD No encuentra solución \eTD \bTD No encuentra solución \eTD \eTR
+\bTR \bTD Determinismo \eTD \bTD Sí \eTD \bTD Sí \eTD \bTD Semilla \eTD \bTD Semilla \eTD \eTR
+\eTABLE
+\blank[medium]
 
 \stopsubsection
 
 \stopsection
 
-\startsection[title={Quinta Versión: Metaheurística Bio-inspirada (OPP ACO)}]
 
-Además del modelo exacto (OPP\_v3) y la heurística de búsqueda local (Hill Climbing), se diseñó e implementó un motor basado en inteligencia de enjambres: {\bf Ant Colony Optimization (ACO)}. Esta metaheurística iterativa emula el comportamiento de búsqueda de las hormigas reales para converger hacia rutas óptimas.
+\page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsection[title={Comparación de los modelos exactos con las heurísticas}, reference=sec:comparacion]
 
-\startsubsection[title={Definición del Problema Adaptado para ACO}]
+Esta sección compara los cuatro métodos con los resultados de los experimentos.
 
-La metaheurística ACO, al igual que Hill Climbing, delega la lógica de asignación ({\em order batching}) asumiendo que los lotes ya se encuentran ensamblados. El esfuerzo computacional se concentra exclusivamente en el enrutamiento:
+\startsubsection[title={Comparabilidad}]
+
+Se comparan solo instancias en que los cuatro métodos resuelven exactamente los mismos datos.
+En la suite funcional, las heurísticas reciben exactamente los datos que resuelven los modelos exactos en cada
+test. En stress son 19 escenarios que los cuatro métodos construyen con el mismo generador y los
+mismos argumentos. Según el resultado del modelo exacto, cada instancia se compara así:
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\setupTABLE[column][4][width=6cm, align=flushleft]
+\bTR \bTH Resultado del modelo exacto \eTH \bTH Estado \eTH \bTH Objetivo \eTH \bTH Motivo \eTH \eTR
+\bTR \bTD Óptimo, sin espera \eTD \bTD Sí \eTD \bTD Sí \eTD \bTD Mismos datos, mismo objetivo \eTD \eTR
+\bTR \bTD Óptimo, con espera voluntaria \eTD \bTD Sí \eTD \bTD No \eTD \bTD El modelo exacto obtiene menos objetivo por diseño del modelo, no por un plan mejor \eTD \eTR
+\bTR \bTD Infactible \eTD \bTD Sí \eTD \bTD No \eTD \bTD Se verifica que la heurística tampoco encuentre solución \eTD \eTR
+\bTR \bTD No termina (timeout) \eTD \bTD No \eTD \bTD No \eTD \bTD No hay referencia; se usa para escala y para el experimento a igual tiempo \eTD \eTR
+\eTABLE
+\blank[medium]
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH  \eTH \bTH Funcional \eTH \bTH Stress \eTH \eTR
+\bTR \bTD Instancias \eTD \bTD 70 \eTD \bTD 19 \eTD \eTR
+\bTR \bTD Comparables en estado y objetivo \eTD \bTD 45 \eTD \bTD 9 \eTD \eTR
+\bTR \bTD Comparables solo en estado \eTD \bTD 22 \eTD \bTD 0 \eTD \eTR
+\bTR \bTD \quad infactible \eTD \bTD 12 \eTD \bTD 0 \eTD \eTR
+\bTR \bTD \quad usa espera voluntaria \eTD \bTD 10 \eTD \bTD 0 \eTD \eTR
+\bTR \bTD No comparables \eTD \bTD 3 \eTD \bTD 10 \eTD \eTR
+\eTABLE
+\blank[medium]
+
+{\bf Qué prueba cada suite.} La suite funcional son tests chicos, de pocos lotes y
+locaciones, y cada uno verifica una regla del problema: que se respete la capacidad del carro, que
+la ruta pase por todas las locaciones requeridas sin repetir ninguna, que se elija la ruta o el
+picker que conviene según las fechas de entrega, que se cumpla la cadena de frío, y que las
+instancias imposibles (una orden más grande que el carro, una locación inalcanzable, un lote sin
+picker que cumpla el frío) se detecten como infactibles. La suite de stress mide hasta qué tamaño
+llega cada método. Sus escenarios crecen en una dirección por vez: el tamaño del almacén (04 a 08),
+su forma (09), la cantidad de lotes y pickers (12 a 14 y 16 a 19), y casos particulares de la
+agenda (10, 11 y 15):
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\setupTABLE[column][2][align=flushleft]
+\bTR \bTH Caso \eTH \bTH Qué se prueba \eTH \bTH Lotes \eTH \bTH Pickers \eTH \bTH Grilla \eTH \eTR
+\bTR \bTD 01 \eTD \bTD Almacén muy grande, un lote por picker, órdenes atrasadas \eTD \bTD 30 \eTD \bTD 30 \eTD \bTD 100×100 \eTD \eTR
+\bTR \bTD 02 \eTD \bTD Un lote por picker, órdenes atrasadas \eTD \bTD 10 \eTD \bTD 10 \eTD \bTD 10×10 \eTD \eTR
+\bTR \bTD 03 \eTD \bTD Un solo picker con 40 lotes, órdenes atrasadas \eTD \bTD 40 \eTD \bTD 1 \eTD \bTD 7×7 \eTD \eTR
+\bTR \bTD 04 \eTD \bTD Perfil realista en almacén chico \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 7×7 \eTD \eTR
+\bTR \bTD 05 \eTD \bTD Igual que 04 en un almacén más grande \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 13×13 \eTD \eTR
+\bTR \bTD 06 \eTD \bTD Igual que 04, almacén 14×14 \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 14×14 \eTD \eTR
+\bTR \bTD 07 \eTD \bTD Igual que 04, almacén 15×15 \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 15×15 \eTD \eTR
+\bTR \bTD 08 \eTD \bTD Igual que 04, almacén 16×16: techo del ruteo exacto \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 16×16 \eTD \eTR
+\bTR \bTD 09 \eTD \bTD Almacén alargado: ¿importa la forma? \eTD \bTD 6 \eTD \bTD 3 \eTD \bTD 8×21 \eTD \eTR
+\bTR \bTD 10 \eTD \bTD Peso en la agenda: ruteo barato, 4 pickers \eTD \bTD 6 \eTD \bTD 4 \eTD \bTD 7×7 \eTD \eTR
+\bTR \bTD 11 \eTD \bTD Cadena de frío activa: solo los pickers rápidos \eTD \bTD 6 \eTD \bTD 4 \eTD \bTD 13×13 \eTD \eTR
+\bTR \bTD 12 \eTD \bTD Más personal: 8 lotes, 4 pickers \eTD \bTD 8 \eTD \bTD 4 \eTD \bTD 7×7 \eTD \eTR
+\bTR \bTD 13 \eTD \bTD Más personal: 10 lotes, 5 pickers \eTD \bTD 10 \eTD \bTD 5 \eTD \bTD 7×7 \eTD \eTR
+\bTR \bTD 14 \eTD \bTD Más personal: 12 lotes, 6 pickers \eTD \bTD 12 \eTD \bTD 6 \eTD \bTD 7×7 \eTD \eTR
+\bTR \bTD 15 \eTD \bTD Más pickers que lotes: quién queda libre \eTD \bTD 6 \eTD \bTD 9 \eTD \bTD 10×10 \eTD \eTR
+\bTR \bTD 16 \eTD \bTD Una ola: un lote por picker \eTD \bTD 12 \eTD \bTD 12 \eTD \bTD 10×10 \eTD \eTR
+\bTR \bTD 17 \eTD \bTD 3 pickers toman un segundo lote \eTD \bTD 15 \eTD \bTD 12 \eTD \bTD 10×10 \eTD \eTR
+\bTR \bTD 18 \eTD \bTD La mitad toma un segundo lote \eTD \bTD 18 \eTD \bTD 12 \eTD \bTD 10×10 \eTD \eTR
+\bTR \bTD 19 \eTD \bTD Todos toman dos lotes \eTD \bTD 24 \eTD \bTD 12 \eTD \bTD 10×10 \eTD \eTR
+\eTABLE
+\blank[medium]
+
+En stress no hay espera que descartar: en los escenarios 04 a 19 el peso por lote completado
+($W^{c} = 27$) es mayor que las órdenes por lote, así que esperar nunca conviene, y en los
+escenarios 01 a 03 todas las órdenes llegan tarde. Los 10 no comparables son los que el modelo en dos etapas no
+termina en 40 minutos. El monolítico resuelve las mismas instancias que el de dos etapas y llega al mismo
+óptimo en los 49 pares funcionales que resuelven los dos, pero en stress no termina ninguno de
+los 19 en 40 minutos, así que la referencia de stress es el modelo en dos etapas.
+
+\stopsubsection
+
+\startsubsection[title={Validez y estado}]
+
+Cada solución de las heurísticas se verificó contra el modelo monolítico: se fijan sus valores
+en las variables del modelo y SCIP decide si son factibles, sin reescribir ninguna restricción. Ninguna de las 150 soluciones verificadas (56
+funcionales y 19 de stress por heurística) viola una restricción del modelo, y el objetivo
+recalculado coincide con el reportado en todas.
+
+En estado, las dos heurísticas coinciden con el modelo en dos etapas en las 67 instancias funcionales
+comparables en estado y en los 9 escenarios de stress comparables: no devuelven solución en
+las 12 infactibles y siempre encuentran una en las factibles.
+
+\stopsubsection
+
+\startsubsection[title={Calidad y tiempo hasta terminar}]
+
+Brecha $= 100 \cdot (z_{\rm heur} - z_{\rm exacto}) / z_{\rm exacto}$ sobre las instancias comparables
+en objetivo, con cada método corriendo hasta su propio criterio de parada (el modelo en dos etapas hasta probar el
+óptimo, con tope de 40 minutos).
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Heurística \eTH \bTH Suite \eTH \bTH Instancias \eTH \bTH Óptimo \eTH \bTH Brecha media \eTH \bTH Máxima \eTH \bTH Dos etapas / heurística (mediana) \eTH \eTR
+\bTR \bTD HC \eTD \bTD Funcional \eTD \bTD 45 \eTD \bTD 40 \eTD \bTD 0,36 \% \eTD \bTD 5,88 \% \eTD \bTD 5,1× \eTD \eTR
+\bTR \bTD ACO \eTD \bTD Funcional \eTD \bTD 45 \eTD \bTD 45 \eTD \bTD 0,00 \% \eTD \bTD 0,00 \% \eTD \bTD 1,4× \eTD \eTR
+\bTR \bTD HC \eTD \bTD Stress \eTD \bTD 9 \eTD \bTD 1 \eTD \bTD 0,06 \% \eTD \bTD 0,21 \% \eTD \bTD 53,1× \eTD \eTR
+\bTR \bTD ACO \eTD \bTD Stress \eTD \bTD 9 \eTD \bTD 2 \eTD \bTD 0,01 \% \eTD \bTD 0,06 \% \eTD \bTD 1,7× \eTD \eTR
+\eTABLE
+\blank[medium]
+
+En los escenarios de stress que el modelo en dos etapas resuelve:
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[style=\tfx]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style={\tfx\bf}]
+\bTR \bTH Caso \eTH \bTH Escenario \eTH \bTH Lotes \eTH \bTH Grilla \eTH \bTH Dos etapas (s) \eTH \bTH HC (s) \eTH \bTH Brecha \eTH \bTH ACO (s) \eTH \bTH Brecha \eTH \eTR
+\bTR \bTD 02 \eTD \bTD 10 pickers, atrasadas \eTD \bTD 10 \eTD \bTD 10×10 \eTD \bTD 33 \eTD \bTD 0,9 \eTD \bTD 0,00 \% \eTD \bTD 93,5 \eTD \bTD 0,00 \% \eTD \eTR
+\bTR \bTD 04 \eTD \bTD realista, 7×7 \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 12 \eTD \bTD 0,5 \eTD \bTD 0,01 \% \eTD \bTD 12,9 \eTD \bTD 0,00 \% \eTD \eTR
+\bTR \bTD 05 \eTD \bTD realista, 13×13 \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 108 \eTD \bTD 2,8 \eTD \bTD 0,05 \% \eTD \bTD 84,1 \eTD \bTD 0,01 \% \eTD \eTR
+\bTR \bTD 06 \eTD \bTD realista, 14×14 \eTD \bTD 6 \eTD \bTD 14×14 \eTD \bTD 202 \eTD \bTD 3,8 \eTD \bTD 0,04 \% \eTD \bTD 116,1 \eTD \bTD 0,01 \% \eTD \eTR
+\bTR \bTD 07 \eTD \bTD realista, 15×15 \eTD \bTD 6 \eTD \bTD 15×15 \eTD \bTD 904 \eTD \bTD 4,3 \eTD \bTD 0,04 \% \eTD \bTD 156,1 \eTD \bTD 0,01 \% \eTD \eTR
+\bTR \bTD 09 \eTD \bTD almacén alargado \eTD \bTD 6 \eTD \bTD 8×21 \eTD \bTD 224 \eTD \bTD 3,8 \eTD \bTD 0,06 \% \eTD \bTD 204,1 \eTD \bTD 0,00 \% \eTD \eTR
+\bTR \bTD 10 \eTD \bTD agenda pesada \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 86 \eTD \bTD 0,5 \eTD \bTD 0,02 \% \eTD \bTD 15,3 \eTD \bTD 0,00 \% \eTD \eTR
+\bTR \bTD 11 \eTD \bTD cadena de frío \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 139 \eTD \bTD 2,9 \eTD \bTD 0,21 \% \eTD \bTD 83,6 \eTD \bTD 0,06 \% \eTD \eTR
+\bTR \bTD 15 \eTD \bTD sobran pickers \eTD \bTD 6 \eTD \bTD 10×10 \eTD \bTD 244 \eTD \bTD 1,5 \eTD \bTD 0,07 \% \eTD \bTD 52,5 \eTD \bTD 0,00 \% \eTD \eTR
+\eTABLE
+\blank[medium]
+
+La figura \in[fig:tiempos] muestra el tiempo de cada método en los 19 escenarios, la
+\in[fig:brecha] la brecha de cada heurística donde hay óptimo, y la \in[fig:tradeoff] las dos
+cosas juntas.
+
+\placefigure[here][fig:tiempos]{Tiempo total por escenario de stress (escala logarítmica). Las barras sin relleno son los escenarios que el modelo en dos etapas no termina en 40 minutos.}
+{\startMPcode
+numeric w, h; w := 12cm; h := 6.5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+label.bot(textext("\strut\tfx 01"), (0.316cm,-0.100cm));
+label.bot(textext("\strut\tfx 02"), (0.947cm,-0.100cm));
+label.bot(textext("\strut\tfx 03"), (1.579cm,-0.100cm));
+label.bot(textext("\strut\tfx 04"), (2.211cm,-0.100cm));
+label.bot(textext("\strut\tfx 05"), (2.842cm,-0.100cm));
+label.bot(textext("\strut\tfx 06"), (3.474cm,-0.100cm));
+label.bot(textext("\strut\tfx 07"), (4.105cm,-0.100cm));
+label.bot(textext("\strut\tfx 08"), (4.737cm,-0.100cm));
+label.bot(textext("\strut\tfx 09"), (5.368cm,-0.100cm));
+label.bot(textext("\strut\tfx 10"), (6.000cm,-0.100cm));
+label.bot(textext("\strut\tfx 11"), (6.632cm,-0.100cm));
+label.bot(textext("\strut\tfx 12"), (7.263cm,-0.100cm));
+label.bot(textext("\strut\tfx 13"), (7.895cm,-0.100cm));
+label.bot(textext("\strut\tfx 14"), (8.526cm,-0.100cm));
+label.bot(textext("\strut\tfx 15"), (9.158cm,-0.100cm));
+label.bot(textext("\strut\tfx 16"), (9.789cm,-0.100cm));
+label.bot(textext("\strut\tfx 17"), (10.421cm,-0.100cm));
+label.bot(textext("\strut\tfx 18"), (11.053cm,-0.100cm));
+label.bot(textext("\strut\tfx 19"), (11.684cm,-0.100cm));
+draw (0.000cm,0.805cm)--(-0.120cm,0.805cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1"), (-0.120cm,0.805cm));
+draw (0.000cm,2.345cm)--(-0.120cm,2.345cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10"), (-0.120cm,2.345cm));
+draw (0.000cm,3.884cm)--(-0.120cm,3.884cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100"), (-0.120cm,3.884cm));
+draw (0.000cm,5.424cm)--(-0.120cm,5.424cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1.000"), (-0.120cm,5.424cm));
+label.lft(textext("Tiempo total (s, escala log.)") rotated 90, (-1.25cm,h/2));
+draw (0.000cm,6.009cm)--(12.000cm,6.009cm) withpen pencircle scaled .5pt dashed evenly;
+label.rt(textext("\tfxx tope de 40 min"), (0.100cm,6.209cm));
+draw (0.063cm,0.000cm)--(0.227cm,0.000cm)--(0.227cm,6.009cm)--(0.063cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (0.234cm,0.000cm)--(0.398cm,0.000cm)--(0.398cm,5.443cm)--(0.234cm,5.443cm)--cycle withcolor \MPcolor{greenline};
+fill (0.404cm,0.000cm)--(0.568cm,0.000cm)--(0.568cm,5.918cm)--(0.404cm,5.918cm)--cycle withcolor \MPcolor{redline};
+fill (0.695cm,0.000cm)--(0.859cm,0.000cm)--(0.859cm,3.138cm)--(0.695cm,3.138cm)--cycle withcolor \MPcolor{darkblue};
+fill (0.865cm,0.000cm)--(1.029cm,0.000cm)--(1.029cm,0.745cm)--(0.865cm,0.745cm)--cycle withcolor \MPcolor{greenline};
+fill (1.036cm,0.000cm)--(1.200cm,0.000cm)--(1.200cm,3.840cm)--(1.036cm,3.840cm)--cycle withcolor \MPcolor{redline};
+draw (1.326cm,0.000cm)--(1.491cm,0.000cm)--(1.491cm,6.009cm)--(1.326cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (1.497cm,0.000cm)--(1.661cm,0.000cm)--(1.661cm,1.177cm)--(1.497cm,1.177cm)--cycle withcolor \MPcolor{greenline};
+fill (1.667cm,0.000cm)--(1.832cm,0.000cm)--(1.832cm,4.634cm)--(1.667cm,4.634cm)--cycle withcolor \MPcolor{redline};
+fill (1.958cm,0.000cm)--(2.122cm,0.000cm)--(2.122cm,2.484cm)--(1.958cm,2.484cm)--cycle withcolor \MPcolor{darkblue};
+fill (2.128cm,0.000cm)--(2.293cm,0.000cm)--(2.293cm,0.380cm)--(2.128cm,0.380cm)--cycle withcolor \MPcolor{greenline};
+fill (2.299cm,0.000cm)--(2.463cm,0.000cm)--(2.463cm,2.513cm)--(2.299cm,2.513cm)--cycle withcolor \MPcolor{redline};
+fill (2.589cm,0.000cm)--(2.754cm,0.000cm)--(2.754cm,3.934cm)--(2.589cm,3.934cm)--cycle withcolor \MPcolor{darkblue};
+fill (2.760cm,0.000cm)--(2.924cm,0.000cm)--(2.924cm,1.501cm)--(2.760cm,1.501cm)--cycle withcolor \MPcolor{greenline};
+fill (2.931cm,0.000cm)--(3.095cm,0.000cm)--(3.095cm,3.769cm)--(2.931cm,3.769cm)--cycle withcolor \MPcolor{redline};
+fill (3.221cm,0.000cm)--(3.385cm,0.000cm)--(3.385cm,4.353cm)--(3.221cm,4.353cm)--cycle withcolor \MPcolor{darkblue};
+fill (3.392cm,0.000cm)--(3.556cm,0.000cm)--(3.556cm,1.698cm)--(3.392cm,1.698cm)--cycle withcolor \MPcolor{greenline};
+fill (3.562cm,0.000cm)--(3.726cm,0.000cm)--(3.726cm,3.984cm)--(3.562cm,3.984cm)--cycle withcolor \MPcolor{redline};
+fill (3.853cm,0.000cm)--(4.017cm,0.000cm)--(4.017cm,5.356cm)--(3.853cm,5.356cm)--cycle withcolor \MPcolor{darkblue};
+fill (4.023cm,0.000cm)--(4.187cm,0.000cm)--(4.187cm,1.773cm)--(4.023cm,1.773cm)--cycle withcolor \MPcolor{greenline};
+fill (4.194cm,0.000cm)--(4.358cm,0.000cm)--(4.358cm,4.182cm)--(4.194cm,4.182cm)--cycle withcolor \MPcolor{redline};
+draw (4.484cm,0.000cm)--(4.648cm,0.000cm)--(4.648cm,6.009cm)--(4.484cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (4.655cm,0.000cm)--(4.819cm,0.000cm)--(4.819cm,1.853cm)--(4.655cm,1.853cm)--cycle withcolor \MPcolor{greenline};
+fill (4.825cm,0.000cm)--(4.989cm,0.000cm)--(4.989cm,4.002cm)--(4.825cm,4.002cm)--cycle withcolor \MPcolor{redline};
+fill (5.116cm,0.000cm)--(5.280cm,0.000cm)--(5.280cm,4.423cm)--(5.116cm,4.423cm)--cycle withcolor \MPcolor{darkblue};
+fill (5.286cm,0.000cm)--(5.451cm,0.000cm)--(5.451cm,1.699cm)--(5.286cm,1.699cm)--cycle withcolor \MPcolor{greenline};
+fill (5.457cm,0.000cm)--(5.621cm,0.000cm)--(5.621cm,4.361cm)--(5.457cm,4.361cm)--cycle withcolor \MPcolor{redline};
+fill (5.747cm,0.000cm)--(5.912cm,0.000cm)--(5.912cm,3.780cm)--(5.747cm,3.780cm)--cycle withcolor \MPcolor{darkblue};
+fill (5.918cm,0.000cm)--(6.082cm,0.000cm)--(6.082cm,0.402cm)--(5.918cm,0.402cm)--cycle withcolor \MPcolor{greenline};
+fill (6.088cm,0.000cm)--(6.253cm,0.000cm)--(6.253cm,2.627cm)--(6.088cm,2.627cm)--cycle withcolor \MPcolor{redline};
+fill (6.379cm,0.000cm)--(6.543cm,0.000cm)--(6.543cm,4.106cm)--(6.379cm,4.106cm)--cycle withcolor \MPcolor{darkblue};
+fill (6.549cm,0.000cm)--(6.714cm,0.000cm)--(6.714cm,1.528cm)--(6.549cm,1.528cm)--cycle withcolor \MPcolor{greenline};
+fill (6.720cm,0.000cm)--(6.884cm,0.000cm)--(6.884cm,3.764cm)--(6.720cm,3.764cm)--cycle withcolor \MPcolor{redline};
+draw (7.011cm,0.000cm)--(7.175cm,0.000cm)--(7.175cm,6.009cm)--(7.011cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (7.181cm,0.000cm)--(7.345cm,0.000cm)--(7.345cm,0.557cm)--(7.181cm,0.557cm)--cycle withcolor \MPcolor{greenline};
+fill (7.352cm,0.000cm)--(7.516cm,0.000cm)--(7.516cm,4.048cm)--(7.352cm,4.048cm)--cycle withcolor \MPcolor{redline};
+draw (7.642cm,0.000cm)--(7.806cm,0.000cm)--(7.806cm,6.009cm)--(7.642cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (7.813cm,0.000cm)--(7.977cm,0.000cm)--(7.977cm,0.589cm)--(7.813cm,0.589cm)--cycle withcolor \MPcolor{greenline};
+fill (7.983cm,0.000cm)--(8.147cm,0.000cm)--(8.147cm,4.006cm)--(7.983cm,4.006cm)--cycle withcolor \MPcolor{redline};
+draw (8.274cm,0.000cm)--(8.438cm,0.000cm)--(8.438cm,6.009cm)--(8.274cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (8.444cm,0.000cm)--(8.608cm,0.000cm)--(8.608cm,0.726cm)--(8.444cm,0.726cm)--cycle withcolor \MPcolor{greenline};
+fill (8.615cm,0.000cm)--(8.779cm,0.000cm)--(8.779cm,3.698cm)--(8.615cm,3.698cm)--cycle withcolor \MPcolor{redline};
+fill (8.905cm,0.000cm)--(9.069cm,0.000cm)--(9.069cm,4.481cm)--(8.905cm,4.481cm)--cycle withcolor \MPcolor{darkblue};
+fill (9.076cm,0.000cm)--(9.240cm,0.000cm)--(9.240cm,1.086cm)--(9.076cm,1.086cm)--cycle withcolor \MPcolor{greenline};
+fill (9.246cm,0.000cm)--(9.411cm,0.000cm)--(9.411cm,3.454cm)--(9.246cm,3.454cm)--cycle withcolor \MPcolor{redline};
+draw (9.537cm,0.000cm)--(9.701cm,0.000cm)--(9.701cm,6.009cm)--(9.537cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (9.707cm,0.000cm)--(9.872cm,0.000cm)--(9.872cm,1.262cm)--(9.707cm,1.262cm)--cycle withcolor \MPcolor{greenline};
+fill (9.878cm,0.000cm)--(10.042cm,0.000cm)--(10.042cm,4.066cm)--(9.878cm,4.066cm)--cycle withcolor \MPcolor{redline};
+draw (10.168cm,0.000cm)--(10.333cm,0.000cm)--(10.333cm,6.009cm)--(10.168cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (10.339cm,0.000cm)--(10.503cm,0.000cm)--(10.503cm,1.560cm)--(10.339cm,1.560cm)--cycle withcolor \MPcolor{greenline};
+fill (10.509cm,0.000cm)--(10.674cm,0.000cm)--(10.674cm,4.234cm)--(10.509cm,4.234cm)--cycle withcolor \MPcolor{redline};
+draw (10.800cm,0.000cm)--(10.964cm,0.000cm)--(10.964cm,6.009cm)--(10.800cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (10.971cm,0.000cm)--(11.135cm,0.000cm)--(11.135cm,1.618cm)--(10.971cm,1.618cm)--cycle withcolor \MPcolor{greenline};
+fill (11.141cm,0.000cm)--(11.305cm,0.000cm)--(11.305cm,4.559cm)--(11.141cm,4.559cm)--cycle withcolor \MPcolor{redline};
+draw (11.432cm,0.000cm)--(11.596cm,0.000cm)--(11.596cm,6.009cm)--(11.432cm,6.009cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+fill (11.602cm,0.000cm)--(11.766cm,0.000cm)--(11.766cm,1.867cm)--(11.602cm,1.867cm)--cycle withcolor \MPcolor{greenline};
+fill (11.773cm,0.000cm)--(11.937cm,0.000cm)--(11.937cm,5.026cm)--(11.773cm,5.026cm)--cycle withcolor \MPcolor{redline};
+fill (12.400cm,3.380cm)--(12.800cm,3.380cm)--(12.800cm,3.620cm)--(12.400cm,3.620cm)--cycle withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx dos etapas"), (13.000cm,3.500cm));
+draw (12.400cm,2.960cm)--(12.800cm,2.960cm)--(12.800cm,3.200cm)--(12.400cm,3.200cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx dos etapas: no termina"), (13.000cm,3.080cm));
+fill (12.400cm,2.540cm)--(12.800cm,2.540cm)--(12.800cm,2.780cm)--(12.400cm,2.780cm)--cycle withcolor \MPcolor{greenline};
+label.rt(textext("\tfx HC"), (13.000cm,2.660cm));
+fill (12.400cm,2.120cm)--(12.800cm,2.120cm)--(12.800cm,2.360cm)--(12.400cm,2.360cm)--cycle withcolor \MPcolor{redline};
+label.rt(textext("\tfx ACO"), (13.000cm,2.240cm));
+\stopMPcode}
+
+\placefigure[here][fig:brecha]{Brecha contra el óptimo en cada escenario que el modelo en dos etapas resuelve. Un 0 indica que la heurística encontró el óptimo.}
+{\startMPcode
+numeric w, h; w := 12cm; h := 5.5cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+label.bot(textext("\strut\tfx 02"), (0.667cm,-0.100cm));
+label.bot(textext("\strut\tfx 04"), (2.000cm,-0.100cm));
+label.bot(textext("\strut\tfx 05"), (3.333cm,-0.100cm));
+label.bot(textext("\strut\tfx 06"), (4.667cm,-0.100cm));
+label.bot(textext("\strut\tfx 07"), (6.000cm,-0.100cm));
+label.bot(textext("\strut\tfx 09"), (7.333cm,-0.100cm));
+label.bot(textext("\strut\tfx 10"), (8.667cm,-0.100cm));
+label.bot(textext("\strut\tfx 11"), (10.000cm,-0.100cm));
+label.bot(textext("\strut\tfx 15"), (11.333cm,-0.100cm));
+draw (0.000cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,00 \%"), (-0.120cm,0.000cm));
+draw (0.000cm,1.100cm)--(-0.120cm,1.100cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,05 \%"), (-0.120cm,1.100cm));
+draw (0.000cm,2.200cm)--(-0.120cm,2.200cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,10 \%"), (-0.120cm,2.200cm));
+draw (0.000cm,3.300cm)--(-0.120cm,3.300cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,15 \%"), (-0.120cm,3.300cm));
+draw (0.000cm,4.400cm)--(-0.120cm,4.400cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,20 \%"), (-0.120cm,4.400cm));
+draw (0.000cm,5.500cm)--(-0.120cm,5.500cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,25 \%"), (-0.120cm,5.500cm));
+label.lft(textext("Brecha contra el óptimo") rotated 90, (-1.25cm,h/2));
+label.top(textext("\tfxx 0"), (0.413cm,0.020cm));
+label.top(textext("\tfxx 0"), (0.880cm,0.020cm));
+fill (1.533cm,0.000cm)--(1.973cm,0.000cm)--(1.973cm,0.289cm)--(1.533cm,0.289cm)--cycle withcolor \MPcolor{greenline};
+fill (2.000cm,0.000cm)--(2.440cm,0.000cm)--(2.440cm,0.049cm)--(2.000cm,0.049cm)--cycle withcolor \MPcolor{redline};
+fill (2.867cm,0.000cm)--(3.307cm,0.000cm)--(3.307cm,1.056cm)--(2.867cm,1.056cm)--cycle withcolor \MPcolor{greenline};
+fill (3.333cm,0.000cm)--(3.773cm,0.000cm)--(3.773cm,0.319cm)--(3.333cm,0.319cm)--cycle withcolor \MPcolor{redline};
+fill (4.200cm,0.000cm)--(4.640cm,0.000cm)--(4.640cm,0.915cm)--(4.200cm,0.915cm)--cycle withcolor \MPcolor{greenline};
+fill (4.667cm,0.000cm)--(5.107cm,0.000cm)--(5.107cm,0.200cm)--(4.667cm,0.200cm)--cycle withcolor \MPcolor{redline};
+fill (5.533cm,0.000cm)--(5.973cm,0.000cm)--(5.973cm,0.779cm)--(5.533cm,0.779cm)--cycle withcolor \MPcolor{greenline};
+fill (6.000cm,0.000cm)--(6.440cm,0.000cm)--(6.440cm,0.317cm)--(6.000cm,0.317cm)--cycle withcolor \MPcolor{redline};
+fill (6.867cm,0.000cm)--(7.307cm,0.000cm)--(7.307cm,1.223cm)--(6.867cm,1.223cm)--cycle withcolor \MPcolor{greenline};
+fill (7.333cm,0.000cm)--(7.773cm,0.000cm)--(7.773cm,0.090cm)--(7.333cm,0.090cm)--cycle withcolor \MPcolor{redline};
+fill (8.200cm,0.000cm)--(8.640cm,0.000cm)--(8.640cm,0.433cm)--(8.200cm,0.433cm)--cycle withcolor \MPcolor{greenline};
+label.top(textext("\tfxx 0"), (8.880cm,0.020cm));
+fill (9.533cm,0.000cm)--(9.973cm,0.000cm)--(9.973cm,4.718cm)--(9.533cm,4.718cm)--cycle withcolor \MPcolor{greenline};
+fill (10.000cm,0.000cm)--(10.440cm,0.000cm)--(10.440cm,1.298cm)--(10.000cm,1.298cm)--cycle withcolor \MPcolor{redline};
+fill (10.867cm,0.000cm)--(11.307cm,0.000cm)--(11.307cm,1.554cm)--(10.867cm,1.554cm)--cycle withcolor \MPcolor{greenline};
+fill (11.333cm,0.000cm)--(11.773cm,0.000cm)--(11.773cm,0.103cm)--(11.333cm,0.103cm)--cycle withcolor \MPcolor{redline};
+fill (0.400cm,5.180cm)--(0.800cm,5.180cm)--(0.800cm,5.420cm)--(0.400cm,5.420cm)--cycle withcolor \MPcolor{greenline};
+label.rt(textext("\tfx HC"), (1.000cm,5.300cm));
+fill (0.400cm,4.760cm)--(0.800cm,4.760cm)--(0.800cm,5.000cm)--(0.400cm,5.000cm)--cycle withcolor \MPcolor{redline};
+label.rt(textext("\tfx ACO"), (1.000cm,4.880cm));
+\stopMPcode}
+
+\placefigure[here][fig:tradeoff]{Brecha contra tiempo total en los escenarios de stress que el modelo en dos etapas resuelve (tiempo en escala logarítmica).}
+{\startMPcode
+numeric w, h; w := 11cm; h := 6cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+draw (1.438cm,0.000cm)--(1.438cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 1"), (1.438cm,-0.120cm));
+draw (4.188cm,0.000cm)--(4.188cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\strut\tfx 10"), (4.188cm,-0.120cm));
+draw (6.938cm,0.000cm)--(6.938cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 100"), (6.938cm,-0.120cm));
+draw (9.688cm,0.000cm)--(9.688cm,-0.120cm) withpen pencircle scaled .5pt;
+label.bot(textext("\tfx 1.000"), (9.688cm,-0.120cm));
+draw (0.000cm,0.231cm)--(-0.120cm,0.231cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,00 \%"), (-0.120cm,0.231cm));
+draw (0.000cm,1.385cm)--(-0.120cm,1.385cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,05 \%"), (-0.120cm,1.385cm));
+draw (0.000cm,2.538cm)--(-0.120cm,2.538cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,10 \%"), (-0.120cm,2.538cm));
+draw (0.000cm,3.692cm)--(-0.120cm,3.692cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,15 \%"), (-0.120cm,3.692cm));
+draw (0.000cm,4.846cm)--(-0.120cm,4.846cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,20 \%"), (-0.120cm,4.846cm));
+draw (0.000cm,6.000cm)--(-0.120cm,6.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,25 \%"), (-0.120cm,6.000cm));
+label.bot(textext("Tiempo total (s, escala log.)"), (w/2,-0.55cm));
+label.lft(textext("Brecha contra el óptimo") rotated 90, (-1.25cm,h/2));
+fill fullcircle scaled 4pt shifted (5.605cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.330cm,0.231cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (6.858cm,0.231cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (4.437cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (0.678cm,0.534cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (4.489cm,0.282cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.027cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (2.681cm,1.339cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (6.731cm,0.566cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.776cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (3.032cm,1.190cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (7.116cm,0.441cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (9.567cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (3.166cm,1.048cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (7.470cm,0.563cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.900cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (3.035cm,1.514cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (7.790cm,0.325cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (6.752cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (0.718cm,0.685cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (4.693cm,0.231cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.333cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (2.729cm,5.179cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (6.724cm,1.592cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (8.004cm,0.231cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.940cm,1.861cm) withcolor \MPcolor{greenline};
+fill fullcircle scaled 4pt shifted (6.169cm,0.339cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (7.100cm,5.700cm) withcolor \MPcolor{darkblue};
+label.rt(textext("\tfx dos etapas (óptimo)"), (7.500cm,5.700cm));
+fill fullcircle scaled 4pt shifted (7.100cm,5.280cm) withcolor \MPcolor{greenline};
+label.rt(textext("\tfx HC"), (7.500cm,5.280cm));
+fill fullcircle scaled 4pt shifted (7.100cm,4.860cm) withcolor \MPcolor{redline};
+label.rt(textext("\tfx ACO"), (7.500cm,4.860cm));
+\stopMPcode}
+
+En los otros 10 escenarios (8 lotes o más, la grilla de 16×16 y el 100×100) el modelo en dos etapas no termina
+en 40 minutos y las dos heurísticas dan una solución válida: HC en menos de 5~s y ACO en
+minutos, salvo el 01 (30 lotes en 100×100), que les lleva 17 y 35 minutos.
+
+Esta comparación responde cuánto se pierde por no resolver en forma exacta, pero no es justa
+en tiempo: el modelo en dos etapas corre hasta {\em probar} el óptimo, y buena parte de ese tiempo puede ir a
+cerrar la cota dual después de haber encontrado ya la mejor solución.
+
+\stopsubsection
+
+\startsubsection[title={A igual tiempo}, reference=sec:igual_tiempo]
+
+La forma estándar de comparar una metaheurística con un solver exacto es darles el mismo
+tiempo. En este experimento cada modelo exacto recibe,
+en cada escenario de stress, exactamente el tiempo total que tardó la heurística en ese
+escenario, como límite de reloj de SCIP, y se registra la mejor solución que tiene al vencer
+ese límite:
+\startitemize
+\item {\bf Dos etapas}: la Etapa 1 reparte el tiempo en partes iguales entre los lotes que faltan
+rutear, y la Etapa 2 usa lo que queda. Solo hay solución completa si todos los lotes tienen
+ruta y la Etapa 2 encuentra una solución a tiempo. Una ruta cortada por tiempo no es
+necesariamente la mínima.
+\item {\bf Monolítico}: una sola resolución con todo el tiempo.
+\stopitemize
+
+El tiempo se mide desde que se arma el modelo hasta que el solver termina, igual que el de la
+heurística; como el límite de SCIP cubre solo la resolución, el tiempo transcurrido puede pasar un
+poco el presupuesto. La columna es $100 \cdot (z_{\rm heur} - z_{\rm exacto}) / z_{\rm exacto}$:
+negativa significa que la heurística es mejor.
+
+{\bf Con el tiempo de HC} (entre 0,5 y 5,7~s, salvo 1.209~s en el 01), ninguno de los dos modelos
+exactos obtiene una solución en ninguno de los 19 escenarios: en el de dos etapas, la Etapa 1 no llega a rutear
+todos los lotes; el monolítico no encuentra ninguna solución entera. En el tiempo que HC
+usa para dar una solución a menos de 0,21~\% del óptimo, los modelos exactos no dan ninguna.
+
+{\bf Con el tiempo de ACO:}
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[style=\tfx]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style={\tfx\bf}]
+\bTR \bTH Caso \eTH \bTH Escenario \eTH \bTH Tiempo (s) \eTH \bTH ACO \eTH \bTH Dos etapas \eTH \bTH ACO contra dos etapas \eTH \bTH Monolítico \eTH \bTH ACO contra monolítico \eTH \eTR
+\bTR \bTD 01 \eTD \bTD 100×100, atrasadas \eTD \bTD 1.877,8 \eTD \bTD 917.328,0 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 02 \eTD \bTD 10 pickers, atrasadas \eTD \bTD 31,3 \eTD \bTD 29.034,0 \eTD \bTD 29.262,0 \eTD \bTD -0,78 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 03 \eTD \bTD 1 picker, 40 lotes \eTD \bTD 412,1 \eTD \bTD 1.752.076,0 \eTD \bTD 1.763.704,0 \eTD \bTD -0,66 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 04 \eTD \bTD realista, 7×7 \eTD \bTD 15,1 \eTD \bTD 149.221,0 \eTD \bTD 149.218,9 \eTD \bTD 0,001 \% \eTD \bTD 157.569,7 \eTD \bTD -5,30 \% \eTD \eTR
+\bTR \bTD 05 \eTD \bTD realista, 13×13 \eTD \bTD 95,0 \eTD \bTD 241.273,5 \eTD \bTD 241.398,5 \eTD \bTD -0,05 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 06 \eTD \bTD realista, 14×14 \eTD \bTD 109,8 \eTD \bTD 256.642,2 \eTD \bTD 256.791,0 \eTD \bTD -0,06 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 07 \eTD \bTD realista, 15×15 \eTD \bTD 194,6 \eTD \bTD 271.914,3 \eTD \bTD 272.016,8 \eTD \bTD -0,04 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 08 \eTD \bTD realista, 16×16 \eTD \bTD 129,5 \eTD \bTD 287.199,8 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 09 \eTD \bTD almacén alargado \eTD \bTD 223,9 \eTD \bTD 275.046,8 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 10 \eTD \bTD agenda pesada \eTD \bTD 15,2 \eTD \bTD 112.082,8 \eTD \bTD 112.083,2 \eTD \bTD -0,0004 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 11 \eTD \bTD cadena de frío \eTD \bTD 94,1 \eTD \bTD 182.338,5 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 12 \eTD \bTD 8 lotes, 4 pickers \eTD \bTD 29,8 \eTD \bTD 198.905,5 \eTD \bTD 198.918,8 \eTD \bTD -0,007 \% \eTD \bTD 222.183,9 \eTD \bTD -10,48 \% \eTD \eTR
+\bTR \bTD 13 \eTD \bTD 10 lotes, 5 pickers \eTD \bTD 42,0 \eTD \bTD 248.696,3 \eTD \bTD 248.715,4 \eTD \bTD -0,008 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 14 \eTD \bTD 12 lotes, 6 pickers \eTD \bTD 43,8 \eTD \bTD 298.381,2 \eTD \bTD 426.194,9 \eTD \bTD -29,99 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 15 \eTD \bTD sobran pickers \eTD \bTD 52,9 \eTD \bTD 97.922,8 \eTD \bTD 98.018,5 \eTD \bTD -0,10 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 16 \eTD \bTD un lote por picker \eTD \bTD 97,1 \eTD \bTD 195.901,5 \eTD \bTD 393.929,1 \eTD \bTD -50,27 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 17 \eTD \bTD 3 con segundo lote \eTD \bTD 137,1 \eTD \bTD 305.798,8 \eTD \bTD 711.264,6 \eTD \bTD -57,01 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 18 \eTD \bTD 6 con segundo lote \eTD \bTD 188,2 \eTD \bTD 439.821,4 \eTD \bTD 1.149.998,9 \eTD \bTD -61,75 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 19 \eTD \bTD todos con 2 lotes \eTD \bTD 365,5 \eTD \bTD 780.799,0 \eTD \bTD 1.879.853,9 \eTD \bTD -58,47 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\eTABLE
+\blank[medium]
+
+La figura \in[fig:igual_tiempo] muestra la columna {\em ACO contra dos etapas} con el signo cambiado y en escala logarítmica, para que se vean juntas las diferencias chicas y las grandes.
+
+\placefigure[here][fig:igual_tiempo]{A igual tiempo que ACO: cuánto mejor es la solución de ACO que la del modelo en dos etapas, $100 \cdot (z_{\rm DE} - z_{\rm ACO}) / z_{\rm DE}$, donde $z_{\rm DE}$ es el objetivo del modelo en dos etapas. Es la columna {\em ACO contra dos etapas} de la tabla, con el signo cambiado (escala logarítmica). Más alto es más ventaja para ACO.}
+{\startMPcode
+numeric w, h; w := 12.35cm; h := 7.0cm;
+drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
+drawarrow (0,0)--(0,h+0.4cm) withpen pencircle scaled 1pt;
+draw (0cm,0.000cm)--(-0.120cm,0.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,0001 \%"), (-0.120cm,0.000cm));
+draw (0cm,1.167cm)--(-0.120cm,1.167cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,001 \%"), (-0.120cm,1.167cm));
+draw (0cm,1.167cm)--(w,1.167cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,2.333cm)--(-0.120cm,2.333cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,01 \%"), (-0.120cm,2.333cm));
+draw (0cm,2.333cm)--(w,2.333cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,3.500cm)--(-0.120cm,3.500cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 0,1 \%"), (-0.120cm,3.500cm));
+draw (0cm,3.500cm)--(w,3.500cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,4.667cm)--(-0.120cm,4.667cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 1 \%"), (-0.120cm,4.667cm));
+draw (0cm,4.667cm)--(w,4.667cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,5.833cm)--(-0.120cm,5.833cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 10 \%"), (-0.120cm,5.833cm));
+draw (0cm,5.833cm)--(w,5.833cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+draw (0cm,7.000cm)--(-0.120cm,7.000cm) withpen pencircle scaled .5pt;
+label.lft(textext("\tfx 100 \%"), (-0.120cm,7.000cm));
+draw (0cm,7.000cm)--(w,7.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
+label.lft(textext("Ventaja de ACO sobre dos etapas") rotated 90, (-1.55cm,h/2));
+label.bot(textext("\strut\tfx 01"), (0.325cm,-0.100cm));
+label.top(textext("\tfxx sin solución") rotated 90, (0.325cm,0.100cm));
+label.bot(textext("\strut\tfx 02"), (0.975cm,-0.100cm));
+fill (0.755cm,0cm)--(1.195cm,0cm)--(1.195cm,4.540cm)--(0.755cm,4.540cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\strut\tfx 03"), (1.625cm,-0.100cm));
+fill (1.405cm,0cm)--(1.845cm,0cm)--(1.845cm,4.456cm)--(1.405cm,4.456cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\strut\tfx 04"), (2.275cm,-0.100cm));
+label.top(textext("\tfxx dos etapas mejor") rotated 90, (2.275cm,0.100cm));
+label.bot(textext("\strut\tfx 05"), (2.925cm,-0.100cm));
+fill (2.705cm,0cm)--(3.145cm,0cm)--(3.145cm,3.167cm)--(2.705cm,3.167cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\strut\tfx 06"), (3.575cm,-0.100cm));
+fill (3.355cm,0cm)--(3.795cm,0cm)--(3.795cm,3.223cm)--(3.355cm,3.223cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\strut\tfx 07"), (4.225cm,-0.100cm));
+fill (4.005cm,0cm)--(4.445cm,0cm)--(4.445cm,3.005cm)--(4.005cm,3.005cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\strut\tfx 08"), (4.875cm,-0.100cm));
+label.top(textext("\tfxx sin solución") rotated 90, (4.875cm,0.100cm));
+label.bot(textext("\strut\tfx 09"), (5.525cm,-0.100cm));
+label.top(textext("\tfxx sin solución") rotated 90, (5.525cm,0.100cm));
+label.bot(textext("\strut\tfx 10"), (6.175cm,-0.100cm));
+fill (5.955cm,0cm)--(6.395cm,0cm)--(6.395cm,0.665cm)--(5.955cm,0.665cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\strut\tfx 11"), (6.825cm,-0.100cm));
+label.top(textext("\tfxx sin solución") rotated 90, (6.825cm,0.100cm));
+label.bot(textext("\strut\tfx 12"), (7.475cm,-0.100cm));
+fill (7.255cm,0cm)--(7.695cm,0cm)--(7.695cm,2.131cm)--(7.255cm,2.131cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\strut\tfx 13"), (8.125cm,-0.100cm));
+fill (7.905cm,0cm)--(8.345cm,0cm)--(8.345cm,2.201cm)--(7.905cm,2.201cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\strut\tfx 14"), (8.775cm,-0.100cm));
+fill (8.555cm,0cm)--(8.995cm,0cm)--(8.995cm,6.390cm)--(8.555cm,6.390cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\strut\tfx 15"), (9.425cm,-0.100cm));
+fill (9.205cm,0cm)--(9.645cm,0cm)--(9.645cm,3.487cm)--(9.205cm,3.487cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\strut\tfx 16"), (10.075cm,-0.100cm));
+fill (9.855cm,0cm)--(10.295cm,0cm)--(10.295cm,6.652cm)--(9.855cm,6.652cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\strut\tfx 17"), (10.725cm,-0.100cm));
+fill (10.505cm,0cm)--(10.945cm,0cm)--(10.945cm,6.715cm)--(10.505cm,6.715cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\strut\tfx 18"), (11.375cm,-0.100cm));
+fill (11.155cm,0cm)--(11.595cm,0cm)--(11.595cm,6.756cm)--(11.155cm,6.756cm)--cycle withcolor \MPcolor{darkblue};
+label.bot(textext("\strut\tfx 19"), (12.025cm,-0.100cm));
+fill (11.805cm,0cm)--(12.245cm,0cm)--(12.245cm,6.728cm)--(11.805cm,6.728cm)--cycle withcolor \MPcolor{darkblue};
+\stopMPcode}
+
+\startitemize
+\item {\bf El modelo en dos etapas} da solución en 15 de los 19 escenarios. ACO es igual o mejor en 14 de esos
+15; la excepción es el 04, donde queda 0,001~\% por debajo. En 8 la diferencia es de
+0,1~\% o menos, en el 02 y el 03 es de menos de 1~\%, y en los 5 escenarios con 12 lotes o más
+(14, 16 a 19) queda entre 30~\% y 62~\% por encima: con el tiempo repartido entre muchos
+lotes, la Etapa 1 corta rutas lejos de la mínima, y la Etapa 2 arrastra esas rutas.
+\item No da solución en el 01, el 08 y el 09 (la Etapa 1 no rutea todos los lotes) ni en
+el 11, donde las rutas cortadas por tiempo hacen que algún lote no tenga ningún picker elegible
+por cadena de frío. En el 09 la Etapa 1 excedió el presupuesto (864~s contra 224~s), porque el
+límite se aplica a cada resolución y no al proceso completo.
+\item {\bf El monolítico} da solución solo en el 04 y el 12, entre 5~\% y 10~\% por encima de ACO.
+\stopitemize
+
+Los presupuestos son los tiempos de otra ejecución de ACO, distinta de la de la tabla de
+stress: por eso el tiempo y el objetivo de ACO difieren un poco
+(por ejemplo, 15,1~s contra 12,9~s en el 04, y 917.328 contra 988.252 en el 01).
+
+\stopsubsection
+
+\page
+\startsubsection[title={Conclusiones}]
 
 \startitemize[n]
-    \item {\bf Input:} Configuración fija de órdenes empaquetadas por lote (parámetro $B_{nb}$) y la topología espacial del almacén ($V, E, D_{ij}$).
-    \item {\bf Dinámica Espacial:} Transiciones probabilísticas iterativas de nodos basadas en una matriz de rastros de feromonas (memoria global) y visibilidad heurística (matriz de distancias inversas).
-    \item {\bf Objetivo:} Construcción estocástica de secuencias de {\em picking} que minimicen el {\em makespan} global y las penalizaciones temporales $ea_n, ta_n$.
-    \item {\bf Output:} Grafo final de trayectorias óptimas compatibles con OPP\_v3.
-\stopitemize
-
-\stopsubsection
-
-\startsubsection[title={Fundamentación de la Metaheurística}]
-
-El motor ACO ofrece una propuesta diferencial frente a algoritmos constructivos o de búsqueda local rígida:
-
-\startitemize[bullet]
-    \item {\bf Exploración Estocástica:} A diferencia de HC (que suele atraparse en óptimos locales), ACO fomenta la exploración de nuevas ramas topológicas utilizando una matriz de probabilidades de estado de transición.
-    \item {\bf Aprendizaje Colectivo:} El rastro de feromonas ($\tau_{ij}$) actúa como un sistema de memoria a largo plazo. Soluciones eficientes encontradas por el enjambre en iteraciones previas sesgan probabilísticamente el camino de futuras hormigas.
-    \item {\bf Escalabilidad en Densidad:} Aunque sufre en grafos excesivamente extensos (como se demostró en los test de estrés), ACO es excepcionalmente hábil desenredando marañas de múltiples órdenes dentro de zonas de {\em picking} congestionadas.
-\stopitemize
-
-\stopsubsection
-
-\startsubsection[title={Arquitectura Algorítmica y Probabilidad de Transición}]
-
-El núcleo de ACO reside en la ecuación probabilística de selección de estado. Una hormiga en el nodo $i$ elige transitar al nodo $j$ (dentro del conjunto de vecindad no visitada $N_i$) según la siguiente fórmula:
-
-\startformula
-P_{ij} = \frac{[\tau_{ij}]^\alpha \cdot [\eta_{ij}]^\beta}{\sum_{k \in N_i} [\tau_{ik}]^\alpha \cdot [\eta_{ik}]^\beta}
-\stopformula
-
-Donde:
-\startitemize[bullet]
-    \item $\tau_{ij}$: Nivel actual de feromona depositada en el arco $(i,j)$. Representa el aprendizaje global.
-    \item $\eta_{ij} = \frac{1}{D_{ij}}$: Información heurística local (visibilidad). Favorece los desplazamientos físicamente más cortos.
-    \item $\alpha, \beta$: Hiperparámetros que ponderan la importancia relativa del rastro histórico frente a la codicia geográfica.
-\stopitemize
-
-\stopsubsection
-
-\startsubsection[title={Actualización de Feromonas (Pheromone Update)}]
-
-Tras finalizar una iteración global (cuando todo el enjambre construyó sus rutas), la matriz de feromonas experimenta dos procesos concurrentes: evaporación y depósito.
-
-\startformula
-\tau_{ij} \leftarrow (1 - \rho) \cdot \tau_{ij} + \sum_{k=1}^{m} \Delta \tau_{ij}^k
-\stopformula
-
-Donde $\rho$ es el coeficiente de evaporación (evita convergencia prematura), $m$ es el número de hormigas, y $\Delta \tau_{ij}^k$ es la cantidad de feromona depositada por la hormiga $k$, la cual es inversamente proporcional al costo total (función objetivo) de la ruta hallada.
-
-\stopsubsection
-
-\startsubsection[title={Pseudocódigo Estructural}]
-
-\starttyping
-procedure ACO_Routing(B_nb_fijo, parametros)
-  // Inicialización global
-  MatrizFeromonas ← Inicializar(\tau_0)
-  MejorSolucionGlobal ← Nulo
-  MejorCostoGlobal ← \infty
-  
-  para iteracion = 1 hasta max_iteraciones hacer
-    SolucionesHormigas ← []
-    
-    // Fase constructiva del enjambre
-    para k = 1 hasta num_hormigas hacer
-      ruta_k ← ConstruirRutaProbabilistica(MatrizFeromonas, Visibilidad)
-      costo_k ← EvaluarRuta(ruta_k)
-      Agregar ruta_k a SolucionesHormigas
-      
-      si costo_k < MejorCostoGlobal entonces
-        MejorSolucionGlobal ← ruta_k
-        MejorCostoGlobal ← costo_k
-      fin si
-    fin para
-    
-    // Evaporación global
-    Evaporar(MatrizFeromonas, \rho)
-    
-    // Refuerzo basado en elitismo
-    DepositarFeromonas(MatrizFeromonas, SolucionesHormigas)
-    
-  fin para
-  
-  devolver MejorSolucionGlobal
-fin procedure
-\stoptyping
-
-\stopsubsection
-
-\startsubsection[title={Comparativa e Inserción en la Arquitectura OPP}]
-
-La arquitectura bio-inspirada se instanció preservando estrictamente las políticas de DTOs y el patrón Observer descritos en las guías técnicas del proyecto:
-
-\startitemize[bullet]
-    \item {\bf OPPAcoModelV3:} Actúa como controlador y hereda abstractamente del orquestador base, compartiendo la misma firma de método `solve(params)`.
-    \item {\bf Parámetros Sintonizables:} Además de los hiperparámetros convencionales del OPP ($W^{c}, W^{pen}, W^{e}, W^{t}$), el modelo exige configuración para el tamaño del enjambre (`ants`), las épocas de búsqueda (`max_iterations`), la evaporación (`evaporation_rate`) y las ponderaciones $\alpha$ y $\beta$.
-    \item {\bf Desempeño y Tolerancia:} La estabilización asintótica observada revela que ACO domina la búsqueda local (HC) en instancias altamente laberínticas, pero incurre en un castigo cuadrático computacional al someterse a expansiones territoriales desmedidas (incrementos masivos de $|V|$).
+\item {\bf Mismo problema.} Las cuatro formulaciones comparten datos, restricciones y objetivo;
+la única diferencia de modelado es la espera voluntaria, que los modelos exactos permiten y las heurísticas no.
+Las instancias donde el modelo exacto la usa se comparan solo en estado.
+\item {\bf Las heurísticas son válidas.} Todas sus soluciones cumplen las restricciones de los modelos exactos,
+verificadas contra el monolítico, y coinciden con el modelo en dos etapas en el estado de todas las instancias
+comparables.
+\item {\bf Cerca del óptimo.} ACO alcanza el óptimo en las 45 funcionales comparables y queda
+a 0,06~\% como máximo en stress; HC falla en 5 funcionales de grilla (hasta 5,88~\%) y queda
+a 0,21~\% como máximo en stress.
+\item {\bf A igual tiempo, las heurísticas dominan.} Con el tiempo de HC, los modelos exactos no obtienen
+ninguna solución. Con el de ACO, el modelo en dos etapas empata o pierde en todos los escenarios salvo uno (por
+0,001~\%), pierde por 30~\% a 62~\% con 12 lotes o más, y en 4 escenarios no da solución; el
+monolítico casi nunca la da.
+\item {\bf El valor de los modelos exactos es la prueba de optimalidad.} Hasta 6 lotes en grillas de hasta
+15×15, el modelo en dos etapas prueba el óptimo en minutos y sirve de referencia para medir a las heurísticas.
+Por encima de ese tamaño, o cuando el tiempo de respuesta importa, las heurísticas son la
+opción: ACO cuando importa la calidad y HC cuando importan los segundos.
 \stopitemize
 
 \stopsubsection
