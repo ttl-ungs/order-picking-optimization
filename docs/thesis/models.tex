@@ -16,13 +16,13 @@
 
 \starttext
 
-\title{\bf Modelos OPP v5 y heurísticas HC-4 y ACO-4:\crlf definiciones y comparación}
+\title{\bf Modelos exactos y heurísticas HC y ACO para order-picking:\crlf definiciones y comparación}
 \blank[big]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \startsection[title={Introducción}]
 
-Este documento define los dos modelos exactos de v5 y las dos heurísticas que resuelven el
+Este documento define dos modelos exactos y las dos heurísticas que resuelven el
 mismo problema, y los compara con los resultados de los experimentos. Los cuatro métodos
 resuelven el mismo problema de {\em order-picking}: dado un conjunto de lotes
 de pedidos, un grafo de locaciones de almacén y un conjunto de pickers heterogéneos en
@@ -34,9 +34,9 @@ de cadena de frío.
 Las dos formulaciones exactas difieren en la estrategia de resolución:
 
 \startitemize
-\item {\bf OPP v5.1 (monolítico)}: un único MIP que decide ruta, asignación y secuenciación
+\item {\bf Modelo monolítico}: un único MIP que decide ruta, asignación y secuenciación
 en conjunto. El tiempo de ruta $r_b$ es una {\em variable} de decisión.
-\item {\bf OPP v5.2 (dos etapas)}: la Etapa~1 resuelve el ruteo óptimo de cada lote de
+\item {\bf Modelo en dos etapas}: la Etapa~1 resuelve el ruteo óptimo de cada lote de
 forma independiente (minimizando el tiempo de ruta); la Etapa~2 recibe el tiempo de ruta
 como {\em dato} fijo y resuelve asignación, secuenciación y cadena de frío.
 \stopitemize
@@ -51,11 +51,11 @@ Las dos heurísticas (sección \in[sec:heuristicas]) buscan sobre el mismo espac
 soluciones (una ruta por lote, una asignación de lotes a pickers y una secuencia por picker)
 con el mismo objetivo, pero sin garantía de optimalidad:
 \startitemize
-\item {\bf HC-4}: búsqueda local estocástica ({\em Hill Climbing}) que parte de
+\item {\bf HC}: búsqueda local estocástica ({\em Hill Climbing}) que parte de
 rutas construidas por varios métodos y mejora rutas, asignación y secuencia con movimientos
 aleatorios.
-\item {\bf ACO-4}: colonia de hormigas ({\em Ant Colony Optimization}) que
-construye rutas y asignaciones con feromonas y aplica búsqueda local a la mejor solución.
+\item {\bf ACO}: colonia de hormigas ({\em Ant Colony Optimization}) que
+construye rutas y asignaciones con feromonas y aplica búsqueda local a la mejor solución.\footnote{En el código del proyecto, el modelo monolítico corresponde a OPP v5.1 (opp\_v5\_1\_mono), el modelo en dos etapas a OPP v5.2 (opp\_v5\_2\_split), HC a opp\_hc\_4 y ACO a opp\_aco\_4.}
 \stopitemize
 
 La sección \in[sec:comparacion] compara los cuatro métodos: qué instancias son comparables,
@@ -191,7 +191,7 @@ binarias})$: vale 0 solo si las $k$ binarias valen 1.
 \page
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\startsection[title={OPP v5.1 — Formulación monolítica}]
+\startsection[title={Modelo monolítico}]
 
 Un único MIP decide a la vez la ruta de cada lote, a qué picker se asigna y en qué orden lo
 ejecuta.
@@ -359,7 +359,7 @@ $ta_n = \max(0,\, c_b - T^{due}_n)$ y $ea_n = \max(0,\, T^{due}_n - c_b)$.
 (17) y (19)--(20) son desigualdades: piden que un lote termine {\em no antes} de lo que tarda,
 pero permiten declarar un $c_{pb}$ mayor. Cuando el adelanto pesa en el objetivo, al modelo le
 puede convenir declarar un lote terminado más tarde para acercarlo a la fecha de entrega. Es
-una propiedad de la formulación, compartida por las dos versiones de v5, y es la razón por la
+una propiedad de la formulación, compartida por los dos modelos exactos, y es la razón por la
 que algunas instancias no se comparan en objetivo con las heurísticas (sección
 \in[sec:comparacion]).
 \stopsubsection
@@ -370,7 +370,7 @@ que algunas instancias no se comparan en objetivo con las heurísticas (sección
 \page
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\startsection[title={OPP v5.2 — Formulación en dos etapas}]
+\startsection[title={Modelo en dos etapas}]
 
 El mismo problema se resuelve con dos MIP, uno después del otro:
 \startitemize[n]
@@ -495,7 +495,7 @@ Iguales a (21)--(22) del monolítico, para los pares elegibles:
 
 \bTABLE[split=yes, align=middle, frame=on, width=broad]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
-\bTR \bTH Aspecto \eTH \bTH v5.1 Monolítico \eTH \bTH v5.2 Dos etapas \eTH \eTR
+\bTR \bTH Aspecto \eTH \bTH Monolítico \eTH \bTH Dos etapas \eTH \eTR
 \bTR \bTD Número de MIPs \eTD \bTD 1 \eTD \bTD 2 (secuenciales) \eTD \eTR
 \bTR \bTD Tiempo de ruta ($r_b$ / $R_b$) \eTD \bTD Variable de decisión \eTD \bTD Dato (resultado de Etapa 1) \eTD \eTR
 \bTR \bTD $T^{exec}_{pb}$ \eTD \bTD Expresión con variable ($F_b + r_b / V_p$) \eTD \bTD Parámetro precalculado \eTD \eTR
@@ -513,25 +513,25 @@ Iguales a (21)--(22) del monolítico, para los pares elegibles:
 \page
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\startsection[title={Heurísticas: HC-4 y ACO-4}, reference=sec:heuristicas]
+\startsection[title={Heurísticas: HC y ACO}, reference=sec:heuristicas]
 
-HC-4 y ACO-4 resuelven el mismo problema que v5, con la misma notación de las secciones
+HC y ACO resuelven el mismo problema que los modelos exactos, con la misma notación de las secciones
 anteriores: ruteo de cada lote, asignación de lotes a pickers y secuencia de cada picker, con
-velocidades heterogéneas y cadena de frío. Como v5, no modelan congestión entre pickers.
+velocidades heterogéneas y cadena de frío. Como los modelos exactos, no modelan congestión entre pickers.
 
 \startsubsection[title={Representación común de una solución}]
 
 Una solución $S$ de cualquiera de las dos heurísticas tiene tres componentes:
 \startitemize
 \item {\bf Ruta} $\rho_b$ de cada lote $b$: un camino simple de $v_{start}$ a $v_{end}$ por
-arcos de $\mathcal{E}$ que visita todas las locaciones requeridas del lote. Como en v5, no se
+arcos de $\mathcal{E}$ que visita todas las locaciones requeridas del lote. Como en los modelos exactos, no se
 repite ningún vértice (restricciones (8)--(9) del monolítico).
 \item {\bf Asignación} $p(b) \in \mathcal{P}$ de cada lote a un picker (equivale a $x_{pb}$).
 \item {\bf Secuencia} $\sigma_p = (b_1, \dots, b_k)$ de los lotes asignados a cada picker
 (equivale a $y_{bk}$).
 \stopitemize
 
-El tiempo de ruta y el tiempo de ejecución se calculan como en v5, pero sobre la ruta
+El tiempo de ruta y el tiempo de ejecución se calculan como en los modelos exactos, pero sobre la ruta
 concreta de la heurística:
 \startformula
 \startalign
@@ -546,12 +546,12 @@ $\sigma_p = (b_1, \dots, b_k)$,
 c_{b_1} = T^{exec}_{p b_1}, \qquad c_{b_j} = c_{b_{j-1}} + T^{exec}_{p b_j} \quad (j = 2, \dots, k)
 \stopformula
 y para cada orden $n$ del lote $b$, $ta_n = \max(0,\, c_b - T^{due}_n)$ y
-$ea_n = \max(0,\, T^{due}_n - c_b)$. El objetivo $f(S)$ es exactamente el de v5:
+$ea_n = \max(0,\, T^{due}_n - c_b)$. El objetivo $f(S)$ es exactamente el de los modelos exactos:
 \startformula
 f(S) = W^{c} \cdot \sum_{b \in \mathcal{B}} c_b + W^{pen} \cdot \left( W^{e} \cdot \sum_{n \in \mathcal{N}} ea_n + W^{t} \cdot \sum_{n \in \mathcal{N}} ta_n \right)
 \stopformula
 
-Esta es la única diferencia de modelado con v5: en v5 la restricción de completitud es una
+Esta es la única diferencia de modelado con los modelos exactos: en ellos la restricción de completitud es una
 desigualdad ($c_{pb} \ge T^{exec}_{pb}$ y las de secuenciación), así que el modelo puede
 declarar un lote terminado más tarde de lo que termina para reducir el adelanto
 ({\em espera voluntaria}). Las heurísticas reportan el tiempo real de terminación.
@@ -561,7 +561,7 @@ declarar un lote terminado más tarde de lo que termina para reducir el adelanto
 \startsubsection[title={Cadena de frío: dura en la respuesta, blanda en la búsqueda}]
 
 Un par $(p,b)$ es elegible si $T^{exec}_{pb} \le T^{cold} + \varepsilon$, como en
-$\mathcal{PB}^{elig}$ de v5.2. La solución que reporta una heurística cumple siempre esa
+$\mathcal{PB}^{elig}$ del modelo en dos etapas. La solución que reporta una heurística cumple siempre esa
 condición para todos sus lotes. Durante la búsqueda, en cambio, se permite pasar por
 soluciones que la violan, penalizadas por el exceso total:
 \startformula
@@ -585,7 +585,7 @@ infactible. Por eso una heurística {\em no prueba} infactibilidad: solo no encu
 
 \stopsubsection
 
-\startsubsection[title={HC-4: Hill Climbing}]
+\startsubsection[title={HC: Hill Climbing}]
 
 Búsqueda local estocástica de primera mejora: en cada iteración se elige {\em un} movimiento y
 {\em un} vecino al azar, y se acepta si baja $g$. No se recorre toda la vecindad antes de
@@ -642,7 +642,7 @@ tope de tiempo se mira entre iteraciones, así que no corta una construcción in
 
 \stopsubsection
 
-\startsubsection[title={ACO-4: Ant Colony Optimization}]
+\startsubsection[title={ACO: Ant Colony Optimization}]
 
 Cada hormiga construye una solución completa: para cada lote, primero la ruta y después el
 picker. Hay dos tablas de feromona: una de ruta, $\tau_{ij}$ entre pares de locaciones
@@ -654,7 +654,7 @@ con probabilidad
 \startformula
 P(r) = \frac{\tau_{ir}^{\alpha} \cdot \eta_{ir}^{\beta}}{\sum_{s \text{ pendiente}} \tau_{is}^{\alpha} \cdot \eta_{is}^{\beta}}, \qquad \eta_{ir} = \frac{1}{d(i,r)}
 \stopformula
-y camina hasta ella por el camino más corto. Como v5 no permite repetir vértices, $d(i,r)$ y
+y camina hasta ella por el camino más corto. Como los modelos exactos no permiten repetir vértices, $d(i,r)$ y
 el camino se recalculan en cada paso con Dijkstra, evitando los vértices ya usados. Cada lote
 tiene hasta 10 intentos de construcción, alternando el sentido (desde $v_{start}$ o desde
 $v_{end}$); si todos fallan se usa una ruta de respaldo por búsqueda best-first. Cada ruta
@@ -680,7 +680,7 @@ bibliografía, que se aplican cuando cambia la mejor solución:
 construido cualquier hormiga, manteniendo asignación y secuencia; se acepta si baja $f$.
 \item {\em Búsqueda local de agenda}: con las rutas fijas, mover un lote a otro picker en
 cualquier posición, intercambiar dos lotes de la misma secuencia o intercambiar dos lotes entre
-pickers, hasta que ningún movimiento mejore. Son las vecindades de HC-4, recorridas en forma
+pickers, hasta que ningún movimiento mejore. Son las vecindades de HC, recorridas en forma
 exhaustiva.
 \stopitemize
 
@@ -705,7 +705,7 @@ ALGORITMO ACO4(params)
 \stoptyping
 
 Parámetros en la suite de stress: $K = 15$ hormigas, $Max\_it = 60$, $\alpha = 1{,}0$,
-$\beta = 2{,}5$, $\rho = 0{,}15$, $Q = 100$ y $Max\_time = 30$~min. Como en HC-4, el tope de
+$\beta = 2{,}5$, $\rho = 0{,}15$, $Q = 100$ y $Max\_time = 30$~min. Como en HC, el tope de
 tiempo se mira entre hormigas e iteraciones; la construcción puede usar hasta la mitad y el
 resto queda para pulir y para la búsqueda local.
 
@@ -716,7 +716,7 @@ resto queda para pulir y para la búsqueda local.
 \blank[medium]
 \bTABLE[split=yes, align=middle, frame=on, width=broad]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
-\bTR \bTH Aspecto \eTH \bTH v5.1 mono \eTH \bTH v5.2 split \eTH \bTH HC-4 \eTH \bTH ACO-4 \eTH \eTR
+\bTR \bTH Aspecto \eTH \bTH Monolítico \eTH \bTH Dos etapas \eTH \bTH HC \eTH \bTH ACO \eTH \eTR
 \bTR \bTD Tipo \eTD \bTD MIP (ZIMPL + SCIP) \eTD \bTD Dos MIP (ZIMPL + SCIP) \eTD \bTD Búsqueda local \eTD \bTD Colonia de hormigas + búsqueda local \eTD \eTR
 \bTR \bTD Optimalidad \eTD \bTD Probada \eTD \bTD Probada \eTD \bTD No \eTD \bTD No \eTD \eTR
 \bTR \bTD Ruta \eTD \bTD Variable, junto con la agenda \eTD \bTD Mínima por lote (Etapa 1) \eTD \bTD Construcción + 2-opt \eTD \bTD Hormigas + 2-opt + recombinación \eTD \eTR
@@ -736,24 +736,24 @@ resto queda para pulir y para la búsqueda local.
 \page
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\startsection[title={Comparación de v5 con las heurísticas}, reference=sec:comparacion]
+\startsection[title={Comparación de los modelos exactos con las heurísticas}, reference=sec:comparacion]
 
 Esta sección compara los cuatro métodos con los resultados de los experimentos.
 
 \startsubsection[title={Comparabilidad}]
 
 Se comparan solo instancias en que los cuatro métodos resuelven exactamente los mismos datos.
-En la suite funcional, las heurísticas reciben exactamente los datos que resuelve v5 en cada
+En la suite funcional, las heurísticas reciben exactamente los datos que resuelven los modelos exactos en cada
 test. En stress son 19 escenarios que los cuatro métodos construyen con el mismo generador y los
-mismos argumentos. Según el resultado de v5, cada instancia se compara así:
+mismos argumentos. Según el resultado del modelo exacto, cada instancia se compara así:
 
 \blank[medium]
 \bTABLE[split=yes, align=middle, frame=on, width=fit]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \setupTABLE[column][4][width=6cm, align=flushleft]
-\bTR \bTH Situación de v5 \eTH \bTH Estado \eTH \bTH Objetivo \eTH \bTH Motivo \eTH \eTR
+\bTR \bTH Resultado del modelo exacto \eTH \bTH Estado \eTH \bTH Objetivo \eTH \bTH Motivo \eTH \eTR
 \bTR \bTD Óptimo, sin espera \eTD \bTD Sí \eTD \bTD Sí \eTD \bTD Mismos datos, mismo objetivo \eTD \eTR
-\bTR \bTD Óptimo, con espera voluntaria \eTD \bTD Sí \eTD \bTD No \eTD \bTD v5 obtiene menos objetivo por diseño del modelo, no por un plan mejor \eTD \eTR
+\bTR \bTD Óptimo, con espera voluntaria \eTD \bTD Sí \eTD \bTD No \eTD \bTD El modelo exacto obtiene menos objetivo por diseño del modelo, no por un plan mejor \eTD \eTR
 \bTR \bTD Infactible \eTD \bTD Sí \eTD \bTD No \eTD \bTD Se verifica que la heurística tampoco encuentre solución \eTD \eTR
 \bTR \bTD No termina (timeout) \eTD \bTD No \eTD \bTD No \eTD \bTD No hay referencia; se usa para escala y para el experimento a igual tiempo \eTD \eTR
 \eTABLE
@@ -766,8 +766,8 @@ mismos argumentos. Según el resultado de v5, cada instancia se compara así:
 \bTR \bTD Instancias \eTD \bTD 70 \eTD \bTD 19 \eTD \eTR
 \bTR \bTD Comparables en estado y objetivo \eTD \bTD 45 \eTD \bTD 9 \eTD \eTR
 \bTR \bTD Comparables solo en estado \eTD \bTD 22 \eTD \bTD 0 \eTD \eTR
-\bTR \bTD \quad v5 infactible \eTD \bTD 12 \eTD \bTD 0 \eTD \eTR
-\bTR \bTD \quad v5 usa espera voluntaria \eTD \bTD 10 \eTD \bTD 0 \eTD \eTR
+\bTR \bTD \quad infactible \eTD \bTD 12 \eTD \bTD 0 \eTD \eTR
+\bTR \bTD \quad usa espera voluntaria \eTD \bTD 10 \eTD \bTD 0 \eTD \eTR
 \bTR \bTD No comparables \eTD \bTD 3 \eTD \bTD 10 \eTD \eTR
 \eTABLE
 \blank[medium]
@@ -811,10 +811,10 @@ agenda (10, 11 y 15):
 
 En stress no hay espera que descartar: en los escenarios 04 a 19 el peso por lote completado
 ($W^{c} = 27$) es mayor que las órdenes por lote, así que esperar nunca conviene, y en los
-escenarios 01 a 03 todas las órdenes llegan tarde. Los 10 no comparables son los que split no
-termina en 40 minutos. El monolítico resuelve las mismas instancias que split y llega al mismo
+escenarios 01 a 03 todas las órdenes llegan tarde. Los 10 no comparables son los que el modelo en dos etapas no
+termina en 40 minutos. El monolítico resuelve las mismas instancias que el de dos etapas y llega al mismo
 óptimo en los 49 pares funcionales que resuelven los dos, pero en stress no termina ninguno de
-los 19 en 40 minutos, así que la referencia de stress es split.
+los 19 en 40 minutos, así que la referencia de stress es el modelo en dos etapas.
 
 \stopsubsection
 
@@ -822,10 +822,10 @@ los 19 en 40 minutos, así que la referencia de stress es split.
 
 Cada solución de las heurísticas se verificó contra el modelo monolítico: se fijan sus valores
 en las variables del modelo y SCIP decide si son factibles, sin reescribir ninguna restricción. Ninguna de las 150 soluciones verificadas (56
-funcionales y 19 de stress por heurística) viola una restricción de v5, y el objetivo
+funcionales y 19 de stress por heurística) viola una restricción del modelo, y el objetivo
 recalculado coincide con el reportado en todas.
 
-En estado, las dos heurísticas coinciden con split en las 67 instancias funcionales
+En estado, las dos heurísticas coinciden con el modelo en dos etapas en las 67 instancias funcionales
 comparables en estado y en los 9 escenarios de stress comparables: no devuelven solución en
 las 12 infactibles y siempre encuentran una en las factibles.
 
@@ -833,28 +833,28 @@ las 12 infactibles y siempre encuentran una en las factibles.
 
 \startsubsection[title={Calidad y tiempo hasta terminar}]
 
-Brecha $= 100 \cdot (z_{\rm heur} - z_{\rm v5}) / z_{\rm v5}$ sobre las instancias comparables
-en objetivo, con cada método corriendo hasta su propio criterio de parada (split hasta probar el
+Brecha $= 100 \cdot (z_{\rm heur} - z_{\rm exacto}) / z_{\rm exacto}$ sobre las instancias comparables
+en objetivo, con cada método corriendo hasta su propio criterio de parada (el modelo en dos etapas hasta probar el
 óptimo, con tope de 40 minutos).
 
 \blank[medium]
 \bTABLE[split=yes, align=middle, frame=on, width=fit]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
-\bTR \bTH Heurística \eTH \bTH Suite \eTH \bTH Instancias \eTH \bTH Óptimo \eTH \bTH Brecha media \eTH \bTH Máxima \eTH \bTH Split / heurística (mediana) \eTH \eTR
-\bTR \bTD HC-4 \eTD \bTD Funcional \eTD \bTD 45 \eTD \bTD 40 \eTD \bTD 0,36 \% \eTD \bTD 5,88 \% \eTD \bTD 5,1× \eTD \eTR
-\bTR \bTD ACO-4 \eTD \bTD Funcional \eTD \bTD 45 \eTD \bTD 45 \eTD \bTD 0,00 \% \eTD \bTD 0,00 \% \eTD \bTD 1,4× \eTD \eTR
-\bTR \bTD HC-4 \eTD \bTD Stress \eTD \bTD 9 \eTD \bTD 1 \eTD \bTD 0,06 \% \eTD \bTD 0,21 \% \eTD \bTD 53,1× \eTD \eTR
-\bTR \bTD ACO-4 \eTD \bTD Stress \eTD \bTD 9 \eTD \bTD 2 \eTD \bTD 0,01 \% \eTD \bTD 0,06 \% \eTD \bTD 1,7× \eTD \eTR
+\bTR \bTH Heurística \eTH \bTH Suite \eTH \bTH Instancias \eTH \bTH Óptimo \eTH \bTH Brecha media \eTH \bTH Máxima \eTH \bTH Dos etapas / heurística (mediana) \eTH \eTR
+\bTR \bTD HC \eTD \bTD Funcional \eTD \bTD 45 \eTD \bTD 40 \eTD \bTD 0,36 \% \eTD \bTD 5,88 \% \eTD \bTD 5,1× \eTD \eTR
+\bTR \bTD ACO \eTD \bTD Funcional \eTD \bTD 45 \eTD \bTD 45 \eTD \bTD 0,00 \% \eTD \bTD 0,00 \% \eTD \bTD 1,4× \eTD \eTR
+\bTR \bTD HC \eTD \bTD Stress \eTD \bTD 9 \eTD \bTD 1 \eTD \bTD 0,06 \% \eTD \bTD 0,21 \% \eTD \bTD 53,1× \eTD \eTR
+\bTR \bTD ACO \eTD \bTD Stress \eTD \bTD 9 \eTD \bTD 2 \eTD \bTD 0,01 \% \eTD \bTD 0,06 \% \eTD \bTD 1,7× \eTD \eTR
 \eTABLE
 \blank[medium]
 
-En los escenarios de stress que split resuelve:
+En los escenarios de stress que el modelo en dos etapas resuelve:
 
 \blank[medium]
 \bTABLE[split=yes, align=middle, frame=on, width=fit]
 \setupTABLE[style=\tfx]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style={\tfx\bf}]
-\bTR \bTH Caso \eTH \bTH Escenario \eTH \bTH Lotes \eTH \bTH Grilla \eTH \bTH Split (s) \eTH \bTH HC-4 (s) \eTH \bTH Brecha \eTH \bTH ACO-4 (s) \eTH \bTH Brecha \eTH \eTR
+\bTR \bTH Caso \eTH \bTH Escenario \eTH \bTH Lotes \eTH \bTH Grilla \eTH \bTH Dos etapas (s) \eTH \bTH HC (s) \eTH \bTH Brecha \eTH \bTH ACO (s) \eTH \bTH Brecha \eTH \eTR
 \bTR \bTD 02 \eTD \bTD 10 pickers, atrasadas \eTD \bTD 10 \eTD \bTD 10×10 \eTD \bTD 33 \eTD \bTD 0,9 \eTD \bTD 0,00 \% \eTD \bTD 93,5 \eTD \bTD 0,00 \% \eTD \eTR
 \bTR \bTD 04 \eTD \bTD realista, 7×7 \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 12 \eTD \bTD 0,5 \eTD \bTD 0,01 \% \eTD \bTD 12,9 \eTD \bTD 0,00 \% \eTD \eTR
 \bTR \bTD 05 \eTD \bTD realista, 13×13 \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 108 \eTD \bTD 2,8 \eTD \bTD 0,05 \% \eTD \bTD 84,1 \eTD \bTD 0,01 \% \eTD \eTR
@@ -871,7 +871,7 @@ La figura \in[fig:tiempos] muestra el tiempo de cada método en los 19 escenario
 \in[fig:brecha] la brecha de cada heurística donde hay óptimo, y la \in[fig:tradeoff] las dos
 cosas juntas.
 
-\placefigure[here][fig:tiempos]{Tiempo total por escenario de stress (escala logarítmica). Las barras sin relleno son los timeouts de split.}
+\placefigure[here][fig:tiempos]{Tiempo total por escenario de stress (escala logarítmica). Las barras sin relleno son los escenarios que el modelo en dos etapas no termina en 40 minutos.}
 {\startMPcode
 numeric w, h; w := 12cm; h := 6.5cm;
 drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
@@ -964,16 +964,16 @@ draw (11.432cm,0.000cm)--(11.596cm,0.000cm)--(11.596cm,6.009cm)--(11.432cm,6.009
 fill (11.602cm,0.000cm)--(11.766cm,0.000cm)--(11.766cm,1.867cm)--(11.602cm,1.867cm)--cycle withcolor \MPcolor{greenline};
 fill (11.773cm,0.000cm)--(11.937cm,0.000cm)--(11.937cm,5.026cm)--(11.773cm,5.026cm)--cycle withcolor \MPcolor{redline};
 fill (12.400cm,3.380cm)--(12.800cm,3.380cm)--(12.800cm,3.620cm)--(12.400cm,3.620cm)--cycle withcolor \MPcolor{darkblue};
-label.rt(textext("\tfx split"), (13.000cm,3.500cm));
+label.rt(textext("\tfx dos etapas"), (13.000cm,3.500cm));
 draw (12.400cm,2.960cm)--(12.800cm,2.960cm)--(12.800cm,3.200cm)--(12.400cm,3.200cm)--cycle withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
-label.rt(textext("\tfx split: timeout"), (13.000cm,3.080cm));
+label.rt(textext("\tfx dos etapas: no termina"), (13.000cm,3.080cm));
 fill (12.400cm,2.540cm)--(12.800cm,2.540cm)--(12.800cm,2.780cm)--(12.400cm,2.780cm)--cycle withcolor \MPcolor{greenline};
-label.rt(textext("\tfx HC-4"), (13.000cm,2.660cm));
+label.rt(textext("\tfx HC"), (13.000cm,2.660cm));
 fill (12.400cm,2.120cm)--(12.800cm,2.120cm)--(12.800cm,2.360cm)--(12.400cm,2.360cm)--cycle withcolor \MPcolor{redline};
-label.rt(textext("\tfx ACO-4"), (13.000cm,2.240cm));
+label.rt(textext("\tfx ACO"), (13.000cm,2.240cm));
 \stopMPcode}
 
-\placefigure[here][fig:brecha]{Brecha contra el óptimo de split en cada escenario que split resuelve. Un 0 indica que la heurística encontró el óptimo.}
+\placefigure[here][fig:brecha]{Brecha contra el óptimo en cada escenario que el modelo en dos etapas resuelve. Un 0 indica que la heurística encontró el óptimo.}
 {\startMPcode
 numeric w, h; w := 12cm; h := 5.5cm;
 drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
@@ -999,7 +999,7 @@ draw (0.000cm,4.400cm)--(-0.120cm,4.400cm) withpen pencircle scaled .5pt;
 label.lft(textext("\tfx 0,20 \%"), (-0.120cm,4.400cm));
 draw (0.000cm,5.500cm)--(-0.120cm,5.500cm) withpen pencircle scaled .5pt;
 label.lft(textext("\tfx 0,25 \%"), (-0.120cm,5.500cm));
-label.lft(textext("Brecha contra el óptimo de split") rotated 90, (-1.25cm,h/2));
+label.lft(textext("Brecha contra el óptimo") rotated 90, (-1.25cm,h/2));
 label.top(textext("\tfxx 0"), (0.413cm,0.020cm));
 label.top(textext("\tfxx 0"), (0.880cm,0.020cm));
 fill (1.533cm,0.000cm)--(1.973cm,0.000cm)--(1.973cm,0.289cm)--(1.533cm,0.289cm)--cycle withcolor \MPcolor{greenline};
@@ -1019,12 +1019,12 @@ fill (10.000cm,0.000cm)--(10.440cm,0.000cm)--(10.440cm,1.298cm)--(10.000cm,1.298
 fill (10.867cm,0.000cm)--(11.307cm,0.000cm)--(11.307cm,1.554cm)--(10.867cm,1.554cm)--cycle withcolor \MPcolor{greenline};
 fill (11.333cm,0.000cm)--(11.773cm,0.000cm)--(11.773cm,0.103cm)--(11.333cm,0.103cm)--cycle withcolor \MPcolor{redline};
 fill (0.400cm,5.180cm)--(0.800cm,5.180cm)--(0.800cm,5.420cm)--(0.400cm,5.420cm)--cycle withcolor \MPcolor{greenline};
-label.rt(textext("\tfx HC-4"), (1.000cm,5.300cm));
+label.rt(textext("\tfx HC"), (1.000cm,5.300cm));
 fill (0.400cm,4.760cm)--(0.800cm,4.760cm)--(0.800cm,5.000cm)--(0.400cm,5.000cm)--cycle withcolor \MPcolor{redline};
-label.rt(textext("\tfx ACO-4"), (1.000cm,4.880cm));
+label.rt(textext("\tfx ACO"), (1.000cm,4.880cm));
 \stopMPcode}
 
-\placefigure[here][fig:tradeoff]{Brecha contra tiempo total en los escenarios de stress que split resuelve (tiempo en escala logarítmica).}
+\placefigure[here][fig:tradeoff]{Brecha contra tiempo total en los escenarios de stress que el modelo en dos etapas resuelve (tiempo en escala logarítmica).}
 {\startMPcode
 numeric w, h; w := 11cm; h := 6cm;
 drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
@@ -1079,19 +1079,19 @@ fill fullcircle scaled 4pt shifted (8.004cm,0.231cm) withcolor \MPcolor{darkblue
 fill fullcircle scaled 4pt shifted (1.940cm,1.861cm) withcolor \MPcolor{greenline};
 fill fullcircle scaled 4pt shifted (6.169cm,0.339cm) withcolor \MPcolor{redline};
 fill fullcircle scaled 4pt shifted (7.100cm,5.700cm) withcolor \MPcolor{darkblue};
-label.rt(textext("\tfx split (óptimo)"), (7.500cm,5.700cm));
+label.rt(textext("\tfx dos etapas (óptimo)"), (7.500cm,5.700cm));
 fill fullcircle scaled 4pt shifted (7.100cm,5.280cm) withcolor \MPcolor{greenline};
-label.rt(textext("\tfx HC-4"), (7.500cm,5.280cm));
+label.rt(textext("\tfx HC"), (7.500cm,5.280cm));
 fill fullcircle scaled 4pt shifted (7.100cm,4.860cm) withcolor \MPcolor{redline};
-label.rt(textext("\tfx ACO-4"), (7.500cm,4.860cm));
+label.rt(textext("\tfx ACO"), (7.500cm,4.860cm));
 \stopMPcode}
 
-En los otros 10 escenarios (8 lotes o más, la grilla de 16×16 y el 100×100) split no termina
-en 40 minutos y las dos heurísticas dan una solución válida: HC-4 en menos de 5~s y ACO-4 en
+En los otros 10 escenarios (8 lotes o más, la grilla de 16×16 y el 100×100) el modelo en dos etapas no termina
+en 40 minutos y las dos heurísticas dan una solución válida: HC en menos de 5~s y ACO en
 minutos, salvo el 01 (30 lotes en 100×100), que les lleva 17 y 35 minutos.
 
 Esta comparación responde cuánto se pierde por no resolver en forma exacta, pero no es justa
-en tiempo: split corre hasta {\em probar} el óptimo, y buena parte de ese tiempo puede ir a
+en tiempo: el modelo en dos etapas corre hasta {\em probar} el óptimo, y buena parte de ese tiempo puede ir a
 cerrar la cota dual después de haber encontrado ya la mejor solución.
 
 \stopsubsection
@@ -1099,35 +1099,35 @@ cerrar la cota dual después de haber encontrado ya la mejor solución.
 \startsubsection[title={A igual tiempo}, reference=sec:igual_tiempo]
 
 La forma estándar de comparar una metaheurística con un solver exacto es darles el mismo
-tiempo. En este experimento cada modelo de v5 recibe,
+tiempo. En este experimento cada modelo exacto recibe,
 en cada escenario de stress, exactamente el tiempo total que tardó la heurística en ese
 escenario, como límite de reloj de SCIP, y se registra la mejor solución que tiene al vencer
 ese límite:
 \startitemize
-\item {\bf Split}: la Etapa 1 reparte el tiempo en partes iguales entre los lotes que faltan
+\item {\bf Dos etapas}: la Etapa 1 reparte el tiempo en partes iguales entre los lotes que faltan
 rutear, y la Etapa 2 usa lo que queda. Solo hay solución completa si todos los lotes tienen
 ruta y la Etapa 2 encuentra una solución a tiempo. Una ruta cortada por tiempo no es
 necesariamente la mínima.
-\item {\bf Mono}: una sola resolución con todo el tiempo.
+\item {\bf Monolítico}: una sola resolución con todo el tiempo.
 \stopitemize
 
 El tiempo se mide desde que se arma el modelo hasta que el solver termina, igual que el de la
 heurística; como el límite de SCIP cubre solo la resolución, el tiempo transcurrido puede pasar un
-poco el presupuesto. La columna es $100 \cdot (z_{\rm heur} - z_{\rm v5}) / z_{\rm v5}$:
+poco el presupuesto. La columna es $100 \cdot (z_{\rm heur} - z_{\rm exacto}) / z_{\rm exacto}$:
 negativa significa que la heurística es mejor.
 
-{\bf Con el tiempo de HC-4} (entre 0,5 y 5,7~s, salvo 1.209~s en el 01), ni split ni mono
-obtienen una solución en ninguno de los 19 escenarios: en split, la Etapa 1 no llega a rutear
-todos los lotes; el monolítico no encuentra ninguna solución entera. En el tiempo que HC-4
-usa para dar una solución a menos de 0,21~\% del óptimo, v5 no da ninguna.
+{\bf Con el tiempo de HC} (entre 0,5 y 5,7~s, salvo 1.209~s en el 01), ninguno de los dos modelos
+exactos obtiene una solución en ninguno de los 19 escenarios: en el de dos etapas, la Etapa 1 no llega a rutear
+todos los lotes; el monolítico no encuentra ninguna solución entera. En el tiempo que HC
+usa para dar una solución a menos de 0,21~\% del óptimo, los modelos exactos no dan ninguna.
 
-{\bf Con el tiempo de ACO-4:}
+{\bf Con el tiempo de ACO:}
 
 \blank[medium]
 \bTABLE[split=yes, align=middle, frame=on, width=fit]
 \setupTABLE[style=\tfx]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style={\tfx\bf}]
-\bTR \bTH Caso \eTH \bTH Escenario \eTH \bTH Tiempo (s) \eTH \bTH ACO-4 \eTH \bTH Split \eTH \bTH ACO-4 contra split \eTH \bTH Mono \eTH \bTH ACO-4 contra mono \eTH \eTR
+\bTR \bTH Caso \eTH \bTH Escenario \eTH \bTH Tiempo (s) \eTH \bTH ACO \eTH \bTH Dos etapas \eTH \bTH ACO contra dos etapas \eTH \bTH Monolítico \eTH \bTH ACO contra monolítico \eTH \eTR
 \bTR \bTD 01 \eTD \bTD 100×100, atrasadas \eTD \bTD 1.877,8 \eTD \bTD 917.328,0 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
 \bTR \bTD 02 \eTD \bTD 10 pickers, atrasadas \eTD \bTD 31,3 \eTD \bTD 29.034,0 \eTD \bTD 29.262,0 \eTD \bTD -0,78 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
 \bTR \bTD 03 \eTD \bTD 1 picker, 40 lotes \eTD \bTD 412,1 \eTD \bTD 1.752.076,0 \eTD \bTD 1.763.704,0 \eTD \bTD -0,66 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
@@ -1150,9 +1150,9 @@ usa para dar una solución a menos de 0,21~\% del óptimo, v5 no da ninguna.
 \eTABLE
 \blank[medium]
 
-La figura \in[fig:igual_tiempo] muestra la columna {\em ACO-4 contra split} con el signo cambiado y en escala logarítmica, para que se vean juntas las diferencias chicas y las grandes.
+La figura \in[fig:igual_tiempo] muestra la columna {\em ACO contra dos etapas} con el signo cambiado y en escala logarítmica, para que se vean juntas las diferencias chicas y las grandes.
 
-\placefigure[here][fig:igual_tiempo]{A igual tiempo que ACO-4: cuánto mejor es la solución de ACO-4 que la de split, $100 \cdot (z_{\rm split} - z_{\rm ACO}) / z_{\rm split}$. Es la columna {\em ACO-4 contra split} de la tabla, con el signo cambiado (escala logarítmica). Más alto es más ventaja para ACO-4.}
+\placefigure[here][fig:igual_tiempo]{A igual tiempo que ACO: cuánto mejor es la solución de ACO que la del modelo en dos etapas, $100 \cdot (z_{\rm DE} - z_{\rm ACO}) / z_{\rm DE}$, donde $z_{\rm DE}$ es el objetivo del modelo en dos etapas. Es la columna {\em ACO contra dos etapas} de la tabla, con el signo cambiado (escala logarítmica). Más alto es más ventaja para ACO.}
 {\startMPcode
 numeric w, h; w := 12.35cm; h := 7.0cm;
 drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
@@ -1177,7 +1177,7 @@ draw (0cm,5.833cm)--(w,5.833cm) withpen pencircle scaled .2pt withcolor \MPcolor
 draw (0cm,7.000cm)--(-0.120cm,7.000cm) withpen pencircle scaled .5pt;
 label.lft(textext("\tfx 100 \%"), (-0.120cm,7.000cm));
 draw (0cm,7.000cm)--(w,7.000cm) withpen pencircle scaled .2pt withcolor \MPcolor{darkgray};
-label.lft(textext("Ventaja de ACO-4 sobre split") rotated 90, (-1.55cm,h/2));
+label.lft(textext("Ventaja de ACO sobre dos etapas") rotated 90, (-1.55cm,h/2));
 label.bot(textext("\strut\tfx 01"), (0.325cm,-0.100cm));
 label.top(textext("\tfxx sin solución") rotated 90, (0.325cm,0.100cm));
 label.bot(textext("\strut\tfx 02"), (0.975cm,-0.100cm));
@@ -1185,7 +1185,7 @@ fill (0.755cm,0cm)--(1.195cm,0cm)--(1.195cm,4.540cm)--(0.755cm,4.540cm)--cycle w
 label.bot(textext("\strut\tfx 03"), (1.625cm,-0.100cm));
 fill (1.405cm,0cm)--(1.845cm,0cm)--(1.845cm,4.456cm)--(1.405cm,4.456cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\strut\tfx 04"), (2.275cm,-0.100cm));
-label.top(textext("\tfxx split mejor") rotated 90, (2.275cm,0.100cm));
+label.top(textext("\tfxx dos etapas mejor") rotated 90, (2.275cm,0.100cm));
 label.bot(textext("\strut\tfx 05"), (2.925cm,-0.100cm));
 fill (2.705cm,0cm)--(3.145cm,0cm)--(3.145cm,3.167cm)--(2.705cm,3.167cm)--cycle withcolor \MPcolor{darkblue};
 label.bot(textext("\strut\tfx 06"), (3.575cm,-0.100cm));
@@ -1219,20 +1219,20 @@ fill (11.805cm,0cm)--(12.245cm,0cm)--(12.245cm,6.728cm)--(11.805cm,6.728cm)--cyc
 \stopMPcode}
 
 \startitemize
-\item {\bf Split} da solución en 15 de los 19 escenarios. ACO-4 es igual o mejor en 14 de esos
-15; la excepción es el 04, donde split queda 0,001~\% por debajo. En 8 la diferencia es de
+\item {\bf El modelo en dos etapas} da solución en 15 de los 19 escenarios. ACO es igual o mejor en 14 de esos
+15; la excepción es el 04, donde queda 0,001~\% por debajo. En 8 la diferencia es de
 0,1~\% o menos, en el 02 y el 03 es de menos de 1~\%, y en los 5 escenarios con 12 lotes o más
-(14, 16 a 19) split queda entre 30~\% y 62~\% por encima: con el tiempo repartido entre muchos
+(14, 16 a 19) queda entre 30~\% y 62~\% por encima: con el tiempo repartido entre muchos
 lotes, la Etapa 1 corta rutas lejos de la mínima, y la Etapa 2 arrastra esas rutas.
-\item Split no da solución en el 01, el 08 y el 09 (la Etapa 1 no rutea todos los lotes) ni en
+\item No da solución en el 01, el 08 y el 09 (la Etapa 1 no rutea todos los lotes) ni en
 el 11, donde las rutas cortadas por tiempo hacen que algún lote no tenga ningún picker elegible
 por cadena de frío. En el 09 la Etapa 1 excedió el presupuesto (864~s contra 224~s), porque el
 límite se aplica a cada resolución y no al proceso completo.
-\item {\bf Mono} da solución solo en el 04 y el 12, entre 5~\% y 10~\% por encima de ACO-4.
+\item {\bf El monolítico} da solución solo en el 04 y el 12, entre 5~\% y 10~\% por encima de ACO.
 \stopitemize
 
-Los presupuestos son los tiempos de otra ejecución de ACO-4, distinta de la de la tabla de
-stress: por eso el tiempo y el objetivo de ACO-4 difieren un poco
+Los presupuestos son los tiempos de otra ejecución de ACO, distinta de la de la tabla de
+stress: por eso el tiempo y el objetivo de ACO difieren un poco
 (por ejemplo, 15,1~s contra 12,9~s en el 04, y 917.328 contra 988.252 en el 01).
 
 \stopsubsection
@@ -1242,22 +1242,22 @@ stress: por eso el tiempo y el objetivo de ACO-4 difieren un poco
 
 \startitemize[n]
 \item {\bf Mismo problema.} Las cuatro formulaciones comparten datos, restricciones y objetivo;
-la única diferencia de modelado es la espera voluntaria, que v5 permite y las heurísticas no.
-Las instancias donde v5 la usa se comparan solo en estado.
-\item {\bf Las heurísticas son válidas.} Todas sus soluciones cumplen las restricciones de v5,
-verificadas contra el monolítico, y coinciden con split en el estado de todas las instancias
+la única diferencia de modelado es la espera voluntaria, que los modelos exactos permiten y las heurísticas no.
+Las instancias donde el modelo exacto la usa se comparan solo en estado.
+\item {\bf Las heurísticas son válidas.} Todas sus soluciones cumplen las restricciones de los modelos exactos,
+verificadas contra el monolítico, y coinciden con el modelo en dos etapas en el estado de todas las instancias
 comparables.
-\item {\bf Cerca del óptimo.} ACO-4 alcanza el óptimo en las 45 funcionales comparables y queda
-a 0,06~\% como máximo en stress; HC-4 falla en 5 funcionales de grilla (hasta 5,88~\%) y queda
+\item {\bf Cerca del óptimo.} ACO alcanza el óptimo en las 45 funcionales comparables y queda
+a 0,06~\% como máximo en stress; HC falla en 5 funcionales de grilla (hasta 5,88~\%) y queda
 a 0,21~\% como máximo en stress.
-\item {\bf A igual tiempo, las heurísticas dominan.} Con el tiempo de HC-4, v5 no obtiene
-ninguna solución. Con el de ACO-4, split empata o pierde en todos los escenarios salvo uno (por
+\item {\bf A igual tiempo, las heurísticas dominan.} Con el tiempo de HC, los modelos exactos no obtienen
+ninguna solución. Con el de ACO, el modelo en dos etapas empata o pierde en todos los escenarios salvo uno (por
 0,001~\%), pierde por 30~\% a 62~\% con 12 lotes o más, y en 4 escenarios no da solución; el
 monolítico casi nunca la da.
-\item {\bf El valor de v5 es la prueba de optimalidad.} Hasta 6 lotes en grillas de hasta
-15×15, split prueba el óptimo en minutos y sirve de referencia para medir a las heurísticas.
+\item {\bf El valor de los modelos exactos es la prueba de optimalidad.} Hasta 6 lotes en grillas de hasta
+15×15, el modelo en dos etapas prueba el óptimo en minutos y sirve de referencia para medir a las heurísticas.
 Por encima de ese tamaño, o cuando el tiempo de respuesta importa, las heurísticas son la
-opción: ACO-4 cuando importa la calidad y HC-4 cuando importan los segundos.
+opción: ACO cuando importa la calidad y HC cuando importan los segundos.
 \stopitemize
 
 \stopsubsection
