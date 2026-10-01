@@ -12,23 +12,26 @@
 \setuppapersize[A4][A4]
 \setupbodyfont[11pt]
 \setuplayout[width=middle, height=middle, topspace=2cm, bottomspace=2cm]
+\mainlanguage[es]
 
 \starttext
 
-\title{\bf Modelos OPP v5: formulación monolítica y formulación en dos etapas}
+\title{\bf Modelos OPP v5 y heurísticas HC-4 y ACO-4:\crlf definiciones y comparación}
 \blank[big]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \startsection[title={Introducción}]
 
-Ambos modelos resuelven el mismo problema de {\em order-picking}: dado un conjunto de lotes
+Este documento define los dos modelos exactos de v5 y las dos heurísticas que resuelven el
+mismo problema, y los compara con los resultados de los experimentos. Los cuatro métodos
+resuelven el mismo problema de {\em order-picking}: dado un conjunto de lotes
 de pedidos, un grafo de locaciones de almacén y un conjunto de pickers heterogéneos en
 velocidad, determinar simultáneamente la ruta de recolección de cada lote, la asignación de
 lotes a pickers y la secuenciación temporal, minimizando una función objetivo que combina
 tiempos de completitud con penalizaciones de tardanza y adelanto, sujeto a una restricción
 de cadena de frío.
 
-Las dos formulaciones difieren en la estrategia de resolución:
+Las dos formulaciones exactas difieren en la estrategia de resolución:
 
 \startitemize
 \item {\bf OPP v5.1 (monolítico)}: un único MIP que decide ruta, asignación y secuenciación
@@ -38,17 +41,34 @@ forma independiente (minimizando el tiempo de ruta); la Etapa~2 recibe el tiempo
 como {\em dato} fijo y resuelve asignación, secuenciación y cadena de frío.
 \stopitemize
 
-Ambos tienen el mismo valor óptimo: la ruta más corta domina cualquier otra porque el
+Las dos formulaciones tienen el mismo valor óptimo: la ruta más corta domina cualquier otra porque el
 objetivo no contiene un término de tiempo de ruta y una ruta más corta solo relaja las
 restricciones de duración y cadena de frío. Sin embargo, el conjunto de soluciones óptimas
 difiere: el modelo monolítico puede devolver rutas no mínimas que alcanzan el mismo
 objetivo.
 
-Los archivos fuente de las formulaciones son:
+Las dos heurísticas (sección \in[sec:heuristicas]) buscan sobre el mismo espacio de
+soluciones (una ruta por lote, una asignación de lotes a pickers y una secuencia por picker)
+con el mismo objetivo, pero sin garantía de optimalidad:
+\startitemize
+\item {\bf OPP\_hc\_4 (HC-4)}: búsqueda local estocástica ({\em Hill Climbing}) que parte de
+rutas construidas por varios métodos y mejora rutas, asignación y secuencia con movimientos
+aleatorios.
+\item {\bf OPP\_aco\_4 (ACO-4)}: colonia de hormigas ({\em Ant Colony Optimization}) que
+construye rutas y asignaciones con feromonas y aplica búsqueda local a la mejor solución.
+\stopitemize
+
+La sección \in[sec:comparacion] compara los cuatro métodos: qué instancias son comparables,
+cuánto se alejan las heurísticas del óptimo, cuánto tardan, y qué obtiene el modelo exacto si
+recibe el mismo tiempo que usó la heurística.
+
+Los archivos fuente son:
 \startitemize
 \item \type{models/opp_v5_1_mono/opp_model_v5_1_mono.zpl}
 \item \type{models/opp_v5_2_split/opp_model_v5_2_split_stage1_routing.zpl}
 \item \type{models/opp_v5_2_split/opp_model_v5_2_split_stage2_scheduling.zpl}
+\item \type{models/opp_hc_4/opp_hc_4.py}
+\item \type{models/opp_aco_4/opp_aco_4.py}
 \stopitemize
 
 \stopsection
@@ -406,6 +426,441 @@ $r_b$).
 \bTR \bTD Ruta garantizada mínima \eTD \bTD No (puede elegir ruta no mínima) \eTD \bTD Sí (Etapa 1 minimiza $r_b$) \eTD \eTR
 \bTR \bTD Tamaño del MIP principal \eTD \bTD Grande (ruteo + scheduling juntos) \eTD \bTD Menor (cada etapa por separado) \eTD \eTR
 \eTABLE
+
+\stopsection
+
+
+\page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsection[title={Heurísticas: HC-4 y ACO-4}, reference=sec:heuristicas]
+
+OPP\_hc\_4 y OPP\_aco\_4 resuelven el mismo problema que v5, con la misma notación de la
+sección anterior: ruteo de cada lote, asignación de lotes a pickers y secuencia de cada
+picker, con velocidades heterogéneas y cadena de frío. No agregan congestión entre pickers
+(a diferencia de OPP\_hc\_3 y OPP\_aco\_3), porque v5 tampoco la modela.
+
+\startsubsection[title={Representación común de una solución}]
+
+Una solución $S$ de cualquiera de las dos heurísticas tiene tres componentes:
+\startitemize
+\item {\bf Ruta} $\rho_b$ de cada lote $b$: un camino simple de $v_{start}$ a $v_{end}$ por
+arcos de $\mathcal{E}$ que visita todas las locaciones requeridas del lote. Como en v5, no se
+repite ningún vértice (restricciones (8)--(9) del monolítico).
+\item {\bf Asignación} $p(b) \in \mathcal{P}$ de cada lote a un picker (equivale a $x_{pb}$).
+\item {\bf Secuencia} $\sigma_p = (b_1, \dots, b_k)$ de los lotes asignados a cada picker
+(equivale a $y_{bk}$).
+\stopitemize
+
+El tiempo de ruta y el tiempo de ejecución se calculan como en v5, pero sobre la ruta
+concreta de la heurística:
+\startformula
+\startalign
+    \NC R_b(\rho_b) \NC = T^{travel} \cdot \sum_{(i,j) \in \rho_b} D_{ij} \;+\; \sum_{i \in \rho_b \setminus \{v_{start},v_{end}\}} S_i \NR
+    \NC T^{exec}_{pb} \NC = F_b + \frac{R_b(\rho_b)}{V_p} \NR
+\stopalign
+\stopformula
+
+Los lotes de cada picker se ejecutan uno detrás del otro, sin esperas: si
+$\sigma_p = (b_1, \dots, b_k)$,
+\startformula
+c_{b_1} = T^{exec}_{p b_1}, \qquad c_{b_j} = c_{b_{j-1}} + T^{exec}_{p b_j} \quad (j = 2, \dots, k)
+\stopformula
+y para cada orden $n$ del lote $b$, $ta_n = \max(0,\, c_b - T^{due}_n)$ y
+$ea_n = \max(0,\, T^{due}_n - c_b)$. El objetivo $f(S)$ es exactamente el de v5:
+\startformula
+f(S) = W^{c} \cdot \sum_{b \in \mathcal{B}} c_b + W^{pen} \cdot \left( W^{e} \cdot \sum_{n \in \mathcal{N}} ea_n + W^{t} \cdot \sum_{n \in \mathcal{N}} ta_n \right)
+\stopformula
+
+Esta es la única diferencia de modelado con v5: en v5 la restricción de completitud es una
+desigualdad ($c_{pb} \ge T^{exec}_{pb}$ y las de secuenciación), así que el modelo puede
+declarar un lote terminado más tarde de lo que termina para reducir el adelanto
+({\em espera voluntaria}). Las heurísticas reportan el tiempo real de terminación.
+
+\stopsubsection
+
+\startsubsection[title={Cadena de frío: dura en la respuesta, blanda en la búsqueda}]
+
+Un par $(p,b)$ es elegible si $T^{exec}_{pb} \le T^{cold} + \varepsilon$, como en
+$\mathcal{PB}^{elig}$ de v5.2. La solución que reporta una heurística cumple siempre esa
+condición para todos sus lotes. Durante la búsqueda, en cambio, se permite pasar por
+soluciones que la violan, penalizadas por el exceso total:
+\startformula
+\startalign
+    \NC \Delta^{cold}(S) \NC = \sum_{b \in \mathcal{B}} \max\left(0,\; T^{exec}_{p(b)\,b} - T^{cold} - \varepsilon\right) \NR
+    \NC g(S) \NC = f(S) + 1000 \cdot \Delta^{cold}(S) \NR
+\stopalign
+\stopformula
+
+$g$ decide qué movimientos se aceptan; la mejor solución se guarda aparte, solo entre las que
+tienen $\Delta^{cold}(S) = 0$, y se mide con $f$. Así una ruta inicial demasiado larga para el
+límite de frío no descarta la instancia: la búsqueda puede acortarla o pasar el lote a un
+picker más rápido.
+
+Antes de buscar, las dos heurísticas aplican un único chequeo de infactibilidad que es exacto,
+no una estimación: con $R_b = 0$, el mejor caso posible, $T^{exec}_{pb} = F_b$ para todo
+picker, así que si $F_b > T^{cold} + \varepsilon$ ninguna ruta ni ningún picker puede cumplir
+el frío y la instancia se declara infactible. En cualquier otro caso
+la búsqueda corre completa; si termina sin ninguna solución que cumpla el frío, reporta
+infactible. Por eso una heurística {\em no prueba} infactibilidad: solo no encuentra solución.
+
+\stopsubsection
+
+\startsubsection[title={OPP\_hc\_4: Hill Climbing}]
+
+Búsqueda local estocástica de primera mejora: en cada iteración se elige {\em un} movimiento y
+{\em un} vecino al azar, y se acepta si baja $g$. No se recorre toda la vecindad antes de
+moverse, salvo dentro del movimiento de ruta.
+
+\starttyping[option=none]
+ALGORITMO HC4(params)
+    si algún lote no es elegible para ningún picker con R_b = 0:
+        retornar infeasible                       # chequeo exacto
+
+    S <- SolucionInicial()
+    si S es None: retornar infeasible             # algún lote no se puede rutear
+    mejor <- S si Delta_cold(S) = 0 si_no None
+    iteracion <- 0 ; sin_mejora <- 0
+
+    mientras iteracion < Max_it y sin_mejora < Max_imp
+                                y tiempo < Max_time:
+        iteracion <- iteracion + 1
+        S' <- Vecino(S)
+        si S' es None o g(S') >= g(S):
+            sin_mejora <- sin_mejora + 1 ; continuar
+        S <- S' ; sin_mejora <- 0
+        si Delta_cold(S) = 0 y f(S) < f(mejor):
+            mejor <- S
+
+    retornar mejor (o infeasible si es None)
+
+
+SUBRUTINA SolucionInicial()
+    para cada lote b con órdenes:
+        candidatas <- { vecino más cercano (Dijkstra),
+                        inserción más lejana, hacia adelante y hacia atrás,
+                        20 construcciones pick-to-pick al azar con peso (1/d)^2.5,
+                          alternando el sentido, cada una mejorada con 2-opt }
+        si no hay candidatas: candidatas <- { búsqueda best-first acotada }
+        rho_b <- pulir(la candidata más corta)    # 2-opt, or-opt, re-ruteo
+    asignar cada lote al picker elegible con menos lotes
+        (si no tiene ninguno elegible: al que minimiza T_exec_pb)
+    retornar S
+
+
+SUBRUTINA Vecino(S)
+    elegir al azar entre los movimientos aplicables:
+    Ruta:        lote al azar; aplicar la mejor inversión 2-opt factible
+                 de su ruta, medida por distancia + penalización de frío
+    Reasignar:   lote al azar; pasarlo a otro picker al azar
+    Intercambio: picker al azar con 2 o más lotes; intercambiar dos
+                 posiciones de su secuencia
+\stoptyping
+
+Parámetros en la suite de stress: $Max\_it = 200$, $Max\_imp = 60$ y $Max\_time = 30$~s. El
+tope de tiempo se mira entre iteraciones, así que no corta una construcción inicial en curso.
+
+\stopsubsection
+
+\startsubsection[title={OPP\_aco\_4: Ant Colony Optimization}]
+
+Cada hormiga construye una solución completa: para cada lote, primero la ruta y después el
+picker. Hay dos tablas de feromona: una de ruta, $\tau_{ij}$ entre pares de locaciones
+requeridas, y una de asignación, $\tau^{P}_{bp}$ entre lotes y pickers.
+
+{\bf Construcción de la ruta.} Es {\em pick-to-pick} (Chen et al., 2013): desde la última
+locación visitada $i$, la hormiga elige la próxima locación requerida $r$ entre las que faltan
+con probabilidad
+\startformula
+P(r) = \frac{\tau_{ir}^{\alpha} \cdot \eta_{ir}^{\beta}}{\sum_{s \text{ pendiente}} \tau_{is}^{\alpha} \cdot \eta_{is}^{\beta}}, \qquad \eta_{ir} = \frac{1}{d(i,r)}
+\stopformula
+y camina hasta ella por el camino más corto. Como v5 no permite repetir vértices, $d(i,r)$ y
+el camino se recalculan en cada paso con Dijkstra, evitando los vértices ya usados. Cada lote
+tiene hasta 10 intentos de construcción, alternando el sentido (desde $v_{start}$ o desde
+$v_{end}$); si todos fallan se usa una ruta de respaldo por búsqueda best-first. Cada ruta
+construida se mejora con 2-opt y re-ruteo de segmentos.
+
+{\bf Elección del picker.} Por ruleta entre los pickers elegibles para la ruta recién
+construida, con peso $(\tau^{P}_{bp})^{\alpha} \cdot (1 / (1 + \text{carga}_p))^{\beta}$, donde
+la carga es la cantidad de lotes que la hormiga ya le asignó. Si ningún picker es elegible, la
+ruleta usa todos. La secuencia de cada picker se ordena por la fecha de entrega más temprana
+de sus órdenes.
+
+{\bf Feromonas.} La feromona de ruta sigue el esquema MAX-MIN (Stützle y Hoos, 2000): empieza
+en $\tau_{max} = 2 / \rho$, en cada iteración se evapora y solo depositan, con
+$\Delta\tau = 1$, la ruta más corta de la iteración y la más corta hasta el momento de cada
+lote; se mantiene en $[\tau_{max}/50,\; \tau_{max}]$. Aprende de la longitud de la ruta, no
+del objetivo completo. La feromona de asignación se evapora y recibe $Q / g(S)$ de cada
+hormiga, solo en los lotes que cumplen el frío, más un depósito doble de la mejor solución.
+
+{\bf Búsqueda local sobre la mejor solución.} Dos agregados propios, no tomados de la
+bibliografía, que se aplican cuando cambia la mejor solución:
+\startitemize
+\item {\em Recombinación}: reemplazar la ruta de cada lote por la más corta que haya
+construido cualquier hormiga, manteniendo asignación y secuencia; se acepta si baja $f$.
+\item {\em Búsqueda local de agenda}: con las rutas fijas, mover un lote a otro picker en
+cualquier posición, intercambiar dos lotes de la misma secuencia o intercambiar dos lotes entre
+pickers, hasta que ningún movimiento mejore. Son las vecindades de HC-4, recorridas en forma
+exhaustiva.
+\stopitemize
+
+\starttyping[option=none]
+ALGORITMO ACO4(params)
+    si algún lote no es elegible para ningún picker con R_b = 0:
+        retornar infeasible                       # chequeo exacto
+    inicializar tau (MAX-MIN) y tau_P
+    mejor <- None
+
+    para iteracion en 1 .. Max_it, mientras tiempo < Max_time:
+        para hormiga en 1 .. K:
+            S <- ConstruirSolucion(tau, tau_P)
+            registrar la ruta más corta de cada lote
+        pulir las rutas que mejoraron su récord
+        S* <- la hormiga de menor f entre las que cumplen el frío
+        si f(S*) < f(mejor): mejor <- S*
+        mejor <- Recombinar(mejor) ; mejor <- BusquedaLocalAgenda(mejor)
+        actualizar tau (mejores rutas por lote) y tau_P (todas las hormigas)
+
+    retornar mejor (o infeasible si es None)
+\stoptyping
+
+Parámetros en la suite de stress: $K = 15$ hormigas, $Max\_it = 60$, $\alpha = 1{,}0$,
+$\beta = 2{,}5$, $\rho = 0{,}15$, $Q = 100$ y $Max\_time = 30$~min. Como en HC-4, el tope de
+tiempo se mira entre hormigas e iteraciones; la construcción puede usar hasta la mitad y el
+resto queda para pulir y para la búsqueda local.
+
+\stopsubsection
+
+\startsubsection[title={Los cuatro métodos lado a lado}]
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=broad]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Aspecto \eTH \bTH v5.1 mono \eTH \bTH v5.2 split \eTH \bTH HC-4 \eTH \bTH ACO-4 \eTH \eTR
+\bTR \bTD Tipo \eTD \bTD MIP (ZIMPL + SCIP) \eTD \bTD Dos MIP (ZIMPL + SCIP) \eTD \bTD Búsqueda local \eTD \bTD Colonia de hormigas + búsqueda local \eTD \eTR
+\bTR \bTD Optimalidad \eTD \bTD Probada \eTD \bTD Probada \eTD \bTD No \eTD \bTD No \eTD \eTR
+\bTR \bTD Ruta \eTD \bTD Variable, junto con la agenda \eTD \bTD Mínima por lote (Etapa 1) \eTD \bTD Construcción + 2-opt \eTD \bTD Hormigas + 2-opt + recombinación \eTD \eTR
+\bTR \bTD Asignación y secuencia \eTD \bTD Variables $x_{pb}$, $y_{bk}$ \eTD \bTD Variables $x_{pb}$, $y_{bk}$ \eTD \bTD Movimientos aleatorios \eTD \bTD Ruleta + búsqueda local \eTD \eTR
+\bTR \bTD Cadena de frío \eTD \bTD Cota de $u_{pb}$ \eTD \bTD Dominio $\mathcal{PB}^{elig}$ \eTD \bTD Dura al reportar, penalizada al buscar \eTD \bTD Dura al reportar, penalizada al buscar \eTD \eTR
+\bTR \bTD Espera voluntaria \eTD \bTD Sí \eTD \bTD Sí \eTD \bTD No \eTD \bTD No \eTD \eTR
+\bTR \bTD Infactibilidad \eTD \bTD Probada \eTD \bTD Probada \eTD \bTD No encuentra solución \eTD \bTD No encuentra solución \eTD \eTR
+\bTR \bTD Determinismo \eTD \bTD Sí \eTD \bTD Sí \eTD \bTD Semilla \eTD \bTD Semilla \eTD \eTR
+\eTABLE
+\blank[medium]
+
+\stopsubsection
+
+\stopsection
+
+
+\page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\startsection[title={Comparación de v5 con las heurísticas}, reference=sec:comparacion]
+
+Esta sección resume los resultados. El detalle instancia por instancia está en
+\type{opp_v5_2_split_vs_heuristics_comparison.tex} (split contra las heurísticas) y en
+\type{opp_v5_1_mono_vs_opp_v5_2_split_comparison.tex} (mono contra split).
+
+\startsubsection[title={Comparabilidad}]
+
+Se comparan solo instancias en que los cuatro métodos resuelven exactamente los mismos datos.
+En la suite funcional son las instancias \type{test_v5eq__*} de las heurísticas, que capturan
+el escenario de cada test funcional de v5 en el momento en que v5 escribe sus \type{.dat}. En
+stress son los 19 escenarios de la suite, que los cuatro métodos construyen con el mismo
+generador y los mismos argumentos. Las reglas están en
+\type{docs/specs/comparabilidad_v5_heuristicas.md} y la fuente de verdad es
+\type{results/comparability/comparability_v5_vs_heuristics.csv}.
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\setupTABLE[column][4][width=6cm, align=flushleft]
+\bTR \bTH Situación de v5 \eTH \bTH Estado \eTH \bTH Objetivo \eTH \bTH Motivo \eTH \eTR
+\bTR \bTD Óptimo, sin espera \eTD \bTD Sí \eTD \bTD Sí \eTD \bTD Mismos datos, mismo objetivo \eTD \eTR
+\bTR \bTD Óptimo, con espera voluntaria \eTD \bTD Sí \eTD \bTD No \eTD \bTD v5 obtiene menos objetivo por diseño del modelo, no por un plan mejor \eTD \eTR
+\bTR \bTD Infactible \eTD \bTD Sí \eTD \bTD No \eTD \bTD Se verifica que la heurística tampoco encuentre solución \eTD \eTR
+\bTR \bTD No termina (timeout) \eTD \bTD No \eTD \bTD No \eTD \bTD No hay referencia; se usa para escala y para el experimento a igual tiempo \eTD \eTR
+\eTABLE
+\blank[medium]
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH  \eTH \bTH Funcional \eTH \bTH Stress \eTH \eTR
+\bTR \bTD Instancias \eTD \bTD 70 \eTD \bTD 19 \eTD \eTR
+\bTR \bTD Comparables en estado y objetivo \eTD \bTD 45 \eTD \bTD 9 \eTD \eTR
+\bTR \bTD Comparables solo en estado \eTD \bTD 22 \eTD \bTD 0 \eTD \eTR
+\bTR \bTD \quad v5 infactible \eTD \bTD 12 \eTD \bTD 0 \eTD \eTR
+\bTR \bTD \quad v5 usa espera voluntaria \eTD \bTD 10 \eTD \bTD 0 \eTD \eTR
+\bTR \bTD No comparables \eTD \bTD 3 \eTD \bTD 10 \eTD \eTR
+\eTABLE
+\blank[medium]
+
+En stress no hay espera que descartar: en los escenarios 04 a 19 el peso por lote completado
+($W^{c} = 27$) es mayor que las órdenes por lote, así que esperar nunca conviene, y en los
+heredados 01 a 03 todas las órdenes llegan tarde. Los 10 no comparables son los que split no
+termina en 40 minutos. El monolítico resuelve las mismas instancias que split y llega al mismo
+óptimo en los 49 pares funcionales que resuelven los dos, pero en stress no termina ninguno de
+los 19 en 40 minutos, así que la referencia de stress es split.
+
+\stopsubsection
+
+\startsubsection[title={Validez y estado}]
+
+Cada solución de las heurísticas se verificó contra OPP\_v5\_1\_mono: se fijan sus valores en las
+variables del monolítico y SCIP decide si son factibles, sin reescribir ninguna restricción
+(\type{verification/run_compliance.py}). Ninguna de las 150 soluciones verificadas (56
+funcionales y 19 de stress por heurística) viola una restricción de v5, y el objetivo
+recalculado coincide con el reportado en todas.
+
+En estado, las dos heurísticas coinciden con split en las 67 instancias funcionales
+comparables en estado y en los 9 escenarios de stress comparables: no devuelven solución en
+las 12 infactibles y siempre encuentran una en las factibles.
+
+\stopsubsection
+
+\startsubsection[title={Calidad y tiempo hasta terminar}]
+
+Brecha $= 100 \cdot (z_{\rm heur} - z_{\rm v5}) / z_{\rm v5}$ sobre las instancias comparables
+en objetivo, con cada método corriendo hasta su propio criterio de parada (split hasta probar el
+óptimo, con tope de 40 minutos).
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Heurística \eTH \bTH Suite \eTH \bTH Instancias \eTH \bTH Óptimo \eTH \bTH Brecha media \eTH \bTH Máxima \eTH \bTH Split / heurística (mediana) \eTH \eTR
+\bTR \bTD HC-4 \eTD \bTD Funcional \eTD \bTD 45 \eTD \bTD 40 \eTD \bTD 0,36 \% \eTD \bTD 5,88 \% \eTD \bTD 5,1× \eTD \eTR
+\bTR \bTD ACO-4 \eTD \bTD Funcional \eTD \bTD 45 \eTD \bTD 45 \eTD \bTD 0,00 \% \eTD \bTD 0,00 \% \eTD \bTD 1,4× \eTD \eTR
+\bTR \bTD HC-4 \eTD \bTD Stress \eTD \bTD 9 \eTD \bTD 1 \eTD \bTD 0,06 \% \eTD \bTD 0,21 \% \eTD \bTD 53,1× \eTD \eTR
+\bTR \bTD ACO-4 \eTD \bTD Stress \eTD \bTD 9 \eTD \bTD 2 \eTD \bTD 0,01 \% \eTD \bTD 0,06 \% \eTD \bTD 1,7× \eTD \eTR
+\eTABLE
+\blank[medium]
+
+En los escenarios de stress que split resuelve:
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Caso \eTH \bTH Lotes \eTH \bTH Grilla \eTH \bTH Split (s) \eTH \bTH HC-4 (s) \eTH \bTH Brecha \eTH \bTH ACO-4 (s) \eTH \bTH Brecha \eTH \eTR
+\bTR \bTD 02 \eTD \bTD 10 \eTD \bTD 10×10 \eTD \bTD 33 \eTD \bTD 0,9 \eTD \bTD 0,00 \% \eTD \bTD 93,5 \eTD \bTD 0,00 \% \eTD \eTR
+\bTR \bTD 04 \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 12 \eTD \bTD 0,5 \eTD \bTD 0,01 \% \eTD \bTD 12,9 \eTD \bTD 0,00 \% \eTD \eTR
+\bTR \bTD 05 \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 108 \eTD \bTD 2,8 \eTD \bTD 0,05 \% \eTD \bTD 84,1 \eTD \bTD 0,01 \% \eTD \eTR
+\bTR \bTD 06 \eTD \bTD 6 \eTD \bTD 14×14 \eTD \bTD 202 \eTD \bTD 3,8 \eTD \bTD 0,04 \% \eTD \bTD 116,1 \eTD \bTD 0,01 \% \eTD \eTR
+\bTR \bTD 07 \eTD \bTD 6 \eTD \bTD 15×15 \eTD \bTD 904 \eTD \bTD 4,3 \eTD \bTD 0,04 \% \eTD \bTD 156,1 \eTD \bTD 0,01 \% \eTD \eTR
+\bTR \bTD 09 \eTD \bTD 6 \eTD \bTD 8×21 \eTD \bTD 224 \eTD \bTD 3,8 \eTD \bTD 0,06 \% \eTD \bTD 204,1 \eTD \bTD 0,00 \% \eTD \eTR
+\bTR \bTD 10 \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 86 \eTD \bTD 0,5 \eTD \bTD 0,02 \% \eTD \bTD 15,3 \eTD \bTD 0,00 \% \eTD \eTR
+\bTR \bTD 11 \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 139 \eTD \bTD 2,9 \eTD \bTD 0,21 \% \eTD \bTD 83,6 \eTD \bTD 0,06 \% \eTD \eTR
+\bTR \bTD 15 \eTD \bTD 6 \eTD \bTD 10×10 \eTD \bTD 244 \eTD \bTD 1,5 \eTD \bTD 0,07 \% \eTD \bTD 52,5 \eTD \bTD 0,00 \% \eTD \eTR
+\eTABLE
+\blank[medium]
+
+En los otros 10 escenarios (8 lotes o más, la grilla de 16×16 y el 100×100) split no termina
+en 40 minutos y las dos heurísticas dan una solución válida: HC-4 en menos de 5~s y ACO-4 en
+minutos, salvo el 01 (30 lotes en 100×100), que les lleva 17 y 35 minutos.
+
+Esta comparación responde cuánto se pierde por no resolver en forma exacta, pero no es justa
+en tiempo: split corre hasta {\em probar} el óptimo, y buena parte de ese tiempo puede ir a
+cerrar la cota dual después de haber encontrado ya la mejor solución.
+
+\stopsubsection
+
+\startsubsection[title={A igual tiempo}, reference=sec:igual_tiempo]
+
+La forma estándar de comparar una metaheurística con un solver exacto es darles el mismo
+tiempo. En este experimento (\type{analysis/run_equal_time_study.py}) cada modelo de v5 recibe,
+en cada escenario de stress, exactamente el tiempo total que tardó la heurística en ese
+escenario, como límite de reloj de SCIP, y se registra la mejor solución que tiene al vencer
+ese límite:
+\startitemize
+\item {\bf Split}: la Etapa 1 reparte el tiempo en partes iguales entre los lotes que faltan
+rutear, y la Etapa 2 usa lo que queda. Solo hay solución completa si todos los lotes tienen
+ruta y la Etapa 2 encuentra una solución a tiempo. Una ruta cortada por tiempo no es
+necesariamente la mínima.
+\item {\bf Mono}: una sola resolución con todo el tiempo.
+\stopitemize
+
+El tiempo se mide desde el inicio del pipeline (escribir los \type{.dat}, compilar con ZIMPL
+y resolver), igual que el de la heurística; como el límite de SCIP cubre solo su resolución, el
+tiempo transcurrido puede pasar un poco el presupuesto. Los resultados están en
+\type{results/equal_time/}. La columna es $100 \cdot (z_{\rm heur} - z_{\rm v5}) / z_{\rm v5}$:
+negativa significa que la heurística es mejor.
+
+{\bf Con el tiempo de HC-4} (entre 0,5 y 5,7~s, salvo 1.209~s en el 01), ni split ni mono
+obtienen una solución en ninguno de los 19 escenarios: en split, la Etapa 1 no llega a rutear
+todos los lotes; el monolítico no encuentra ninguna solución entera. En el tiempo que HC-4
+usa para dar una solución a menos de 0,21~\% del óptimo, v5 no da ninguna.
+
+{\bf Con el tiempo de ACO-4:}
+
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\bTR \bTH Caso \eTH \bTH Tiempo (s) \eTH \bTH ACO-4 \eTH \bTH Split \eTH \bTH ACO-4 contra split \eTH \bTH Mono \eTH \bTH ACO-4 contra mono \eTH \eTR
+\bTR \bTD 01 \eTD \bTD 1.877,8 \eTD \bTD 917.328,0 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 02 \eTD \bTD 31,3 \eTD \bTD 29.034,0 \eTD \bTD 29.262,0 \eTD \bTD -0,78 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 03 \eTD \bTD 412,1 \eTD \bTD 1.752.076,0 \eTD \bTD 1.763.704,0 \eTD \bTD -0,66 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 04 \eTD \bTD 15,1 \eTD \bTD 149.221,0 \eTD \bTD 149.218,9 \eTD \bTD 0,001 \% \eTD \bTD 157.569,7 \eTD \bTD -5,30 \% \eTD \eTR
+\bTR \bTD 05 \eTD \bTD 95,0 \eTD \bTD 241.273,5 \eTD \bTD 241.398,5 \eTD \bTD -0,05 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 06 \eTD \bTD 109,8 \eTD \bTD 256.642,2 \eTD \bTD 256.791,0 \eTD \bTD -0,06 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 07 \eTD \bTD 194,6 \eTD \bTD 271.914,3 \eTD \bTD 272.016,8 \eTD \bTD -0,04 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 08 \eTD \bTD 129,5 \eTD \bTD 287.199,8 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 09 \eTD \bTD 223,9 \eTD \bTD 275.046,8 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 10 \eTD \bTD 15,2 \eTD \bTD 112.082,8 \eTD \bTD 112.083,2 \eTD \bTD -0,0004 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 11 \eTD \bTD 94,1 \eTD \bTD 182.338,5 \eTD \bTD sin solución \eTD \bTD -- \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 12 \eTD \bTD 29,8 \eTD \bTD 198.905,5 \eTD \bTD 198.918,8 \eTD \bTD -0,007 \% \eTD \bTD 222.183,9 \eTD \bTD -10,48 \% \eTD \eTR
+\bTR \bTD 13 \eTD \bTD 42,0 \eTD \bTD 248.696,3 \eTD \bTD 248.715,4 \eTD \bTD -0,008 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 14 \eTD \bTD 43,8 \eTD \bTD 298.381,2 \eTD \bTD 426.194,9 \eTD \bTD -29,99 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 15 \eTD \bTD 52,9 \eTD \bTD 97.922,8 \eTD \bTD 98.018,5 \eTD \bTD -0,10 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 16 \eTD \bTD 97,1 \eTD \bTD 195.901,5 \eTD \bTD 393.929,1 \eTD \bTD -50,27 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 17 \eTD \bTD 137,1 \eTD \bTD 305.798,8 \eTD \bTD 711.264,6 \eTD \bTD -57,01 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 18 \eTD \bTD 188,2 \eTD \bTD 439.821,4 \eTD \bTD 1.149.998,9 \eTD \bTD -61,75 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\bTR \bTD 19 \eTD \bTD 365,5 \eTD \bTD 780.799,0 \eTD \bTD 1.879.853,9 \eTD \bTD -58,47 \% \eTD \bTD sin solución \eTD \bTD -- \eTD \eTR
+\eTABLE
+\blank[medium]
+
+\startitemize
+\item {\bf Split} da solución en 15 de los 19 escenarios. ACO-4 es igual o mejor en 14 de esos
+15; la excepción es el 04, donde split queda 0,001~\% por debajo. En 8 la diferencia es de
+0,1~\% o menos, en el 02 y el 03 es de menos de 1~\%, y en los 5 escenarios con 12 lotes o más
+(14, 16 a 19) split queda entre 30~\% y 62~\% por encima: con el tiempo repartido entre muchos
+lotes, la Etapa 1 corta rutas lejos de la mínima, y la Etapa 2 arrastra esas rutas.
+\item Split no da solución en el 01, el 08 y el 09 (la Etapa 1 no rutea todos los lotes) ni en
+el 11, donde las rutas cortadas por tiempo hacen que algún lote no tenga ningún picker elegible
+por cadena de frío. En el 09 la Etapa 1 excedió el presupuesto (864~s contra 224~s), porque el
+límite se aplica a cada resolución y no al proceso completo.
+\item {\bf Mono} da solución solo en el 04 y el 12, entre 5~\% y 10~\% por encima de ACO-4.
+\stopitemize
+
+Los presupuestos son los tiempos de la corrida de ACO-4 del 27 de septiembre, que no es la
+misma corrida que la tabla anterior: por eso el tiempo y el objetivo de ACO-4 difieren un poco
+(por ejemplo, 15,1~s contra 12,9~s en el 04, y 917.328 contra 988.252 en el 01).
+
+\stopsubsection
+
+\startsubsection[title={Conclusiones}]
+
+\startitemize[n]
+\item {\bf Mismo problema.} Las cuatro formulaciones comparten datos, restricciones y objetivo;
+la única diferencia de modelado es la espera voluntaria, que v5 permite y las heurísticas no.
+Las instancias donde v5 la usa se comparan solo en estado.
+\item {\bf Las heurísticas son válidas.} Todas sus soluciones cumplen las restricciones de v5,
+verificadas contra el monolítico, y coinciden con split en el estado de todas las instancias
+comparables.
+\item {\bf Cerca del óptimo.} ACO-4 alcanza el óptimo en las 45 funcionales comparables y queda
+a 0,06~\% como máximo en stress; HC-4 falla en 5 funcionales de grilla (hasta 5,88~\%) y queda
+a 0,21~\% como máximo en stress.
+\item {\bf A igual tiempo, las heurísticas dominan.} Con el tiempo de HC-4, v5 no obtiene
+ninguna solución. Con el de ACO-4, split empata o pierde en todos los escenarios salvo uno (por
+0,001~\%), pierde por 30~\% a 62~\% con 12 lotes o más, y en 4 escenarios no da solución; el
+monolítico casi nunca la da.
+\item {\bf El valor de v5 es la prueba de optimalidad.} Hasta 6 lotes en grillas de hasta
+15×15, split prueba el óptimo en minutos y sirve de referencia para medir a las heurísticas.
+Por encima de ese tamaño, o cuando el tiempo de respuesta importa, las heurísticas son la
+opción: ACO-4 cuando importa la calidad y HC-4 cuando importan los segundos.
+\stopitemize
+
+\stopsubsection
 
 \stopsection
 
