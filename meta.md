@@ -12,7 +12,7 @@ Este archivo funciona como resumen operativo del proyecto para trabajo compartid
 - Tipo: Optimización / routing de picking en almacén
 - Stack principal: Python, PySCIPOpt, modelos exactos y heurísticos
 - Estado actual: En desarrollo (limpieza y reorganización de repo en curso)
-- Última actualización: 2026-09-29
+- Última actualización: 2026-10-08
 - Responsable actual: Ebertz, Ximena; Soria, Lucía
 
 ### Objetivo del repositorio
@@ -738,6 +738,16 @@ Las dos primeras son de rendimiento puro y están medidas. Las otras cuatro son 
   - `python -m analysis.run_analysis` regenerado con los CSV actuales.
 - Riesgo / atención: la sección 4.1 de `analysis/output/report.md` sigue sin reflejar la comparación correcta: `quality_gap_table` empareja por nombre de test y tamaño de instancia, no por el registro de comparabilidad, y mezcla tests de HC-4/ACO-4 que no son equivalentes a los de split (brecha máx. 1.180 %). Arreglarlo requiere cambiar `analysis/`; pendiente de decisión. Además, `analysis/config.py` registra que el stress de mono 05–19 nunca se corrió con `W_c` = 27 (el documento los muestra como timeout; punto desestimado).
 - Validación: los dos `.tex` compilan con `context`; `check_repo` pasa.
+
+### Cambio 2026-10-08 - Exploraciones de v5 regeneradas con el CSV final de stress del split
+- Alcance: documentación / reportes
+- Archivos: [experiments/opp_v5/reports/build_split_exploration.py](experiments/opp_v5/reports/build_split_exploration.py), [split_exploration_template.tex](experiments/opp_v5/reports/split_exploration_template.tex); `docs/thesis/opp_v5_2_split_exploration.{tex,pdf}` y `docs/thesis/opp_v5_1_mono_exploration.{tex,pdf}`
+- Por qué: las dos exploraciones se regeneraron el 29-09 a las 15:31, antes de que la corrida que guardó las soluciones volviera a correr los 9 stress que resuelven y de que se corrigiera el tiempo del stress 10. Sus tiempos de la suite de stress no coincidían con los de `models.tex` y las dos comparaciones (por ejemplo, 15×15: 14,8 min contra 904 s; stress 10: 6,1 min contra 86 s). Los objetivos eran los mismos.
+- Qué se hizo:
+  - Exploración del mono: solo se regeneró (su tabla de la suite sale de `stress_suite.py`); queda igual a la de la comparación mono vs split.
+  - Exploración del split: la tabla de tiempos por etapa de la sección de validación, que estaba escrita a mano en la plantilla, ahora la genera `build_split_exploration.py` desde el mismo CSV que sus gráficos (`%%TABLE:stage_times%%`), y los números que cita el texto (crecimiento de la Etapa 1, rango de la Etapa 2, minutos de 14×14 y 15×15) son marcadores `%%NUM:...%%`. El generador falla si una corrida nueva deja falsa alguna frase del texto (qué etapa domina, 8×21 más lento que 14×14, el 11 como Etapa 2 más lenta).
+  - Corrección de texto: decía que la Etapa 1 domina en todos los tests; en el 7×7 domina la Etapa 2 (3,4 s contra 8,9 s), ya con los números viejos.
+- Validación: los dos `.tex` compilan con `context` sin errores (los avisos de líneas desbordadas son los mismos que antes, en párrafos que no cambiaron); se revisaron las páginas renderizadas; `check_repo` pasa.
 
 ---
 

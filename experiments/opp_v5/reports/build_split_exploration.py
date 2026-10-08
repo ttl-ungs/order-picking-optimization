@@ -3,8 +3,9 @@
     python -m experiments.opp_v5.reports.build_split_exploration
 
 Fills each %%FIG:id%% marker of split_exploration_template.tex with a MetaPost chart
-computed from experiments/opp_v5/studies/ and the split stress runs in results/.
-Compile the output with `context` from docs/thesis/.
+computed from experiments/opp_v5/studies/ and the split stress runs in results/, and
+the %%TABLE:stage_times%% and %%NUM:id%% markers of the validation section with the
+stress suite's stage times. Compile the output with `context` from docs/thesis/.
 """
 import csv
 import glob
@@ -19,6 +20,56 @@ from experiments.opp_v5.reports.charts import Chart, ROOT, STUDIES, es, f, log_t
 
 TEMPLATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "split_exploration_template.tex")
 OUT = os.path.join(ROOT, "docs", "thesis", "opp_v5_2_split_exploration.tex")
+SUITE_CSV = os.path.join(ROOT, "results", "opp_v5_2_split", "stress",
+                         "output_opp_v5_2_split_stress_tests_parallel.csv")
+
+# Realistic-profile stress tests of the validation section: (test case, grid label).
+VALIDATION_TESTS = (("04", "7×7"), ("05", "13×13"), ("06", "14×14"), ("07", "15×15"),
+                    ("09", "8×21"), ("11", "13×13, frío"))
+
+
+def load_suite():
+    with open(SUITE_CSV, encoding="utf-8", errors="replace") as fh:
+        return {r["test"].split(".")[0]: r for r in csv.DictReader(fh)}
+
+
+def stage_times(suite, case):
+    """(total, Stage 1 estimate, Stage 2) in seconds; Stage 1 is total minus Stage 2."""
+    r = suite[f"test_case_{case}"]
+    total, s2 = f(r, "total_time"), f(r, "model_time")
+    return total, total - s2, s2
+
+
+def validation():
+    """The validation section's table and the numbers its text quotes, from the suite CSV."""
+    suite = load_suite()
+    times = {case: stage_times(suite, case) for case, _ in VALIDATION_TESTS}
+    lines = ["\\blank[medium]", "\\bTABLE[split=yes, align=middle, frame=on, width=fit]",
+             "\\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]",
+             "\\bTR \\bTH Test \\eTH \\bTH Grilla \\eTH \\bTH Etapa 1 (estim.) \\eTH \\bTH Etapa 2 \\eTH "
+             "\\bTH Total \\eTH \\bTH SLA \\eTH \\eTR"]
+    for case, grid in VALIDATION_TESTS:
+        total, s1, s2 = times[case]
+        sla = es(f(suite[f"test_case_{case}"], "sla_on_time_pct"), 1).replace(",0", "")
+        lines.append(f"\\bTR \\bTD {case} \\eTD \\bTD {grid} \\eTD \\bTD {es(s1, 1)} s \\eTD "
+                     f"\\bTD {es(s2, 1)} s \\eTD \\bTD {es(total / 60, 1)} min \\eTD \\bTD {sla}\\% \\eTD \\eTR")
+    lines += ["\\eTABLE", "\\blank[medium]"]
+
+    # The text around the table states these; fail loudly if a new run breaks them.
+    assert all(s1 > s2 for case, (_, s1, s2) in times.items() if case != "04"), "Stage 1 no longer dominates"
+    assert times["04"][2] > times["04"][1], "Stage 2 no longer dominates the 7x7 test"
+    assert times["09"][1] > times["06"][1], "8x21 no longer slower than 14x14 in Stage 1"
+    stage2 = [s2 for _, _, s2 in times.values()]
+    assert max(stage2) == times["11"][2], "the cold-chain test is no longer the slowest Stage 2"
+    nums = {
+        "s1_growth_13_14": es(times["06"][1] / times["05"][1], 1),
+        "s1_growth_14_15": es(times["07"][1] / times["06"][1], 1),
+        "s2_min": es(min(stage2), 1),
+        "s2_max": es(max(stage2), 1),
+        "total_14": es(times["06"][0] / 60, 1),
+        "total_15": es(times["07"][0] / 60, 1),
+    }
+    return "\n".join(lines), nums
 
 
 def build_figures():
@@ -178,23 +229,13 @@ def build_figures():
     FIG["formas"] = c.code()
 
     # 11. stress tests: time by stage (split, realistic profile), from the suite run (6 workers)
-    suite_path = os.path.join(ROOT, "results", "opp_v5_2_split", "stress",
-                              "output_opp_v5_2_split_stress_tests_parallel.csv")
-    with open(suite_path, encoding="utf-8", errors="replace") as fh:
-        suite = {r["test"].split(".")[0]: r for r in csv.DictReader(fh)}
-
-    def stage_times(test_case):
-        r = suite[test_case]
-        return f(r, "total_time"), f(r, "model_time")
-
-    tests = [(label, *stage_times(case)) for label, case in (
-        ("7×7", "test_case_04"), ("13×13", "test_case_05"), ("14×14", "test_case_06"),
-        ("15×15", "test_case_07"), ("8×21", "test_case_09"))]
+    suite = load_suite()
+    tests = [(label, *stage_times(suite, case)) for label, case in (
+        ("7×7", "04"), ("13×13", "05"), ("14×14", "06"), ("15×15", "07"), ("8×21", "09"))]
     c = Chart(0, 5, 0, 1500, h=6)
     c.cat_axes([(i + 0.5, t[0]) for i, t in enumerate(tests)], [(v, es(v, 0)) for v in (0, 300, 600, 900, 1200, 1500)],
                "Tiempo total (s)")
-    for i, (lab, total, s2) in enumerate(tests):
-        s1 = total - s2
+    for i, (lab, total, s1, s2) in enumerate(tests):
         c.bar(i + 0.25, 0.5, 0, s1, "darkblue")
         c.bar(i + 0.25, 0.5, s1, total, "redline")
         c.note(i + 0.5, total, f"{es(total / 60, 1)} min", "top", dy=0.03)
@@ -252,8 +293,8 @@ def build_figures():
         return sum(times) / len(times)
 
     # 15. realistic profile: Stage 1 vs grid side -- suite run (6 workers), study 12 (sequential), calibration
-    runs = [(side, stage_times(case)[0] - stage_times(case)[1])
-            for side, case in ((7, "test_case_04"), (13, "test_case_05"), (14, "test_case_06"), (15, "test_case_07"))]
+    runs = [(side, stage_times(suite, case)[1])
+            for side, case in ((7, "04"), (13, "05"), (14, "06"), (15, "07"))]
     seq = [(side, ab_mean(side, False)) for side in (13, 14)]
     cal = [(7, f(solo[0], "stage1_s")), (13, f(solo[1], "stage1_s"))]
     c = Chart(6, 16, 1, 10000, logy=True)
@@ -296,6 +337,12 @@ def main():
     assert not unused, unused
     for key, code in figures.items():
         text = text.replace(f"%%FIG:{key}%%", code)
+    table, nums = validation()
+    text = text.replace("%%TABLE:stage_times%%", table)
+    for key, value in nums.items():
+        text = text.replace(f"%%NUM:{key}%%", value)
+    left = re.findall(r"%%\w+:\w+%%", text)
+    assert not left, left
     with open(OUT, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(text)
     print(f"wrote {OUT} with {len(figures)} charts")

@@ -839,8 +839,8 @@ objetivo con y sin la restricción.
 \stopsection
 
 \startsection[title={Validación: los tests de stress del perfil realista},reference=sec:tests]
-La corrida de la suite de stress del split del 29 de septiembre, con el código actual, la Etapa 1
-en 6 procesos y $W^{c} = 27$ (mayor que las órdenes por lote, así que esperar a propósito no
+La corrida de la suite de stress del split del 29 de septiembre (la que guardó las soluciones), con el
+código actual, la Etapa 1 en 6 procesos y $W^{c} = 27$ (mayor que las órdenes por lote, así que esperar a propósito no
 conviene). La Etapa 1 se estima como el tiempo total menos el de la Etapa 2, así que incluye la
 compilación y el resto de la preparación. La corrida anterior, del 23 de septiembre, usaba
 $W^{c} = 9$: con los mismos tests, la Etapa 2 tardaba entre 86 y 203 s (salvo el test 11) y el
@@ -869,21 +869,21 @@ label.lft(textext("\tfx 1.200"), (-0.120cm,4.800cm));
 draw (0.000cm,6.000cm)--(-0.120cm,6.000cm) withpen pencircle scaled .5pt;
 label.lft(textext("\tfx 1.500"), (-0.120cm,6.000cm));
 label.lft(textext("Tiempo total (s)") rotated 90, (-1.25cm,h/2));
-fill (0.550cm,0.000cm)--(1.650cm,0.000cm)--(1.650cm,0.012cm)--(0.550cm,0.012cm)--cycle withcolor \MPcolor{darkblue};
-fill (0.550cm,0.012cm)--(1.650cm,0.012cm)--(1.650cm,0.047cm)--(0.550cm,0.047cm)--cycle withcolor \MPcolor{redline};
-label.top(textext("\tfxx 0,2 min"), (1.100cm,0.077cm));
-fill (2.750cm,0.000cm)--(3.850cm,0.000cm)--(3.850cm,0.380cm)--(2.750cm,0.380cm)--cycle withcolor \MPcolor{darkblue};
-fill (2.750cm,0.380cm)--(3.850cm,0.380cm)--(3.850cm,0.419cm)--(2.750cm,0.419cm)--cycle withcolor \MPcolor{redline};
-label.top(textext("\tfxx 1,7 min"), (3.300cm,0.449cm));
-fill (4.950cm,0.000cm)--(6.050cm,0.000cm)--(6.050cm,0.754cm)--(4.950cm,0.754cm)--cycle withcolor \MPcolor{darkblue};
-fill (4.950cm,0.754cm)--(6.050cm,0.754cm)--(6.050cm,0.780cm)--(4.950cm,0.780cm)--cycle withcolor \MPcolor{redline};
-label.top(textext("\tfxx 3,2 min"), (5.500cm,0.810cm));
-fill (7.150cm,0.000cm)--(8.250cm,0.000cm)--(8.250cm,3.534cm)--(7.150cm,3.534cm)--cycle withcolor \MPcolor{darkblue};
-fill (7.150cm,3.534cm)--(8.250cm,3.534cm)--(8.250cm,3.551cm)--(7.150cm,3.551cm)--cycle withcolor \MPcolor{redline};
-label.top(textext("\tfxx 14,8 min"), (7.700cm,3.581cm));
-fill (9.350cm,0.000cm)--(10.450cm,0.000cm)--(10.450cm,0.914cm)--(9.350cm,0.914cm)--cycle withcolor \MPcolor{darkblue};
-fill (9.350cm,0.914cm)--(10.450cm,0.914cm)--(10.450cm,0.938cm)--(9.350cm,0.938cm)--cycle withcolor \MPcolor{redline};
-label.top(textext("\tfxx 3,9 min"), (9.900cm,0.968cm));
+fill (0.550cm,0.000cm)--(1.650cm,0.000cm)--(1.650cm,0.014cm)--(0.550cm,0.014cm)--cycle withcolor \MPcolor{darkblue};
+fill (0.550cm,0.014cm)--(1.650cm,0.014cm)--(1.650cm,0.049cm)--(0.550cm,0.049cm)--cycle withcolor \MPcolor{redline};
+label.top(textext("\tfxx 0,2 min"), (1.100cm,0.079cm));
+fill (2.750cm,0.000cm)--(3.850cm,0.000cm)--(3.850cm,0.391cm)--(2.750cm,0.391cm)--cycle withcolor \MPcolor{darkblue};
+fill (2.750cm,0.391cm)--(3.850cm,0.391cm)--(3.850cm,0.431cm)--(2.750cm,0.431cm)--cycle withcolor \MPcolor{redline};
+label.top(textext("\tfxx 1,8 min"), (3.300cm,0.461cm));
+fill (4.950cm,0.000cm)--(6.050cm,0.000cm)--(6.050cm,0.779cm)--(4.950cm,0.779cm)--cycle withcolor \MPcolor{darkblue};
+fill (4.950cm,0.779cm)--(6.050cm,0.779cm)--(6.050cm,0.807cm)--(4.950cm,0.807cm)--cycle withcolor \MPcolor{redline};
+label.top(textext("\tfxx 3,4 min"), (5.500cm,0.837cm));
+fill (7.150cm,0.000cm)--(8.250cm,0.000cm)--(8.250cm,3.601cm)--(7.150cm,3.601cm)--cycle withcolor \MPcolor{darkblue};
+fill (7.150cm,3.601cm)--(8.250cm,3.601cm)--(8.250cm,3.616cm)--(7.150cm,3.616cm)--cycle withcolor \MPcolor{redline};
+label.top(textext("\tfxx 15,1 min"), (7.700cm,3.646cm));
+fill (9.350cm,0.000cm)--(10.450cm,0.000cm)--(10.450cm,0.873cm)--(9.350cm,0.873cm)--cycle withcolor \MPcolor{darkblue};
+fill (9.350cm,0.873cm)--(10.450cm,0.873cm)--(10.450cm,0.895cm)--(9.350cm,0.895cm)--cycle withcolor \MPcolor{redline};
+label.top(textext("\tfxx 3,7 min"), (9.900cm,0.925cm));
 fill (0.450cm,5.730cm)--(0.850cm,5.730cm)--(0.850cm,5.970cm)--(0.450cm,5.970cm)--cycle withcolor \MPcolor{darkblue};
 label.rt(textext("\tfx Etapa 1 y preparación"), (1.050cm,5.850cm));
 fill (0.450cm,5.310cm)--(0.850cm,5.310cm)--(0.850cm,5.550cm)--(0.450cm,5.550cm)--cycle withcolor \MPcolor{redline};
@@ -894,12 +894,12 @@ label.rt(textext("\tfx Etapa 2 (solver)"), (1.050cm,5.430cm));
 \bTABLE[split=yes, align=middle, frame=on, width=fit]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \bTR \bTH Test \eTH \bTH Grilla \eTH \bTH Etapa 1 (estim.) \eTH \bTH Etapa 2 \eTH \bTH Total \eTH \bTH SLA \eTH \eTR
-\bTR \bTD 04 \eTD \bTD 7×7 \eTD \bTD 3,1 s \eTD \bTD 8,6 s \eTD \bTD 0,2 min \eTD \bTD 100\% \eTD \eTR
-\bTR \bTD 05 \eTD \bTD 13×13 \eTD \bTD 95,1 s \eTD \bTD 9,7 s \eTD \bTD 1,7 min \eTD \bTD 100\% \eTD \eTR
-\bTR \bTD 06 \eTD \bTD 14×14 \eTD \bTD 188,5 s \eTD \bTD 6,4 s \eTD \bTD 3,2 min \eTD \bTD 100\% \eTD \eTR
-\bTR \bTD 07 \eTD \bTD 15×15 \eTD \bTD 883,6 s \eTD \bTD 4,2 s \eTD \bTD 14,8 min \eTD \bTD 100\% \eTD \eTR
-\bTR \bTD 09 \eTD \bTD 8×21 \eTD \bTD 228,5 s \eTD \bTD 6,0 s \eTD \bTD 3,9 min \eTD \bTD 100\% \eTD \eTR
-\bTR \bTD 11 \eTD \bTD 13×13, frío \eTD \bTD 107,0 s \eTD \bTD 7,2 s \eTD \bTD 1,9 min \eTD \bTD 97,4\% \eTD \eTR
+\bTR \bTD 04 \eTD \bTD 7×7 \eTD \bTD 3,4 s \eTD \bTD 8,9 s \eTD \bTD 0,2 min \eTD \bTD 100\% \eTD \eTR
+\bTR \bTD 05 \eTD \bTD 13×13 \eTD \bTD 97,8 s \eTD \bTD 9,9 s \eTD \bTD 1,8 min \eTD \bTD 100\% \eTD \eTR
+\bTR \bTD 06 \eTD \bTD 14×14 \eTD \bTD 194,9 s \eTD \bTD 6,8 s \eTD \bTD 3,4 min \eTD \bTD 100\% \eTD \eTR
+\bTR \bTD 07 \eTD \bTD 15×15 \eTD \bTD 900,2 s \eTD \bTD 3,9 s \eTD \bTD 15,1 min \eTD \bTD 100\% \eTD \eTR
+\bTR \bTD 09 \eTD \bTD 8×21 \eTD \bTD 218,3 s \eTD \bTD 5,5 s \eTD \bTD 3,7 min \eTD \bTD 100\% \eTD \eTR
+\bTR \bTD 11 \eTD \bTD 13×13, frío \eTD \bTD 127,3 s \eTD \bTD 11,9 s \eTD \bTD 2,3 min \eTD \bTD 97,4\% \eTD \eTR
 \eTABLE
 \blank[medium]
 
@@ -930,11 +930,11 @@ draw (0.000cm,6.000cm)--(-0.120cm,6.000cm) withpen pencircle scaled .5pt;
 label.lft(textext("\tfx 10.000"), (-0.120cm,6.000cm));
 label.bot(textext("Grilla (perfil realista)"), (w/2,-0.85cm));
 label.lft(textext("Tiempo de Etapa 1 (s)") rotated 90, (-1.25cm,h/2));
-draw (1.100cm,0.741cm)--(7.700cm,2.967cm)--(8.800cm,3.413cm)--(9.900cm,4.419cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
-fill fullcircle scaled 4pt shifted (1.100cm,0.741cm) withcolor \MPcolor{darkblue};
-fill fullcircle scaled 4pt shifted (7.700cm,2.967cm) withcolor \MPcolor{darkblue};
-fill fullcircle scaled 4pt shifted (8.800cm,3.413cm) withcolor \MPcolor{darkblue};
-fill fullcircle scaled 4pt shifted (9.900cm,4.419cm) withcolor \MPcolor{darkblue};
+draw (1.100cm,0.792cm)--(7.700cm,2.986cm)--(8.800cm,3.435cm)--(9.900cm,4.432cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.100cm,0.792cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (7.700cm,2.986cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (8.800cm,3.435cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (9.900cm,4.432cm) withcolor \MPcolor{darkblue};
 draw (7.700cm,3.578cm)--(8.800cm,3.909cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{blueline};
 fill fullcircle scaled 4pt shifted (7.700cm,3.578cm) withcolor \MPcolor{blueline};
 fill fullcircle scaled 4pt shifted (8.800cm,3.909cm) withcolor \MPcolor{blueline};
@@ -954,14 +954,16 @@ label.rt(textext("\tfx calibración cortada sin terminar"), (1.050cm,4.590cm));
 \stopMPcode}
 
 \startitemize
-\item {\bf Con $W^{c} = 27$ domina la Etapa 1 en todos los tests}, aun en paralelo, y su
-crecimiento es abrupto: de 13×13 a 14×14 se multiplica por 2,0; de 14×14 a 15×15, por 4,7.
+\item {\bf Con $W^{c} = 27$ domina la Etapa 1}, aun en paralelo, en todos los tests salvo el de
+7×7, donde el ruteo cuesta segundos. Su crecimiento es abrupto: de 13×13 a 14×14 se multiplica
+por 2,0; de 14×14 a 15×15, por 4,6.
 \item {\bf La forma de la grilla pesa:} la grilla alargada de 8×21 (168 ubicaciones) tardó en
 la Etapa 1 más que la cuadrada de 14×14 (196), aunque tiene menos ubicaciones. En la corrida del
 23 de septiembre había quedado entre 13×13 y 14×14.
-\item {\bf La Etapa 2 deja de pesar cuando esperar no conviene.} Con $W^{c} = 27$ resuelve en
-menos de 10 s en todos los tests, también en el 11 (4 pickers, cadena de frío), donde ya era
-barata con $W^{c} = 9$ porque el límite de frío deja elegibles solo a los 2 pickers rápidos.
+\item {\bf La Etapa 2 deja de pesar cuando esperar no conviene.} Con $W^{c} = 27$ resuelve entre
+3,9 y 11,9 s en todos los tests. El más lento es el 11 (4 pickers, cadena de
+frío), que ya era barato con $W^{c} = 9$ porque el límite de frío deja elegibles solo a los 2
+pickers rápidos.
 \stopitemize
 \stopsection
 
@@ -1094,7 +1096,7 @@ distintas; no alcanzan como comparación sistemática.
 la grilla mucho más que de las ubicaciones por lote. La Etapa 2 depende de la proporción entre
 lotes y pickers, de la heterogeneidad de velocidades y de qué tan plano queda el objetivo.
 \item {\bf La Etapa 1 es lo que deja afuera a los depósitos reales.} Crece de forma abrupta con
-la grilla: segundos en 7×7, minutos en 13×13, casi 15 minutos en 15×15 (en 6 procesos). En 25×25 no termina en
+la grilla: segundos en 7×7, minutos en 13×13, 15,1 minutos en 15×15 (en 6 procesos). En 25×25 no termina en
 15 minutos ni con 12 órdenes por lote. El mecanismo no está identificado.
 \item {\bf La Etapa 2 es lo que limita el tamaño de la cuadrilla.} Con velocidades realistas
 tolera unos dos lotes por picker. La proporción intermedia (6 lotes para 4 pickers) es la más
@@ -1121,10 +1123,10 @@ paralelo; la calibración, con hasta ocho. Los tiempos absolutos de esos estudio
 citar sin repetirlos.
 \item El efecto del objetivo aplanado sobre la Etapa 2 estaba confundido con $N_b$. La suite
 corrida con $W^{c} = 27$ sobre las mismas instancias ($N_b$ fijo) separa una parte: la Etapa 2
-bajó de 86--203 s a menos de 10 s. Falta barrer valores intermedios de $W^{c}$.
+bajó de 86--203 s a 3,9--11,9 s. Falta barrer valores intermedios de $W^{c}$.
 \item Qué hace crecer la Etapa 1 con la grilla sigue sin explicación.
 \item La franja de 10 a 20 minutos del perfil realista quedó cubierta con la corrida del 29 de
-septiembre: 15×15 tardó 14,8 minutos (14×14, 3,2).
+septiembre: 15×15 tardó 15,1 minutos (14×14, 3,4).
 \stopitemize
 \stopsection
 
