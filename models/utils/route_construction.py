@@ -788,7 +788,13 @@ def stitch_route(
     def open_step(current):
         dist, prev = dijkstra(location_graph, current, forbidden=(visited | {final}) - {current}, targets=remaining)
         weights = {}
-        for r in remaining:
+        # sorted(): roulette walks `weights` in insertion order, and a set of
+        # str iterates in an order that changes with PYTHONHASHSEED, so the
+        # same Seed used to pick different locations in different processes
+        # (measured 2026-10-14: up to 0.5% objective spread on stress 03, and
+        # stress 11 infeasible in 2 of 7 processes). Same probabilities, fixed
+        # order -- results now depend on Seed alone.
+        for r in sorted(remaining):
             if r in dist:
                 weights[r] = weight(current, r, dist[r] if dist[r] > 0 else 0.01)
         return {"current": current, "prev": prev, "weights": weights}
