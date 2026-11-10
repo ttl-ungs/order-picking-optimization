@@ -1,5 +1,0 @@
-id,scenario,model,budget_from,budget_s,heuristic_obj,status,obj_val,dual_bound,mip_gap_pct,elapsed_s,heuristic_vs_model_pct
-06,test_realistic_crew_14x14_warehouse,opp_v5_2_split,opp_aco_4,109.837,256642.24999999997,optimal,256790.9999999969,256790.9999999969,0.0,97.428,-0.05792648496127855
-06,test_realistic_crew_14x14_warehouse,opp_v5_1_mono,opp_aco_4,109.837,256642.24999999997,timelimit,,37581.014516302086,,110.875,
-15,test_over_staffed_wave_6_batches_9_pickers,opp_v5_2_split,opp_aco_4,52.935,97922.83333333334,timelimit,98018.45833333355,42936.09791670224,128.2891624746462,53.0,-0.09755815550068098
-15,test_over_staffed_wave_6_batches_9_pickers,opp_v5_1_mono,opp_aco_4,52.935,97922.83333333334,timelimit,,0.0,,53.399,
