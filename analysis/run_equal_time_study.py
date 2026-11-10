@@ -82,7 +82,7 @@ FIELDNAMES = [
 def latest_heuristic_results(model_label):
     """{test method name: row} from the newest stress CSV of `model_label` that has v5-ported rows."""
     paths = sorted(
-        glob.glob(os.path.join(OUTPUTS_ROOT, model_label, "stress", f"output_{model_label}_stress_tests_*.csv")),
+        glob.glob(os.path.join(OUTPUTS_ROOT, model_label, "stress", f"output_{model_label}_stress_tests*.csv")),
         key=os.path.getmtime, reverse=True,
     )
     # Matched by method name, not file name: the v5 ports were test_case_v5_*.py
