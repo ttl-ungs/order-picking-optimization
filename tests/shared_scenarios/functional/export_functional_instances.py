@@ -21,7 +21,7 @@ interrupt SCIP while it's inside its C solve loop, so they'd otherwise
 hang the export just as they time out in the regular suite.
 
 Writes tests/shared_scenarios/functional/functional_instances.json:
-{"instances": [...], "excluded": {test: reason}, "not_captured": [...]}.
+{"instances": [...], "excluded": {test: reason}, "not_captured": [...], "cases": {test: case}}.
 Re-run it whenever a Split functional test or scenario changes:
 
     python -m tests.shared_scenarios.functional.export_functional_instances
@@ -67,7 +67,8 @@ def _iter_tests(suite):
 
 def main():
     suite = unittest.TestLoader().discover("tests/opp_split/functional", top_level_dir=".")
-    state = {"test": None, "current": None, "capture": True}
+    state = {"test": None, "case": None, "current": None, "capture": True}
+    case_of = {}
     instances = []
 
     original_build = dat_files_builder.build_dat_files
@@ -77,6 +78,7 @@ def main():
             return original_build(tmpdir, scenario)
         entry = {
             "split_test": state["test"],
+            "split_case": state["case"],
             "scenario": copy.deepcopy(scenario),
             "split_status": None,
             "split_obj": None,
@@ -169,9 +171,10 @@ def main():
     not_captured = []
     for test in _iter_tests(suite):
         name = test.id().split(".")[-1]
+        case_of[name] = test.id().split(".")[-2]
         if name in EXCLUDED:
             continue
-        state["test"], state["current"] = name, None
+        state["test"], state["case"], state["current"] = name, case_of[name], None
         before = len(instances)
         try:
             test.run(unittest.TestResult())
@@ -194,6 +197,7 @@ def main():
             "instances": [encode(e) for e in instances],
             "excluded": EXCLUDED,
             "not_captured": sorted(not_captured),
+            "cases": {name: case_of[name] for name in list(EXCLUDED) + sorted(not_captured)},
         }, f, indent=1, sort_keys=True)
     print(f"\n{len(instances)} instancias en {FIXTURE_PATH}")
 

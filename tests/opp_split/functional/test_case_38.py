@@ -10,7 +10,7 @@ from tests.opp_split.opp_split_test_case import OPPTestCaseSplit
 from tests.opp_split.stage1_decomposition import solve_stage1_decomposed
 
 
-class TestOPPSplitSimplePathLimit(OPPTestCaseSplit):
+class Case38SimplePathLimit(OPPTestCaseSplit):
     """Documents a limit of the routing formulation, not a business rule.
 
     one_input_arc_per_node / one_output_arc_per_node (`<= 1`) make every route a

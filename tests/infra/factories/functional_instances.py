@@ -10,15 +10,14 @@ from the Split's own tests, so both models solve the same data:
    (needs zimpl/SCIP) runs opp_split's functional suite, captures
    every scenario dict right when it's written to the .dat files, and the Split's
    final status/objective for it, into functional_instances.json.
-2. functional_instances_case() builds, for a heuristic, one test per captured
-   instance (test_instance__<Split test method>[__<k>]) that solves it through
+2. bind_instances() builds, for a heuristic, one test per captured instance, with the
+   id of the Split's test (<case class>.<test method>[__<k>]), that solves it through
    tests/infra/factories/scenario_adapter.py -- the same adapter
    the stress cases use -- and checks the outcome class (feasible vs
    infeasible) matches the Split's. The objective lands in the results CSV via
    the solve registry, joinable with the Split's CSV by stripping the prefix.
 """
 
-import inspect
 import json
 import os
 from collections import Counter, defaultdict
@@ -29,8 +28,6 @@ from tests.infra.factories.scenario_adapter import build_model_dto_and_params
 FIXTURE_PATH = os.path.abspath(os.path.join(
     os.path.dirname(__file__), "..", "..", "shared_scenarios", "functional", "functional_instances.json",
 ))
-
-METHOD_PREFIX = "test_instance__"
 
 # Same defaults opp_split applies to scenarios that predate picker speed
 # and cold chain (tests/infra/zimpl/dat_files_builder.py, OPPTestCaseSplit.solve).
@@ -84,14 +81,20 @@ def load_fixtures(path=FIXTURE_PATH):
 
 # --- heuristic test factory ---------------------------------------------------
 
-def _method_names(entries):
-    counts = Counter(e["split_test"] for e in entries)
+def case_instances(entries):
+    """(case, test name, entry) for every captured instance.
+
+    The case is the class that defines the Split's test (`Case24ColdChain`, ...) and the test name
+    is the Split's own method name, so an instance has the same id as in the exact models. A test
+    with several instances inside one case gets a `__1`, `__2` suffix.
+    """
+    counts = Counter((e["split_case"], e["split_test"]) for e in entries)
     seen = defaultdict(int)
     for entry in entries:
-        name = entry["split_test"]
-        seen[name] += 1
-        suffix = f"__{seen[name]}" if counts[name] > 1 else ""
-        yield METHOD_PREFIX + name + suffix, entry
+        key = (entry["split_case"], entry["split_test"])
+        seen[key] += 1
+        suffix = f"__{seen[key]}" if counts[key] > 1 else ""
+        yield key[0], key[1] + suffix, entry
 
 
 def _make_test(entry, model_cls, dto_cls, configure_params):
@@ -114,32 +117,27 @@ def _make_test(entry, model_cls, dto_cls, configure_params):
             self.assertEqual(status, "infeasible", "the Split proved this instance infeasible")
         # Any other the Split outcome (timeout, limit) is inconclusive: nothing to compare the status to.
 
-    test.__doc__ = f"Same instance as opp_split's {entry['split_test']} (the Split: {entry['split_status']}, obj {entry['split_obj']})."
+    test.__doc__ = f"Same instance as opp_split's {entry['split_case']}.{entry['split_test']} (the Split: {entry['split_status']}, obj {entry['split_obj']})."
     return test
 
 
-def functional_instances_case(model_cls, dto_cls, configure_params=None, fixture_path=FIXTURE_PATH):
+def bind_instances(model_cls, dto_cls, namespace, configure_params=None, fixture_path=FIXTURE_PATH):
+    """Define in `namespace` one test class per case, with one test per captured instance of it.
+
+    The instances are solved by `model_cls` with a `dto_cls` params DTO (seed 1; `configure_params`
+    can adjust it, e.g. HC's iteration budget). Each class has the name of the Split's case class
+    and each test the name of the Split's test, so tests/run_suite.py launches them by the same
+    dotted id as in the exact models (and `--id NN` selects a case).
     """
-    A TestCase class with one test per instance in the fixture, solved by
-    `model_cls` with a `dto_cls` params DTO (seed 1; `configure_params`
-    can adjust it, e.g. HC's iteration budget). Named TestFunctionalInstances and
-    registered in the calling module, so tests/run_suite.py can launch each
-    test by its dotted id (same approach as the shared cases).
-    """
-    fixtures = load_fixtures(fixture_path)
-
-    class TestFunctionalInstances(OPPTestCase):
-        pass
-
-    for method_name, entry in _method_names(fixtures["instances"]):
-        setattr(TestFunctionalInstances, method_name, _make_test(entry, model_cls, dto_cls, configure_params))
-
-    # Without the __qualname__ reset the test id would be
-    # "...functional_instances_case.<locals>.TestFunctionalInstances...", which
-    # tests/run_suite.py can't load by name.
-    TestFunctionalInstances.__qualname__ = "TestFunctionalInstances"
-    TestFunctionalInstances.__module__ = inspect.currentframe().f_back.f_globals["__name__"]
-    return TestFunctionalInstances
+    classes = {}
+    for case, name, entry in case_instances(load_fixtures(fixture_path)["instances"]):
+        if case not in classes:
+            classes[case] = type(case, (OPPTestCase,), {
+                "__module__": namespace["__name__"],
+                "__doc__": f"The instances of opp_split's {case}, solved by this model.",
+            })
+        setattr(classes[case], name, _make_test(entry, model_cls, dto_cls, configure_params))
+    namespace.update(classes)
 
 
 # --- comparability ------------------------------------------------------------

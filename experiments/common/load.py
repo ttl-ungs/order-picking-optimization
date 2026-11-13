@@ -136,6 +136,12 @@ def _extract_instance(test_id: str) -> str:
     return test_id.split(".")[-1]
 
 
+def case_number(test_id: str) -> str:
+    """The two-digit case number of a test id: 'Case24b...' and 'Stress04' give '24' and '04'."""
+    match = re.search(r"\b(?:Case|Stress)(\d+)", test_id)
+    return match.group(1) if match else ""
+
+
 def load_all(verbose: bool = True) -> pd.DataFrame:
     """
     Loads the latest CSV per (model, scenario) declared in config.MODEL_DIRS,

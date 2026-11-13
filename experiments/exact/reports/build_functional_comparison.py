@@ -12,6 +12,7 @@ alternative optimum). Fills the %%TABLE:id%%, %%FIG:id%% and %%NUM:id%% markers
 of functional_comparison_template.tex.
 Compile the output with `context` from docs/thesis/.
 """
+from experiments.common.load import case_number
 import csv
 import math
 import os
@@ -80,8 +81,7 @@ def load(path):
     with open(os.path.join(ROOT, path), encoding="utf-8", errors="replace") as fh:
         rows = {}
         for r in csv.DictReader(fh):
-            num, _, method = r["test"].split(".")
-            rows[(num.replace("test_case_", ""), method)] = r
+            rows[(case_number(r["test"]), r["test"].split(".")[-1])] = r
         return rows
 
 

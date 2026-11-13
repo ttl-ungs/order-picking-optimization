@@ -280,7 +280,8 @@
    "split_test": "test_basic_two_orders_capacity_limit",
    "split_waiting_batches": [
     "B1"
-   ]
+   ],
+   "split_case": "Case01"
   },
   {
    "comparable_objective": true,
@@ -667,7 +668,8 @@
    "split_obj": 795.0,
    "split_status": "optimal",
    "split_test": "test_two_orders_two_aisles",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case02"
   },
   {
    "comparable_objective": true,
@@ -1054,7 +1056,8 @@
    "split_obj": 795.0,
    "split_status": "optimal",
    "split_test": "test_two_orders_two_aisles",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case03"
   },
   {
    "comparable_objective": true,
@@ -1441,7 +1444,8 @@
    "split_obj": 795.0,
    "split_status": "optimal",
    "split_test": "test_two_orders_two_aisles_one_picking_point_per_order",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case04"
   },
   {
    "comparable_objective": true,
@@ -1828,7 +1832,8 @@
    "split_obj": 846.0,
    "split_status": "optimal",
    "split_test": "test_two_orders_two_aisles_using_one_aisle",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case05"
   },
   {
    "comparable_objective": false,
@@ -2133,7 +2138,8 @@
    "split_waiting_batches": [
     "B1",
     "B2"
-   ]
+   ],
+   "split_case": "Case06ShortestRoute"
   },
   {
    "comparable_objective": false,
@@ -2438,7 +2444,8 @@
    "split_waiting_batches": [
     "B1",
     "B2"
-   ]
+   ],
+   "split_case": "Case06ShortestRoute"
   },
   {
    "comparable_objective": false,
@@ -2806,7 +2813,8 @@
    "split_obj": null,
    "split_status": "infeasible",
    "split_test": "test_repeated_picking_locations",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case07"
   },
   {
    "comparable_objective": true,
@@ -3320,7 +3328,8 @@
    "split_obj": 69.0,
    "split_status": "optimal",
    "split_test": "test_repeated_picking_locations_2",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case08"
   },
   {
    "comparable_objective": true,
@@ -3668,7 +3677,8 @@
    "split_obj": 1833.0,
    "split_status": "optimal",
    "split_test": "test_two_orders_two_locations",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case09"
   },
   {
    "comparable_objective": true,
@@ -4005,7 +4015,8 @@
    "split_obj": 1509.0,
    "split_status": "optimal",
    "split_test": "test_two_orders_two_locations_two_missions",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case10"
   },
   {
    "comparable_objective": true,
@@ -4614,7 +4625,8 @@
    "split_obj": 3666.0,
    "split_status": "optimal",
    "split_test": "test_four_orders_two_locations_two_missions",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case11"
   },
   {
    "comparable_objective": true,
@@ -7848,7 +7860,8 @@
    "split_obj": 3086.999999999979,
    "split_status": "optimal",
    "split_test": "test_two_periods_two_orders_per_vehicle",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case13"
   },
   {
    "comparable_objective": true,
@@ -11082,7 +11095,8 @@
    "split_obj": 3086.999999999979,
    "split_status": "optimal",
    "split_test": "test_one_period_two_orders_per_vehicle",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case14"
   },
   {
    "comparable_objective": true,
@@ -12365,7 +12379,8 @@
    "split_obj": 889.0,
    "split_status": "optimal",
    "split_test": "test_3_orders_1_mission_1_picker",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case15"
   },
   {
    "comparable_objective": true,
@@ -14272,7 +14287,8 @@
    "split_obj": 1338.0,
    "split_status": "optimal",
    "split_test": "test_6_orders_3_missions_2_pickers",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case16"
   },
   {
    "comparable_objective": true,
@@ -14889,7 +14905,8 @@
    "split_obj": 2512.5,
    "split_status": "optimal",
    "split_test": "test_branched_single_mission_route",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case17"
   },
   {
    "comparable_objective": true,
@@ -15688,7 +15705,8 @@
    "split_obj": 4518.0,
    "split_status": "optimal",
    "split_test": "test_detour_single_mission_route",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case18"
   },
   {
    "comparable_objective": false,
@@ -16689,7 +16707,8 @@
    "split_test": "test_longer_single_mission_duplicate_location",
    "split_waiting_batches": [
     "B1"
-   ]
+   ],
+   "split_case": "Case19"
   },
   {
    "comparable_objective": true,
@@ -17688,7 +17707,8 @@
    "split_obj": 120.0,
    "split_status": "optimal",
    "split_test": "test_longer_single_mission_penalties",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case19"
   },
   {
    "comparable_objective": true,
@@ -18687,7 +18707,8 @@
    "split_obj": 0.0,
    "split_status": "optimal",
    "split_test": "test_longer_single_mission_penalties",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case19"
   },
   {
    "comparable_objective": false,
@@ -19688,7 +19709,8 @@
    "split_test": "test_longer_single_mission_route",
    "split_waiting_batches": [
     "B1"
-   ]
+   ],
+   "split_case": "Case19"
   },
   {
    "comparable_objective": true,
@@ -22533,7 +22555,8 @@
    "split_obj": 2619.999999999985,
    "split_status": "optimal",
    "split_test": "test_grid_multi_location_orders",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case20"
   },
   {
    "comparable_objective": false,
@@ -24808,7 +24831,8 @@
    "split_obj": null,
    "split_status": "infeasible",
    "split_test": "test_bridge_disconnected_required_location",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case21"
   },
   {
    "comparable_objective": true,
@@ -25779,7 +25803,8 @@
    "split_obj": 10126.0,
    "split_status": "optimal",
    "split_test": "test_earliness_when_batch_finishes_before_due_date",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case22"
   },
   {
    "comparable_objective": true,
@@ -26750,7 +26775,8 @@
    "split_obj": 154.0,
    "split_status": "optimal",
    "split_test": "test_tardiness_when_batch_finishes_after_due_date",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case22"
   },
   {
    "comparable_objective": true,
@@ -27032,7 +27058,8 @@
    "split_obj": 16.0,
    "split_status": "optimal",
    "split_test": "test_longer_route_is_assigned_to_the_faster_picker",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case23RoutingAndScheduling"
   },
   {
    "comparable_objective": true,
@@ -27314,7 +27341,8 @@
    "split_obj": 16.0,
    "split_status": "optimal",
    "split_test": "test_routes_are_exported_and_used_by_scheduling",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case23RoutingAndScheduling"
   },
   {
    "comparable_objective": true,
@@ -27473,7 +27501,8 @@
    "split_obj": 9.0,
    "split_status": "optimal",
    "split_test": "test_cold_chain_filters_out_the_slow_picker",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case24ColdChain"
   },
   {
    "comparable_objective": false,
@@ -27632,7 +27661,8 @@
    "split_obj": null,
    "split_status": "infeasible",
    "split_test": "test_preflight_detects_when_no_picker_is_eligible",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case24bPreflightEligibility"
   },
   {
    "comparable_objective": false,
@@ -30477,7 +30507,8 @@
    "split_obj": null,
    "split_status": "infeasible",
    "split_test": "test_grid_batch_infeasible_order_size",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case25"
   },
   {
    "comparable_objective": true,
@@ -33322,7 +33353,8 @@
    "split_obj": 2434.0,
    "split_status": "optimal",
    "split_test": "test_grid_duplicate_location_within_batch",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case25"
   },
   {
    "comparable_objective": true,
@@ -36167,7 +36199,8 @@
    "split_obj": 2619.999999999985,
    "split_status": "optimal",
    "split_test": "test_grid_multi_location_orders_with_capacities",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case25"
   },
   {
    "comparable_objective": false,
@@ -39012,7 +39045,8 @@
    "split_obj": null,
    "split_status": "infeasible",
    "split_test": "test_grid_order_size_bigger_than_cart_infeasible",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case25"
   },
   {
    "comparable_objective": true,
@@ -41857,7 +41891,8 @@
    "split_obj": 276.0,
    "split_status": "optimal",
    "split_test": "test_grid_penalties_due_date",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case25"
   },
   {
    "comparable_objective": true,
@@ -44702,7 +44737,8 @@
    "split_obj": 0.0,
    "split_status": "optimal",
    "split_test": "test_grid_penalties_due_date",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case25"
   },
   {
    "comparable_objective": true,
@@ -47547,7 +47583,8 @@
    "split_obj": 101.99999999999909,
    "split_status": "optimal",
    "split_test": "test_grid_penalties_order_size_equal_to_cart",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case25"
   },
   {
    "comparable_objective": true,
@@ -50392,7 +50429,8 @@
    "split_obj": 156.00000000000003,
    "split_status": "optimal",
    "split_test": "test_grid_penalties_order_size_equal_to_cart",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case25"
   },
   {
    "comparable_objective": true,
@@ -53237,7 +53275,8 @@
    "split_obj": 3223.9999999999873,
    "split_status": "optimal",
    "split_test": "test_grid_shared_locations_across_batches",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case25"
   },
   {
    "comparable_objective": false,
@@ -55512,7 +55551,8 @@
    "split_obj": null,
    "split_status": "infeasible",
    "split_test": "test_bridge_disconnected_required_location_with_capacities",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case26"
   },
   {
    "comparable_objective": false,
@@ -57820,7 +57860,8 @@
    "split_waiting_batches": [
     "B2",
     "B4"
-   ]
+   ],
+   "split_case": "Case26"
   },
   {
    "comparable_objective": false,
@@ -60128,7 +60169,8 @@
    "split_waiting_batches": [
     "B1",
     "B3"
-   ]
+   ],
+   "split_case": "Case26"
   },
   {
    "comparable_objective": true,
@@ -62433,7 +62475,8 @@
    "split_obj": 2462.9999999999477,
    "split_status": "optimal",
    "split_test": "test_bridge_shared_locations_across_batches",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case26"
   },
   {
    "comparable_objective": true,
@@ -64738,7 +64781,8 @@
    "split_obj": 5324.999999999687,
    "split_status": "optimal",
    "split_test": "test_bridge_tardiness_beta_picking",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case26"
   },
   {
    "comparable_objective": true,
@@ -67043,7 +67087,8 @@
    "split_obj": 13478.999999999873,
    "split_status": "optimal",
    "split_test": "test_bridge_tardiness_beta_picking",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case26"
   },
   {
    "comparable_objective": true,
@@ -67320,7 +67365,8 @@
    "split_obj": 58.05,
    "split_status": "optimal",
    "split_test": "test_basic_two_orders_with_different_weights",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case27"
   },
   {
    "comparable_objective": true,
@@ -67617,7 +67663,8 @@
    "split_obj": 20.0,
    "split_status": "optimal",
    "split_test": "test_due_dates_tight_vs_relaxed",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case28"
   },
   {
    "comparable_objective": true,
@@ -67914,7 +67961,8 @@
    "split_obj": 0.0,
    "split_status": "optimal",
    "split_test": "test_due_dates_tight_vs_relaxed",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case28"
   },
   {
    "comparable_objective": false,
@@ -70763,7 +70811,8 @@
    "split_waiting_batches": [
     "B2",
     "B3"
-   ]
+   ],
+   "split_case": "Case29"
   },
   {
    "comparable_objective": false,
@@ -74197,7 +74246,8 @@
    "split_obj": null,
    "split_status": "timeout",
    "split_test": "test_fractional_and_zero_capacities_feasible",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case30"
   },
   {
    "comparable_objective": false,
@@ -77631,7 +77681,8 @@
    "split_obj": null,
    "split_status": "infeasible",
    "split_test": "test_fractional_and_zero_capacities_infeasible",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case30"
   },
   {
    "comparable_objective": false,
@@ -78018,7 +78069,8 @@
    "split_obj": null,
    "split_status": "infeasible",
    "split_test": "test_order_assigned_to_multiple_batches_infeasible",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case31"
   },
   {
    "comparable_objective": false,
@@ -78408,7 +78460,8 @@
    "split_waiting_batches": [
     "B1",
     "B2"
-   ]
+   ],
+   "split_case": "Case31"
   },
   {
    "comparable_objective": false,
@@ -80679,7 +80732,8 @@
    "split_obj": null,
    "split_status": "infeasible",
    "split_test": "test_single_order_exceeds_vehicle",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case32"
   },
   {
    "comparable_objective": true,
@@ -80956,7 +81010,8 @@
    "split_obj": 106.5,
    "split_status": "optimal",
    "split_test": "test_service_time_mixed",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case33"
   },
   {
    "comparable_objective": true,
@@ -81233,7 +81288,8 @@
    "split_obj": 81.0,
    "split_status": "optimal",
    "split_test": "test_service_time_one",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case33"
   },
   {
    "comparable_objective": false,
@@ -81512,7 +81568,8 @@
    "split_test": "test_service_time_zero",
    "split_waiting_batches": [
     "B1"
-   ]
+   ],
+   "split_case": "Case33"
   },
   {
    "comparable_objective": false,
@@ -81671,7 +81728,8 @@
    "split_obj": null,
    "split_status": "infeasible",
    "split_test": "test_no_eligible_picker_returns_infeasible_gracefully",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case34ColdChainEdgeCases"
   },
   {
    "comparable_objective": true,
@@ -81830,7 +81888,8 @@
    "split_obj": 9.0,
    "split_status": "optimal",
    "split_test": "test_picker_exactly_at_the_cold_chain_limit_is_still_eligible",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case34ColdChainEdgeCases"
   },
   {
    "comparable_objective": true,
@@ -82112,7 +82171,8 @@
    "split_obj": 16.0,
    "split_status": "optimal",
    "split_test": "test_completion_time_matches_the_documented_formula_exactly",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case34SpeedFormula"
   },
   {
    "comparable_objective": true,
@@ -82394,7 +82454,8 @@
    "split_obj": 27.0,
    "split_status": "optimal",
    "split_test": "test_cold_limit_applies_to_each_batch_not_the_whole_shift",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case35ColdChainCoverage"
   },
   {
    "comparable_objective": true,
@@ -82553,7 +82614,8 @@
    "split_obj": 9.0,
    "split_status": "optimal",
    "split_test": "test_cold_limit_tolerance_keeps_a_picker_within_rounding_noise",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case35ColdChainCoverage"
   },
   {
    "comparable_objective": false,
@@ -82712,7 +82774,8 @@
    "split_obj": null,
    "split_status": "infeasible",
    "split_test": "test_fixed_time_counts_toward_the_cold_limit",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case35ColdChainCoverage"
   },
   {
    "comparable_objective": true,
@@ -82994,7 +83057,8 @@
    "split_obj": 25.0,
    "split_status": "optimal",
    "split_test": "test_batches_are_split_when_fast_picker_is_only_twice_as_fast",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case36SpeedCoverage"
   },
   {
    "comparable_objective": true,
@@ -83276,7 +83340,8 @@
    "split_obj": 16.5,
    "split_status": "optimal",
    "split_test": "test_fast_picker_takes_both_batches_when_four_times_faster",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case36SpeedCoverage"
   },
   {
    "comparable_objective": true,
@@ -83433,7 +83498,8 @@
    "split_obj": 310.0,
    "split_status": "optimal",
    "split_test": "test_tardiness_uses_the_speed_scaled_route_time",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case36SpeedCoverage"
   },
   {
    "comparable_objective": true,
@@ -83742,7 +83808,8 @@
    "split_obj": 78.0,
    "split_status": "optimal",
    "split_test": "test_batch_is_not_delayed_when_completion_weight_dominates",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case37JustInTime"
   },
   {
    "comparable_objective": false,
@@ -84023,11 +84090,16 @@
    "split_obj": null,
    "split_status": "infeasible",
    "split_test": "test_route_that_must_revisit_a_vertex_is_infeasible",
-   "split_waiting_batches": []
+   "split_waiting_batches": [],
+   "split_case": "Case38SimplePathLimit"
   }
  ],
  "not_captured": [
   "test_non_positive_speed_is_rejected_before_solving"
  ],
- "source": "tests/opp_split/functional"
+ "source": "tests/opp_split/functional",
+ "cases": {
+  "test_batch_is_delayed_while_early_orders_outweigh_completion_weight": "Case37JustInTime",
+  "test_non_positive_speed_is_rejected_before_solving": "Case36SpeedCoverage"
+ }
 }

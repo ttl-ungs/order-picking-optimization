@@ -11,7 +11,7 @@ docs/specs/comparabilidad_split_heuristicas.md for the rules.
 - functional: the instances in
   tests/shared_scenarios/functional/functional_instances.json (exported
   from opp_split's functional tests), which opp_aco/opp_hc solve in
-  test_case_functional_instances.py as test_instance__<Split test>[__<k>]. Their Split
+  test_functional_cases.py with the Split's case and test names (<Case>.<test>[__<k>]). Their Split
   objective comes from that file (per instance -- the Split results CSV keeps
   only the last solve of tests that solve more than one instance).
   The OTHER opp_aco/opp_hc functional tests are not comparable with the Split, even
@@ -38,12 +38,12 @@ import pandas as pd
 
 from experiments.common.config import OUTPUTS_ROOT
 from experiments.common.load import _extract_instance, _load_sources, _pick_sources
-from tests.infra.factories.functional_instances import FIXTURE_PATH, METHOD_PREFIX, _method_names, load_fixtures
+from tests.infra.factories.functional_instances import FIXTURE_PATH, case_instances, load_fixtures
 
 OUTPUT_PATH = os.path.join(OUTPUTS_ROOT, "comparability", "comparability_split_vs_heuristics.csv")
 
 COLUMNS = [
-    "tier", "split_test", "heuristic_instance", "split_model", "split_status", "split_obj",
+    "tier", "case", "split_test", "heuristic_instance", "split_model", "split_status", "split_obj",
     "comparable_status", "comparable_objective", "not_comparable_reason", "source",
 ]
 
@@ -51,9 +51,10 @@ COLUMNS = [
 def functional_rows(fixture_path=FIXTURE_PATH):
     fixtures = load_fixtures(fixture_path)
     rows = []
-    for method_name, entry in _method_names(fixtures["instances"]):
+    for case, method_name, entry in case_instances(fixtures["instances"]):
         rows.append({
             "tier": "functional",
+            "case": case,
             "split_test": entry["split_test"],
             "heuristic_instance": method_name,
             "split_model": "opp_split",
@@ -66,13 +67,15 @@ def functional_rows(fixture_path=FIXTURE_PATH):
         })
     for name, reason in sorted(fixtures["excluded"].items()):
         rows.append({
-            "tier": "functional", "split_test": name, "heuristic_instance": None, "split_model": "opp_split",
+            "tier": "functional", "case": fixtures["cases"][name], "split_test": name, "heuristic_instance": None,
+            "split_model": "opp_split",
             "split_status": None, "split_obj": None, "comparable_status": False, "comparable_objective": False,
             "not_comparable_reason": f"excluido: {reason}", "source": os.path.basename(fixture_path),
         })
     for name in fixtures["not_captured"]:
         rows.append({
-            "tier": "functional", "split_test": name, "heuristic_instance": None, "split_model": "opp_split",
+            "tier": "functional", "case": fixtures["cases"][name], "split_test": name, "heuristic_instance": None,
+            "split_model": "opp_split",
             "split_status": None, "split_obj": None, "comparable_status": False, "comparable_objective": False,
             "not_comparable_reason": "el test del Split no llega al solver (rechaza la entrada antes)",
             "source": os.path.basename(fixture_path),
@@ -82,13 +85,14 @@ def functional_rows(fixture_path=FIXTURE_PATH):
 
 def stress_rows():
     sources, _ = _pick_sources("opp_split", "stress")
-    split_rows = _load_sources(sources)
+    split_rows = _with_case(_load_sources(sources))
     rows = []
     for _, row in split_rows.iterrows():
         instance = _extract_instance(row["test"])
         ok = row["status"] == "ok"
         rows.append({
             "tier": "stress",
+            "case": row["case"],
             "split_test": instance,
             "heuristic_instance": instance,
             "split_model": "opp_split",
@@ -126,6 +130,13 @@ RESULT_COLUMNS = COLUMNS[:-1] + [
 GAP_TOLERANCE_PCT = 1e-6
 
 
+def _with_case(df):
+    """The rows of a results CSV with the `case` (class of the test id) next to the `instance` (method name)."""
+    df = df.copy()
+    df["case"] = df["test"].map(lambda test_id: test_id.split(".")[-2])
+    return df
+
+
 def _seconds(total_time):
     """
     total_time as seconds. A timed-out run stores the text "Ejecución
@@ -147,12 +158,7 @@ def _heuristic_rows(model_dir, tier):
     sources, _ = _pick_sources(model_dir, tier)
     if not sources:
         return pd.DataFrame(columns=["instance", "obj_val", "total_time", "source_file"])
-    df = _load_sources(sources)
-    if tier == "functional":
-        # Only the equivalence instances: the other functional tests don't
-        # share the Split's data even when they share its test name.
-        df = df[df["instance"].str.startswith(METHOD_PREFIX)]
-    return df
+    return _with_case(_load_sources(sources))
 
 
 def _split_functional_times(registry):
@@ -166,22 +172,21 @@ def _split_functional_times(registry):
     sources, _ = _pick_sources("opp_split", "functional")
     if not sources:
         return {}
-    split_rows = _load_sources(sources)
-    unique = split_rows[~split_rows["instance"].duplicated(keep=False)].set_index("instance")
+    split_rows = _with_case(_load_sources(sources)).set_index(["case", "instance"])
     functional = registry[(registry["tier"] == "functional") & registry["heuristic_instance"].notna()]
-    instances_per_test = functional["split_test"].value_counts()
+    instances_per_test = functional.groupby(["case", "split_test"]).size()
     times = {}
     for _, row in functional.iterrows():
-        name = row["split_test"]
-        if instances_per_test[name] != 1 or name not in unique.index:
+        key = (row["case"], row["split_test"])
+        if instances_per_test[key] != 1 or key not in split_rows.index:
             continue
-        split_row = unique.loc[name]
+        split_row = split_rows.loc[key]
         csv_obj = pd.to_numeric(split_row["obj_val"], errors="coerce")
         same_obj = (pd.isna(csv_obj) and pd.isna(row["split_obj"])) or (
             pd.notna(csv_obj) and pd.notna(row["split_obj"]) and abs(csv_obj - row["split_obj"]) <= 1e-6 * max(1.0, abs(row["split_obj"]))
         )
         if same_obj:
-            times[row["heuristic_instance"]] = (_seconds(split_row["total_time"]), split_row["source_file"])
+            times[(row["case"], row["heuristic_instance"])] = (_seconds(split_row["total_time"]), split_row["source_file"])
     return times
 
 
@@ -199,26 +204,27 @@ def build_results(registry):
       the Split timeouts it's a lower bound, the Split having been cut at its time
       limit: speedup_is_lower_bound).
     """
-    split_stress = _load_sources(_pick_sources("opp_split", "stress")[0]).set_index("instance")
+    split_stress = _with_case(_load_sources(_pick_sources("opp_split", "stress")[0])).set_index(["case", "instance"])
     split_functional_times = _split_functional_times(registry)
     rows = []
     for model_dir in HEURISTICS:
-        results = {tier: _heuristic_rows(model_dir, tier).set_index("instance") for tier in ("functional", "stress")}
+        results = {tier: _heuristic_rows(model_dir, tier).set_index(["case", "instance"]) for tier in ("functional", "stress")}
         for _, reg in registry.iterrows():
             instance = reg["heuristic_instance"]
             if pd.isna(instance):
                 continue
+            key = (reg["case"], instance)
             row = {c: reg[c] for c in COLUMNS[:-1]}
             row["heuristic"] = model_dir
-            if reg["tier"] == "stress" and instance in split_stress.index:
-                row["split_time"] = _seconds(split_stress.loc[instance, "total_time"])
-                row["split_time_source"] = split_stress.loc[instance, "source_file"]
-            elif instance in split_functional_times:
-                row["split_time"], row["split_time_source"] = split_functional_times[instance]
+            if reg["tier"] == "stress" and key in split_stress.index:
+                row["split_time"] = _seconds(split_stress.loc[key, "total_time"])
+                row["split_time_source"] = split_stress.loc[key, "source_file"]
+            elif key in split_functional_times:
+                row["split_time"], row["split_time_source"] = split_functional_times[key]
 
             tier_results = results[reg["tier"]]
-            if instance in tier_results.index:
-                h = tier_results.loc[instance]
+            if key in tier_results.index:
+                h = tier_results.loc[key]
                 obj = pd.to_numeric(h["obj_val"], errors="coerce")
                 row["heuristic_obj"] = obj
                 row["heuristic_time"] = _seconds(h["total_time"])

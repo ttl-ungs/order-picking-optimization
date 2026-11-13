@@ -51,7 +51,7 @@ def split_vs_mono_verdicts():
 
 
 def compliance(model, tier):
-    """{instance method: verdict} of the model's compliance report."""
+    """{(case, test): verdict} of the model's compliance report."""
     path = os.path.join(ROOT, "results", "compliance", model, tier,
                         f"compliance_output_{model}_{tier}_tests.csv")
-    return {r["test"].split(".")[-1]: r["verdict"] for r in _read(path)}
+    return {tuple(r["test"].split(".")[-2:]): r["verdict"] for r in _read(path)}

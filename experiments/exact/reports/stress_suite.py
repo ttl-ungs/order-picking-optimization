@@ -4,6 +4,7 @@ Shared by build_mono_exploration and build_functional_comparison. Each model's
 stress CSV is the unified run of its suite (tests 01-19, same numbering and
 same instances in both models).
 """
+from experiments.common.load import case_number
 import csv
 import os
 
@@ -40,7 +41,7 @@ SUITE = {
 
 def _load(path):
     with open(path, encoding="utf-8", errors="replace") as fh:
-        return {r["test"].split(".")[0]: r for r in csv.DictReader(fh)}
+        return {case_number(r["test"]): r for r in csv.DictReader(fh)}
 
 
 def results():
@@ -48,7 +49,7 @@ def results():
     split, mono = _load(SPLIT_STRESS), _load(MONO_STRESS)
     out = []
     for n, (desc, lots, grid) in SUITE.items():
-        case = f"test_case_{n}"
+        case = n
         s = split[case]
         minutes = float(s["total_time"]) / 60 if s["status"] == "ok" else None
         out.append((n, desc, lots, grid, s["status"], minutes, mono[case]["status"]))

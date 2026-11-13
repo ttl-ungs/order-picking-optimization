@@ -14,11 +14,11 @@ Toda tabla o gráfico que compare el Split con las heurísticas debe filtrar por
 
 | Qué | Instancias de las heurísticas | Referencia del Split |
 |---|---|---|
-| **Funcional** | `test_instance__<test del Split>[__<k>]` en `tests/opp_{aco,hc}/functional/test_case_functional_instances.py` | Estado y objetivo por instancia en `tests/shared_scenarios/functional/functional_instances.json` |
+| **Funcional** | `<Caso>.<test del Split>[__<k>]` en `tests/opp_{aco,hc}/functional/test_functional_cases.py` (el mismo caso y nombre de test que en el Split; `__<k>` solo si un test tiene varias instancias) | Estado y objetivo por instancia en `tests/shared_scenarios/functional/functional_instances.json` |
 | **Estrés** | Los casos de `tests/stress_cases/` (19 escenarios), con el mismo nombre de método en los CSV de los cuatro modelos | CSV de estrés de `opp_split`, combinados por `experiments.common.load`: 04–19 con W_c = 27 y 01–03 de las corridas consolidadas |
 | **Tiempo igual** | CSV de estrés de cada heurística | `results/equal_time/output_equal_time_<heurística>_*.csv`, donde el Split corre con el tiempo de la heurística como límite |
 
-**Para comparar funcionales se usan solo las instancias `test_instance__*`**: son las que resuelven exactamente los mismos datos que el Split. Los otros tests funcionales de opp_aco y opp_hc (`invalid_speed_rejected` y, en ACO, `unreachable_required_location`) no tienen un par en el Split.
+**Para comparar funcionales se usan solo las instancias de `test_functional_cases.py`**: son las que resuelven exactamente los mismos datos que el Split. Los otros tests funcionales de opp_aco y opp_hc (`invalid_speed_rejected` y, en ACO, `unreachable_required_location`) no tienen un par en el Split.
 
 ## Cómo se garantiza que sean los mismos datos
 
@@ -60,30 +60,29 @@ Los escenarios de estrés donde el Split hizo timeout no tienen referencia de ob
 
 ### Funcional: instancias no comparables en objetivo
 
-| Test del Split | Instancia en opp_aco/opp_hc | Estado del Split | ¿Estado comparable? | Motivo |
+| Test del Split | Instancia en opp_aco/opp_hc (`Caso.test`) | Estado del Split | ¿Estado comparable? | Motivo |
 |---|---|---|---|---|
-| `test_basic_two_orders_capacity_limit` | `test_instance__test_basic_two_orders_capacity_limit` | optimal | Sí | el Split usa espera voluntaria en B1 |
-| `test_two_possible_routes` | `test_instance__test_two_possible_routes` | optimal | Sí | el Split usa espera voluntaria en B1, B2 |
-| `test_longer_single_mission_duplicate_location` | `test_instance__test_longer_single_mission_duplicate_location` | optimal | Sí | el Split usa espera voluntaria en B1 |
-| `test_longer_single_mission_route` | `test_instance__test_longer_single_mission_route` | optimal | Sí | el Split usa espera voluntaria en B1 |
-| `test_bridge_earliness_order_size` | `test_instance__test_bridge_earliness_order_size__1` | optimal | Sí | el Split usa espera voluntaria en B2, B4 |
-| `test_bridge_earliness_order_size` | `test_instance__test_bridge_earliness_order_size__2` | optimal | Sí | el Split usa espera voluntaria en B1, B3 |
-| `test_one_empty_batch_allowed` | `test_instance__test_one_empty_batch_allowed` | optimal | Sí | el Split usa espera voluntaria en B2, B3 |
-| `test_order_assigned_to_single_batch_feasible` | `test_instance__test_order_assigned_to_single_batch_feasible` | optimal | Sí | el Split usa espera voluntaria en B1, B2 |
-| `test_service_time_zero` | `test_instance__test_service_time_zero` | optimal | Sí | el Split usa espera voluntaria en B1 |
-| `test_repeated_picking_locations` | `test_instance__test_repeated_picking_locations` | infeasible | Sí | Sin objetivo |
-| `test_bridge_disconnected_required_location` | `test_instance__test_bridge_disconnected_required_location` | infeasible | Sí | Sin objetivo |
-| `test_bridge_disconnected_required_location_with_capacities` | `test_instance__test_bridge_disconnected_required_location_with_capacities` | infeasible | Sí | Sin objetivo |
-| `test_preflight_detects_when_no_picker_is_eligible` | `test_instance__test_preflight_detects_when_no_picker_is_eligible` | infeasible | Sí | Sin objetivo |
-| `test_grid_batch_infeasible_order_size` | `test_instance__test_grid_batch_infeasible_order_size` | infeasible | Sí | Sin objetivo |
-| `test_grid_order_size_bigger_than_cart_infeasible` | `test_instance__test_grid_order_size_bigger_than_cart_infeasible` | infeasible | Sí | Sin objetivo |
-| `test_fractional_and_zero_capacities_infeasible` | `test_instance__test_fractional_and_zero_capacities_infeasible` | infeasible | Sí | Sin objetivo |
-| `test_order_assigned_to_multiple_batches_infeasible` | `test_instance__test_order_assigned_to_multiple_batches_infeasible` | infeasible | Sí | Sin objetivo |
-| `test_single_order_exceeds_vehicle` | `test_instance__test_single_order_exceeds_vehicle` | infeasible | Sí | Sin objetivo |
-| `test_no_eligible_picker_returns_infeasible_gracefully` | `test_instance__test_no_eligible_picker_returns_infeasible_gracefully` | infeasible | Sí | Sin objetivo |
-| `test_fixed_time_counts_toward_the_cold_limit` | `test_instance__test_fixed_time_counts_toward_the_cold_limit` | infeasible | Sí | Sin objetivo |
-| `test_route_that_must_revisit_a_vertex_is_infeasible` | `test_instance__test_route_that_must_revisit_a_vertex_is_infeasible` | infeasible | Sí | Sin objetivo |
-| `test_fractional_and_zero_capacities_feasible` | `test_instance__test_fractional_and_zero_capacities_feasible` | timeout | No | el Split no terminó; ya hacía timeout en la suite normal |
+| `test_basic_two_orders_capacity_limit` | `Case01.test_basic_two_orders_capacity_limit` | optimal | Sí | el Split usa espera voluntaria en B1 |
+| `test_longer_single_mission_duplicate_location` | `Case19.test_longer_single_mission_duplicate_location` | optimal | Sí | el Split usa espera voluntaria en B1 |
+| `test_longer_single_mission_route` | `Case19.test_longer_single_mission_route` | optimal | Sí | el Split usa espera voluntaria en B1 |
+| `test_bridge_earliness_order_size` | `Case26.test_bridge_earliness_order_size__1` | optimal | Sí | el Split usa espera voluntaria en B2, B4 |
+| `test_bridge_earliness_order_size` | `Case26.test_bridge_earliness_order_size__2` | optimal | Sí | el Split usa espera voluntaria en B1, B3 |
+| `test_one_empty_batch_allowed` | `Case29.test_one_empty_batch_allowed` | optimal | Sí | el Split usa espera voluntaria en B2, B3 |
+| `test_order_assigned_to_single_batch_feasible` | `Case31.test_order_assigned_to_single_batch_feasible` | optimal | Sí | el Split usa espera voluntaria en B1, B2 |
+| `test_service_time_zero` | `Case33.test_service_time_zero` | optimal | Sí | el Split usa espera voluntaria en B1 |
+| `test_repeated_picking_locations` | `Case07.test_repeated_picking_locations` | infeasible | Sí | Sin objetivo |
+| `test_bridge_disconnected_required_location` | `Case21.test_bridge_disconnected_required_location` | infeasible | Sí | Sin objetivo |
+| `test_bridge_disconnected_required_location_with_capacities` | `Case26.test_bridge_disconnected_required_location_with_capacities` | infeasible | Sí | Sin objetivo |
+| `test_preflight_detects_when_no_picker_is_eligible` | `Case24bPreflightEligibility.test_preflight_detects_when_no_picker_is_eligible` | infeasible | Sí | Sin objetivo |
+| `test_grid_batch_infeasible_order_size` | `Case25.test_grid_batch_infeasible_order_size` | infeasible | Sí | Sin objetivo |
+| `test_grid_order_size_bigger_than_cart_infeasible` | `Case25.test_grid_order_size_bigger_than_cart_infeasible` | infeasible | Sí | Sin objetivo |
+| `test_fractional_and_zero_capacities_infeasible` | `Case30.test_fractional_and_zero_capacities_infeasible` | infeasible | Sí | Sin objetivo |
+| `test_order_assigned_to_multiple_batches_infeasible` | `Case31.test_order_assigned_to_multiple_batches_infeasible` | infeasible | Sí | Sin objetivo |
+| `test_single_order_exceeds_vehicle` | `Case32.test_single_order_exceeds_vehicle` | infeasible | Sí | Sin objetivo |
+| `test_no_eligible_picker_returns_infeasible_gracefully` | `Case34ColdChainEdgeCases.test_no_eligible_picker_returns_infeasible_gracefully` | infeasible | Sí | Sin objetivo |
+| `test_fixed_time_counts_toward_the_cold_limit` | `Case35ColdChainCoverage.test_fixed_time_counts_toward_the_cold_limit` | infeasible | Sí | Sin objetivo |
+| `test_route_that_must_revisit_a_vertex_is_infeasible` | `Case38SimplePathLimit.test_route_that_must_revisit_a_vertex_is_infeasible` | infeasible | Sí | Sin objetivo |
+| `test_fractional_and_zero_capacities_feasible` | `Case30.test_fractional_and_zero_capacities_feasible` | timeout | No | el Split no terminó; ya hacía timeout en la suite normal |
 | `test_batch_is_delayed_while_early_orders_outweigh_completion_weight` | — | — | No | Excluido: el test verifica justamente que el Split espere |
 | `test_non_positive_speed_is_rejected_before_solving` | — | — | No | el Split rechaza la entrada antes de resolver. Las heurísticas tienen su propio test: `test_zero_speed_is_rejected` / `test_negative_speed_is_rejected` |
 

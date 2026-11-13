@@ -107,11 +107,9 @@ def _save_solution(sr, test_name, solutions_dir, solve_data):
     try:
         from verification.solution_store import write_solution_record
 
-        # <module>.<method>.json: the class name is dropped to stay under
-        # Windows' 260-char path limit (git can't index longer paths by
-        # default); the full unittest id is kept inside the JSON ("test").
+        # <module>.<class>.<method>.json: the id of the test as it appears in the CSV.
         parts = test_name.split(".")
-        path = os.path.join(solutions_dir, f"{parts[0]}.{parts[-1]}.json")
+        path = os.path.join(solutions_dir, f"{'.'.join(parts[-3:])}.json")
         write_solution_record(record, test_name, path)
         solve_data["solution_file"] = os.path.relpath(path, _PROJECT_ROOT).replace(os.sep, "/")
     except Exception as e:

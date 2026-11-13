@@ -3,13 +3,14 @@
     python -m experiments.exact.reports.build_heuristics_comparison
 
 Compares opp_split with opp_hc and opp_aco on the instances the three
-share (comparable_set): the test_instance__* functional instances and the 19 stress
+share (comparable_set): the functional instances of test_functional_cases.py and the 19 stress
 scenarios. Reads results/comparability/results_split_vs_heuristics.csv (status,
 objective, gap and times per instance and heuristic) and the heuristics'
 compliance reports, and fills the %%TABLE:id%%, %%FIG:id%% and %%NUM:id%%
 markers of heuristics_comparison_template.tex.
 Compile the output with `context` from docs/thesis/.
 """
+from experiments.common.load import case_number
 import csv
 import math
 import os
@@ -72,8 +73,7 @@ def instance_label(row, by_method):
 def stress_cases():
     """{stress method: case number '01'..'19'} from the split stress CSV."""
     with open(SPLIT_STRESS, encoding="utf-8", errors="replace") as fh:
-        return {r["test"].split(".")[-1]: r["test"].split(".")[0].replace("test_case_", "")
-                for r in csv.DictReader(fh)}
+        return {r["test"].split(".")[-1]: case_number(r["test"]) for r in csv.DictReader(fh)}
 
 
 def build():
@@ -119,9 +119,9 @@ def build():
     TABLE["functional_out"] = table(["Caso", "Test", "Motivo"], sorted(out_rows))
 
     # --- Compliance of the heuristics' solutions, on the shared instances only.
-    shared = {"functional": {r["heuristic_instance"] for r in reg if r["tier"] == "functional"
+    shared = {"functional": {(r["case"], r["heuristic_instance"]) for r in reg if r["tier"] == "functional"
                              and r["heuristic_instance"]},
-              "stress": {r["heuristic_instance"] for r in reg if r["tier"] == "stress"}}
+              "stress": {(r["case"], r["heuristic_instance"]) for r in reg if r["tier"] == "stress"}}
     comp_rows, all_compliant = [], True
     for h in HEURISTICS:
         for tier, tier_name in (("functional", "Funcional"), ("stress", "Stress")):
@@ -138,7 +138,7 @@ def build():
             path = os.path.join(ROOT, "results", "compliance", h, tier, f"compliance_output_{h}_{tier}_tests.csv")
             with open(path, encoding="utf-8", errors="replace") as fh:
                 for r in csv.DictReader(fh):
-                    if r["test"].split(".")[-1] in shared[tier] and r["verdict"] == "compliant":
+                    if tuple(r["test"].split(".")[-2:]) in shared[tier] and r["verdict"] == "compliant":
                         a, b = num(r["heuristic_obj"]), num(r["recomputed_obj"])
                         checked += 1
                         matched += abs(a - b) <= 1e-6 * max(1.0, abs(a))
@@ -173,7 +173,7 @@ def build():
     TABLE["gap_stress"] = table(header, gap_rows["stress"])
 
     # Instances where split uses voluntary waiting: status comparable, objective not.
-    wait = {h: {r["heuristic_instance"]: r for r in of("functional", h) if is_true(r["comparable_status"])
+    wait = {h: {(r["case"], r["heuristic_instance"]): r for r in of("functional", h) if is_true(r["comparable_status"])
                 and not is_true(r["comparable_objective"]) and r["split_status"] == "optimal"} for h in HEURISTICS}
     wait_rows = []
     for inst in sorted(wait[HEURISTICS[0]]):
@@ -191,7 +191,7 @@ def build():
                                     if num(wait["opp_aco"][inst]["heuristic_obj"]) > num(wait["opp_aco"][inst]["split_obj"]) + 1e-6))
 
     # Functional instances where some heuristic misses the optimum.
-    functional = {h: {r["heuristic_instance"]: r for r in of("functional", h)
+    functional = {h: {(r["case"], r["heuristic_instance"]): r for r in of("functional", h)
                       if is_true(r["comparable_objective"])} for h in HEURISTICS}
     missed = sorted({inst for h in HEURISTICS for inst, r in functional[h].items() if num(r["gap_pct"]) > EXACT})
     detail = []
@@ -298,7 +298,7 @@ def raw_stress():
     out = {}
     for model, path in paths.items():
         with open(path, encoding="utf-8", errors="replace") as fh:
-            out[model] = {r["test"].split(".")[0].replace("test_case_", ""): r for r in csv.DictReader(fh)}
+            out[model] = {case_number(r["test"]): r for r in csv.DictReader(fh)}
     return out
 
 

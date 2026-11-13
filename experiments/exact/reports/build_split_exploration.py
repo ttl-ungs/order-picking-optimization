@@ -7,6 +7,7 @@ computed from experiments/exact/studies/ and the split stress runs in results/, 
 the %%TABLE:stage_times%% and %%NUM:id%% markers of the validation section with the
 stress suite's stage times. Compile the output with `context` from docs/thesis/.
 """
+from experiments.common.load import case_number
 import csv
 import glob
 import math
@@ -30,12 +31,12 @@ VALIDATION_TESTS = (("04", "7×7"), ("05", "13×13"), ("06", "14×14"), ("07", "
 
 def load_suite():
     with open(SUITE_CSV, encoding="utf-8", errors="replace") as fh:
-        return {r["test"].split(".")[0]: r for r in csv.DictReader(fh)}
+        return {case_number(r["test"]): r for r in csv.DictReader(fh)}
 
 
 def stage_times(suite, case):
     """(total, Stage 1 estimate, Stage 2) in seconds; Stage 1 is total minus Stage 2."""
-    r = suite[f"test_case_{case}"]
+    r = suite[case]
     total, s2 = f(r, "total_time"), f(r, "model_time")
     return total, total - s2, s2
 
@@ -50,7 +51,7 @@ def validation():
              "\\bTH Total \\eTH \\bTH SLA \\eTH \\eTR"]
     for case, grid in VALIDATION_TESTS:
         total, s1, s2 = times[case]
-        sla = es(f(suite[f"test_case_{case}"], "sla_on_time_pct"), 1).replace(",0", "")
+        sla = es(f(suite[case], "sla_on_time_pct"), 1).replace(",0", "")
         lines.append(f"\\bTR \\bTD {case} \\eTD \\bTD {grid} \\eTD \\bTD {es(s1, 1)} s \\eTD "
                      f"\\bTD {es(s2, 1)} s \\eTD \\bTD {es(total / 60, 1)} min \\eTD \\bTD {sla}\\% \\eTD \\eTR")
     lines += ["\\eTABLE", "\\blank[medium]"]

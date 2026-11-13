@@ -7,7 +7,7 @@ from tests.shared_scenarios.functional.two_stage_scenarios import two_dead_end_a
 from tests.opp_mono.opp_mono_test_case import OPPTestCaseMono
 
 
-class TestOPPMonoSimplePathLimit(OPPTestCaseMono):
+class Case38SimplePathLimit(OPPTestCaseMono):
     """Documents a limit of the routing formulation, not a business rule.
 
     one_input_arc_per_node / one_output_arc_per_node (`<= 1`) make every route a
