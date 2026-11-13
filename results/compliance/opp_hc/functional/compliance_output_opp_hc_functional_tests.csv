@@ -1,67 +1,6 @@
 test,model,verdict,heuristic_obj,recomputed_obj,level1_status,level1_obj,level2_status,level2_obj,big_m_substituted,prechecks,diagnosis,notes,error,check_time
-test_case_01.TestOPPHillClimbing2Model2.test_two_orders_two_aisles,opp_hc,compliant,1917.0,1917.0,optimal,1917.0,optimal,1917.0,False,,,,,0.357086181640625
-test_case_02.TestOPPHillClimbing2Model3.test_two_orders_two_aisles_one_picking_point_per_order,opp_hc,compliant,1917.0,1917.0,optimal,1917.0,optimal,1917.0,False,,,,,0.08316826820373535
-test_case_03.TestOPPHillClimbing2Model4.test_two_orders_two_aisles_using_one_aisle,opp_hc,compliant,2019.0,2019.0,optimal,2019.0,optimal,2019.0,False,,,,,0.090301513671875
-test_case_04.TestOPPHillClimbing2Model5.test_basic_two_orders_with_different_weights,opp_hc,compliant,89.55,89.55,optimal,89.55,optimal,89.55,False,,,,,0.1642744541168213
-test_case_05.TestOPPHillClimbing2.test_two_orders_two_locations,opp_hc,compliant,1833.0,1833.0,optimal,1833.0,optimal,1833.0,False,,,,,0.1532001495361328
-test_case_06.TestOPPHillClimbing2.test_two_orders_two_locations_two_missions,opp_hc,compliant,3013.5,3013.5,optimal,3013.5,optimal,3013.5,False,,,,,0.09772610664367676
-test_case_07.TestOPPHillClimbing2.test_four_orders_two_locations_two_missions,opp_hc,compliant,6999.0,6999.0,optimal,6999.0,optimal,6999.0,False,,,,,0.1689307689666748
-test_case_08.TestOPPHillClimbing2.test_twelve_orders_six_missions_three_pickers_one_order_per_vehicle,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
-test_case_09.TestOPPHillClimbing2.test_two_periods_two_orders_per_vehicle,opp_hc,compliant,3087.0,3087.0,optimal,3087.0,optimal,3087.0,False,,,,,0.24010300636291504
-test_case_10.TestOPPHillClimbing2.test_3_orders_1_mission_1_picker,opp_hc,compliant,889.0,889.0,optimal,889.0,optimal,889.0,False,,,,,0.12126994132995605
-test_case_11.TestOPPHillClimbing2.test_6_orders_3_missions_2_pickers,opp_hc,compliant,1338.0,1338.0,optimal,1338.0,optimal,1338.0,False,,,,,0.18269133567810059
-test_case_12.TestOPPHillClimbing2.test_branched_single_mission_route,opp_hc,compliant,312.5,312.5,optimal,20.0,optimal,312.5,False,,,,,0.16071271896362305
-test_case_13.TestOPPHillClimbing2.test_detour_single_mission_route,opp_hc,compliant,118.0,118.0,optimal,20.0,optimal,118.0,False,,,,,0.14369583129882812
-test_case_14.TestOPPHillClimbing2.test_longer_single_mission_duplicate_location,opp_hc,compliant,320.0,320.0,optimal,25.0,optimal,320.0,False,,,,,0.19989252090454102
-test_case_14.TestOPPHillClimbing2.test_longer_single_mission_penalties,opp_hc,compliant,0.0,0.0,optimal,0.0,optimal,0.0,False,,,,,0.11223030090332031
-test_case_14.TestOPPHillClimbing2.test_longer_single_mission_route,opp_hc,compliant,320.0,320.0,optimal,25.0,optimal,320.0,False,,,,,0.083892822265625
-test_case_15.TestOPPHillClimbing2Grid.test_grid_batch_infeasible_order_size,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
-test_case_15.TestOPPHillClimbing2Grid.test_grid_duplicate_location_within_batch,opp_hc,compliant,9874.0,9874.0,optimal,9874.0,optimal,9874.0,False,,,,,0.22620463371276855
-test_case_15.TestOPPHillClimbing2Grid.test_grid_multi_location_orders,opp_hc,compliant,9630.0,9630.0,optimal,9630.0,optimal,9630.0,False,,,,,0.11809802055358887
-test_case_15.TestOPPHillClimbing2Grid.test_grid_order_size_bigger_than_cart_infeasible,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
-test_case_15.TestOPPHillClimbing2Grid.test_grid_penalties_due_date,opp_hc,compliant,0.0,0.0,optimal,0.0,optimal,0.0,False,,,,,0.12586450576782227
-test_case_15.TestOPPHillClimbing2Grid.test_grid_penalties_order_size_equal_to_cart,opp_hc,compliant,330.0,330.0,optimal,330.0,optimal,330.0,False,,,,,0.11390447616577148
-test_case_15.TestOPPHillClimbing2Grid.test_grid_shared_locations_across_batches,opp_hc,compliant,11686.0,11686.0,optimal,11686.0,optimal,11686.0,False,,,,,0.13051199913024902
-test_case_16.TestOPPHillClimbing2Bridge.test_bridge_disconnected_required_location,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
-test_case_16.TestOPPHillClimbing2Bridge.test_bridge_earliness_order_size,opp_hc,compliant,155.0,155.0,optimal,155.0,optimal,155.0,False,,,,,0.22625064849853516
-test_case_16.TestOPPHillClimbing2Bridge.test_bridge_shared_locations_across_batches,opp_hc,compliant,10115.0,10115.0,optimal,10115.0,optimal,10115.0,False,,,,,0.10021018981933594
-test_case_16.TestOPPHillClimbing2Bridge.test_bridge_tardiness_beta_picking,opp_hc,compliant,525.0,525.0,optimal,525.0,optimal,525.0,False,,,,,0.11835241317749023
-test_case_17.TestOPPHillClimbing2.test_earliness_when_batch_finishes_before_due_date,opp_hc,compliant,10126.0,10126.0,optimal,10126.0,optimal,10126.0,False,,,,,0.18465256690979004
-test_case_17.TestOPPHillClimbing2.test_tardiness_when_batch_finishes_after_due_date,opp_hc,compliant,154.0,154.0,optimal,154.0,optimal,154.0,False,,,,,0.11527419090270996
-test_case_18.TestDueDatesExtreme.test_due_dates_tight_vs_relaxed,opp_hc,compliant,0.0,0.0,optimal,0.0,optimal,0.0,False,,,,,0.13230061531066895
-test_case_19.TestEmptyBatch.test_one_empty_batch_allowed,opp_hc,compliant,426.0,426.0,optimal,381.0,optimal,426.0,False,,,,,0.22072625160217285
-test_case_20.TestFractionalZeroCapacities.test_fractional_and_zero_capacities_feasible,opp_hc,compliant,344.0,344.0,optimal,213.5,optimal,344.0,False,,,"dropped 10 empty batch(es) not in the solution: ['B11', 'B12', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']",,0.18646955490112305
-test_case_20.TestFractionalZeroCapacities.test_fractional_and_zero_capacities_infeasible,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
-test_case_21.TestOrderAssignedMultipleBatches.test_order_assigned_to_multiple_batches_infeasible,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
-test_case_21.TestOrderAssignedMultipleBatches.test_order_assigned_to_single_batch_feasible,opp_hc,compliant,388.0,388.0,optimal,298.0,optimal,388.0,False,,,,,0.0796809196472168
-test_case_22.TestSingleOrderExceedsVehicle.test_single_order_exceeds_vehicle,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
-test_case_23.TestServiceTimeVariations.test_service_time_mixed,opp_hc,compliant,871.5,871.5,optimal,871.5,optimal,871.5,False,,,,,0.09839177131652832
-test_case_23.TestServiceTimeVariations.test_service_time_one,opp_hc,compliant,846.0,846.0,optimal,846.0,optimal,846.0,False,,,,,0.10812163352966309
-test_case_23.TestServiceTimeVariations.test_service_time_zero,opp_hc,compliant,744.0,744.0,optimal,744.0,optimal,744.0,False,,,,,0.09557175636291504
-test_case_24.TestServiceTimeEdgeCases.test_depot_and_final_ignored_in_service_time,opp_hc,compliant,153000693.0,153000693.0,optimal,153000693.0,optimal,153000693.0,True,,,M 1000.0 too small for this solution (needs >= 1.00002e+06): replaced,,0.09781622886657715
-test_case_24.TestServiceTimeEdgeCases.test_large_and_fractional_s,opp_hc,compliant,922.5,922.5,optimal,922.5,optimal,922.5,False,,,,,0.11070060729980469
-test_case_24.TestServiceTimeEdgeCases.test_missing_s_uses_default_zero,opp_hc,compliant,744.0,744.0,optimal,744.0,optimal,744.0,False,,,,,0.08403134346008301
-test_case_24.TestServiceTimeEdgeCases.test_negative_s_values_do_not_crash,opp_hc,compliant,723.0,723.0,optimal,723.0,optimal,723.0,False,,,,,0.09957408905029297
-test_case_24.TestServiceTimeEdgeCases.test_non_dict_s_values,opp_hc,compliant,744.0,744.0,optimal,744.0,optimal,744.0,False,,,,,0.07213211059570312
-test_case_24.TestServiceTimeEdgeCases.test_partial_s_dictionary,opp_hc,compliant,795.0,795.0,optimal,795.0,optimal,795.0,False,,,,,0.10138726234436035
-test_case_cold_chain_boundary.TestOPPHillClimbingColdChainBoundary.test_picker_exactly_at_the_cold_chain_limit_is_still_eligible,opp_hc,compliant,14.0,14.0,optimal,14.0,optimal,14.0,False,,,,,0.13692545890808105
-test_case_cold_chain_eligibility.TestOPPHillClimbingModel4ColdChainEligibility.test_only_eligible_picker_is_assigned,opp_hc,compliant,6.25,6.25,optimal,6.25,optimal,6.25,False,,,dropped 1 empty batch(es) not in the solution: ['B2'],,0.09382033348083496
-test_case_cold_chain_infeasible.TestOPPHillClimbingModel3ColdChainInfeasible.test_unreachable_cold_chain_deadline_is_infeasible,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
-test_case_cold_chain_per_batch_not_shift.TestOPPHillClimbingColdChainPerBatchNotShift.test_cold_limit_applies_to_each_batch_not_the_whole_shift,opp_hc,compliant,42.0,42.0,optimal,42.0,optimal,42.0,False,,,,,0.09714293479919434
-test_case_cold_chain_tolerance.TestOPPHillClimbingColdChainTolerance.test_cold_limit_tolerance_keeps_a_picker_within_rounding_noise,opp_hc,compliant,14.0,14.0,optimal,14.0,optimal,14.0,False,,,,,0.07816886901855469
-test_case_equivalence.TestOPPHillClimbingModel1Equivalence.test_basic_two_orders_capacity_limit,opp_hc,compliant,744.0,744.0,optimal,744.0,optimal,744.0,False,,,,,0.0726158618927002
-test_case_forced_revisit_is_infeasible.TestOPPHillClimbingForcedRevisitIsInfeasible.test_route_that_must_revisit_a_vertex_is_infeasible,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
 test_case_invalid_speed_rejected.TestOPPHillClimbingInvalidSpeedRejected.test_negative_speed_is_rejected,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
 test_case_invalid_speed_rejected.TestOPPHillClimbingInvalidSpeedRejected.test_zero_speed_is_rejected,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
-test_case_mixed_eligibility.TestOPPHillClimbingModel5MixedEligibility.test_only_the_long_batch_is_forced_to_the_fast_picker,opp_hc,compliant,30.0,30.0,optimal,30.0,optimal,30.0,False,,,,,0.1737196445465088
-test_case_picker_speed.TestOPPHillClimbingModel2PickerSpeed.test_faster_picker_is_preferred,opp_hc,compliant,6.25,6.25,optimal,6.25,optimal,6.25,False,,,dropped 1 empty batch(es) not in the solution: ['B2'],,0.07569718360900879
-test_case_pre_check_uses_tightened_route.TestOPPHillClimbingModel6PreCheckUsesTightenedRoute.test_nearest_neighbor_trap_is_not_reported_infeasible,opp_hc,compliant,7.0,7.0,optimal,7.0,optimal,7.0,False,,,,,0.18043899536132812
-test_case_repeated_picking_locations.TestOPPHillClimbingRepeatedPickingLocations.test_repeated_picking_locations,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
-test_case_repeated_picking_locations_resolved.TestOPPHillClimbingRepeatedPickingLocationsResolved.test_repeated_picking_locations_resolved,opp_hc,compliant,69.0,69.0,optimal,69.0,optimal,69.0,False,,,,,0.1686098575592041
-test_case_speed_sequencing_tradeoff.TestOPPHillClimbingSpeedSequencingTradeoff.test_batches_are_split_when_fast_picker_is_only_twice_as_fast,opp_hc,compliant,25.0,25.0,optimal,25.0,optimal,25.0,False,,,,,0.11148977279663086
-test_case_speed_sequencing_tradeoff.TestOPPHillClimbingSpeedSequencingTradeoff.test_fast_picker_takes_both_batches_when_four_times_faster,opp_hc,compliant,16.5,16.5,optimal,16.5,optimal,16.5,False,,,,,0.0913844108581543
-test_case_speed_sequencing_tradeoff.TestOPPHillClimbingSpeedSequencingTradeoff.test_tardiness_uses_the_speed_scaled_route_time,opp_hc,compliant,310.0,310.0,optimal,310.0,optimal,310.0,False,,,,,0.1314687728881836
-test_case_two_possible_routes.TestOPPHillClimbingTwoPossibleRoutes.test_two_possible_routes,opp_hc,compliant,144.0,144.0,optimal,144.0,optimal,144.0,False,,,,,0.09737539291381836
 test_case_functional_instances.TestFunctionalInstances.test_instance__test_3_orders_1_mission_1_picker,opp_hc,compliant,889.0,889.0,optimal,889.0,optimal,889.0,False,,,,,0.10997676849365234
 test_case_functional_instances.TestFunctionalInstances.test_instance__test_6_orders_3_missions_2_pickers,opp_hc,compliant,1338.0,1338.0,optimal,1338.0,optimal,1338.0,False,,,,,0.09035444259643555
 test_case_functional_instances.TestFunctionalInstances.test_instance__test_basic_two_orders_capacity_limit,opp_hc,compliant,39.0,39.0,optimal,30.0,optimal,39.0,False,,,,,0.06470966339111328
