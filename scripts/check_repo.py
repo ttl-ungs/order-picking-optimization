@@ -113,6 +113,8 @@ def check_naming(files):
     for (model, tier), names in sorted(by_dir.items()):
         numbers = []
         for n in names:
+            if n == "test_functional_cases.py":  # binds tests/functional_cases to the model
+                continue
             m = re.fullmatch(r"test_case_(\d+|[a-z0-9_]+)\.py", n)
             if not m:
                 errors.append(f"tests/{model}/{tier}/{n}: not named test_case_<NN|slug>.py")
