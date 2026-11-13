@@ -6,15 +6,13 @@ The checks that were done by hand after every restructuring, as one command:
     python -m scripts.check_repo --skip-imports   # layout/naming/references only (instant)
 
 Checks:
-  imports     every tracked module imports cleanly (this also resolves the base
-              module of every family_case() factory)
-  factories   the module path inside every family_case() call exists
+  imports     every tracked module imports cleanly
   naming      test files (test_*.py) under tests/<model>/{functional,stress,diagnostics}/
               are test_case_<NN|slug>.py, and the numbered ones are continuous (01..N)
   layout      no leftover scenarios/, tests/, doc/ inside tests/<model>/;
               results/ is results/<model>/<tier|study>/, results/compliance/<model>/<tier>/
               or the flat results/comparability/ and results/equal_time/ (tiers:
-              functional|stress|stability; studies: ablation|pheromone)
+              functional|stress; studies: ablation|pheromone|seeds|budget)
   references  no tracked .py/.md still uses a module path or directory that
               was removed or renamed
 Exit code is 1 if any check fails.
@@ -30,10 +28,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 ROOT = os.getcwd()
 TIERS = ("functional", "stress", "diagnostics")
-RESULT_TIERS = {"functional", "stress", "stability"}
+RESULT_TIERS = {"functional", "stress"}
 # results/<model>/<study>/: a model's own calibration studies (opp_aco_4's
-# ablation and pheromone sweeps), not test-suite runs.
-RESULT_STUDIES = {"ablation", "pheromone"}
+# ablation, pheromone and seed sweeps, opp_hc_4's budget study), not test-suite runs.
+RESULT_STUDIES = {"ablation", "pheromone", "seeds", "budget"}
 # results/<dir>/ that hold cross-model outputs instead of one model's runs:
 #   compliance/<model>/<tier>/  verification/ reports (one per run it checks)
 #   comparability/, equal_time/  flat CSVs (analysis.comparability, the
@@ -44,7 +42,7 @@ RESULT_CROSS_MODEL_FLAT = {"comparability", "equal_time"}
 # Entry points / scripts whose import would run something or is not a library module.
 # experiments/*/studies/ keeps each study's scripts exactly as they were run;
 # most execute the experiment at import time.
-IMPORT_SKIP_PREFIXES = ("examples/", "experiments/opp_v5/studies/")
+IMPORT_SKIP_PREFIXES = ("experiments/opp_v5/studies/",)
 IMPORT_SKIP_FILES = {"tests/run_suite.py"}
 
 # (pattern, why) -- paths and dotted modules that no longer exist.
@@ -89,18 +87,6 @@ def check_imports(files):
         except Exception as exc:  # noqa: BLE001 -- report any failure, whatever its type
             errors.append(f"{mod}: {type(exc).__name__}: {str(exc)[:100]}")
     return mods, errors
-
-
-def check_factories(files):
-    errors = []
-    pat = re.compile(r"family_case\(\s*['\"]([\w.]+)['\"]")
-    for f in files:
-        if not f.startswith("tests/") or not f.endswith(".py"):
-            continue
-        for target in pat.findall(open(f, encoding="utf-8").read()):
-            if not os.path.exists(target.replace(".", "/") + ".py"):
-                errors.append(f"{f}: factory points at missing module {target}")
-    return errors
 
 
 def check_naming(files):
@@ -165,7 +151,7 @@ def check_layout(files):
     for f in files:
         m = re.match(r"tests/(opp_\w+)/(scenarios|tests|doc)/", f)
         if m:
-            errors.append(f"{f}: tests/<model>/{m.group(2)}/ should not exist (scenarios -> tests/shared_scenarios, docs -> docs/tests)")
+            errors.append(f"{f}: tests/<model>/{m.group(2)}/ should not exist (scenarios -> tests/shared_scenarios)")
         if re.match(r"models/opp_\w+/example_usage\.py$", f):
             errors.append(f"{f}: usage examples live in examples/")
         if f.startswith("results/"):
@@ -194,7 +180,6 @@ def main():
     sections = [
         ("layout", lambda: (None, check_layout(files))),
         ("naming", lambda: (None, check_naming(files))),
-        ("factories", lambda: (None, check_factories(files))),
         ("references", lambda: (None, check_references(files))),
     ]
     if not skip_imports:

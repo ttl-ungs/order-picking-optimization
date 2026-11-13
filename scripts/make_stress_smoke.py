@@ -7,7 +7,7 @@ A stress test qualifies when, in the latest recorded run of its model (results/<
 read through analysis.load), it finished OK within --max-seconds. Tests are matched by unittest
 method name -- the same key the analysis pipeline joins on -- and a test module is included only
 if every test method in it qualifies and no method name is ambiguous within the model. Only the
-Hill Climbing / ACO models are listed: opp_v4/opp_v5_2_split need the zimpl binary and never converge at
+Hill Climbing / ACO models are listed: opp_v5_1_mono/opp_v5_2_split need the zimpl binary and never converge at
 stress scale.
 
 `python -m scripts.run_all --tier stress --smoke` then runs just those files through
@@ -26,7 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from analysis.config import STABILITY_MODELS  # noqa: E402  (the six HC/ACO models)
+from analysis.config import HEURISTIC_MODELS  # noqa: E402
 from analysis.load import load_all  # noqa: E402
 
 OUT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stress_smoke.json")
@@ -65,7 +65,7 @@ def main():
     df = load_all(verbose=False)
     stress = df[df["scenario"] == "stress"]
     models = {}
-    for model in STABILITY_MODELS:
+    for model in HEURISTIC_MODELS:
         rows = stress[stress["model"] == model]
         fast = set(rows[(rows["status"] == "ok") & (rows["total_time"] <= args.max_seconds)]["instance"])
         modules = discover(model)
