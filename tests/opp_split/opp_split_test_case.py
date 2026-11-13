@@ -35,8 +35,8 @@ class OPPTestCaseSplit(ExactModelTestCase):
         both stages together.
         """
         # Decomposed into one solve per batch instead of one joint solve for
-        # every batch (see stage1_decomposition.py's module docstring for the
-        # measured speedup) -- STAGE1_ZPL_PATH itself is unchanged. `params`
+        # every batch (see stage1_decomposition.py's module docstring for why).
+        # STAGE1_ZPL_PATH itself is unchanged. `params`
         # (capacity/duplicate-assignment pre-checks, CSV metadata) isn't
         # threaded into the per-batch solves; it's still applied at the Stage
         # 2 call below with the untouched full scenario, so a genuinely
@@ -114,10 +114,10 @@ class OPPTestCaseSplit(ExactModelTestCase):
         # of exactly 0 divides by zero there (no graceful "infeasible", it's
         # a plain parameter expression, not a constraint); a negative one
         # silently yields a negative T_exec_pb that would look "eligible"
-        # for any T_cold. Reject before ZIMPL ever sees it (2026-09-10
-        # audit finding), same pattern as the stuck_batches short-circuit below.
+        # for any T_cold. Reject before ZIMPL ever sees it, same pattern as the
+        # stuck_batches short-circuit below.
         # It has to run before build_dat_files too: its M_seq estimate divides
-        # by the slowest speed, so a 0 crashed there first (found 2026-09-24).
+        # by the slowest speed, so a 0 would crash there first.
         bad_speeds = invalid_speeds(scenario["V_p"])
         self.assertFalse(
             bad_speeds,
@@ -126,8 +126,8 @@ class OPPTestCaseSplit(ExactModelTestCase):
 
         build_dat_files(self.dat_dir, scenario)
         # Decomposed into one solve per batch instead of one joint solve
-        # for every batch (see stage1_decomposition.py's module docstring
-        # for the measured speedup) -- STAGE1_ZPL_PATH itself is unchanged.
+        # for every batch (see stage1_decomposition.py's module docstring).
+        # STAGE1_ZPL_PATH itself is unchanged.
         stage1_status, stage1_values = solve_stage1_decomposed(self.dat_dir)
         self.assertIn(stage1_status, ("optimal", "feasible"), "Stage 1 did not solve")
 
@@ -141,7 +141,7 @@ class OPPTestCaseSplit(ExactModelTestCase):
         if not solve_stage2:
             return stage1_values, route_times, None, None
 
-        # Fix (2026-09-01, code audit): a batch with zero eligible pickers
+        # A batch with zero eligible pickers
         # under the cold-chain limit makes opp_split_stage2_scheduling.zpl's
         # assign_exactly_one_picker sum over an empty PB_elig slice for
         # that batch, which ZIMPL rejects at COMPILE time (RuntimeError).

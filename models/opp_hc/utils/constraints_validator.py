@@ -3,31 +3,23 @@ Constraints validator for opp_hc.
 
 Extends the base validator (models/utils/base_constraints_validator.py: all
 topology/capacity/assignment constraints, enforced as HARD constraints via
-validate_solution()) with cold-chain eligibility. Unlike those, cold chain is deliberately NOT
-folded into validate_solution() -- see the 2026-09-10 audit finding this
-addresses:
+validate_solution()) with cold-chain eligibility. Unlike those, cold chain is
+deliberately NOT folded into validate_solution():
 
-Cold chain used to be an extra hard check inside validate_solution(),
-called once right after the initial construction (opp_hc.py's
-_generate_initial_feasible_solution) and never again. That meant a batch
-that came out cold-chain-ineligible under its initial (heuristic) route
-made the WHOLE initial solution get thrown away immediately -- the Hill
-Climbing loop never got a chance to run 2-opt/reassignment moves that
-might have fixed just that one batch, because there was no solution left
-to run them on.
+validate_solution() runs once, right after the initial construction. If a
+cold-chain-ineligible batch made it fail, the WHOLE initial solution would be
+thrown away and the Hill Climbing loop would never get to run the 2-opt and
+reassignment moves that might fix that one batch.
 
-Fix: cold chain is now a SOFT constraint during search (see
-cold_chain_violation(), consumed as a large cost penalty by
-opp_hc.py's _search_cost/_route_local_search_cost) and a HARD
-constraint only on what gets reported as the final answer (see
-validate_cold_chain_strict(), used by opp_hc.py's solve() to decide
-what may become best_feasible_solution). validate_solution() itself now
-checks ONLY the base hard constraints (topology/capacity/
-one-picker-per-batch) -- an initial solution with a cold-chain-ineligible
-batch is no longer discarded outright; Hill Climbing gets a real,
-full-budget chance to fix it via 2-opt/reassignment, guided by the
-penalty naturally biasing accept/reject decisions towards compliance.
-
+So cold chain is a SOFT constraint during the search (see
+cold_chain_violation(), consumed as a large cost penalty by opp_hc.py's
+_search_cost/_route_local_search_cost) and a HARD constraint only on what is
+reported as the final answer (see validate_cold_chain_strict(), used by
+opp_hc.py's solve() to decide what may become best_feasible_solution).
+validate_solution() itself checks ONLY the base hard constraints: an initial
+solution with a cold-chain-ineligible batch is accepted, and Hill Climbing
+gets a full-budget chance to fix it, guided by the penalty biasing the
+accept/reject decisions towards compliance.
 """
 
 from typing import Dict, List, Set
@@ -116,11 +108,9 @@ class ConstraintsValidator(BaseConstraintsValidator):
         Total cold-chain overrun across every batch with orders: sum of
         max(0, T_exec_pb[assigned_picker, b] - T_cold - COLD_CHAIN_TOLERANCE).
         Zero exactly when validate_cold_chain_strict() would return True --
-        the tolerance is subtracted here too (2026-09-26 audit finding: it
-        used to be omitted, so a T_exec_pb within tolerance of T_cold
-        still had overrun > 0, and a solution could get stuck never
-        reaching the zero-violation state validate_cold_chain_strict()
-        would have accepted). Consumed by opp_hc.py as a large
+        the tolerance is subtracted here too, so a T_exec_pb within tolerance
+        of T_cold has no overrun (otherwise a solution could never reach the
+        zero-violation state validate_cold_chain_strict() accepts). Consumed by opp_hc.py as a large
         search-cost penalty, so Hill Climbing is biased toward (and, once
         it reaches zero, satisfies) cold chain without needing to
         hard-reject a solution that hasn't gotten there yet.

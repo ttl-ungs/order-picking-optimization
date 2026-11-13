@@ -35,6 +35,21 @@ checked on the status, and their solutions are verified against OPP-Mono (`verif
 - `scripts/` — repository checks (`check_repo`, `run_all`, `make_stress_smoke`).
 - `docs/` — specs, the style guide and the generated reports; `conventions.md` — the binding conventions.
 
+## Documentation
+
+| Where | What |
+| --- | --- |
+| [models/README.md](models/README.md) | The four models and the code they share; one README per model. |
+| [dtos/README.md](dtos/README.md) | The parameter and result containers. |
+| [tests/README.md](tests/README.md) | How the cases are shared and how to run them. |
+| [results/README.md](results/README.md) | Layout of the result files. |
+| [analysis/README.md](analysis/README.md) | The comparability registry and the studies of the heuristics. |
+| [verification/README.md](verification/README.md) | Checking the heuristics' solutions against OPP-Mono. |
+| [experiments/exact/README.md](experiments/exact/README.md) | Explorations of the exact models and the reports generated from them (`docs/thesis/`). |
+| [scripts/README.md](scripts/README.md) | Repository checks and CI. |
+| [docs/specs/comparabilidad_split_heuristicas.md](docs/specs/comparabilidad_split_heuristicas.md) | Which results of the exact models and the heuristics can be compared. |
+| [conventions.md](conventions.md) | The binding conventions. |
+
 ## Requirements
 
 Python 3.12+ and `pip install -r requirements.txt` (PySCIPOpt, python-dotenv, pandas, matplotlib).

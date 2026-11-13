@@ -150,22 +150,6 @@ class Case20(ExactModelTestCase):
             for loc in required_locs:
                 self.assertIn(loc, visited, f"El lote {batch} no visitó {loc}")
 
-    # def test_grid_order_size_bigger_than_cart_infeasible(self):
-    #     V, _, B, _, _, _, _, _, _, _ = grid_5x3_two_pickers_four_batches()
-    #     N = {f"O{i}" for i in range(1, 13)}
-    #     a = {(n, v): 0 for n in N for v in V}
-    #     y = {
-    #         (n, b): 0 for n in N for b in B
-    #     }  # Simplificado para que no ocupe 20 lineas
-    #
-    #     # Test Infeasible por capacidad
-    #     cap_n = {n: 3.0 for n in N}
-    #     status, _, _, _, _ = self._solve_grid_zpl(N, a, y, cap_n)
-    #
-    #     El modelo ya no evalúa que las órdenes entren en el carro, el test ya no tiene sentido.
-    #
-    #     self.assertEqual(status, "infeasible")
-
 
 if __name__ == "__main__":
     unittest.main()

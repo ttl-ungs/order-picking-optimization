@@ -58,7 +58,7 @@ raiz-del-proyecto/
 ├── experiments/exact/           # Exploraciones de los modelos exactos y generadores de los informes
 ├── scripts/                     # check_repo, run_all, make_stress_smoke (ver scripts/README.md)
 ├── .github/workflows/           # CI: ci.yml (por PR) y nightly.yml (programado)
-└── docs/                        # Especificaciones, guía de estilo e informes generados (índice en docs/README.md)
+└── docs/                        # Especificaciones, guía de estilo e informes generados (ver README.md)
 ```
 
 Los escenarios no viven dentro de cada modelo: están todos en `tests/shared_scenarios/`.

@@ -1,7 +1,7 @@
 """Stress scenarios designed to exercise what the models decide, instead of plain grids.
 
 `grid_stress_scenario` builds plain grids of a given size, but it carries five properties that inflate difficulty
-without modelling anything a warehouse does. Measured 2026-09-22:
+without modelling anything a warehouse does:
 
 1. `|P| >= |B|` in six of the eight scenarios. Every batch goes to exactly one
    picker, so at most `|B|` pickers are ever used; when `|P| == |B|` each batch
@@ -64,7 +64,7 @@ ORDERS_PER_BATCH = 26
 
 
 def realistic_crew_scenario(rows, cols=None, batches=6, pickers=3, t_cold=None):
-    """The stress profile calibrated on 2026-09-23: a realistic crew on a warehouse grid.
+    """The calibrated stress profile: a realistic crew on a warehouse grid.
 
     26 orders per batch (on-time share ~67%, so earliness and tardiness both
     act), aisles slightly longer than cross-aisles (4/5) and two speed bands
@@ -174,11 +174,10 @@ def designed_stress_scenario(
     # both 1 here), or the Split gains by voluntary waiting: c_pb >= T_exec_pb lets it
     # report a batch LATER than it physically finishes, and a delay of d costs
     # W_c * d while cutting earliness by up to (orders in the batch) * d.
-    # With the previous W_c = 9 and 26 orders per batch that paid ~17 per
-    # unit of delay, so the Split's optimum waited and no heuristic -- which reports
-    # real completion times -- could match it (measured 2026-09-26: 7x7 Split
-    # 79,047 vs ACO 104,565, gap almost entirely earliness). Above the bound a
-    # delay never pays and earliness still counts in the objective.
+    # With W_c = 9 and 26 orders per batch a delay paid ~17 per unit, so the
+    # Split's optimum waited and no heuristic -- which reports real completion
+    # times -- could match it. Above the bound a delay never pays and earliness
+    # still counts in the objective.
     w_ea_ta, w_ea = 1.0, 1.0
     max_orders_per_batch = -(-orders // batches)  # round-robin: ceil(orders / batches)
     w_full = max_orders_per_batch * w_ea_ta * w_ea + 1.0

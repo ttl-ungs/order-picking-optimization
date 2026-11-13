@@ -34,8 +34,8 @@ SCENARIOS = ["functional", "stress"]
 # The two heuristics (the models whose own randomness a seed study measures).
 HEURISTIC_MODELS = ["opp_hc", "opp_aco"]
 
-# Stress tests 01-03 (grid_stress_scenario): the scenarios the 2026-09-26
-# W_c change did NOT touch -- see the stress overrides below.
+# Stress tests 01-03 (grid_stress_scenario): the scenarios that keep W_c = 9, unlike
+# the designed ones (04-19, W_c = 27, see stress_scenarios_designed.py).
 GRID_STRESS_INSTANCES = (
     "test_25_orders_per_batch_30_batches_100x100",
     "test_10_orders_per_batch",
@@ -49,43 +49,30 @@ GRID_STRESS_INSTANCES = (
 # Only labels present in MODEL_DIRS are ever looked up here (see
 # analysis/load.py).
 LATEST_FILE_OVERRIDES = {
-    # 2026-09-24: the exact models' results are consolidated runs under fixed names
-    # (no timestamp) -- the version that counts, whatever a later run writes
-    # next to it. "_parallel": the split stress run with Stage 1 on 6 workers.
+    # The results that count are consolidated runs under fixed names (no
+    # timestamp), whatever a later run writes next to them.
     ("opp_mono", "functional"): "output_opp_mono_functional_tests.csv",
-    # 2026-09-28: stress runs of 04-19 (the designed realistic_crew family)
-    # after W_c changed from 9 to 27 in stress_scenarios_designed.py
-    # (2026-09-26, to rule out the exact models' voluntary-wait exploit) have a
-    # DIFFERENT objective function than the consolidated files above, so
-    # each stress entry now merges sources (list form, see
-    # analysis/load.py): the new run for 04-19, plus the consolidated file
-    # ONLY for 01-03 (grid_stress_scenario, unchanged -- W_c still
-    # 9 there). Mono's new run was cut after 04 (timeout at 40 min, the
-    # smallest scenario); 05-19 were never run with W_c = 27, so they're
-    # left out and reported as missing rather than taken from the W_c = 9
-    # file. 2026-09-29: unified in one file (04's row from the 2026-09-27
-    # run replaced the W_c = 9 one; 05-19 kept untouched as the W_c = 9
-    # record), so only 01-04 are read from it.
+    # Stress 04-19 use W_c = 27 (to rule out the voluntary-wait exploit of the
+    # exact models), a different objective function than 01-03 (W_c = 9). Mono
+    # was only run on 01-04 with the current stress suite (04 timed out at
+    # 40 min), so only those are read from its file; the rest are reported as
+    # missing instead of being taken from runs with W_c = 9.
     ("opp_mono", "stress"): [
         ("output_opp_mono_stress_tests.csv",
          GRID_STRESS_INSTANCES + ("test_realistic_crew_7x7_warehouse",)),
     ],
     ("opp_split", "functional"): "output_opp_split_functional_tests.csv",
-    # 2026-09-29: opp_hc/opp_aco results are unified runs under fixed
-    # names, like the exact models': one row per current test, every row taken from a
-    # run saved with WRITE_SOLUTIONS, so each links to its solution JSON
+    # opp_hc / opp_aco: one row per current test, every row taken from a run
+    # saved with WRITE_SOLUTIONS, so each links to its solution JSON
     # (solution_file) and to its row in results/compliance/ (all verified
-    # against opp_mono). opp_aco stress merges three runs (8 + 10
-    # tests + the 100x100); its 100x100 row had a 4-min laptop suspension,
-    # so its objective (988,252) is 6.9% above the discarded 2026-09-28 run
-    # without a saved solution (924,536).
+    # against opp_mono). opp_aco's 100x100 row (objective 988,252) includes a
+    # 4-minute laptop suspension, so it is 6.9% above a discarded run without
+    # a saved solution (924,536).
     ("opp_hc", "functional"): "output_opp_hc_functional_tests.csv",
     ("opp_hc", "stress"): "output_opp_hc_stress_tests.csv",
     ("opp_aco", "functional"): "output_opp_aco_functional_tests.csv",
     ("opp_aco", "stress"): "output_opp_aco_stress_tests.csv",
-    # 2026-09-29: split stress unified in one file. 02, 04-07, 09-11 and 15
-    # re-run with the current code (Stage 1 on 6 workers, same objectives as
-    # before); the 10 timeouts (40 min) kept from their previous runs: 01 and
-    # 03 from the 09-24 run, 08 and 12-19 from the 09-26 run (W_c = 27).
+    # opp_split stress, Stage 1 on 6 workers ("_parallel"): the timeouts (40
+    # min) are kept from earlier runs of the same scenarios.
     ("opp_split", "stress"): "output_opp_split_stress_tests_parallel.csv",
 }

@@ -23,25 +23,16 @@ counterpart of opp_split's opp_split_stage2_scheduling.zpl):
 
 Cold chain is enforced as a HARD constraint on the reported final answer,
 but a SOFT one (a large cost penalty, _search_cost/_route_local_search_
-cost) during the search itself -- see models/opp_hc/utils/
-constraints_validator.py's module docstring for the 2026-09-10 audit
-finding this fixes (a cold-chain-ineligible batch used to make the
-initial solution get discarded outright, right after construction,
-before Hill Climbing ever got a chance to fix it via 2-opt/reassignment).
+cost) during the search itself, so a cold-chain-ineligible initial batch
+does not discard the whole solution before Hill Climbing gets a chance to fix
+it via 2-opt/reassignment (see models/opp_hc/utils/constraints_validator.py).
 
-Infeasibility detection is now HONEST: there is no upfront estimate-based
-pre-check that can produce a false "infeasible" before the search ever
-gets to try (a 2026-09-09 audit finding -- an earlier version of this
-file pre-checked batches_without_eligible_picker against the initial
-(heuristic, even after 2-opt-tightening) route, which could still be
-worse than what further search would achieve, incorrectly declaring a
-genuinely feasible instance infeasible). The ONLY upfront short-circuit
-left is mathematically exact, not an estimate: batches_without_eligible_
-picker is fed a route_time of EXACTLY 0.0 for every batch (the best
-physically possible case -- real route_time is always >= 0), so a batch
-flagged there is impossible under ANY route/picker whatsoever, not just
-the one this run happened to construct. Every other batch gets a genuine
-full run of the Hill Climbing loop; the reported answer (best_feasible_
+Infeasibility detection is honest: there is no up-front estimate that could
+wrongly declare a feasible instance infeasible. The only up-front
+short-circuit is exact: batches_without_eligible_picker is fed a route_time
+of EXACTLY 0.0 for every batch (the best physically possible case), so a
+batch flagged there is impossible under ANY route or picker. Every other
+batch gets a genuine full run of the Hill Climbing loop; the reported answer (best_feasible_
 solution) is only ever set when every batch is fully cold-chain-compliant
 (see solve()), so if the loop finishes without ever reaching that,
 "infeasible" reflects an honest, exhausted search budget -- not a
@@ -94,16 +85,12 @@ from models.utils.sla import sla_on_time_pct
 class OPPHillClimbing(Model):
     """Hill Climbing solver for the OPP - picker speed + cold chain, no congestion."""
 
-    # Multiplier applied to a cold-chain overrun (a time-unit amount)
-    # before adding it to a search cost -- see constraints_validator.py's
-    # module docstring for why cold chain is a SOFT constraint during
-    # search now (2026-09-10 audit fix). Large enough to dominate the
-    # search away from violations (typical marginal objective contribution
-    # per unit of recollection time is W_c, usually single-to-low-
-    # double digits) without using an arbitrarily huge Big-M-style
-    # constant -- this is a plain Python cost comparison, not a MIP
-    # constraint, so there's no SCIP-presolve-numerics failure mode to
-    # worry about the way there was with opp_split's M_seq.
+    # Multiplier applied to a cold-chain overrun (a time-unit amount) before
+    # adding it to a search cost: cold chain is a soft constraint during the
+    # search (see constraints_validator.py). Large enough to dominate the
+    # search away from violations (the marginal objective per unit of time is
+    # W_c, usually single-to-low-double digits) without a Big-M-style
+    # constant: this is a plain cost comparison, not a MIP constraint.
     _COLD_CHAIN_PENALTY_WEIGHT = 1000.0
 
     def __init__(self, dto: ModelDTO):
@@ -159,29 +146,20 @@ class OPPHillClimbing(Model):
         self._fixed_time_cache = {}
         self._batches_with_orders_cache = [b for b in self.B if batch_assignments[b]]
 
-        # V_p[p] is a divisor in _T_exec_pb (fixed_time(b) + route_time(b)
-        # / V_p[p]): a speed of exactly 0 is a ZeroDivisionError waiting
-        # to happen the first time any batch/picker pair gets evaluated
-        # (the eligibility pre-check below, if nothing else); a negative
-        # one silently produces a negative T_exec_pb that would look
-        # "eligible" for any T_cold. Reject up front instead of
-        # crashing or accepting nonsensical input (2026-09-10 audit finding).
+        # V_p[p] is a divisor in _T_exec_pb: a speed of 0 would divide by zero
+        # and a negative one would give a negative T_exec_pb that looks
+        # eligible for any T_cold. Reject it up front.
         bad_speeds = invalid_speeds(self._picker_speeds(params))
         if bad_speeds:
             print(f"ERROR: V_p must be strictly positive for every picker; got non-positive speed for {sorted(bad_speeds)}")
             self._register_infeasible(params, time.time() - wall_clock_start)
             return "infeasible", None
 
-        # Exact (not estimated) impossibility pre-check: fixed_time(b)
-        # alone (setup + picking, independent of route/picker) already
-        # tells us the BEST possible T_exec_pb for any picker, since
-        # route_time is always >= 0 -- feeding batches_without_eligible_
-        # picker a route_time of exactly 0.0 for every batch asks it "is
-        # there a picker fast enough even for a zero-distance route?". A
-        # batch flagged here is impossible under ANY route or picker, not
-        # just one this run happened to construct -- unlike the estimate-
-        # based pre-check this replaces (2026-09-09 audit finding). See
-        # header for the full rationale.
+        # Exact impossibility pre-check: fixed_time(b) alone (setup + picking)
+        # gives the best possible T_exec_pb for any picker, since route_time >= 0,
+        # so feeding batches_without_eligible_picker a route_time of exactly 0.0
+        # asks "is there a picker fast enough even for a zero-distance route?".
+        # A batch flagged here is impossible under ANY route or picker.
         best_case_route_time = {batch: 0.0 for batch in self.B}
         impossible_batches = batches_without_eligible_picker(
             self.P, self.B, self.N, params.C_n, params.B_nb,
@@ -425,10 +403,7 @@ class OPPHillClimbing(Model):
         Travel time (T_travel * distance) + service time -- opp_split's
         R_b, the part scaled by V_p. Pass `distance` when the caller
         already computed it (e.g. a 2-opt candidate's distance) to avoid
-        recomputing it a second time via _calculate_route_distance
-        (2026-09-10 audit finding: this and _T_exec_pb used to each
-        recompute the route's distance independently, doubling the work
-        of every 2-opt candidate evaluation in _generate_route_neighbor).
+        recomputing it a second time via _calculate_route_distance.
         """
         if not route:
             return 0.0
@@ -535,13 +510,10 @@ class OPPHillClimbing(Model):
         diversify a Hill Climbing start (e.g. the multi-start local search
         Coruzzolo et al. 2023 use for batching, Logistics 7:61); the pick-
         to-pick construction itself is Chen et al. (2013)'s (see
-        stitch_route). Our own choice to use them here, measured
-        2026-09-26: with the nearest-neighbor start + vertex 2-opt alone,
-        HC's routes summed 490 route-time units on realistic_crew_
-        scenario(7) vs 425 for the Split's exact Stage 1, and on
-        realistic_crew_scenario(14) batch B1 got no route at all
-        (nearest-neighbor stuck, best-first search out of budget), which
-        made the whole solve "infeasible" although the Split solves it.
+        stitch_route). Our own choice to use them here: with the
+        nearest-neighbor start + vertex 2-opt alone the routes are clearly
+        longer than the Split's exact Stage 1 routes, and on hard batches
+        nearest-neighbor can get stuck without any route at all.
         """
         candidates = []
         greedy = self._generate_feasible_route(required_locations)
@@ -688,27 +660,13 @@ class OPPHillClimbing(Model):
         """
         return route_construction.two_opt_tighten_route(self.location_graph, route)
 
-    # 2026-09-26 audit finding: raising this cap alone (tried up to 10M) was
-    # the wrong fix for the realistic_crew_scenario stress profile (26
-    # orders/batch, ~19-26 required locations) reporting false "infeasible"
-    # -- a batch that exhausted even a 10M-expansion cap after ~8 minutes
-    # was actually found in well under a second once _bff_search was
-    # reordered into a best-first search (by locations still required, then
-    # graph distance to the nearest one -- see its docstring) instead of
-    # plain FIFO BFS: the real problem was blind BFS wasting almost its
-    # whole budget on partial paths still far from finished, not that
-    # 200_000 was too small a number.
-    #
-    # That reordering resolves the vast majority of batches at this size
-    # (~20-26 required locations on a ~50-256-node grid) in well under a
-    # second. A minority still take 20-70s even with the better ordering
-    # (measured on 14x14/16x16 grids specifically) -- kept at 2M rather
-    # than 200_000 so those still resolve rather than false-negative,
-    # accepting that cost for the ones that need it. Still a hard safety
-    # valve, not a knob this class of scenario should need to push further;
-    # if a batch still exhausts THIS cap, that is a genuine, larger
-    # instance than anything measured so far, worth a fresh look rather
-    # than raising the constant again.
+    # Hard safety valve on the best-first search's node expansions. The search
+    # orders partial paths by locations still required, then by graph distance
+    # to the nearest one (see _bff_search), so most batches of ~20-26 required
+    # locations on a ~50-256-node grid resolve well below this cap; a minority
+    # on the largest grids needs it. Raising the constant is not the fix for a
+    # batch that exhausts it: that is a larger instance than the search was
+    # designed for.
     _MAX_BFF_EXPANSIONS = 2_000_000
 
     def _generate_feasible_route_bff(self, required_locations: Set) -> Optional[List]:
