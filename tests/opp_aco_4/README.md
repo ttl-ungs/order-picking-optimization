@@ -30,8 +30,7 @@ route_time(b)   = T_travel * travel_distance + service_time          # scaled by
   route-time ESTIMATE (built from the same all-pairs shortest-path table
   `opp_aco_2` already precomputes) since ACO has no single deterministic
   route per batch the way `opp_hc_4`'s construction does.
-- Default `T_cold = +inf` and unset `V_p` make `opp_aco_4` behave
-  exactly like `opp_aco_2` (see `test_case_equivalence.py`).
+- Default `T_cold = +inf` and unset `V_p` disable both extensions (no-op).
 
 **Deliberately no congestion** (unlike `opp_aco_3`): congestion and
 picker-speed/cold-chain are orthogonal additions over `opp_aco_2`. This
@@ -45,20 +44,19 @@ reservation or its multi-pheromone (m-ACO4) architecture, matching how
 tests/opp_aco_4/
 ├── opp_aco_4_test_case.py           # Base assertions (picker assignment, workload, no-overlap, cold chain)
 ├── functional/
-│   ├── test_case_equivalence.py    # dedicated: no-op equivalence with aco_2
-│   ├── test_case_picker_speed.py   # dedicated: faster picker preferred
-│   ├── test_case_cold_chain_infeasible.py  # dedicated: unreachable deadline -> infeasible
-│   ├── test_case_cold_chain_eligibility.py # dedicated: forced onto the eligible picker
-│   ├── test_case_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
-│   └── test_case_NN.py                     # ported 1:1 from opp_aco_2 (V_p unset, T_cold=+inf)
+│   ├── test_case_v5_equivalence.py                  # the functional cases of the thesis, one test per instance (status checked against the Split)
+│   ├── test_case_invalid_speed_rejected.py          # case 36c: a non-positive picker speed is refused
+│   └── test_case_unreachable_required_location.py   # a required location the graph cannot reach -> infeasible
 └── stress/
     ├── v5_stress_test_case.py      # base: runs a v5 stress scenario through this model
     └── test_case_{01..19}.py       # v5's 19 stress scenarios, same numbering and method names as opp_v5_2_split
 ```
 
-The ported functional files are literal copies of their `opp_aco_2`
-counterpart -- same scenario builder, same numeric parameters -- with `V_p`
-unset and `T_cold` left at its default (`+inf`). The stress suite runs
+The functional tier runs the instances of the thesis' functional cases
+(captured from the Split's own tests, see
+`tests/infra/factories/v5_equivalence.py`) and checks that the heuristic's
+status matches the Split's; the objective lands in the results CSV. The
+stress suite runs
 `opp_v5_2_split`'s 19 stress scenarios instead, file-for-file and with the
 same method names, so `analysis/` joins them against v5 by instance name
 (see `docs/specs/comparabilidad_v5_heuristicas.md`).
@@ -69,14 +67,6 @@ deliberately left OUT of `CONGESTION_AWARE_MODELS`).
 Its `single_order_params` fixture (needs a `SolveAco4ModelDTO`) lives in
 `tests/shared_scenarios/functional/single_order_params_aco4.py` -- this model
 has no `scenarios/` of its own.
-
-**Note on `tests/opp_aco_4/functional/test_case_12.py`** (ported as-is from `opp_aco_2`):
-like its `opp_aco_2` counterpart, it sets no `Seed`, so it is inherently
-stochastic -- an unlucky ACO run can occasionally construct a different
-(still feasible) route than the one hardcoded in the assertion. This is a
-pre-existing characteristic of the ported test, not something introduced
-by `opp_aco_4` (confirmed by running `opp_aco_2`'s own copy of the same
-test repeatedly).
 
 ## Running Tests
 

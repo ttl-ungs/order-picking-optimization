@@ -24,8 +24,7 @@ route_time(b)   = T_travel * travel_distance + service_time          # scaled by
   pickers makes the instance `"infeasible"`, short-circuited up front via
   `models/opp_v5_2_split/utils/cold_chain_validation.py::batches_without_eligible_picker`
   (reused directly, not re-implemented).
-- Default `T_cold = +inf` and unset `V_p` make `opp_hc_4` behave
-  exactly like `opp_hc_2` (see `test_case_equivalence.py`).
+- Default `T_cold = +inf` and unset `V_p` disable both extensions (no-op).
 
 **Deliberately no congestion** (unlike `opp_hc_3`): congestion and
 picker-speed/cold-chain are orthogonal additions over `opp_hc_2`, and this
@@ -38,21 +37,18 @@ congestion-free, see `analysis/config.py`).
 tests/opp_hc_4/
 ├── opp_hc_4_test_case.py           # Base assertions (picker assignment, workload, no-overlap, cold chain)
 ├── functional/
-│   ├── test_case_equivalence.py    # dedicated: no-op equivalence with hc_2
-│   ├── test_case_picker_speed.py   # dedicated: faster picker preferred
-│   ├── test_case_cold_chain_infeasible.py  # dedicated: unreachable deadline -> infeasible
-│   ├── test_case_cold_chain_eligibility.py # dedicated: forced onto the eligible picker
-│   ├── test_case_mixed_eligibility.py      # dedicated: per-batch eligibility, not global
-│   └── test_case_NN.py                     # ported 1:1 from opp_hc_2 (V_p unset, T_cold=+inf)
+│   ├── test_case_v5_equivalence.py         # the functional cases of the thesis, one test per instance (status checked against the Split)
+│   └── test_case_invalid_speed_rejected.py # case 36c: a non-positive picker speed is refused
 └── stress/
     ├── v5_stress_test_case.py      # base: runs a v5 stress scenario through this model
     └── test_case_{01..19}.py       # v5's 19 stress scenarios, same numbering and method names as opp_v5_2_split
 ```
 
-The ported functional files are literal copies of their `opp_hc_2`
-counterpart -- same scenario builder, same numeric parameters -- with `V_p`
-unset and `T_cold` left at its default (`+inf`), so they are pure
-equivalence checks. The stress suite runs `opp_v5_2_split`'s 19 stress
+The functional tier runs the instances of the thesis' functional cases
+(captured from the Split's own tests, see
+`tests/infra/factories/v5_equivalence.py`) and checks that the heuristic's
+status matches the Split's; the objective lands in the results CSV. The
+stress suite runs `opp_v5_2_split`'s 19 stress
 scenarios instead, file-for-file and with the same method names, so
 `analysis/` joins them against v5 by instance name (see
 `docs/specs/comparabilidad_v5_heuristicas.md`).

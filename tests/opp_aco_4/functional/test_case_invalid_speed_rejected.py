@@ -17,14 +17,11 @@ from tests.opp_aco_4.opp_aco_4_test_case import OPPTestCaseACO4
 
 class TestOPPAntColonyOptimization4InvalidSpeedRejected(OPPTestCaseACO4):
     """
-    Ported from opp_v5_1_mono's test_case_36
-    (TestOPPMonoSpeedCoverage.test_non_positive_speed_is_rejected_before_solving):
-    a speed of 0 would divide by zero in T_exec_pb, and a negative one
-    would yield a negative duration; both must be refused up front, not
-    crash or silently look "eligible" for any T_cold (see
-    models/opp_v5_2_split/utils/cold_chain_validation.py's invalid_speeds(),
-    shared by opp_aco_4 and opp_hc_4, called at opp_aco_4.py:150 /
-    opp_hc_4.py:142 before any batch is ever evaluated).
+    Case 36c: a speed of 0 would divide by zero in T_exec_pb, and a negative
+    one would yield a negative duration; both must be refused up front, not
+    crash or silently look "eligible" for any T_cold. The check is
+    invalid_speeds() in models/opp_v5_2_split/utils/cold_chain_validation.py, shared by
+    OPP-ACO and OPP-HC and called before any batch is evaluated.
     """
 
     def _graph(self):
