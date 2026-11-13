@@ -11,10 +11,8 @@ the fixed-name result CSVs and the solution JSONs saved with WRITE_SOLUTIONS
                 (by c_pb)? Equal objective with a different solution is an
                 alternative optimum, not a disagreement.
 
-Tests are grouped as "migrated" (split's test module wraps an opp_v4 test)
-or "own" (split's own v5 tests: cold chain, speeds, stages, voluntary wait,
-one arc per vertex). Stress rows are compared too, although mono finishes
-none of them.
+Functional rows are the cases of the thesis. Stress rows are compared too,
+although mono finishes none of them.
 
 --verify-split-stress (opt-in): also check each saved split stress solution
 against opp_v5_1_mono with verification/mono_compliance (split's stages use
@@ -71,15 +69,8 @@ def _rows(tier, model):
 
 
 def _group(tier, split_row):
-    """migrated / own, from split's test module source."""
-    module = split_row["test"].split(".")[0]
-    path = os.path.join(PROJECT_ROOT, "tests", "opp_v5_2_split", tier, f"{module}.py")
-    if tier == "stress":
-        return "stress"
-    try:
-        return "migrated" if "migrated_case(" in open(path, encoding="utf-8").read() else "own"
-    except OSError:
-        return "unknown"
+    """The tier of the test: "functional" or "stress"."""
+    return tier
 
 
 def _values(row):

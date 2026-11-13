@@ -1,22 +1,111 @@
 import os
 import sys
-import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from tests.infra.zimpl.dat_files_builder import build_dat_files, write_indexed_dat, write_scalar_dat
 from models.opp_v5_2_split.utils.cold_chain_validation import (
-    COLD_CHAIN_TOLERANCE, batches_without_eligible_picker, invalid_speeds,
+    batches_without_eligible_picker, invalid_speeds,
 )
 from dtos.opp.solve_result import SolveResult
 from models.utils.solve_registry import get_last, register as register_solve
+from tests.infra.cases.exact_model_case import ExactModelTestCase
 from tests.opp_v5_2_split.config import DAT_DIR, STAGE1_ZPL_PATH, STAGE2_ZPL_PATH
 from tests.opp_v5_2_split.stage1_decomposition import solve_stage1_decomposed
-from tests.infra.zimpl.zpl_utils import extract_active_arcs, solve_zpl
+from tests.infra.zimpl.zpl_utils import solve_zpl
 
 
-class OPPTestCaseSplit(unittest.TestCase):
-    """Runs both OPP v5 stages and exposes assertions for their contract."""
+def _read_names(path):
+    """The names (batches or pickers) listed one per line in a .dat file."""
+    with open(path, encoding="utf-8") as f:
+        return {line.strip().strip('"') for line in f if line.strip()}
+
+
+class OPPTestCaseSplit(ExactModelTestCase):
+    """Adapter of the Split model: Stage 1 routes each batch, Stage 2 assigns and sequences."""
+
+    dat_dir = DAT_DIR
+
+    def solve(self, params):
+        """Solve both stages on the instance whose .dat files a case just wrote.
+
+        The cases that call this write the instance without picker speeds or a
+        cold-chain limit, so every picker runs at the reference speed and the
+        cold-chain limit is disabled. Returns (status, values), with the values of
+        both stages together.
+        """
+        # Decomposed into one solve per batch instead of one joint solve for
+        # every batch (see stage1_decomposition.py's module docstring for the
+        # measured speedup) -- STAGE1_ZPL_PATH itself is unchanged. `params`
+        # (capacity/duplicate-assignment pre-checks, CSV metadata) isn't
+        # threaded into the per-batch solves; it's still applied at the Stage
+        # 2 call below with the untouched full scenario, so a genuinely
+        # invalid input is still caught -- just there instead of here.
+        stage1_status, stage1_values = solve_stage1_decomposed(self.dat_dir)
+        if stage1_status not in ("optimal", "feasible"):
+            return stage1_status, stage1_values
+
+        batches = _read_names(os.path.join(self.dat_dir, "data_B.dat"))
+        pickers = _read_names(os.path.join(self.dat_dir, "data_P.dat"))
+
+        route_times = self.extract_route_times(stage1_values, batches)
+        write_indexed_dat(os.path.join(self.dat_dir, "route_time_b.dat"), route_times)
+        write_indexed_dat(os.path.join(self.dat_dir, "velocities.dat"), {picker: 1.0 for picker in pickers})
+        write_scalar_dat(os.path.join(self.dat_dir, "cold.dat"), 1_000_000_000.0)
+
+        # What assert_no_time_overlap needs to recompute each task's duration.
+        self._route_times = route_times
+        self._solve_params = params or {}
+
+        stage2_status, stage2_values = solve_zpl(STAGE2_ZPL_PATH, dat_dir=self.dat_dir, params=params)
+        # The saved solution (WRITE_SOLUTIONS) needs Stage 1 too: Stage 2 only
+        # sees the routes' times, not the routes themselves.
+        record = getattr(get_last(), "solution_record", None)
+        if record is not None:
+            record.add_stage1_values(stage1_values)
+        return stage2_status, {**stage1_values, **stage2_values}
+
+    def assert_no_time_overlap(self, var_values, P, B):
+        """Check that no picker's batches overlap in time, from the solve() that just ran.
+
+        Stage 2 has no u_pb variable (the duration of each task is the
+        parameter T_exec_pb), so the duration is recomputed from the route
+        times: fixed_time(b) + route_time(b) / V_p[picker], where V_p is 1.0 for
+        every picker in solve().
+        """
+        route_times = getattr(self, "_route_times", {})
+        params = getattr(self, "_solve_params", {})
+        T_setup = params.get("T_setup", 0.0)
+        T_pick = params.get("T_pick", 0.0)
+        C_n = params.get("C_n", {}) or {}
+        B_nb = params.get("B_nb", {}) or {}
+
+        def duration(batch):
+            orders_in_batch = [n for (n, b), assigned in B_nb.items() if b == batch and assigned]
+            fixed_time = T_setup + T_pick * sum(C_n.get(n, 0.0) for n in orders_in_batch)
+            return fixed_time + route_times.get(batch, 0.0)
+
+        x_pb, c_pb = {}, {}
+        for key, val in var_values.items():
+            k = key.lower()
+            p_match = [p for p in P if p in key]
+            b_match = [b for b in B if b in key]
+            if p_match and b_match:
+                p, b = p_match[0], b_match[0]
+                if k.startswith("x_pb"):
+                    x_pb[(p, b)] = val
+                elif k.startswith("c_pb"):
+                    c_pb[(p, b)] = val
+
+        for p in P:
+            tasks = sorted(
+                (c_pb.get((p, b), 0) - duration(b), c_pb.get((p, b), 0), b)
+                for b in B if x_pb.get((p, b), 0) > 0.5
+            )
+            for i in range(len(tasks) - 1):
+                self.assertGreaterEqual(
+                    tasks[i + 1][0], tasks[i][1] - 1e-4, f"Solapamiento temporal en {p}"
+                )
 
     def run_pipeline(self, scenario, solve_stage2=True):
         # V_p[p] is a divisor in opp_model_v5_2_split_stage2_scheduling.zpl's T_exec_pb (T_exec_pb
@@ -35,19 +124,19 @@ class OPPTestCaseSplit(unittest.TestCase):
             f"V_p must be strictly positive for every picker; got non-positive speed for {sorted(bad_speeds)}",
         )
 
-        build_dat_files(DAT_DIR, scenario)
+        build_dat_files(self.dat_dir, scenario)
         # Decomposed into one solve per batch instead of one joint solve
         # for every batch (see stage1_decomposition.py's module docstring
         # for the measured speedup) -- STAGE1_ZPL_PATH itself is unchanged.
-        stage1_status, stage1_values = solve_stage1_decomposed(DAT_DIR)
+        stage1_status, stage1_values = solve_stage1_decomposed(self.dat_dir)
         self.assertIn(stage1_status, ("optimal", "feasible"), "Stage 1 did not solve")
 
         route_times = self.extract_route_times(stage1_values, scenario["B"])
         self.assertEqual(set(route_times), set(scenario["B"]), "Stage 1 did not export every batch time")
 
-        write_indexed_dat(os.path.join(DAT_DIR, "route_time_b.dat"), route_times)
-        write_indexed_dat(os.path.join(DAT_DIR, "velocities.dat"), scenario["V_p"])
-        write_scalar_dat(os.path.join(DAT_DIR, "cold.dat"), scenario["T_cold"])
+        write_indexed_dat(os.path.join(self.dat_dir, "route_time_b.dat"), route_times)
+        write_indexed_dat(os.path.join(self.dat_dir, "velocities.dat"), scenario["V_p"])
+        write_scalar_dat(os.path.join(self.dat_dir, "cold.dat"), scenario["T_cold"])
 
         if not solve_stage2:
             return stage1_values, route_times, None, None
@@ -79,95 +168,10 @@ class OPPTestCaseSplit(unittest.TestCase):
             ))
             return stage1_values, route_times, "infeasible", {}
 
-        stage2_status, stage2_values = solve_zpl(STAGE2_ZPL_PATH, dat_dir=DAT_DIR)
+        stage2_status, stage2_values = solve_zpl(STAGE2_ZPL_PATH, dat_dir=self.dat_dir)
         # The saved solution (WRITE_SOLUTIONS) needs Stage 1 too: Stage 2
         # only sees the routes' times, not the routes themselves.
         record = getattr(get_last(), "solution_record", None)
         if record is not None:
             record.add_stage1_values(stage1_values)
-        return stage1_values, route_times, stage2_status, stage2_values
-
-    def extract_route_times(self, values, batches):
-        result = {}
-        for name, value in values.items():
-            if name.lower().startswith("r_b$"):
-                batch = name.split("$")[-1]
-                if batch in batches:
-                    result[batch] = value
-        return result
-
-    def assignments(self, values, pickers, batches):
-        result = {}
-        for name, value in values.items():
-            if not name.lower().startswith("x_pb$") or value <= 0.5:
-                continue
-            _, picker, batch = name.split("$")
-            if picker in pickers and batch in batches:
-                result[batch] = picker
-        return result
-
-    def completion_times(self, values, pickers, batches):
-        result = {}
-        for name, value in values.items():
-            if name.lower().startswith("c_pb$"):
-                _, picker, batch = name.split("$")
-                if picker in pickers and batch in batches:
-                    result[(picker, batch)] = value
-        return result
-
-    def assert_routes_cover_requirements(self, values, scenario):
-        arcs_by_batch = extract_active_arcs(values, scenario["B"])
-        for batch, arcs in arcs_by_batch.items():
-            self.assertTrue(arcs, f"{batch} has no route")
-            self.assertEqual(sum(i == scenario["depot"] for i, _ in arcs), 1)
-            self.assertEqual(sum(j == scenario["final"] for _, j in arcs), 1)
-            required = {
-                location for location in scenario["V"]
-                if any(scenario["A_ni"][(order, location)] * scenario["B_nb"][(order, batch)]
-                       for order in scenario["N"])
-            }
-            visited = {node for arc in arcs for node in arc}
-            self.assertTrue(required <= visited, f"{batch} misses {required - visited}")
-
-    def assert_no_overlap(self, values, scenario, route_times):
-        assignments = self.assignments(values, scenario["P"], scenario["B"])
-        completions = self.completion_times(values, scenario["P"], scenario["B"])
-        for batch, picker in assignments.items():
-            duration = scenario["T_setup"] + scenario["T_pick"] * sum(
-                scenario["C_n"][order] * scenario["B_nb"][(order, batch)] for order in scenario["N"]
-            ) + route_times[batch] / scenario["V_p"][picker]
-            self.assertGreaterEqual(completions[(picker, batch)] + 1e-5, duration)
-
-        for picker in scenario["P"]:
-            intervals = []
-            for batch, assigned_picker in assignments.items():
-                if assigned_picker == picker:
-                    end = completions[(picker, batch)]
-                    duration = scenario["T_setup"] + scenario["T_pick"] * sum(
-                        scenario["C_n"][order] * scenario["B_nb"][(order, batch)] for order in scenario["N"]
-                    ) + route_times[batch] / scenario["V_p"][picker]
-                    intervals.append((end - duration, end, batch))
-            intervals.sort()
-            for (_, end, first), (start, _, second) in zip(intervals, intervals[1:]):
-                self.assertGreaterEqual(start + 1e-5, end, f"{first} overlaps {second} on {picker}")
-
-    @staticmethod
-    def eligible_pairs(scenario, route_times):
-        """Replicates the PB_elig definition before compiling Stage 2, tolerance included."""
-        pairs = set()
-        for picker in scenario["P"]:
-            for batch in scenario["B"]:
-                fixed_time = scenario["T_setup"] + scenario["T_pick"] * sum(
-                    scenario["C_n"][order] * scenario["B_nb"][(order, batch)]
-                    for order in scenario["N"]
-                )
-                t_exec = fixed_time + route_times[batch] / scenario["V_p"][picker]
-                if t_exec <= scenario["T_cold"] + COLD_CHAIN_TOLERANCE:
-                    pairs.add((picker, batch))
-        return pairs
-
-    @staticmethod
-    def objective_value():
-        """Objective of the last solve: Stage 2, which carries the whole objective."""
-        last = get_last()
-        return last.params.get("obj_val") if last is not None else None
+        return {**stage1_values, **stage2_values}, route_times, stage2_status, stage2_values

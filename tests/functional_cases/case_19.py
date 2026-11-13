@@ -1,0 +1,200 @@
+import unittest
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+from tests.infra.zimpl.dat_files_builder import build_dat_files
+from models.base.opp_location_graph import OPPLocationGraph
+from tests.infra.cases.exact_model_case import ExactModelTestCase
+from tests.infra.zimpl.zpl_utils import extract_active_arcs
+
+from tests.shared_scenarios.functional.scenario_19_v4 import longer_single_mission_route
+from tests.infra.cases.route_assertions import assert_route_covers_orders
+
+class Case19(ExactModelTestCase):
+    """
+    Test 16 (ZIMPL): Single mission, longer route. 9 vertices, 1 batch, 6 orders.
+    Equivalent to opp_v3's test_case_15.py / opp_hc_2's test_case_15.py.
+    """
+
+    def _solve_longer_route(
+        self,
+        due_date,
+        w1_override=None,
+        w2_override=None,
+        gamma_override=None,
+        delta_override=None,
+        duplicate_location=False,
+    ):
+        V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, _x = (
+            longer_single_mission_route()
+        )
+
+        w1, w2, gamma, delta = self.apply_weight_overrides(
+            w1,
+            w2,
+            gamma,
+            delta,
+            w1_override,
+            w2_override,
+            gamma_override,
+            delta_override,
+        )
+
+        N = {"O1", "O2", "O3", "O4", "O5", "O6"}
+        a = {(n, v): 0 for n in N for v in V}
+        a[("O1", "L2")] = 1
+        if duplicate_location:
+            a[("O2", "L2")] = 1
+        else:
+            a[("O2", "L3")] = 1
+        a[("O3", "L4")] = 1
+        a[("O4", "L5")] = 1
+        a[("O5", "L6")] = 1
+        a[("O6", "L7")] = 1
+
+        y = {
+            ("O1", "B1"): 1,
+            ("O2", "B1"): 1,
+            ("O3", "B1"): 1,
+            ("O4", "B1"): 1,
+            ("O5", "B1"): 1,
+            ("O6", "B1"): 1,
+        }
+        cap_n = {n: 2.0 for n in N}
+
+        due_date_by_order = self.normalize_due_dates(N, due_date)
+
+        S_i = {v: 0.0 for v in V}
+
+        E = set()
+        D_ij = {}
+        for i in location_graph.get_vertices():
+            for j in location_graph.get_vertices():
+                if location_graph.has_edge(i, j):
+                    E.add((i, j))
+                    D_ij[(i, j)] = location_graph.get_distance(i, j)
+
+        scenario_data = {
+            "N": N,
+            "V": set(location_graph.get_vertices()),
+            "P": P,
+            "B": B,
+            "E": E,
+            "depot": location_graph.get_depot(),
+            "final": location_graph.get_final(),
+            "W_c": w1,
+            "W_pen": w2,
+            "W_e": gamma,
+            "W_t": delta,
+            "T_travel": 0.5,
+            "T_setup": 1.0,
+            "T_pick": 1.0,
+            "C_v": cap_vehicle,
+            "M": 10000.0,
+            "C_n": cap_n,
+            "T_due_n": due_date_by_order,
+            "D_ij": D_ij,
+            "S_i": S_i,
+            "A_ni": a,
+            "B_nb": y,
+        }
+
+        build_dat_files(self.dat_dir, scenario_data)
+
+        try:
+            status, var_values = self.solve(
+                params={
+                    "N": len(N),
+                    "B": len(B),
+                    "V": len(set(location_graph.get_vertices())),
+                    "P": len(P),
+                    "W_c": w1,
+                    "W_pen": w2,
+                    "W_e": gamma,
+                    "W_t": delta,
+                    "T_travel": 0.5,
+                    "T_setup": 1.0,
+                    "T_pick": 1.0,
+                    "C_v": cap_vehicle,
+                    "C_n": cap_n,
+                    "T_due_n": due_date_by_order,
+                    "D_ij": D_ij,
+                    "S_i": S_i,
+                    "A_ni": a,
+                    "B_nb": y,
+                },
+            )
+        except Exception as e:
+            self.fail(f"ZPL solve failed: {e}")
+
+        return status, var_values, location_graph, B
+
+    def _sum_vars_with_prefix(self, var_values, prefix):
+        total = 0.0
+        for key, val in var_values.items():
+            if key.lower().startswith(prefix):
+                total += val
+        return total
+
+    def test_longer_single_mission_route(self):
+        """Case 19c."""
+        status, var_values, location_graph, B = self._solve_longer_route(due_date=25.0)
+
+        self.assertIn(status, ("optimal", "feasible"), "El modelo no encontró una solución.")
+
+        active_arcs = extract_active_arcs(var_values, B)
+        output_graph = OPPLocationGraph(depot_node=location_graph.get_depot(), final_node=location_graph.get_final())
+        for i in location_graph.get_vertices():
+            if i not in output_graph.get_vertices():
+                output_graph.add_vertex(i, "picking")
+        for b, arcs in active_arcs.items():
+            for i, j in arcs:
+                if not output_graph.has_edge(i, j):
+                    output_graph.add_edge(i, j, location_graph.get_distance(i, j))
+
+        # The objective weighs earliness/tardiness (W_pen=10) far more heavily
+        # than raw distance (W_c=1), so the model is free to prefer a longer
+        # route if it reduces earliness penalties. We only assert that the
+        # result is a single valid depot->final path covering every required
+        # location, not one specific set of edges.
+        assert_route_covers_orders(
+            self, output_graph, {"L2", "L3", "L4", "L5", "L6", "L7"}
+        )
+
+    def test_longer_single_mission_penalties(self):
+        """Case 19b."""
+        status_low, var_values_low, _, _ = self._solve_longer_route(
+            due_date=0.0,
+            w1_override=0.0,
+            w2_override=1.0,
+            gamma_override=0.0,
+            delta_override=1.0,
+        )
+
+        self.assertIn(status_low, ("optimal", "feasible"), "El modelo no encontró una solución.")
+        self.assertGreater(self._sum_vars_with_prefix(var_values_low, "ta_n"), 1e-6)
+
+        status_high, var_values_high, _, _ = self._solve_longer_route(
+            due_date=100.0,
+            w1_override=0.0,
+            w2_override=1.0,
+            gamma_override=0.0,
+            delta_override=1.0,
+        )
+
+        self.assertIn(status_high, ("optimal", "feasible"), "El modelo no encontró una solución.")
+        self.assertLessEqual(self._sum_vars_with_prefix(var_values_high, "ta_n"), 1e-6)
+
+    def test_longer_single_mission_duplicate_location(self):
+        """Case 19a."""
+        status, _, _, _ = self._solve_longer_route(
+            due_date=25.0,
+            duplicate_location=True,
+        )
+
+        self.assertIn(status, ("optimal", "feasible"), "El modelo no encontró una solución.")
+
+
+if __name__ == "__main__":
+    unittest.main()

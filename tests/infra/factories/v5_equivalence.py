@@ -37,7 +37,7 @@ FIXTURE_PATH = os.path.abspath(os.path.join(
 METHOD_PREFIX = "test_v5eq__"
 
 # Same defaults opp_v5_2_split applies to scenarios that predate picker speed
-# and cold chain (tests/infra/zimpl/dat_files_builder.py, migrated_case.py).
+# and cold chain (tests/infra/zimpl/dat_files_builder.py, OPPTestCaseSplit.solve).
 DEFAULT_SPEED = 1.0
 DEFAULT_T_COLD = 1_000_000_000.0
 
@@ -128,7 +128,7 @@ def equivalence_case(model_cls, dto_cls, configure_params=None, fixture_path=FIX
     `model_cls` with a `dto_cls` params DTO (seed 1; `configure_params`
     can adjust it, e.g. HC's iteration budget). Named TestV5Equivalence and
     registered in the calling module, so tests/run_suite.py can launch each
-    test by its dotted id (same approach as migrated_case / family_case).
+    test by its dotted id (same approach as family_case).
     """
     fixtures = load_fixtures(fixture_path)
 

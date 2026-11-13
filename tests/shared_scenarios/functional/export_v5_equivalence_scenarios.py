@@ -7,11 +7,11 @@ e.g. the optimizacion conda env) with two spies installed:
 
 - build_dat_files: every scenario dict a test writes to the .dat files is
   captured (deep copy) as one instance, tagged with the test method name;
-- the v5 solve entry points (OPPTestCaseSplit.run_pipeline for v5's own
-  tests, migrated_case.solve_split_from_v4_data for the ones migrated from
-  opp_v4, solve_stage1_decomposed for tests that stop at Stage 1): their
-  final status, and the objective when solved, are attached to the last
-  captured instance.
+- the Split's solve entry points (OPPTestCaseSplit.run_pipeline for the cases
+  that hand it a whole scenario, OPPTestCaseSplit.solve for the ones that
+  write the .dat files themselves, solve_stage1_decomposed for tests that
+  stop at Stage 1): their final status, and the objective when solved, are
+  attached to the last captured instance.
 
 Tests are otherwise run unchanged (their assertions still execute; a
 failing assertion doesn't affect the export). Tests in
@@ -108,17 +108,16 @@ def main():
                 }
             entry["v5_waiting_batches"] = v5_waiting_batches(entry["scenario"], values, route_times)
 
-    import tests.infra.factories.migrated_case as migrated_case
     from tests.opp_v5_2_split.opp_test_case_v5_2_split import OPPTestCaseSplit
 
-    original_v4_solve = migrated_case.solve_split_from_v4_data
+    original_solve = OPPTestCaseSplit.solve
 
-    def recording_v4_solve(*args, **kwargs):
-        status, values = original_v4_solve(*args, **kwargs)
+    def recording_solve(self, params):
+        status, values = original_solve(self, params)
         record(status, values)
         return status, values
 
-    migrated_case.solve_split_from_v4_data = recording_v4_solve
+    OPPTestCaseSplit.solve = recording_solve
 
     original_pipeline = OPPTestCaseSplit.run_pipeline
 

@@ -7,8 +7,8 @@ The checks that were done by hand after every restructuring, as one command:
 
 Checks:
   imports     every tracked module imports cleanly (this also resolves the base
-              module of every family_case()/migrated_case() factory)
-  factories   the module path inside every family_case()/migrated_case() call exists
+              module of every family_case() factory)
+  factories   the module path inside every family_case() call exists
   naming      test files (test_*.py) under tests/<model>/{functional,stress,diagnostics}/
               are test_case_<NN|slug>.py, and the numbered ones are continuous (01..N)
   layout      no leftover scenarios/, tests/, doc/ inside tests/<model>/;
@@ -56,7 +56,6 @@ STALE = [
     (r"tests\.utils\.zpl_utils\b", "moved to tests.infra.zimpl.zpl_utils"),
     (r"models\.utils\.dat_files_builder\b", "moved to tests.infra.zimpl.dat_files_builder"),
     (r"\bgraphs\.graphs_factory\b", "moved to tests.infra.factories.graphs_factory"),
-    (r"tests\.opp_v5\.v4_compat\b", "renamed to tests.infra.factories.migrated_case"),
     (r"\b(models|tests)\.opp_v5\b|\b(models|tests|results)/opp_v5\b", "opp_v5 was renamed to opp_v5_2_split"),
     (r"tests\.opp_v[24]\.route_assertions\b", "moved to tests.infra.cases.route_assertions"),
     (r"tests\.opp_\w+\.tests\.(normal|stress|diagnostics)\b", "tests/<model>/tests/ was flattened"),
@@ -94,7 +93,7 @@ def check_imports(files):
 
 def check_factories(files):
     errors = []
-    pat = re.compile(r"(?:family_case|migrated_case)\(\s*['\"]([\w.]+)['\"]")
+    pat = re.compile(r"family_case\(\s*['\"]([\w.]+)['\"]")
     for f in files:
         if not f.startswith("tests/") or not f.endswith(".py"):
             continue
@@ -121,9 +120,12 @@ def check_naming(files):
                 if len(m.group(1)) != 2:
                     errors.append(f"tests/{model}/{tier}/{n}: number must have two digits")
                 numbers.append(int(m.group(1)))
-        if numbers and sorted(numbers) != list(range(1, len(numbers) + 1)):
+        if tier != "functional" and numbers and sorted(numbers) != list(range(1, len(numbers) + 1)):
             missing = sorted(set(range(1, max(numbers) + 1)) - set(numbers))
             errors.append(f"tests/{model}/{tier}: numbering not continuous (missing {missing}, duplicates: {len(numbers) - len(set(numbers))})")
+    shared = sorted(int(m.group(1)) for f in files if (m := re.fullmatch(r"tests/functional_cases/case_(\d\d)\.py", f)))
+    if shared != list(range(1, len(shared) + 1)):
+        errors.append(f"tests/functional_cases: case numbering not continuous (found {shared})")
     return errors
 
 
