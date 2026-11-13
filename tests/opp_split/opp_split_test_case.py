@@ -146,7 +146,7 @@ class OPPTestCaseSplit(ExactModelTestCase):
         # assign_exactly_one_picker sum over an empty PB_elig slice for
         # that batch, which ZIMPL rejects at COMPILE time (RuntimeError).
         # Short-circuit here instead of letting that crash surface
-        # (same pattern as opp_v4's input_validation.py pre-checks in solve_zpl).
+        # (same pattern as input_validation.py's pre-checks in solve_zpl).
         stuck_batches = batches_without_eligible_picker(
             scenario["P"], scenario["B"], scenario["N"], scenario["C_n"],
             scenario["B_nb"], scenario["T_setup"], scenario["T_pick"],

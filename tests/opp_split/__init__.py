@@ -1,1 +1,1 @@
-"""Integration tests for the two-stage OPP v5 model."""
+"""Tests of OPP-Split (the two-stage model)."""

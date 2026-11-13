@@ -48,7 +48,7 @@ functional,test_basic_two_orders_with_different_weights,test_instance__test_basi
 functional,test_due_dates_tight_vs_relaxed,test_instance__test_due_dates_tight_vs_relaxed__1,opp_split,optimal,20.0,True,True,,functional_instances.json
 functional,test_due_dates_tight_vs_relaxed,test_instance__test_due_dates_tight_vs_relaxed__2,opp_split,optimal,0.0,True,True,,functional_instances.json
 functional,test_one_empty_batch_allowed,test_instance__test_one_empty_batch_allowed,opp_split,optimal,327.0000000000001,True,False,"el Split usa espera voluntaria en ['B2', 'B3']",functional_instances.json
-functional,test_fractional_and_zero_capacities_feasible,test_instance__test_fractional_and_zero_capacities_feasible,opp_split,timeout,,False,False,v5 no terminó (timeout),functional_instances.json
+functional,test_fractional_and_zero_capacities_feasible,test_instance__test_fractional_and_zero_capacities_feasible,opp_split,timeout,,False,False,el Split no terminó (timeout),functional_instances.json
 functional,test_fractional_and_zero_capacities_infeasible,test_instance__test_fractional_and_zero_capacities_infeasible,opp_split,infeasible,,True,False,infeasible: no hay objetivo que comparar,functional_instances.json
 functional,test_order_assigned_to_multiple_batches_infeasible,test_instance__test_order_assigned_to_multiple_batches_infeasible,opp_split,infeasible,,True,False,infeasible: no hay objetivo que comparar,functional_instances.json
 functional,test_order_assigned_to_single_batch_feasible,test_instance__test_order_assigned_to_single_batch_feasible,opp_split,optimal,100.0,True,False,"el Split usa espera voluntaria en ['B1', 'B2']",functional_instances.json
@@ -67,24 +67,24 @@ functional,test_fast_picker_takes_both_batches_when_four_times_faster,test_insta
 functional,test_tardiness_uses_the_speed_scaled_route_time,test_instance__test_tardiness_uses_the_speed_scaled_route_time,opp_split,optimal,310.0,True,True,,functional_instances.json
 functional,test_batch_is_not_delayed_when_completion_weight_dominates,test_instance__test_batch_is_not_delayed_when_completion_weight_dominates,opp_split,optimal,78.0,True,True,,functional_instances.json
 functional,test_route_that_must_revisit_a_vertex_is_infeasible,test_instance__test_route_that_must_revisit_a_vertex_is_infeasible,opp_split,infeasible,,True,False,infeasible: no hay objetivo que comparar,functional_instances.json
-functional,test_batch_is_delayed_while_early_orders_outweigh_completion_weight,,opp_split,,,False,False,"excluido: el test verifica justamente que v5 espere voluntariamente (c_pb > T_exec_pb), algo que las heurísticas no modelan a propósito (ver W_c en stress_scenarios_designed.py)",functional_instances.json
-functional,test_non_positive_speed_is_rejected_before_solving,,opp_split,,,False,False,el test de v5 no llega al solver (rechaza la entrada antes),functional_instances.json
-stress,test_25_orders_per_batch_30_batches_100x100,test_25_orders_per_batch_30_batches_100x100,opp_split,timeout,,False,False,v5 no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
+functional,test_batch_is_delayed_while_early_orders_outweigh_completion_weight,,opp_split,,,False,False,"excluido: el test verifica justamente que el Split espere voluntariamente (c_pb > T_exec_pb), algo que las heurísticas no modelan a propósito (ver W_c en stress_scenarios_designed.py)",functional_instances.json
+functional,test_non_positive_speed_is_rejected_before_solving,,opp_split,,,False,False,el test del Split no llega al solver (rechaza la entrada antes),functional_instances.json
+stress,test_25_orders_per_batch_30_batches_100x100,test_25_orders_per_batch_30_batches_100x100,opp_split,timeout,,False,False,el Split no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
 stress,test_10_orders_per_batch,test_10_orders_per_batch,opp_split,optimal,29033.99999999998,True,True,,output_opp_split_stress_tests_parallel.csv
-stress,test_8_orders_per_batch_7x7_320_orders,test_8_orders_per_batch_7x7_320_orders,opp_split,timeout,,False,False,v5 no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
+stress,test_8_orders_per_batch_7x7_320_orders,test_8_orders_per_batch_7x7_320_orders,opp_split,timeout,,False,False,el Split no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
 stress,test_realistic_crew_7x7_warehouse,test_realistic_crew_7x7_warehouse,opp_split,optimal,149217.6666666672,True,True,,output_opp_split_stress_tests_parallel.csv
 stress,test_realistic_crew_13x13_warehouse,test_realistic_crew_13x13_warehouse,opp_split,optimal,241253.91666666543,True,True,,output_opp_split_stress_tests_parallel.csv
 stress,test_realistic_crew_14x14_warehouse,test_realistic_crew_14x14_warehouse,opp_split,optimal,256564.3333333334,True,True,,output_opp_split_stress_tests_parallel.csv
 stress,test_realistic_crew_15x15_warehouse,test_realistic_crew_15x15_warehouse,opp_split,optimal,271907.6666666667,True,True,,output_opp_split_stress_tests_parallel.csv
-stress,test_realistic_crew_16x16_warehouse,test_realistic_crew_16x16_warehouse,opp_split,timeout,,False,False,v5 no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
+stress,test_realistic_crew_16x16_warehouse,test_realistic_crew_16x16_warehouse,opp_split,timeout,,False,False,el Split no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
 stress,test_realistic_crew_rectangular_warehouse,test_realistic_crew_rectangular_warehouse,opp_split,optimal,275019.3033333333,True,True,,output_opp_split_stress_tests_parallel.csv
 stress,test_realistic_crew_scheduling_heavy,test_realistic_crew_scheduling_heavy,opp_split,optimal,112079.4899999909,True,True,,output_opp_split_stress_tests_parallel.csv
 stress,test_realistic_crew_cold_chain,test_realistic_crew_cold_chain,opp_split,optimal,182253.54999999944,True,True,,output_opp_split_stress_tests_parallel.csv
-stress,test_larger_crew_8_batches_4_pickers,test_larger_crew_8_batches_4_pickers,opp_split,timeout,,False,False,v5 no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
-stress,test_larger_crew_10_batches_5_pickers,test_larger_crew_10_batches_5_pickers,opp_split,timeout,,False,False,v5 no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
-stress,test_larger_crew_12_batches_6_pickers,test_larger_crew_12_batches_6_pickers,opp_split,timeout,,False,False,v5 no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
+stress,test_larger_crew_8_batches_4_pickers,test_larger_crew_8_batches_4_pickers,opp_split,timeout,,False,False,el Split no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
+stress,test_larger_crew_10_batches_5_pickers,test_larger_crew_10_batches_5_pickers,opp_split,timeout,,False,False,el Split no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
+stress,test_larger_crew_12_batches_6_pickers,test_larger_crew_12_batches_6_pickers,opp_split,timeout,,False,False,el Split no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
 stress,test_over_staffed_wave_6_batches_9_pickers,test_over_staffed_wave_6_batches_9_pickers,opp_split,optimal,97914.9166666672,True,True,,output_opp_split_stress_tests_parallel.csv
-stress,test_large_crew_single_wave,test_large_crew_single_wave,opp_split,timeout,,False,False,v5 no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
-stress,test_large_crew_three_second_batches,test_large_crew_three_second_batches,opp_split,timeout,,False,False,v5 no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
-stress,test_large_crew_half_second_batches,test_large_crew_half_second_batches,opp_split,timeout,,False,False,v5 no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
-stress,test_large_crew_two_batches_each,test_large_crew_two_batches_each,opp_split,timeout,,False,False,v5 no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
+stress,test_large_crew_single_wave,test_large_crew_single_wave,opp_split,timeout,,False,False,el Split no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
+stress,test_large_crew_three_second_batches,test_large_crew_three_second_batches,opp_split,timeout,,False,False,el Split no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
+stress,test_large_crew_half_second_batches,test_large_crew_half_second_batches,opp_split,timeout,,False,False,el Split no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv
+stress,test_large_crew_two_batches_each,test_large_crew_two_batches_each,opp_split,timeout,,False,False,el Split no terminó en 40 min (timeout): no hay referencia,output_opp_split_stress_tests_parallel.csv

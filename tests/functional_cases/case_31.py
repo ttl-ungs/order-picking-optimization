@@ -11,9 +11,9 @@ from tests.shared_scenarios.functional.scenario_02 import two_orders_two_aisles
 
 class Case31(ExactModelTestCase):
     """
-    Ported from opp_hc_2's test #27. B_nb has no ZIMPL constraint enforcing
+    B_nb has no ZIMPL constraint enforcing
     "each order in exactly one batch" (it's a fixed parameter, not a
-    decision variable) -- exercises the new orders_without_exactly_one_batch
+    decision variable) -- exercises the orders_without_exactly_one_batch
     pre-validation (models/utils/input_validation.py) instead.
     """
 

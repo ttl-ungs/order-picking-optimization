@@ -14,7 +14,7 @@
 \mainlanguage[es]
 
 \starttext
-\title{\bf Comparación de OPP\_v5\_1\_mono\crlf y OPP\_v5\_2\_split en pruebas funcionales y de stress}
+\title{\bf Comparación de OPP-Mono\crlf y OPP-Split en pruebas funcionales y de stress}
 \blank[big]
 
 \startsection[title={Resumen}]
@@ -30,33 +30,33 @@ logra.
 \stopsection
 
 \startsection[title={Objetivo y alcance}]
-Este documento compara las ejecuciones de los tests funcionales y de stress de OPP\_v5\_1\_mono
-(formulación monolítica) y OPP\_v5\_2\_split (formulación en dos etapas) sobre los mismos
+Este documento compara las ejecuciones de los tests funcionales y de stress de OPP-Mono
+(formulación monolítica) y OPP-Split (formulación en dos etapas) sobre los mismos
 escenarios. Los dos modelos definen el mismo problema de optimización (ruteo, asignación y
 secuenciación, con velocidades heterogéneas de pickers y cadena de frío) y tienen el mismo valor
 óptimo.
 
 Los datos son los CSV consolidados de cada modelo:
 \startitemize
-\item \type{results/opp_v5_2_split/functional/} — 64 tests, con la Etapa 1 en
+\item \type{results/opp_split/functional/} — 64 tests, con la Etapa 1 en
 secuencia.
-\item \type{results/opp_v5_1_mono/functional/} — 63 tests.
-\item \type{results/comparability/compare_v5_split_vs_mono.csv} — la comparación de las
+\item \type{results/opp_mono/functional/} — 63 tests.
+\item \type{results/comparability/compare_split_vs_mono.csv} — la comparación de las
 soluciones guardadas de los dos modelos, test por test.
 \stopitemize
 
-La suite de stress (sección \in[sec:stress]) usa \type{results/opp_v5_2_split/stress/} y
-\type{results/opp_v5_1_mono/stress/}: los mismos 19 escenarios en los dos
+La suite de stress (sección \in[sec:stress]) usa \type{results/opp_split/stress/} y
+\type{results/opp_mono/stress/}: los mismos 19 escenarios en los dos
 modelos, con un tope de 40 minutos por test.
 \stopsection
 
 \startsection[title={Qué tests se comparan}]
-Se comparan solo los tests {\em comparables}: los que OPP\_v5\_2\_split, OPP\_hc\_4 y OPP\_aco\_4
+Se comparan solo los tests {\em comparables}: los que OPP-Split, OPP-HC y OPP-ACO
 resuelven sobre la misma instancia y con el mismo resultado esperado, según el registro
-\type{results/comparability/comparability_v5_vs_heuristics.csv} (reglas en
-\type{docs/specs/comparabilidad_v5_heuristicas.md}). Es la misma base que la comparación de
-OPP\_v5\_2\_split con las heurísticas, así que los dos documentos hablan de los mismos tests.
-OPP\_v5\_1\_mono corre los mismos tests que el split.
+\type{results/comparability/comparability_split_vs_heuristics.csv} (reglas en
+\type{docs/specs/comparabilidad_split_heuristicas.md}). Es la misma base que la comparación de
+OPP-Split con las heurísticas, así que los dos documentos hablan de los mismos tests.
+OPP-Mono corre los mismos tests que el split.
 
 Dentro de esa base, un par es comparable si los dos modelos lo resuelven (se comparan objetivo,
 solución y tiempos) o si los dos lo declaran infactible (se compara el estado).
@@ -582,7 +582,7 @@ draw (0.300cm,5.560cm)--(0.900cm,5.560cm) withpen pencircle scaled 1.5pt withcol
 label.rt(textext("\tfx 4 lotes"), (1.000cm,5.560cm));
 draw (0.300cm,5.140cm)--(0.900cm,5.140cm) withpen pencircle scaled 1.5pt withcolor \MPcolor{greenline};
 label.rt(textext("\tfx 6 lotes"), (1.000cm,5.140cm));
-\stopMPcode}{OPP\_v5\_2\_split}
+\stopMPcode}{OPP-Split}
 {\startMPcode
 numeric w, h; w := 6.4cm; h := 6.5cm;
 drawarrow (0,0)--(w+0.4cm,0) withpen pencircle scaled 1pt;
@@ -630,7 +630,7 @@ fill fullcircle scaled 4pt shifted (0.533cm,4.026cm) withcolor \MPcolor{greenlin
 draw fullcircle scaled 6pt shifted (3.200cm,4.633cm) withpen pencircle scaled 1pt withcolor \MPcolor{greenline};
 draw fullcircle scaled 6pt shifted (0.600cm,6.400cm) withpen pencircle scaled 1pt withcolor \MPcolor{darkblue};
 label.rt(textext("\tfx no termina (cortado al tope)"), (1.000cm,6.400cm));
-\stopMPcode}{OPP\_v5\_1\_mono}
+\stopMPcode}{OPP-Mono}
 \stopcombination}
 
 El contraste es de forma, no de grado. En el split las curvas crecen despacio: con hasta 4 lotes
@@ -692,7 +692,7 @@ monolítico.
 \startsection[title={Suite de stress},reference=sec:stress]
 Los tests de stress llevan los dos modelos a instancias de tamaño real: el perfil realista (26
 órdenes por lote, dos bandas de velocidad, pesos 4/5) en grillas de 7×7 a 16×16 y cuadrillas de
-hasta 24 lotes, más tres escenarios heredados de OPP\_v4. El split corre la Etapa 1 con seis
+hasta 24 lotes, más tres escenarios de grilla. El split corre la Etapa 1 con seis
 procesos. Su tiempo es la duración completa del test y es un techo: si la notebook se suspende
 durante la corrida, el tiempo suspendido cuenta en la duración pero no en el tope.
 
@@ -704,9 +704,9 @@ terminó sin devolver un estado, ni solución ni timeout.
 \bTABLE[split=yes, align=middle, frame=on]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \bTR \bTH Caso \eTH \bTH Instancia \eTH \bTH Lotes \eTH \bTH Grilla \eTH \bTH Split \eTH \bTH Mono \eTH \eTR
-\bTR \bTD 01 \eTD \bTD heredado, 30 pickers, 750 órdenes \eTD \bTD 30 \eTD \bTD 100×100 \eTD \bTD timeout \eTD \bTD sin resultado \eTD \eTR
-\bTR \bTD 02 \eTD \bTD heredado, 10 pickers, 100 órdenes \eTD \bTD 10 \eTD \bTD 10×10 \eTD \bTD 0,5 min \eTD \bTD timeout \eTD \eTR
-\bTR \bTD 03 \eTD \bTD heredado, 1 picker, 320 órdenes \eTD \bTD 40 \eTD \bTD 7×7 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 01 \eTD \bTD grilla, 30 pickers, 750 órdenes \eTD \bTD 30 \eTD \bTD 100×100 \eTD \bTD timeout \eTD \bTD sin resultado \eTD \eTR
+\bTR \bTD 02 \eTD \bTD grilla, 10 pickers, 100 órdenes \eTD \bTD 10 \eTD \bTD 10×10 \eTD \bTD 0,5 min \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 03 \eTD \bTD grilla, 1 picker, 320 órdenes \eTD \bTD 40 \eTD \bTD 7×7 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
 \bTR \bTD 04 \eTD \bTD realista \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 0,2 min \eTD \bTD timeout \eTD \eTR
 \bTR \bTD 05 \eTD \bTD realista \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 1,8 min \eTD \bTD timeout \eTD \eTR
 \bTR \bTD 06 \eTD \bTD realista \eTD \bTD 6 \eTD \bTD 14×14 \eTD \bTD 3,4 min \eTD \bTD timeout \eTD \eTR
@@ -730,7 +730,7 @@ El monolítico termina 0 de los 19 tests; el split,
 9, ninguno en más de 15,1 minutos. En los tests
 funcionales las dos formulaciones son intercambiables salvo en las grillas; a este tamaño, solo
 el split da una respuesta. Los tests que tampoco termina el split son los del perfil realista
-con 8 lotes o más (12 a 14 y 16 a 19), la grilla de 16×16 (08) y dos de los heredados (01 y
+con 8 lotes o más (12 a 14 y 16 a 19), la grilla de 16×16 (08) y dos de los de grilla (01 y
 03).
 \stopsection
 

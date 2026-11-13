@@ -1,10 +1,10 @@
 """
 Shared helpers for the opp_aco studies (run_aco_ablation_study.py,
-run_aco_pheromone_study.py): run opp_aco once on a v5 stress scenario
-with given pheromone parameters / hybrid components, and look up v5's
+run_aco_pheromone_study.py): run opp_aco once on a stress scenario
+with given pheromone parameters / hybrid components, and look up the Split's
 objective on that scenario to report the gap.
 
-Scenarios are the same 19 v5 stress scenarios as run_equal_time_study.py
+Scenarios are the same 19 stress scenarios as run_equal_time_study.py
 (SCENARIOS, keyed by stress test id).
 """
 
@@ -33,7 +33,7 @@ COMPONENT_FLAGS = (
 
 def split_reference_objectives():
     """
-    {test method name: v5_2_split obj_val or None}, taking for each test
+    {test method name: opp_split obj_val or None}, taking for each test
     the row of the NEWEST opp_split stress CSV that has it -- even if
     that row is a timeout (None then): an older CSV may predate the
     W_c = 27 change (2026-09-26) and hold an objective for a different

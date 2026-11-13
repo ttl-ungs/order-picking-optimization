@@ -264,13 +264,9 @@ class Case25(ExactModelTestCase):
     def test_grid_order_size_bigger_than_cart_infeasible(self):
         """Case 25d.
 
-        Was disabled with the note "El modelo ya no evalúa que las órdenes
-        entren en el carro, el test ya no tiene sentido" -- opp_model_v4.zpl
-        dropped the C_v parameter entirely (see models.tex / the ZPL file
-        itself). Re-enabled now that solve_zpl() pre-validates vehicle
-        capacity against C_n/B_nb before ever calling ZIMPL/SCIP (see
-        models/utils/capacity_validation.py), matching opp_hc_2/opp_aco_2's
-        behaviour for the same instance.
+        solve_zpl() pre-validates vehicle capacity against C_n/B_nb before
+        ever calling ZIMPL/SCIP (see models/utils/input_validation.py), like
+        the heuristics do for the same instance.
         """
         V, _, B, _, _, _, _, _, _, _ = grid_5x3_two_pickers_four_batches()
         N = {f"O{i}" for i in range(1, 13)}

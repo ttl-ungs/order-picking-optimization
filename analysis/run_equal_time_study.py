@@ -6,7 +6,7 @@ The stress suites let opp_split / opp_mono run until SCIP proves
 optimality (or the 40-min runner timeout). That measures the exact model's
 quality ceiling, not what it delivers under a heuristic's time budget --
 the standard way to compare a metaheuristic against an exact solver is at
-equal time. Here each v5 model gets, per stress scenario, exactly the
+equal time. Here each model gets, per stress scenario, exactly the
 total_time the heuristic took on that scenario (read from the heuristic's
 latest stress CSV, e.g. results/opp_aco/stress/), passed to SCIP as
 `limits/time`, and we record its best incumbent at that point (if any),
@@ -30,7 +30,7 @@ optimizacion conda env):
     python -m analysis.run_equal_time_study --budget-from opp_hc --id 04 05
 
 Writes results/equal_time/output_equal_time_<budget-from>_<timestamp>.csv,
-one row per (scenario, v5 model).
+one row per (scenario, model).
 """
 
 import argparse
@@ -45,16 +45,16 @@ from models.opp_split.utils.cold_chain_validation import batches_without_eligibl
 from models.utils.solve_registry import get_last
 from tests.infra.zimpl.dat_files_builder import build_dat_files, write_indexed_dat, write_scalar_dat
 from tests.infra.zimpl.zpl_utils import solve_zpl
-from tests.shared_scenarios.stress.stress_scenarios import migrated_stress_scenario
+from tests.shared_scenarios.stress.stress_scenarios import grid_stress_scenario
 from tests.shared_scenarios.stress.stress_scenarios_designed import realistic_crew_scenario
 
 # Stress test id -> (test method name, as it appears in every model's stress
 # CSV, and the scenario builder) -- the same calls as
 # tests/stress_cases/case_<id>.py.
 SCENARIOS = {
-    "01": ("test_25_orders_per_batch_30_batches_100x100", lambda: migrated_stress_scenario(30, 30, 750, 100, 100)),
-    "02": ("test_10_orders_per_batch", lambda: migrated_stress_scenario(10, 10, 100, 10, 10)),
-    "03": ("test_8_orders_per_batch_7x7_320_orders", lambda: migrated_stress_scenario(40, 1, 320, 7, 7)),
+    "01": ("test_25_orders_per_batch_30_batches_100x100", lambda: grid_stress_scenario(30, 30, 750, 100, 100)),
+    "02": ("test_10_orders_per_batch", lambda: grid_stress_scenario(10, 10, 100, 10, 10)),
+    "03": ("test_8_orders_per_batch_7x7_320_orders", lambda: grid_stress_scenario(40, 1, 320, 7, 7)),
     "04": ("test_realistic_crew_7x7_warehouse", lambda: realistic_crew_scenario(7)),
     "05": ("test_realistic_crew_13x13_warehouse", lambda: realistic_crew_scenario(13)),
     "06": ("test_realistic_crew_14x14_warehouse", lambda: realistic_crew_scenario(14)),
@@ -80,21 +80,20 @@ FIELDNAMES = [
 
 
 def latest_heuristic_results(model_label):
-    """{test method name: row} from the newest stress CSV of `model_label` that has v5-ported rows."""
+    """{test method name: row} from the newest stress CSV of `model_label` that has rows of the stress scenarios."""
     paths = sorted(
         glob.glob(os.path.join(OUTPUTS_ROOT, model_label, "stress", f"output_{model_label}_stress_tests*.csv")),
         key=os.path.getmtime, reverse=True,
     )
-    # Matched by method name, not file name: the v5 ports were test_case_v5_*.py
-    # in older CSVs and test_case_NN.py (v5's own numbering) since the legacy
-    # stress tests were removed; no legacy method name collides with v5's.
+    # Matched by method name, not by file or class name: the rows are the ones
+    # of the stress scenarios (SCENARIOS).
     split_methods = {name for name, _ in SCENARIOS.values()}
     for path in paths:
         with open(path, newline="", encoding="utf-8") as f:
             rows = [r for r in csv.DictReader(f) if r["test"].split(".")[-1] in split_methods]
         if rows:
             return path, {r["test"].split(".")[-1]: r for r in rows}
-    raise SystemExit(f"No stress CSV with v5-ported rows under results/{model_label}/stress/")
+    raise SystemExit(f"No stress CSV with rows of the stress scenarios under results/{model_label}/stress/")
 
 
 def _last_solve_info():

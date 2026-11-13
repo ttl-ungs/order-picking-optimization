@@ -11,8 +11,7 @@ from tests.shared_scenarios.functional.scenario_01 import basic_two_orders_capac
 
 class Case27(ExactModelTestCase):
     """
-    Ported from opp_hc_2's test #05 (test_basic_two_orders_with_different_weights):
-    same scenario as test_case_01, different objective weights.
+    The scenario of case 1 with different objective weights.
     """
 
     def test_basic_two_orders_with_different_weights(self):

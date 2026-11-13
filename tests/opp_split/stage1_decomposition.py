@@ -108,7 +108,7 @@ def solve_stage1_decomposed(dat_dir, max_workers=None, time_budget_seconds=None)
     """
     Call AFTER the full scenario's .dat files have already been written
     to `dat_dir` (however the caller normally does that -- build_dat_files(),
-    or a migrated v4 fixture's own scenario construction). Decomposes
+    or a test's own scenario construction). Decomposes
     Stage 1 into one solve per batch instead of one joint solve for every
     batch together, by temporarily narrowing ONLY data_B.dat/B_nb.dat to
     each batch's own column in turn (see module docstring for why

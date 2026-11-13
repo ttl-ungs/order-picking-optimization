@@ -1,1 +1,1 @@
-"""Stress tests for OPP v5."""
+"""Stress tests of OPP-Split."""

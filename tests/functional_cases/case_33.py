@@ -10,7 +10,7 @@ from tests.shared_scenarios.functional.scenario_01 import basic_two_orders_capac
 
 
 class Case33(ExactModelTestCase):
-    """Ported from opp_hc_2's test #29: service time (S_i) set to zero,
+    """Service time (S_i) set to zero,
     one, or a mix across vertices -- must not crash and must remain
     feasible either way."""
 

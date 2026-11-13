@@ -1,6 +1,6 @@
 """
 Shared SLA (nivel de servicio) computation for every Hill Climbing/ACO
-model (hc_2/3/4, aco_2/3/4): % of orders that finished on time or early
+model (opp_hc, opp_aco): % of orders that finished on time or early
 (tardiness <= 0), out of every order that actually got scheduled (has a
 tardiness entry in solution_info).
 """

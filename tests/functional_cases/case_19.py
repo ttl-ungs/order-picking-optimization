@@ -14,7 +14,6 @@ from tests.infra.cases.route_assertions import assert_route_covers_orders
 class Case19(ExactModelTestCase):
     """
     Test 16 (ZIMPL): Single mission, longer route. 9 vertices, 1 batch, 6 orders.
-    Equivalent to opp_v3's test_case_15.py / opp_hc_2's test_case_15.py.
     """
 
     def _solve_longer_route(

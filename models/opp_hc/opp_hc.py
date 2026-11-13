@@ -1,16 +1,17 @@
 """
-Hill Climbing heuristic for OPP v4 with picker speed and cold chain.
+Hill Climbing heuristic for the OPP with picker speed and cold chain (OPP-HC).
 
-Same problem as opp_hc_2 (multi-picker, all constraints validated):
-- Receives: same SolveModelDTO parameters, plus a set of pickers (P)
-- Validates: ALL constraints from opp_hc_2, plus cold-chain eligibility
+Multi-picker, all constraints validated:
+- Receives: the SolveModelDTO parameters, plus a set of pickers (P)
+- Validates: ALL constraints (models/utils/base_constraints_validator.py),
+  plus cold-chain eligibility
 - Optimizes: routes within batches (2-opt) AND the assignment/sequencing of
   batches to pickers, so that batches on different pickers run in parallel
   and batches on the same picker are sequenced without overlap
 - Output: compatible with build_output
 
-Added on top of opp_hc_2 - picker speed and cold chain, the Hill Climbing
-counterpart of opp_split's opp_split_stage2_scheduling.zpl additions over opp_v4:
+Picker speed and cold chain, as in the exact models (the Hill Climbing
+counterpart of opp_split's opp_split_stage2_scheduling.zpl):
 
 - Picker speed (V_p): a batch's execution time is no longer a single
   d_b fixed for every picker. Instead T_exec_pb[p, b] = fixed_time(b)
@@ -62,15 +63,12 @@ initial routing follows their routing step (p.9). None of the papers in
 the thesis bibliography uses Hill Climbing itself; the initial-route
 portfolio (_initial_route) cites its own sources.
 
-Deliberately WITHOUT congestion between concurrent pickers (unlike
-opp_hc_3): congestion and picker-speed/cold-chain are orthogonal additions
-over opp_hc_2, and this model only needs the latter. Adding congestion on
-top would require re-pricing T_exec_pb's route/service time against other
-pickers' reservations (models/utils/congestion.py::CongestionTracker) every
-time a batch's route OR its assigned picker's speed changes - left out here
-to keep the search space (and what's being measured) focused on the
-speed/cold-chain trade-off, matching opp_split itself, which also has no
-congestion (see analysis/config.py).
+Deliberately WITHOUT congestion between concurrent pickers, like opp_aco and
+the exact models (opp_split, opp_mono): modelling it would require re-pricing
+T_exec_pb's route/service time against the other pickers' reservations every
+time a batch's route OR its assigned picker's speed changes, so it is left
+out to keep the search space (and what is being measured) focused on the
+speed/cold-chain trade-off (see analysis/config.py).
 """
 
 import time
@@ -94,7 +92,7 @@ from models.utils.sla import sla_on_time_pct
 
 
 class OPPHillClimbing(Model):
-    """Hill Climbing solver for OPP v4 - picker speed + cold chain, no congestion."""
+    """Hill Climbing solver for the OPP - picker speed + cold chain, no congestion."""
 
     # Multiplier applied to a cold-chain overrun (a time-unit amount)
     # before adding it to a search cost -- see constraints_validator.py's
@@ -126,7 +124,7 @@ class OPPHillClimbing(Model):
 
     def solve(self, params: SolveHCModelDTO):
         """
-        Solve OPP v4 using Hill Climbing on routes with full constraint
+        Solve the OPP using Hill Climbing on routes with full constraint
         validation, picker speed and cold chain eligibility.
         """
         if params.Seed is not None:
@@ -540,10 +538,10 @@ class OPPHillClimbing(Model):
         stitch_route). Our own choice to use them here, measured
         2026-09-26: with the nearest-neighbor start + vertex 2-opt alone,
         HC's routes summed 490 route-time units on realistic_crew_
-        scenario(7) vs 425 for v5's exact Stage 1, and on
+        scenario(7) vs 425 for the Split's exact Stage 1, and on
         realistic_crew_scenario(14) batch B1 got no route at all
         (nearest-neighbor stuck, best-first search out of budget), which
-        made the whole solve "infeasible" although v5 solves it.
+        made the whole solve "infeasible" although the Split solves it.
         """
         candidates = []
         greedy = self._generate_feasible_route(required_locations)
@@ -632,10 +630,9 @@ class OPPHillClimbing(Model):
 
     def _generate_feasible_route(self, required_locations: Set) -> Optional[List]:
         """
-        Dijkstra-based nearest-neighbor route construction (see opp_hc_2's
-        twin method) -- the nearest-neighbor TSP heuristic over shortest-
+        Dijkstra-based nearest-neighbor route construction -- the nearest-neighbor TSP heuristic over shortest-
         path distances that Coruzzolo et al. (2023), Logistics 7:61, p.9,
-        use for routing, here with no-revisit paths (v5's constraint).
+        use for routing, here with no-revisit paths (the exact models' constraint).
         """
         if not required_locations:
             return []
@@ -692,7 +689,7 @@ class OPPHillClimbing(Model):
         return route_construction.two_opt_tighten_route(self.location_graph, route)
 
     # 2026-09-26 audit finding: raising this cap alone (tried up to 10M) was
-    # the wrong fix for v5's realistic_crew_scenario stress profile (26
+    # the wrong fix for the realistic_crew_scenario stress profile (26
     # orders/batch, ~19-26 required locations) reporting false "infeasible"
     # -- a batch that exhausted even a 10M-expansion cap after ~8 minutes
     # was actually found in well under a second once _bff_search was
@@ -1005,7 +1002,7 @@ class OPPHillClimbing(Model):
         return output_graph
 
     def _build_solution_info(self, solution: RouteSolution, objective_value: float, params: SolveHCModelDTO) -> dict:
-        """Build solution information dictionary for OutputHandler (compatible with opp_hc_2's format)."""
+        """Build solution information dictionary for OutputHandler (compatible with opp_aco's format)."""
         solution_info = {
             "status": "optimal",
             "objective_value": objective_value,
@@ -1064,7 +1061,7 @@ class OPPHillClimbing(Model):
         (same formula as RouteEvaluator._calculate_batch_execution_time --
         kept here too since this copy also drives the reported
         batch_times/batch_completions/tardiness/earliness, same split
-        opp_hc_2/opp_hc_3 use between the search's evaluator and this
+        opp_hc/opp_aco use between the search's evaluator and this
         reporting-only helper).
         """
         return self._T_exec_pb(batch, route, picker, params.extract_batch_assignments(), params)

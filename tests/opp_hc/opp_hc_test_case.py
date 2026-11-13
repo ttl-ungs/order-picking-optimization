@@ -15,7 +15,7 @@ class SolutionInfoCapture(Observer):
 class OPPTestCaseHC(OPPTestCase):
     """
     Base test case for opp_hc, adding assertions specific to the picker
-    speed / cold chain extensions over opp_hc_2: eligibility of each
+    speed / cold chain: eligibility of each
     (picker, batch) assignment under T_cold, and the effect of V_p on
     reported batch execution times.
     """
@@ -28,7 +28,7 @@ class OPPTestCaseHC(OPPTestCase):
         return result, output_graph, capture.solution_info
 
     def assert_every_batch_has_one_picker(self, solution_info, P):
-        """Mirrors opp_hc_2/ZPL constraint (14): assign_exactly_one_picker."""
+        """Mirrors the ZPL constraint (14): assign_exactly_one_picker."""
         picker_assignments = solution_info.get("picker_assignments", {})
         for batch, picker in picker_assignments.items():
             self.assertIn(
@@ -51,7 +51,7 @@ class OPPTestCaseHC(OPPTestCase):
             )
 
     def assert_no_time_overlap(self, solution_info, P):
-        """Mirrors opp_hc_2/ZPL constraints (19)/(20): no overlap on the same picker."""
+        """Mirrors the ZPL constraints (19)/(20): no overlap on the same picker."""
         picker_assignments = solution_info.get("picker_assignments", {})
         batch_times = solution_info.get("batch_times", {})
         batch_completions = solution_info.get("batch_completions", {})

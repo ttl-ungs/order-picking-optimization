@@ -34,9 +34,9 @@ SCENARIOS = ["functional", "stress"]
 # The two heuristics (the models whose own randomness a seed study measures).
 HEURISTIC_MODELS = ["opp_hc", "opp_aco"]
 
-# Stress tests 01-03 (migrated_stress_scenario): the scenarios the 2026-09-26
+# Stress tests 01-03 (grid_stress_scenario): the scenarios the 2026-09-26
 # W_c change did NOT touch -- see the stress overrides below.
-MIGRATED_STRESS_INSTANCES = (
+GRID_STRESS_INSTANCES = (
     "test_25_orders_per_batch_30_batches_100x100",
     "test_10_orders_per_batch",
     "test_8_orders_per_batch_7x7_320_orders",
@@ -49,17 +49,17 @@ MIGRATED_STRESS_INSTANCES = (
 # Only labels present in MODEL_DIRS are ever looked up here (see
 # analysis/load.py).
 LATEST_FILE_OVERRIDES = {
-    # 2026-09-24: opp_v5's results are consolidated runs under fixed names
+    # 2026-09-24: the exact models' results are consolidated runs under fixed names
     # (no timestamp) -- the version that counts, whatever a later run writes
     # next to it. "_parallel": the split stress run with Stage 1 on 6 workers.
     ("opp_mono", "functional"): "output_opp_mono_functional_tests.csv",
     # 2026-09-28: stress runs of 04-19 (the designed realistic_crew family)
     # after W_c changed from 9 to 27 in stress_scenarios_designed.py
-    # (2026-09-26, to rule out v5's voluntary-wait exploit) have a
+    # (2026-09-26, to rule out the exact models' voluntary-wait exploit) have a
     # DIFFERENT objective function than the consolidated files above, so
     # each stress entry now merges sources (list form, see
     # analysis/load.py): the new run for 04-19, plus the consolidated file
-    # ONLY for 01-03 (migrated_stress_scenario, unchanged -- W_c still
+    # ONLY for 01-03 (grid_stress_scenario, unchanged -- W_c still
     # 9 there). Mono's new run was cut after 04 (timeout at 40 min, the
     # smallest scenario); 05-19 were never run with W_c = 27, so they're
     # left out and reported as missing rather than taken from the W_c = 9
@@ -68,17 +68,17 @@ LATEST_FILE_OVERRIDES = {
     # record), so only 01-04 are read from it.
     ("opp_mono", "stress"): [
         ("output_opp_mono_stress_tests.csv",
-         MIGRATED_STRESS_INSTANCES + ("test_realistic_crew_7x7_warehouse",)),
+         GRID_STRESS_INSTANCES + ("test_realistic_crew_7x7_warehouse",)),
     ],
     ("opp_split", "functional"): "output_opp_split_functional_tests.csv",
     # 2026-09-29: opp_hc/opp_aco results are unified runs under fixed
-    # names, like opp_v5's: one row per current test, every row taken from a
+    # names, like the exact models': one row per current test, every row taken from a
     # run saved with WRITE_SOLUTIONS, so each links to its solution JSON
     # (solution_file) and to its row in results/compliance/ (all verified
     # against opp_mono). opp_aco stress merges three runs (8 + 10
     # tests + the 100x100); its 100x100 row had a 4-min laptop suspension,
     # so its objective (988,252) is 6.9% above the discarded 2026-09-28 run
-    # without a saved solution (924,536) -- see meta.md.
+    # without a saved solution (924,536).
     ("opp_hc", "functional"): "output_opp_hc_functional_tests.csv",
     ("opp_hc", "stress"): "output_opp_hc_stress_tests.csv",
     ("opp_aco", "functional"): "output_opp_aco_functional_tests.csv",

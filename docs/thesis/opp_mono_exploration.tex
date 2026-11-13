@@ -14,11 +14,11 @@
 \mainlanguage[es]
 
 \starttext
-\title{\bf Exploración de OPP\_v5\_1\_mono: dónde deja de cerrar el modelo monolítico}
+\title{\bf Exploración de OPP-Mono: dónde deja de cerrar el modelo monolítico}
 \blank[big]
 
-Este documento es el par de la exploración de OPP\_v5\_2\_split
-(\type{docs/thesis/opp_v5_2_split_exploration.tex}). Las preguntas son las mismas, pero
+Este documento es el par de la exploración de OPP-Split
+(\type{docs/thesis/opp_split_exploration.tex}). Las preguntas son las mismas, pero
 aplicadas al modelo monolítico: dónde deja de probar el óptimo, qué lo encarece y cuánto más
 lento es que el split sobre la misma instancia. Reúne los estudios 08 a 11 y cierra con la suite
 de stress de los dos modelos.
@@ -45,7 +45,7 @@ exacta del test de stress 04).
 después con el monolítico. Los dos modelos comparten el óptimo, así que el del split es la
 referencia contra la que se mide al monolítico: cuándo encontró una solución cercana, cuándo
 llegó al óptimo y cuánto le faltaba a su cota dual.
-\item {\bf Datos:} \type{experiments/opp_v5/studies/08_mono_frontier/},
+\item {\bf Datos:} \type{experiments/exact/studies/08_mono_frontier/},
 \type{09_shared_with_split/}, \type{10_mono_scale_axes/} y \type{11_mono_long_cap/}.
 \stopitemize
 \stopsection
@@ -978,7 +978,7 @@ Los modelos son chicos: el mayor cortado tiene 4.695 variables. Con 10 minutos l
 no pasó de 302 MB; con 40 minutos (estudio 11) llegó a 636 MB, porque el árbol de búsqueda sigue
 creciendo. La compilación con ZIMPL tardó menos de un segundo en todos los puntos. Hay modelos de
 1.191 variables que no cierran y de 2.199 que encuentran buenas soluciones: lo que decide es la
-estructura, no el tamaño. La única excepción posible son los escenarios heredados de 100×100
+estructura, no el tamaño. La única excepción posible son los escenarios de grilla de 100×100
 de la suite de stress, donde el monolítico terminó sin resultado o con error; su memoria no se
 midió.
 \stopsection
@@ -1120,7 +1120,7 @@ solución y una brecha grande.
 más grandes. El monolítico ya no cierra 6 lotes en 5×5 y, en la mitad de los casos con 6 lotes en
 7×7, no encuentra solución en 5 minutos. Predicción: {\bf ninguno termina}, y en varios puede no
 haber ni una solución que reportar.
-\item {\bf Tests heredados 01 a 03:} quedaron fuera de la predicción. Del 01 (100×100), la
+\item {\bf Tests de grilla 01 a 03:} quedaron fuera de la predicción. Del 01 (100×100), la
 corrida anterior del monolítico terminó sin resultado.
 \stopitemize
 
@@ -1138,9 +1138,9 @@ durante parte de esa corrida, y el tiempo suspendido cuenta en la duración pero
 \bTABLE[split=yes, align=middle, frame=on]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \bTR \bTH Caso \eTH \bTH Instancia \eTH \bTH Lotes \eTH \bTH Grilla \eTH \bTH Split \eTH \bTH Mono \eTH \eTR
-\bTR \bTD 01 \eTD \bTD heredado, 30 pickers, 750 órdenes \eTD \bTD 30 \eTD \bTD 100×100 \eTD \bTD timeout \eTD \bTD sin resultado \eTD \eTR
-\bTR \bTD 02 \eTD \bTD heredado, 10 pickers, 100 órdenes \eTD \bTD 10 \eTD \bTD 10×10 \eTD \bTD 0,5 min \eTD \bTD timeout \eTD \eTR
-\bTR \bTD 03 \eTD \bTD heredado, 1 picker, 320 órdenes \eTD \bTD 40 \eTD \bTD 7×7 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 01 \eTD \bTD grilla, 30 pickers, 750 órdenes \eTD \bTD 30 \eTD \bTD 100×100 \eTD \bTD timeout \eTD \bTD sin resultado \eTD \eTR
+\bTR \bTD 02 \eTD \bTD grilla, 10 pickers, 100 órdenes \eTD \bTD 10 \eTD \bTD 10×10 \eTD \bTD 0,5 min \eTD \bTD timeout \eTD \eTR
+\bTR \bTD 03 \eTD \bTD grilla, 1 picker, 320 órdenes \eTD \bTD 40 \eTD \bTD 7×7 \eTD \bTD timeout \eTD \bTD timeout \eTD \eTR
 \bTR \bTD 04 \eTD \bTD realista \eTD \bTD 6 \eTD \bTD 7×7 \eTD \bTD 0,2 min \eTD \bTD timeout \eTD \eTR
 \bTR \bTD 05 \eTD \bTD realista \eTD \bTD 6 \eTD \bTD 13×13 \eTD \bTD 1,8 min \eTD \bTD timeout \eTD \eTR
 \bTR \bTD 06 \eTD \bTD realista \eTD \bTD 6 \eTD \bTD 14×14 \eTD \bTD 3,4 min \eTD \bTD timeout \eTD \eTR
@@ -1161,7 +1161,7 @@ durante parte de esa corrida, y el tiempo suspendido cuenta en la duración pero
 \blank[medium]
 
 Los tests que el split tampoco termina son los del perfil realista con 8 lotes o más (12 a 14 y
-16 a 19), la grilla de 16×16 (08) y dos de los heredados (01 y 03). En esos casos los dos modelos llegan al
+16 a 19), la grilla de 16×16 (08) y dos de los de grilla (01 y 03). En esos casos los dos modelos llegan al
 tope; en todos los demás, la diferencia es la que ya mostraban los estudios: el split cierra en
 minutos instancias donde el monolítico no demuestra el óptimo en 40.
 \stopsection

@@ -23,7 +23,7 @@ def _peak_rss_mb():
     AND native allocations like PySCIPOpt's C-level SCIP state) of the
     CURRENT process since it started, in MB. Read from the OS, not
     tracemalloc: tracemalloc only sees Python-level allocations, which would
-    badly UNDERSTATE memory for exact-model tests (opp_v2/v3/v4/v5_1_mono/v5_2_split), whose
+    badly UNDERSTATE memory for exact-model tests (opp_mono, opp_split), whose
     actual RAM cost is dominated by SCIP's native branch-and-bound state.
 
     Unix: getrusage's ru_maxrss (bytes on macOS/BSD, KB on Linux), normalized
@@ -172,7 +172,7 @@ class TestRunner:
         # Ej: output_opp_hc_stress_tests_20231024_153000.csv
         csv_filename = f"output_{model_name}_{test_type}_tests_{timestamp}.csv"
 
-        # Ej: results/opp_hc_1/stress/output_opp_hc_stress_tests_20231024_153000.csv
+        # Ej: results/opp_hc/stress/output_opp_hc_stress_tests_20231024_153000.csv
         self.csv_path = os.path.join(
             project_root, "results", model_name, test_type, csv_filename
         )

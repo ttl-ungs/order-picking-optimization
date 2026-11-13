@@ -1,4 +1,4 @@
-"""Build docs/thesis/opp_v5_1_mono_vs_opp_v5_2_split_comparison.tex from the functional
+"""Build docs/thesis/opp_mono_vs_opp_split_comparison.tex from the functional
 and stress runs.
 
     python -m experiments.exact.reports.build_functional_comparison

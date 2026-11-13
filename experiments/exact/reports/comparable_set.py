@@ -1,9 +1,9 @@
-"""The v5 instances that opp_split, opp_hc and opp_aco share.
+"""The Split instances that opp_split, opp_hc and opp_aco share.
 
 Shared by build_functional_comparison and build_heuristics_comparison, so both
 documents compare the same base: the registry that `python -m
 analysis.comparability` writes (see docs/specs/comparabilidad_split_heuristicas.md).
-A functional v5 test is comparable when the registry marks all its instances
+A functional the Split test is comparable when the registry marks all its instances
 as comparable in status; the stress scenarios are the 19 of the suite.
 """
 import csv
@@ -31,7 +31,7 @@ def results():
 
 
 def functional_methods():
-    """{v5 method: (comparable, reason)}; a method is comparable if every instance is."""
+    """{the Split method: (comparable, reason)}; a method is comparable if every instance is."""
     out = {}
     for r in registry():
         if r["tier"] != "functional":

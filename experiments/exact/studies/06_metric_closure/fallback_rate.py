@@ -12,8 +12,8 @@ logic). It NO LONGER RUNS: it calls the closure helpers of
 tests/opp_split/stage1_decomposition.py (`_closure_context`,
 `_narrow_to_batch`, `_expand_to_real_arcs`, `_CLOSURE_FILES`) and
 tests/opp_split/metric_closure.py, all removed with the closure on
-2026-09-23. Its printed output is recorded in meta.md and in
-docs/thesis/opp_v5_2_split_exploration.tex (study 06).
+2026-09-23. Its printed output is recorded in
+docs/thesis/opp_split_exploration.tex (study 06).
 """
 import os
 import sys

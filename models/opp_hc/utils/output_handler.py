@@ -4,8 +4,8 @@ from observer.observer import Observer
 class OutputHandler(Observer):
     """
     Output handler for opp_hc (picker-speed and cold-chain-aware Hill
-    Climbing, no congestion). Same format as opp_hc_2's OutputHandler, plus
-    the picker speeds and cold-chain limit used for this run.
+    Climbing, no congestion). Same format as opp_aco's OutputHandler: it
+    reports the picker speeds and cold-chain limit used for this run.
     """
 
     def update(
@@ -29,7 +29,7 @@ class OutputHandler(Observer):
                 - T_cold: float
         """
         print("\n" + "=" * 50)
-        print(" OPTIMIZATION RESULTS (Hill Climbing v4 - picker speed & cold chain)")
+        print(" OPTIMIZATION RESULTS (Hill Climbing - picker speed & cold chain)")
         print("=" * 50)
 
         status = solution_info.get("status", "unknown")

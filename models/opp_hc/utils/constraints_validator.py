@@ -1,9 +1,9 @@
 """
 Constraints validator for opp_hc.
 
-Extends opp_hc_2's validator (all topology/capacity/assignment constraints,
-unchanged and still enforced as HARD constraints via validate_solution())
-with cold-chain eligibility. Unlike those, cold chain is deliberately NOT
+Extends the base validator (models/utils/base_constraints_validator.py: all
+topology/capacity/assignment constraints, enforced as HARD constraints via
+validate_solution()) with cold-chain eligibility. Unlike those, cold chain is deliberately NOT
 folded into validate_solution() -- see the 2026-09-10 audit finding this
 addresses:
 
@@ -22,14 +22,12 @@ opp_hc.py's _search_cost/_route_local_search_cost) and a HARD
 constraint only on what gets reported as the final answer (see
 validate_cold_chain_strict(), used by opp_hc.py's solve() to decide
 what may become best_feasible_solution). validate_solution() itself now
-checks ONLY opp_hc_2's original hard constraints (topology/capacity/
+checks ONLY the base hard constraints (topology/capacity/
 one-picker-per-batch) -- an initial solution with a cold-chain-ineligible
 batch is no longer discarded outright; Hill Climbing gets a real,
 full-budget chance to fix it via 2-opt/reassignment, guided by the
 penalty naturally biasing accept/reject decisions towards compliance.
 
-No congestion here (unlike opp_hc_3): this model's only addition over
-opp_hc_2 is picker speed + cold chain, kept orthogonal to congestion.
 """
 
 from typing import Dict, List, Set
@@ -41,7 +39,7 @@ from models.opp_split.utils.cold_chain_validation import COLD_CHAIN_TOLERANCE
 
 
 class ConstraintsValidator(BaseConstraintsValidator):
-    """opp_hc_2's validator plus a cold-chain eligibility check on x_pb."""
+    """The base validator plus a cold-chain eligibility check on x_pb."""
 
     def __init__(
         self,
@@ -82,7 +80,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
 
     def validate_solution(self, solution) -> bool:
         """
-        opp_hc_2's ORIGINAL hard constraints only (topology, capacity,
+        The base hard constraints only (topology, capacity,
         exactly-one-picker-per-batch) -- cold chain is intentionally NOT
         checked here anymore (see module docstring). An initial solution
         with a cold-chain-ineligible batch is still accepted here, so Hill

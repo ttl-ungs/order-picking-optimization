@@ -1,25 +1,21 @@
 """
-v5 -> heuristic equivalence suite: run opp_aco / opp_hc on EXACTLY the
-instances opp_split's functional tests solve.
+Functional instances for the heuristics: run opp_aco / opp_hc on EXACTLY the
+instances opp_split's functional tests solve (the functional cases of the
+thesis).
 
-Why (2026-09-28 audit): most heuristic functional tests that share a name
-with a v5 test wrap opp_aco_2 / opp_hc_2 tests that never set
-model_dto.P, so they solve with a single default picker while the v5 test
-(migrated from opp_v4, which takes P from the scenario) uses two -- 34 of
-the 50 name-matched tests differed in the number of pickers, so their
-objectives could not be compared. Instead of copying v5's data by hand
-into heuristic tests, the instances are captured from v5's own tests:
+The instances are not copied by hand into heuristic tests: they are captured
+from the Split's own tests, so both models solve the same data:
 
 1. tests/shared_scenarios/functional/export_functional_instances.py
    (needs zimpl/SCIP) runs opp_split's functional suite, captures
-   every scenario dict right when it's written to the .dat files, and v5's
+   every scenario dict right when it's written to the .dat files, and the Split's
    final status/objective for it, into functional_instances.json.
 2. functional_instances_case() builds, for a heuristic, one test per captured
-   instance (test_instance__<v5 test method>[__<k>]) that solves it through
-   tests/infra/factories/scenario_adapter.py -- the same adapter the v5
-   stress ports use -- and checks the outcome class (feasible vs
-   infeasible) matches v5's. The objective lands in the results CSV via
-   the solve registry, joinable with v5's CSV by stripping the prefix.
+   instance (test_instance__<Split test method>[__<k>]) that solves it through
+   tests/infra/factories/scenario_adapter.py -- the same adapter
+   the stress cases use -- and checks the outcome class (feasible vs
+   infeasible) matches the Split's. The objective lands in the results CSV via
+   the solve registry, joinable with the Split's CSV by stripping the prefix.
 """
 
 import inspect
@@ -101,7 +97,7 @@ def _method_names(entries):
 def _make_test(entry, model_cls, dto_cls, configure_params):
     def test(self):
         if entry.get("fixed_assignment"):
-            self.skipTest("v5 fixes the batch->picker assignment (x_pb) here; the heuristics can't take it")
+            self.skipTest("the Split fixes the batch->picker assignment (x_pb) here; the heuristics can't take it")
         scenario = with_split_defaults(decode(entry["scenario"]))
         model_dto, params = build_model_dto_and_params(scenario, dto_cls, seed=1)
         model_dto.start_time = self.start_time
@@ -113,12 +109,12 @@ def _make_test(entry, model_cls, dto_cls, configure_params):
 
         expected = entry["split_status"]
         if expected in ("optimal", "feasible"):
-            self.assertIn(status, ("optimal", "feasible"), f"v5 found a solution ({expected}); heuristic: {status}")
+            self.assertIn(status, ("optimal", "feasible"), f"the Split found a solution ({expected}); heuristic: {status}")
         elif expected == "infeasible":
-            self.assertEqual(status, "infeasible", "v5 proved this instance infeasible")
-        # Any other v5 outcome (timeout, limit) is inconclusive: nothing to compare the status to.
+            self.assertEqual(status, "infeasible", "the Split proved this instance infeasible")
+        # Any other the Split outcome (timeout, limit) is inconclusive: nothing to compare the status to.
 
-    test.__doc__ = f"Same instance as opp_split's {entry['split_test']} (v5: {entry['split_status']}, obj {entry['split_obj']})."
+    test.__doc__ = f"Same instance as opp_split's {entry['split_test']} (the Split: {entry['split_status']}, obj {entry['split_obj']})."
     return test
 
 
@@ -128,7 +124,7 @@ def functional_instances_case(model_cls, dto_cls, configure_params=None, fixture
     `model_cls` with a `dto_cls` params DTO (seed 1; `configure_params`
     can adjust it, e.g. HC's iteration budget). Named TestFunctionalInstances and
     registered in the calling module, so tests/run_suite.py can launch each
-    test by its dotted id (same approach as family_case).
+    test by its dotted id (same approach as the shared cases).
     """
     fixtures = load_fixtures(fixture_path)
 
@@ -150,8 +146,8 @@ def functional_instances_case(model_cls, dto_cls, configure_params=None, fixture
 
 def split_waiting_batches(scenario, values, route_times, tolerance=1e-6):
     """
-    Batches whose completion v5 reports LATER than its picker could have
-    finished them: v5's c_pb >= T_exec_pb (not ==) lets it delay a batch to
+    Batches whose completion the Split reports LATER than its picker could have
+    finished them: the Split's c_pb >= T_exec_pb (not ==) lets it delay a batch to
     cut earliness -- "voluntary waiting", which the heuristics don't model.
     For each picker, its batches (x_pb = 1, with orders) are taken in
     completion order; batch b waits if c_pb[p, b] exceeds the previous
@@ -164,7 +160,7 @@ def split_waiting_batches(scenario, values, route_times, tolerance=1e-6):
         # so any slack is just the solver's arbitrary pick within an
         # indifferent range, not waiting that changes the result (e.g.
         # test_longer_single_mission_penalties' second instance, W_c =
-        # W_e = 0: v5 and the heuristics both reach 0).
+        # W_e = 0: the Split and the heuristics both reach 0).
         return []
     orders = {b: [n for n in s["N"] if s["B_nb"].get((n, b), 0) > 0.5] for b in s["B"]}
     waits = []
@@ -188,22 +184,22 @@ def comparability(entry):
     (comparable_status, comparable_objective, reason) for one exported
     instance -- the single rule every comparison document/plot should use:
 
-    - timeout: v5 never concluded -> nothing to compare;
-    - x_pb fixed by v5 -> the heuristics can't take that constraint;
+    - timeout: the Split never concluded -> nothing to compare;
+    - x_pb fixed by the Split -> the heuristics can't take that constraint;
     - infeasible: the outcome is comparable, there's no objective;
-    - v5 waits voluntarily in some batch -> outcome comparable, objective
-      not (v5's is lower by design, not by a better plan);
-    - otherwise (v5 optimal, no waiting) -> both comparable.
+    - the Split waits voluntarily in some batch -> outcome comparable, objective
+      not (the Split's is lower by design, not by a better plan);
+    - otherwise (the Split optimal, no waiting) -> both comparable.
     """
     status = entry["split_status"]
     if status == "timeout":
-        return False, False, "v5 no terminó (timeout)"
+        return False, False, "el Split no terminó (timeout)"
     if entry.get("fixed_assignment"):
-        return False, False, "v5 fija la asignación batch-picker (x_pb); las heurísticas no la admiten"
+        return False, False, "el Split fija la asignación batch-picker (x_pb); las heurísticas no la admiten"
     if status == "infeasible":
         return True, False, "infeasible: no hay objetivo que comparar"
     if entry.get("split_waiting_batches"):
         return True, False, f"el Split usa espera voluntaria en {entry['split_waiting_batches']}"
     if status == "optimal":
         return True, True, ""
-    return False, False, f"estado de v5 no concluyente ({status})"
+    return False, False, f"estado del Split no concluyente ({status})"

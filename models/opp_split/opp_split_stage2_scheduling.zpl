@@ -14,7 +14,7 @@
 #     picking tambien depende de la destreza/velocidad del picker, esos
 #     terminos se pueden mover dentro del numerador que se divide por V_p
 #     sin romper nada de lo que sigue.
-#   - La duracion del lote pasa de ser VARIABLE (d_b en opp_v4, con Big-M
+#   - La duracion del lote pasa de ser VARIABLE (con Big-M
 #     para linkearla) a ser un PARAMETRO precalculado: al ser R_b[b] un dato fijo (ya optimizado
 #     en la Etapa 1), T_exec_pb[p,b] = F_b[b] + R_b[b]/V_p[p]
 #     es un numero conocido antes de resolver. Esto elimina la necesidad de
@@ -148,7 +148,7 @@ subto assign_exactly_one_picker:
 
 ##################### Tiempo de completitud (sin Big-M) #######################
 
-# Antes esto eran DOS restricciones con Big-M (d_b variable en opp_v4). Ahora
+# Antes esto eran DOS restricciones con Big-M (d_b variable). Ahora
 # T_exec_pb es un numero conocido, asi que "si x_pb=1, c_pb >= T_exec_pb" es
 # directamente lineal: no hace falta linealizar nada.
 subto batch_completion_floor:
@@ -160,8 +160,8 @@ subto c_b_lower_bound:
         c_pb[p,b] - M * (1 - x_pb[p,b]) <= c_b[b];
 
 ###################### Secuenciamiento sin solapamiento #######################
-# OJO: antes se usaba d_b[k] de opp_v4 (igual para cualquier picker). Ahora que
-# la velocidad depende del picker, hay que usar T_exec_pb[p,k].
+# OJO: como la velocidad depende del picker, hay que usar T_exec_pb[p,k]
+# (no una duracion unica por lote).
 
 subto non_overlap_1:
     forall <p> in P:

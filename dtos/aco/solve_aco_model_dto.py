@@ -93,7 +93,7 @@ class SolveAcoModelDTO(SolveModelDTO):
         can't turn a solvable instance into a false "infeasible". Default
         1800 s: above every realistic_crew stress run measured on
         2026-09-27 (<= ~410 s), so it only bounds the very large instances
-        -- e.g. the 100x100 migrated grid, where the full 60 iterations
+        -- e.g. the 100x100 grid, where the full 60 iterations
         would take ~5 h -- while staying under the stress runner's 40-min
         timeout. Measured there with 600 s: objective 1,061,148, vs 917,328
         when ACO ran ~1878 s (before the budget also covered the

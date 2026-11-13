@@ -1,12 +1,11 @@
 ##############################################################################
-# OPP Model V5.1 (monolitico) - ZIMPL Formulation
-# Basado en: opp_v4 (opp_model_v4.zpl) y models.pdf (Segunda Version).
+# OPP-Mono (modelo monolitico) - ZIMPL Formulation
 # Modelo con asignación de lotes a pickers.
 #
 # Resuelve EL MISMO problema que opp_split (la descomposicion en dos
 # etapas: opp_split_stage1_routing.zpl + opp_split_stage2_scheduling.zpl), pero como un unico MIP
-# monolitico: ruteo + asignacion + secuenciacion se deciden juntos. Respecto de
-# opp_v4 agrega las dos extensiones de la familia v5:
+# monolitico: ruteo + asignacion + secuenciacion se deciden juntos. Incluye las
+# dos extensiones del problema:
 #   - Pickers heterogeneos por velocidad (V_p): la velocidad escala solo el
 #     tiempo de traslado+servicio de la ruta (r_b), NO el setup ni el
 #     picking (T_setup, T_pick): duracion del lote = F_b[b] + r_b[b]/V_p[p]
@@ -18,7 +17,7 @@
 # tardanza/adelanto solo para pares (n,b) con B_nb = 1.
 # Con V_p = 1 para todos los pickers y T_cold muy grande (defaults que
 # escribe dat_files_builder cuando el escenario no los define) el modelo se
-# reduce al problema original de opp_v4.
+# reduce al problema sin velocidades ni cadena de frio.
 #
 # Supuestos LP (del PDF "Supuestos de la Programacion Lineal"):
 #   Proporcionalidad : cada termino de la FO y restricciones es lineal en sus vars.
@@ -138,7 +137,7 @@ var r_b[B]          >= 0;
 var c_b[B]          >= 0;
 
 # u_pb[p,b] : tiempo de procesamiento del lote b asignado al picker p
-#             (variable del modelo v2; se conserva).
+#
 # La cota superior implementa la cadena de frio: si x_pb = 1, (15) obliga a
 # u_pb >= F_b[b] + r_b[b]/V_p[p], asi que esa duracion queda <= T_cold + EPS
 # (la misma condicion que PB_elig de opp_split_stage2_scheduling.zpl);
@@ -146,7 +145,7 @@ var c_b[B]          >= 0;
 var u_pb[P * B]     >= 0 <= T_cold + EPS;
 
 # c_pb[p,b] : tiempo de completitud del lote b del picker p
-#             (variable del modelo v2; se conserva)
+#
 var c_pb[P * B]     >= 0;
 
 # z_ijb[i,j,b] : 1 si el arco (i,j) esta incluido en el lote b  (binaria)
@@ -163,7 +162,7 @@ var z_ijb[E * B] binary;
 var q_ijb[E * B] >= 0;
 
 ##############################################################################
-# NUEVAS VARIABLES (respecto del modelo v2)
+# VARIABLES DE ASIGNACION Y VELOCIDAD
 ##############################################################################
 
 # x_pb[p,b] : 1 si el lote b es asignado al picker p
@@ -287,7 +286,6 @@ subto load_flow_conservation:
 ##################### Tiempo de ejecución y completitud ######################
 
 # (13) Tiempo de ruta del lote (traslado + servicio)
-# El termino S_i se agrega respecto al modelo v2 original.
 # r_b[b] = traslado (distancia * T_travel) + servicio en cada ubicacion
 # visitada. NO incluye T_setup ni T_pick (ver F_b): esos no dependen
 # de la ruta. Es la misma definicion que define_route_time de

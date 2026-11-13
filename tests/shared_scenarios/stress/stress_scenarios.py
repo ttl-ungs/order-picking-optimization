@@ -1,9 +1,9 @@
-"""OPP v5 data builders preserving the sizes of the OPP v4 stress suite."""
+"""Data builders of the plain-grid stress scenarios (01-03)."""
 
 from tests.shared_scenarios.stress.scenario_custom_setup import scenario_custom_setup
 
 
-def migrated_stress_scenario(batches, pickers, orders, rows, cols):
+def grid_stress_scenario(batches, pickers, orders, rows, cols):
     graph, vertices, batch_set, picker_set, order_set, _x, bn, a_ni = scenario_custom_setup(
         batches, pickers, orders, rows, cols
     )
@@ -38,7 +38,7 @@ def migrated_stress_scenario(batches, pickers, orders, rows, cols):
         "T_pick": 1.0,
         "C_v": 250.0,
         "M": 10000.0,
-        # Baseline migration settings: same picker behavior as OPP v4.
+        # Every picker at the reference speed and the cold chain disabled.
         "V_p": {picker: 1.0 for picker in picker_set},
         "T_cold": 1_000_000_000.0,
     }

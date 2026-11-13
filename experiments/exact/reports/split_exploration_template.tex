@@ -14,12 +14,12 @@
 \mainlanguage[es]
 
 \starttext
-\title{\bf Exploración de OPP\_v5\_2\_split: qué encarece cada etapa y dónde deja de resolver}
+\title{\bf Exploración de OPP-Split: qué encarece cada etapa y dónde deja de resolver}
 \blank[big]
 
 Este documento reúne los siete estudios exploratorios que se corrieron sobre el modelo
-OPP\_v5\_2\_split el 22 y el 23 de septiembre de 2026. La pregunta era práctica: los tests de
-stress heredados de OPP\_v4 no terminaban nunca, y hacía falta saber qué dimensión de la
+OPP-Split el 22 y el 23 de septiembre de 2026. La pregunta era práctica: los tests de
+stress originales no terminaban nunca, y hacía falta saber qué dimensión de la
 instancia vuelve difícil a cada etapa del modelo para poder diseñar escenarios de stress que
 fueran realistas y a la vez resolubles.
 
@@ -27,7 +27,7 @@ fueran realistas y a la vez resolubles.
 
 \startsection[title={Alcance y fuentes}]
 \startitemize
-\item {\bf Modelo:} la exploración es de OPP\_v5\_2\_split. OPP\_v5\_1\_mono aparece en dos
+\item {\bf Modelo:} la exploración es de OPP-Split. OPP-Mono aparece en dos
 puntos solamente, cada uno comparado contra el split sobre la misma instancia
 (sección \in[sec:mono]).
 \item {\bf Datos:} un directorio por estudio en \type{experiments/exact/studies/}, con los
@@ -193,13 +193,13 @@ repartidas y sean alcanzables. Con 26 órdenes por lote el SLA sale solo, cerca 
 \item {\bf El modelo es just-in-time:} agrega espera a propósito para no entregar antes de
 tiempo. Eso lo vuelve un problema de scheduling con adelanto y atraso, que no es regular y es
 una clase notoriamente difícil.
-\item {\bf Los escenarios heredados de OPP\_v4 no cumplen la precondición:} todas las fechas son
+\item {\bf Los escenarios de grilla no cumplen la precondición:} todas las fechas son
 30, antes de cualquier finalización posible, y por eso su SLA es 0\%.
 \stopitemize
 \stopsection
 
 \startsection[title={Estudio 02: pesos de la grilla}]
-Los escenarios heredados usan el mismo peso en todas las aristas (4/4), lo que produce muchísimas
+Los escenarios de grilla usan el mismo peso en todas las aristas (4/4), lo que produce muchísimas
 rutas empatadas en costo. Se comparó contra pesos 2/6, elegidos para que la media siguiera siendo
 4: lo único que cambia es la asimetría.
 
@@ -419,7 +419,7 @@ se miden.
 \stopsection
 
 \startsection[title={Comparación puntual con el modelo monolítico},reference=sec:mono]
-En dos puntos de la exploración se resolvió la misma instancia con OPP\_v5\_1\_mono.
+En dos puntos de la exploración se resolvió la misma instancia con OPP-Mono.
 
 \placefigure[force][fig:mono_split]{Split y mono sobre la misma instancia (escala logarítmica). El split terminó con el óptimo probado; el mono se detuvo por límite de tiempo.}
 {%%FIG:mono_split%%}
@@ -454,7 +454,7 @@ difícil, y el salto de costo aparece apenas hay dos velocidades distintas.
 \item {\bf El SLA no es un parámetro del escenario}, sino una consecuencia de $N_b$ y
 $W^{c}$. Con $W^{c}$ menor que las órdenes por lote, el modelo retrasa lotes a propósito para
 no adelantarse; con $W^{c} = 27$ eso deja de convenir y el SLA de la suite sube al 100\%.
-\item {\bf Las simplificaciones de los escenarios heredados no son neutras:} los pesos uniformes
+\item {\bf Las simplificaciones de los escenarios de grilla no son neutras:} los pesos uniformes
 encarecen la Etapa 1 en grillas chicas; las velocidades uniformes abaratan la Etapa 2; las
 fechas imposibles dejan la mitad del objetivo sin ejercitar.
 \item {\bf Nada de lo probado para acelerar la Etapa 1 generalizó:} ni la clausura métrica, ni

@@ -1,4 +1,4 @@
-"""Small scenarios adapted from the normal OPP v4 routing cases."""
+"""Small scenarios of the routing cases of the functional tests."""
 
 
 def two_batches_two_routes():
@@ -202,7 +202,7 @@ def three_orders_one_batch(w_full):
 
 
 def two_possible_routes(due_date):
-    """opp_v4's two_possible_routes instance (scenario_03) for v5: two
+    """The two_possible_routes instance (scenario_03): two
     orders at L4, one batch each, two pickers at speed 1.0, and three ways
     from L1 to L5 through L4 -- the short one L1 -> L4 -> L5 (distance 8)
     and two long ones through L2 or L3 (distance 15).
@@ -214,7 +214,7 @@ def two_possible_routes(due_date):
       - due_date = 10: only the short route arrives in time; completion
         10.0 per batch, objective 1 * (10 + 10) = 20.0. A long route would
         be 1.5 late (10 * 5 * 1.5 = 75 of tardiness per batch).
-      - due_date = 15 (opp_v4's): every route arrives in time, so every
+      - due_date = 15: every route arrives in time, so every
         route is optimal; completion 15.0 per batch, objective 30.0.
     """
     return {

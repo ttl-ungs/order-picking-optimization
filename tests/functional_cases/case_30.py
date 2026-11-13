@@ -13,8 +13,7 @@ from tests.shared_scenarios.functional.multigrid_graph import (
 
 class Case30(ExactModelTestCase):
     """
-    Ported from opp_hc_2's test #26 (test_fractional_and_zero_capacities_*):
-    a mix of zero and fractional order capacities. Exercises the new C_v
+    A mix of zero and fractional order capacities. Exercises the C_v
     pre-validation (models/utils/input_validation.py) at a fractional
     boundary: cap_vehicle=5.0 is infeasible (0+1.5+2.25+3.0 split into two
     batches of 1.5 and 5.25 -- the second overflows), cap_vehicle=6.0 fits.

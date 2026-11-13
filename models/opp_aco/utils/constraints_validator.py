@@ -1,8 +1,8 @@
 """
 Constraints validator for opp_aco.
 
-Extends opp_aco_2's validator (all topology/capacity/assignment
-constraints, unchanged and still enforced as HARD constraints via
+Extends the base validator (models/utils/base_constraints_validator.py: all
+topology/capacity/assignment constraints, enforced as HARD constraints via
 validate_solution()) with cold-chain eligibility. Unlike those, cold chain
 is deliberately NOT folded into validate_solution() -- see the 2026-09-09
 audit finding this addresses:
@@ -26,16 +26,14 @@ cold_chain_violation(), consumed as a large objective penalty by
 models/opp_aco/utils/route_evaluator.py) and a HARD constraint only on
 what gets reported as the final answer (see validate_cold_chain_strict(),
 called from opp_aco.py's main loop to decide what may become
-best_global_solution). validate_solution() itself now checks ONLY
-opp_aco_2's original hard constraints (topology/capacity/one-picker-per-
+best_global_solution). validate_solution() itself checks ONLY
+the base hard constraints (topology/capacity/one-picker-per-
 batch) -- every ant that clears those deposits pheromone (route AND
 picker-assignment edges), so the search keeps learning good routes/
 assignments for every OTHER batch even while one stays cold-chain-tight,
 and the penalty naturally biases the roulette/deposit trajectory towards
 whichever picker gets closest to (and eventually within) T_cold.
 
-No congestion here (unlike opp_aco_3): this model's only addition over
-opp_aco_2 is picker speed + cold chain, kept orthogonal to congestion.
 """
 
 from typing import Dict, List, Set
@@ -48,7 +46,7 @@ from models.opp_split.utils.cold_chain_validation import COLD_CHAIN_TOLERANCE
 
 
 class ConstraintsValidator(BaseConstraintsValidator):
-    """opp_aco_2's validator plus a cold-chain eligibility check on x_pb."""
+    """The base validator plus a cold-chain eligibility check on x_pb."""
 
     def __init__(
         self,
@@ -77,7 +75,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
 
     def validate_solution(self, solution) -> bool:
         """
-        opp_aco_2's ORIGINAL hard constraints only (topology, capacity,
+        The base hard constraints only (topology, capacity,
         exactly-one-picker-per-batch) -- cold chain is intentionally NOT
         checked here anymore (see module docstring). This is what gates
         pheromone updates: any ant clearing this deposits pheromone,

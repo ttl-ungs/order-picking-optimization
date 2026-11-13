@@ -1,9 +1,9 @@
-# Stress test design for opp_v5 (mono and split)
+# Stress test design for the exact models (mono and split)
 
-> Status: **implemented on 2026-09-23 and run on the split**. Results in section 0. The rest of the document is the original proposal with its calibration. Translated from Spanish on 2026-09-24; the content is the proposal as written.
+> Status: **implemented on 2026-09-23 and run on the split**. Results in section 0. The rest of the document is the original proposal with its calibration. The content is the proposal as written.
 
 > ⚠ **Written before later changes.**
-> - **Old numbering.** On 2026-09-23 the opp_v5 stress suite was pruned and renumbered to 19 tests (full table in `meta.md`). Tests 09, 10 and 11 in this document are now **04, 05 and 07**; any 12–23 mentioned follow the `meta.md` table.
+> - **Numbering.** The stress suite has 19 scenarios. Tests 09, 10 and 11 in this document are now **04, 05 and 07**.
 > - **The metric closure was removed** from the code on 2026-09-23; the references to `OPP_STAGE1_METRIC_CLOSURE` below are historical.
 > - **The `<= 1` limit does change answers in one case** found later: a batch that saturates a small grid (26 orders on 4×4) becomes infeasible. It does not affect the tests proposed here, which start at 7×7.
 > - The tool's flags are now in English (`--points`, `--hard-cap`, ...); see `experiments/exact/README.md`.
@@ -134,7 +134,7 @@ A real crew has two or three speed bands, not one per person. Fixed instance (6 
 
 \* version of the ladder designed on 2026-09-22, with uniform speeds and weights.
 
-Six degeneracies found in those scenarios (detail in `meta.md`):
+Six degeneracies found in those scenarios:
 
 | # | Degeneracy | Type |
 |---|---|---|
@@ -228,7 +228,7 @@ Assertions: the same as today (`assert_stress_pipeline`): optimal or feasible st
 
 | Tests | Proposal | Why |
 |---|---|---|
-| 01–06, 08 (migrated) | **Leave them as they are** | They compare against v4 with the same sizes and have history in `results/`. Their degeneracies stay documented in `meta.md`; they are not used as evidence of realistic scalability. |
+| 01–03 (plain grids) | **Leave them as they are** | They keep the same sizes and have history in `results/`. Their degeneracies are listed above; they are not used as evidence of realistic scalability. |
 | 07 (10 batches, 25 pickers) | **Keep it with a note** in the docstring and exclude it from comparisons | It is the degenerate `\|P\| > \|B\|` case. Deleting it throws away evidence and breaks the continuous numbering. |
 | 09, 10, 11 (2026-09-22 version) | **Replace their scenario** with the one in section 5 | They use uniform speeds and weights. They exist in the repo but are uncommitted; the change is only the `designed_stress_scenario` call and the docstring, in split and in mono. |
 

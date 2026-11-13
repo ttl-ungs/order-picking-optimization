@@ -1,4 +1,4 @@
-"""Build docs/thesis/opp_v5_2_split_exploration.tex from the exploration CSVs.
+"""Build docs/thesis/opp_split_exploration.tex from the exploration CSVs.
 
     python -m experiments.exact.reports.build_split_exploration
 
@@ -259,7 +259,7 @@ def build_figures():
     c.legend([("darkblue", "split", "box"), ("darkblue", "mono", "outline")], x=0.2, top=5.35)
     FIG["mono_split"] = c.code()
 
-    # 13. closure fallback rate (diagnostic printed by fallback_rate.py, recorded in meta.md)
+    # 13. closure fallback rate (diagnostic printed by fallback_rate.py)
     fallback = [("25×25, 12 órd./lote", 4), ("13×13, 26 órd./lote", 6), ("7×7, 26 órd./lote", 5)]
     c = Chart(0, 3, 0, 6, h=5)
     c.cat_axes([(i + 0.5, t[0]) for i, t in enumerate(fallback)], [(v, str(v)) for v in range(7)],

@@ -1,9 +1,7 @@
 """
-Objective function evaluator for opp_aco (OPP v4 + picker speed, no
-congestion).
+Objective function evaluator for opp_aco (picker speed, no congestion).
 
-Identical to opp_aco_2's RouteEvaluator, except a batch's execution time
-now depends on WHICH picker runs it: the travel+service portion is divided
+A batch's execution time depends on WHICH picker runs it: the travel+service portion is divided
 by that picker's speed (V_p), while setup/picking time stays fixed (same
 split as opp_split_stage2_scheduling.zpl's T_exec_pb -- see models/opp_aco/
 opp_aco.py header). Batches on the same picker still run sequentially;
@@ -16,7 +14,7 @@ from models.opp_aco.utils import exec_time
 
 
 class RouteEvaluator:
-    """Evaluates the opp_aco objective function (v4 objective, picker-speed-aware)."""
+    """Evaluates the opp_aco objective function (picker-speed-aware)."""
 
     def __init__(
         self,
@@ -61,8 +59,7 @@ class RouteEvaluator:
         self.V_p = V_p or {}
 
     def picker_speed(self, picker: str) -> float:
-        """Speed of `picker`; defaults to 1.0 when unset (no-op, matches
-        opp_split's migrated-baseline default)."""
+        """Speed of `picker`; defaults to 1.0 when unset (no-op)."""
         return self.V_p.get(picker, 1.0)
 
     def evaluate(self, solution) -> float:

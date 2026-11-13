@@ -1,1 +1,1 @@
-"""Normal integration tests for OPP v5."""
+"""Functional tests of OPP-Split."""

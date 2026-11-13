@@ -11,8 +11,7 @@ from tests.shared_scenarios.functional.scenario_03 import two_possible_routes_ba
 
 class Case28(ExactModelTestCase):
     """
-    Ported from opp_hc_2's test #24 (test_due_dates_tight_vs_relaxed):
-    same scenario, tight vs. relaxed due dates -- both must remain feasible
+    The same scenario with tight vs. relaxed due dates -- both must remain feasible
     (ta absorbs a tight due date, it never makes the model infeasible).
     """
 

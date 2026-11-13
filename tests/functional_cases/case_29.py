@@ -12,8 +12,7 @@ from tests.shared_scenarios.functional.three_missions_two_pickers_grid_graph imp
 
 
 class Case29(ExactModelTestCase):
-    """Ported from opp_hc_2's test #25 (test_one_empty_batch_allowed):
-    a setup with one intentionally empty batch among others."""
+    """A setup with one intentionally empty batch among others."""
 
     def test_one_empty_batch_allowed(self):
         """Case 29a."""

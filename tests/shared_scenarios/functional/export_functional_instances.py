@@ -22,7 +22,7 @@ hang the export just as they time out in the regular suite.
 
 Writes tests/shared_scenarios/functional/functional_instances.json:
 {"instances": [...], "excluded": {test: reason}, "not_captured": [...]}.
-Re-run it whenever a v5 functional test or scenario changes:
+Re-run it whenever a Split functional test or scenario changes:
 
     python -m tests.shared_scenarios.functional.export_functional_instances
 """
@@ -36,17 +36,17 @@ import tests.infra.zimpl.dat_files_builder as dat_files_builder
 from models.utils.solve_registry import get_last
 from tests.infra.factories.functional_instances import FIXTURE_PATH, comparability, encode, split_waiting_batches
 
-# v5 functional tests deliberately left out, with the reason. Everything
+# the Split functional tests deliberately left out, with the reason. Everything
 # else that reaches the solver is exported.
 EXCLUDED = {
     "test_batch_is_delayed_while_early_orders_outweigh_completion_weight": (
-        "el test verifica justamente que v5 espere voluntariamente (c_pb > T_exec_pb), algo que las "
+        "el test verifica justamente que el Split espere voluntariamente (c_pb > T_exec_pb), algo que las "
         "heurísticas no modelan a propósito (ver W_c en stress_scenarios_designed.py)"
     ),
 }
 
 
-# Tests whose v5 solve doesn't finish (they time out in tests/run_suite.py
+# Tests whose the Split solve doesn't finish (they time out in tests/run_suite.py
 # too): captured, then stopped before solving.
 KNOWN_SOLVER_TIMEOUTS = {
     "test_fractional_and_zero_capacities_feasible",
@@ -126,7 +126,7 @@ def main():
             result = original_pipeline(self, scenario, solve_stage2)
         except AssertionError:
             # run_pipeline asserts Stage 1 solved before going on: when it
-            # didn't (e.g. a batch with no simple route), v5's outcome is
+            # didn't (e.g. a batch with no simple route), the Split's outcome is
             # Stage 1's own status, the last solve registered.
             last = get_last()
             record(last.status if last else None)
@@ -134,7 +134,7 @@ def main():
         if solve_stage2:
             record(result[2], result[3], result[1])
         else:
-            # The test only needed Stage 1; v5's full outcome for this
+            # The test only needed Stage 1; the Split's full outcome for this
             # instance comes from a separate full run, not captured again.
             state["capture"] = False
             try:
@@ -150,7 +150,7 @@ def main():
     OPPTestCaseSplit.run_pipeline = recording_pipeline
 
     # Some tests call Stage 1 directly (e.g. test_case_38): a Stage 1 with no
-    # route is v5's final outcome for that instance. A successful Stage 1 is
+    # route is the Split's final outcome for that instance. A successful Stage 1 is
     # not recorded -- Stage 2's status, if the test gets there, is the outcome.
     import tests.opp_split.stage1_decomposition as stage1_decomposition
 

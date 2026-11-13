@@ -1,8 +1,7 @@
 import os
 
 # Cold-chain limit written when a scenario does not define one: large enough
-# that no batch is ever excluded (same value the opp_split migrated tests use to
-# neutralize the cold chain for the v4 baseline).
+# that no batch is ever excluded (the cold chain is disabled).
 DEFAULT_T_COLD = 1_000_000_000.0
 
 

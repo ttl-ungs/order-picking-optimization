@@ -1,19 +1,13 @@
 """Single parametrized entry point for running a model's test suite.
 
-Replaces the ~24 near-identical per-model execute_tests.py /
-execute_stress_tests.py scripts (one pair per model, differing only in the
-model_name/test_type strings passed to TestRunner) with one script driven by
-CLI arguments. Two legacy models (opp_v1, opp_v2) predate TestRunner entirely
-(plain unittest.TextTestRunner, no CSV output, no timeout) and keep their own
-execute_tests.py/execute_stress_tests.py unchanged -- they don't fit this
-runner's contract.
+Runs each test of a model's suite in its own process (TestRunner), with a
+per-test timeout, and writes the results to results/<model>/<tier>/.
 
 Usage:
-    python -m tests.run_suite opp_hc_2 functional
-    python -m tests.run_suite opp_hc_3 stress
-    python -m tests.run_suite opp_hc_3 stress --id 04
-        (equivalent to the old `python tests/opp_hc_3/execute_stress_tests.py 04`
-        -- runs only case 04 instead of the full suite)
+    python -m tests.run_suite opp_hc functional
+    python -m tests.run_suite opp_hc stress
+    python -m tests.run_suite opp_hc stress --id 04
+        (runs only case 04 instead of the full suite)
 
 A case id NN selects the module test_case_NN.py and the shared cases whose
 class is named Case<NN>... or Stress<NN>... (see tests/functional_cases and
@@ -46,7 +40,7 @@ def selected_by_id(test_id, case_ids):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("model", help="Model directory name under tests/, e.g. opp_hc_2, opp_aco_3, opp_v4.")
+    parser.add_argument("model", help="Model directory name under tests/, e.g. opp_hc, opp_aco, opp_split, opp_mono.")
     parser.add_argument("tier", choices=["functional", "stress"])
     parser.add_argument(
         "--id",

@@ -1,6 +1,6 @@
 """Check a heuristic solution (opp_hc / opp_aco) against opp_mono.
 
-The monolithic MIP is the single source of truth for the v5 constraints:
+The monolithic MIP is the single source of truth for the constraints:
 instead of re-implementing them in Python, the heuristic's values are fixed
 on mono's own variables and SCIP decides whether they are feasible. Two
 SCIP levels plus a Python precheck, see dtos/verification/
@@ -100,7 +100,7 @@ def _scenario(instance):
         "B_nb": {(n, b): instance["B_nb"].get((n, b), 0) for n in N for b in B},
         "V_p": dict(instance["V_p"]),
         # +inf (cold chain disabled, the heuristics' default) can't be written
-        # to a .dat: use the same stand-in the v5 migrated tests use.
+        # to a .dat: use the same stand-in the functional cases use.
         "T_cold": instance["T_cold"] if math.isfinite(instance["T_cold"]) else DEFAULT_T_COLD,
     }
 

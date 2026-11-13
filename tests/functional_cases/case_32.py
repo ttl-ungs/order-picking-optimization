@@ -12,7 +12,7 @@ from tests.shared_scenarios.functional.one_mission_one_picker_grid_graph import 
 
 
 class Case32(ExactModelTestCase):
-    """Ported from opp_hc_2's test #28: a single order whose own capacity
+    """A single order whose own capacity
     exceeds the vehicle capacity must be infeasible."""
 
     def test_single_order_exceeds_vehicle(self):

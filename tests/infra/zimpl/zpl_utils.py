@@ -30,13 +30,13 @@ def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
     if params is None:
         params = {}
 
-    # opp_model_v4.zpl takes B_nb/C_v as fixed parameters, not decision
+    # The ZIMPL models take B_nb/C_v as fixed parameters, not decision
     # variables, so it has no constraint left to reject a batch that
     # overflows the vehicle or an order assigned to zero/two+ batches --
     # it would just solve happily around garbage input (see
     # models/utils/input_validation.py). Enforce both here, before ever
     # calling zimpl/SCIP, so this input is rejected the same way
-    # opp_hc_2/opp_aco_2/opp_hc_3/opp_aco_3 reject it for the same instance.
+    # opp_hc/opp_aco reject it for the same instance.
     bn = params.get("B_nb")
     invalid_reasons = []
 

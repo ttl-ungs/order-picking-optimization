@@ -1,7 +1,6 @@
-"""Stress scenarios designed for OPP v5 instead of inherited from the v4 baseline.
+"""Stress scenarios designed to exercise what the models decide, instead of plain grids.
 
-`migrated_stress_scenario` reproduces the v4 suite's sizes so the migrated tests
-compare like for like, but it carries five properties that inflate difficulty
+`grid_stress_scenario` builds plain grids of a given size, but it carries five properties that inflate difficulty
 without modelling anything a warehouse does. Measured 2026-09-22:
 
 1. `|P| >= |B|` in six of the eight scenarios. Every batch goes to exactly one
@@ -12,8 +11,7 @@ without modelling anything a warehouse does. Measured 2026-09-22:
 2. Due dates fixed at 30 while a batch's fixed time alone is 101 plus 64-72 of
    routing, so every order is late (`sla_on_time_pct = 0.0`) and the earliness
    half of the objective never activates.
-3. Every `V_p = 1.0`, so no stress scenario exercises the picker speeds that
-   separate v5 from v4.
+3. Every `V_p = 1.0`, so no stress scenario exercises the picker speeds.
 4. Order weights of 10.0 make `F_b` (101) outweigh the route (64-72),
    so improving the routing barely moves the objective.
 5. Orders map to locations by `sorted_locations[i % len(V)]` and to batches by
@@ -173,12 +171,12 @@ def designed_stress_scenario(
     }
 
     # W_c must exceed the largest batch's order count (times W_pen * W_e,
-    # both 1 here), or v5 gains by voluntary waiting: c_pb >= T_exec_pb lets it
+    # both 1 here), or the Split gains by voluntary waiting: c_pb >= T_exec_pb lets it
     # report a batch LATER than it physically finishes, and a delay of d costs
     # W_c * d while cutting earliness by up to (orders in the batch) * d.
     # With the previous W_c = 9 and 26 orders per batch that paid ~17 per
-    # unit of delay, so v5's optimum waited and no heuristic -- which reports
-    # real completion times -- could match it (measured 2026-09-26: 7x7 v5_2
+    # unit of delay, so the Split's optimum waited and no heuristic -- which reports
+    # real completion times -- could match it (measured 2026-09-26: 7x7 Split
     # 79,047 vs ACO 104,565, gap almost entirely earliness). Above the bound a
     # delay never pays and earliness still counts in the objective.
     w_ea_ta, w_ea = 1.0, 1.0

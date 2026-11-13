@@ -1,6 +1,6 @@
 {
  "excluded": {
-  "test_batch_is_delayed_while_early_orders_outweigh_completion_weight": "el test verifica justamente que v5 espere voluntariamente (c_pb > T_exec_pb), algo que las heur\u00edsticas no modelan a prop\u00f3sito (ver W_c en stress_scenarios_designed.py)"
+  "test_batch_is_delayed_while_early_orders_outweigh_completion_weight": "el test verifica justamente que el Split espere voluntariamente (c_pb > T_exec_pb), algo que las heur\u00edsticas no modelan a prop\u00f3sito (ver W_c en stress_scenarios_designed.py)"
  },
  "instances": [
   {
@@ -70769,7 +70769,7 @@
    "comparable_objective": false,
    "comparable_status": false,
    "fixed_assignment": false,
-   "not_comparable_reason": "v5 no termin\u00f3 (timeout)",
+   "not_comparable_reason": "el Split no termin\u00f3 (timeout)",
    "scenario": {
     "A_ni": {
      "__dict_items__": [

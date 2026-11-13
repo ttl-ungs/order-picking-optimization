@@ -1,5 +1,5 @@
 """
-OPP Hill Climbing v4: picker speed + cold chain (no congestion) heuristic solver module.
+OPP Hill Climbing: picker speed + cold chain (no congestion) heuristic solver module.
 """
 
 from models.opp_hc.opp_hc import OPPHillClimbing

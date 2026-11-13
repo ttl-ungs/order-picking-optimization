@@ -1,4 +1,4 @@
-"""The opp_v5 stress suite results of both models, paired by test case.
+"""The stress suite results of both exact models, paired by test case.
 
 Shared by build_mono_exploration and build_functional_comparison. Each model's
 stress CSV is the unified run of its suite (tests 01-19, same numbering and
@@ -16,9 +16,9 @@ MONO_STRESS = os.path.join(ROOT, "results", "opp_mono", "stress",
 
 # (short description, lots, grid) per test case, in Spanish for the docs.
 SUITE = {
-    "01": ("heredado, 30 pickers, 750 órdenes", "30", "100×100"),
-    "02": ("heredado, 10 pickers, 100 órdenes", "10", "10×10"),
-    "03": ("heredado, 1 picker, 320 órdenes", "40", "7×7"),
+    "01": ("grilla, 30 pickers, 750 órdenes", "30", "100×100"),
+    "02": ("grilla, 10 pickers, 100 órdenes", "10", "10×10"),
+    "03": ("grilla, 1 picker, 320 órdenes", "40", "7×7"),
     "04": ("realista", "6", "7×7"),
     "05": ("realista", "6", "13×13"),
     "06": ("realista", "6", "14×14"),

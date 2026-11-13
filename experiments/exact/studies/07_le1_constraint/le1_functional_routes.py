@@ -6,11 +6,10 @@ overwrites THAT copy, runs the tests in this same process (so no child process
 re-imports a pristine copy), then does it again with the original model for a
 side-by-side comparison.
 
-The 11 tests are the v4 functional ones that assert the exact route
-(`assertEqual(output_graph, expected_graph)`): 01-06, 08-11, 17.
+The 11 tests are the functional ones that assert the exact route
+(`assertEqual(output_graph, expected_graph)`).
 
-Kept as it was run on 2026-09-23 (translated to English on 2026-09-24, same
-logic). Its printed output is recorded in meta.md; it saved no CSV.
+Kept as it was run on 2026-09-23 (same logic). It saved no CSV.
 """
 import os
 import re

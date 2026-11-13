@@ -1,4 +1,4 @@
-"""Build docs/thesis/opp_v5_1_mono_exploration.tex from studies 04, 05 and 08 to 11.
+"""Build docs/thesis/opp_mono_exploration.tex from studies 04, 05 and 08 to 11.
 
     python -m experiments.exact.reports.build_mono_exploration
 

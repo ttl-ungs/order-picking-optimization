@@ -79,7 +79,7 @@ def main(argv=None):
                         "split_obj": split_obj, "gap_pct": gap, **result,
                     })
                     f.flush()
-                    gap_text = f"{gap:+.3f}%" if gap is not None else "sin referencia v5"
+                    gap_text = f"{gap:+.3f}%" if gap is not None else "sin referencia del Split"
                     print(f"[{test_id}] a={alpha} b={beta} rho={rho} seed {seed}: "
                           f"obj {result['obj_val']} ({gap_text}), {result['elapsed_s']:.1f}s")
 

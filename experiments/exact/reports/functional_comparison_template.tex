@@ -14,7 +14,7 @@
 \mainlanguage[es]
 
 \starttext
-\title{\bf Comparación de OPP\_v5\_1\_mono\crlf y OPP\_v5\_2\_split en pruebas funcionales y de stress}
+\title{\bf Comparación de OPP-Mono\crlf y OPP-Split en pruebas funcionales y de stress}
 \blank[big]
 
 \startsection[title={Resumen}]
@@ -30,8 +30,8 @@ logra.
 \stopsection
 
 \startsection[title={Objetivo y alcance}]
-Este documento compara las ejecuciones de los tests funcionales y de stress de OPP\_v5\_1\_mono
-(formulación monolítica) y OPP\_v5\_2\_split (formulación en dos etapas) sobre los mismos
+Este documento compara las ejecuciones de los tests funcionales y de stress de OPP-Mono
+(formulación monolítica) y OPP-Split (formulación en dos etapas) sobre los mismos
 escenarios. Los dos modelos definen el mismo problema de optimización (ruteo, asignación y
 secuenciación, con velocidades heterogéneas de pickers y cadena de frío) y tienen el mismo valor
 óptimo.
@@ -51,12 +51,12 @@ modelos, con un tope de 40 minutos por test.
 \stopsection
 
 \startsection[title={Qué tests se comparan}]
-Se comparan solo los tests {\em comparables}: los que OPP\_v5\_2\_split, OPP\_hc\_4 y OPP\_aco\_4
+Se comparan solo los tests {\em comparables}: los que OPP-Split, OPP-HC y OPP-ACO
 resuelven sobre la misma instancia y con el mismo resultado esperado, según el registro
 \type{results/comparability/comparability_split_vs_heuristics.csv} (reglas en
 \type{docs/specs/comparabilidad_split_heuristicas.md}). Es la misma base que la comparación de
-OPP\_v5\_2\_split con las heurísticas, así que los dos documentos hablan de los mismos tests.
-OPP\_v5\_1\_mono corre los mismos tests que el split.
+OPP-Split con las heurísticas, así que los dos documentos hablan de los mismos tests.
+OPP-Mono corre los mismos tests que el split.
 
 Dentro de esa base, un par es comparable si los dos modelos lo resuelven (se comparan objetivo,
 solución y tiempos) o si los dos lo declaran infactible (se compara el estado).
@@ -160,8 +160,8 @@ la instancia es infactible (no entran las ubicaciones) y no se grafica.
 
 \placefigure[force][fig:escala]{Tiempo hasta probar el óptimo, en la misma instancia realista, según la grilla y la cantidad de lotes (escala logarítmica, la misma en los dos paneles). Estudio 08.}
 {\startcombination[2*1]
-{%%FIG:scale_split%%}{OPP\_v5\_2\_split}
-{%%FIG:scale_mono%%}{OPP\_v5\_1\_mono}
+{%%FIG:scale_split%%}{OPP-Split}
+{%%FIG:scale_mono%%}{OPP-Mono}
 \stopcombination}
 
 El contraste es de forma, no de grado. En el split las curvas crecen despacio: con hasta 4 lotes
@@ -202,7 +202,7 @@ monolítico.
 \startsection[title={Suite de stress},reference=sec:stress]
 Los tests de stress llevan los dos modelos a instancias de tamaño real: el perfil realista (26
 órdenes por lote, dos bandas de velocidad, pesos 4/5) en grillas de 7×7 a 16×16 y cuadrillas de
-hasta 24 lotes, más tres escenarios heredados de OPP\_v4. El split corre la Etapa 1 con seis
+hasta 24 lotes, más tres escenarios de grilla. El split corre la Etapa 1 con seis
 procesos. Su tiempo es la duración completa del test y es un techo: si la notebook se suspende
 durante la corrida, el tiempo suspendido cuenta en la duración pero no en el tope.
 
@@ -216,7 +216,7 @@ El monolítico termina %%NUM:stress_mono_ok%% de los %%NUM:stress_total%% tests;
 %%NUM:stress_split_ok%%, ninguno en más de %%NUM:stress_split_max%% minutos. En los tests
 funcionales las dos formulaciones son intercambiables salvo en las grillas; a este tamaño, solo
 el split da una respuesta. Los tests que tampoco termina el split son los del perfil realista
-con 8 lotes o más (12 a 14 y 16 a 19), la grilla de 16×16 (08) y dos de los heredados (01 y
+con 8 lotes o más (12 a 14 y 16 a 19), la grilla de 16×16 (08) y dos de los de grilla (01 y
 03).
 \stopsection
 

@@ -16,7 +16,7 @@ Variants, each adding to the previous one:
 Everything else (Seed, ants, iterations, alpha/beta/rho, Max_time) is the
 DTO default, so "completo" reproduces a normal opp_aco run. Each
 (scenario, variant) runs once per seed; the gap is against
-opp_split's objective from its newest stress CSV (None where v5
+opp_split's objective from its newest stress CSV (None where the Split
 timed out).
 
 NOT a unittest test. Run directly, ideally with nothing else competing for
@@ -89,7 +89,7 @@ def main(argv=None):
                         "split_obj": split_obj, "gap_pct": gap, **result,
                     })
                     f.flush()
-                    gap_text = f"{gap:+.3f}%" if gap is not None else "sin referencia v5"
+                    gap_text = f"{gap:+.3f}%" if gap is not None else "sin referencia del Split"
                     print(f"[{test_id}] {variant} seed {seed}: obj {result['obj_val']} ({gap_text}), "
                           f"{result['elapsed_s']:.1f}s")
 

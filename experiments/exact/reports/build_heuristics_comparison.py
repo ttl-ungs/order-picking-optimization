@@ -1,4 +1,4 @@
-"""Build docs/thesis/opp_v5_2_split_vs_heuristics_comparison.tex from the consolidated CSVs.
+"""Build docs/thesis/opp_split_vs_heuristics_comparison.tex from the consolidated CSVs.
 
     python -m experiments.exact.reports.build_heuristics_comparison
 
@@ -28,7 +28,7 @@ from experiments.exact.reports.stress_suite import SPLIT_STRESS, SUITE
 
 TEMPLATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heuristics_comparison_template.tex")
 OUT = os.path.join(ROOT, "docs", "thesis", "opp_split_vs_heuristics_comparison.tex")
-NAME = {"opp_hc": "HC-4", "opp_aco": "ACO-4"}
+NAME = {"opp_hc": "OPP-HC", "opp_aco": "ACO-4"}
 EXACT = 1e-6  # gap_pct at or below this is the optimum (the registry rounds to 0 below 1e-6 %)
 
 
@@ -48,7 +48,7 @@ def pct(value, dec=2):
 
 
 def instance_ids():
-    """{v5 method: [case id, ...]} from the split run, to label instances like the mono report."""
+    """{the Split method: [case id, ...]} from the split run, to label instances like the mono report."""
     split = load(SPLIT_RUN)
     ids = case_ids(set(split) | set(load(MONO_RUN)))
     out = {}
@@ -185,7 +185,7 @@ def build():
         cells.append(r0["not_comparable_reason"].replace("el Split usa espera voluntaria en ", "")
                      .replace("[", "").replace("]", "").replace("'", ""))
         wait_rows.append(cells)
-    TABLE["wait"] = table(["Caso", "Test", "Split", "HC-4", "ACO-4", "Lotes que esperan"], sorted(wait_rows))
+    TABLE["wait"] = table(["Caso", "Test", "Split", "OPP-HC", "ACO-4", "Lotes que esperan"], sorted(wait_rows))
     NUM["wait_count"] = str(len(wait_rows))
     NUM["wait_aco_above"] = str(sum(1 for inst in wait["opp_aco"]
                                     if num(wait["opp_aco"][inst]["heuristic_obj"]) > num(wait["opp_aco"][inst]["split_obj"]) + 1e-6))
@@ -203,7 +203,7 @@ def build():
             r = functional[h][inst]
             cells += [es(num(r["heuristic_obj"]), 1), pct(num(r["gap_pct"]), 1)]
         detail.append(cells)
-    TABLE["missed"] = table(["Caso", "Test", "Split", "HC-4", "Brecha", "ACO-4", "Brecha"], detail)
+    TABLE["missed"] = table(["Caso", "Test", "Split", "OPP-HC", "Brecha", "ACO-4", "Brecha"], detail)
     NUM["missed"] = str(len(missed))
 
     # --- Functional times, where the split time of the instance is known.
@@ -211,7 +211,7 @@ def build():
     timed = {h: [r for r in functional[h].values() if num(r["split_time"]) is not None] for h in HEURISTICS}
     NUM["timed"] = str(len(timed[HEURISTICS[0]]))
     split_t = [num(r["split_time"]) for r in timed[HEURISTICS[0]]]
-    time_rows.append(["OPP\\_v5\\_2\\_split", es(statistics.median(split_t), 3), es(sum(split_t), 1), "--"])
+    time_rows.append(["OPP-Split", es(statistics.median(split_t), 3), es(sum(split_t), 1), "--"])
     for h in HEURISTICS:
         h_t = [num(r["heuristic_time"]) for r in timed[h]]
         speed = statistics.median(num(r["speedup"]) for r in timed[h])
@@ -239,7 +239,7 @@ def build():
             hc, aco = (num(stress[h][r0["split_test"]]["heuristic_obj"]) for h in HEURISTICS)
             noref.append((n, hc, aco))
         stress_rows.append(cells)
-    TABLE["stress"] = table(["Caso", "Lotes", "Grilla", "Split (s)", "HC-4 (s)", "Brecha",
+    TABLE["stress"] = table(["Caso", "Lotes", "Grilla", "Split (s)", "OPP-HC (s)", "Brecha",
                              "ACO-4 (s)", "Brecha"], stress_rows)
     for h in HEURISTICS:
         NUM[f"stress_speedup_{h}"] = es(statistics.median(ref_speed[h]), 1)
@@ -248,7 +248,7 @@ def build():
     NUM["stress_noref"] = str(len(noref))
     NUM["noref_aco_better"] = str(sum(1 for _, hc, aco in noref if aco < hc - 1e-9))
     NUM["noref_hc_better"] = str(sum(1 for _, hc, aco in noref if hc < aco - 1e-9))
-    TABLE["noref"] = table(["Caso", "HC-4", "ACO-4", "ACO-4 contra HC-4"], [
+    TABLE["noref"] = table(["Caso", "OPP-HC", "ACO-4", "ACO-4 contra OPP-HC"], [
         [n, es(hc, 1), es(aco, 1), pct(100 * (aco - hc) / hc)] for n, hc, aco in noref
     ])
 
@@ -264,7 +264,7 @@ def build():
         c.bar(i + 0.37, 0.26, 0.3, max(num(stress["opp_hc"][r0["split_test"]]["heuristic_time"]), 0.31), "greenline")
         c.bar(i + 0.64, 0.26, 0.3, max(num(stress["opp_aco"][r0["split_test"]]["heuristic_time"]), 0.31), "redline")
     c.legend([("darkblue", "split", "box"), ("darkblue", "split: timeout", "outline"),
-              ("greenline", "HC-4", "box"), ("redline", "ACO-4", "box")], x=12.3, top=3.5)
+              ("greenline", "OPP-HC", "box"), ("redline", "ACO-4", "box")], x=12.3, top=3.5)
     FIG["stress_times"] = c.code()
 
     functional_chart(timed, FIG)
@@ -285,7 +285,7 @@ def functional_chart(timed, FIG):
     for h, color in (("opp_hc", "greenline"), ("opp_aco", "redline")):
         for r in timed[h]:
             c.dot(math.log10(num(r["split_time"])), math.log10(max(num(r["heuristic_time"]), 0.01)), color)
-    c.legend([("greenline", "HC-4", "dot"), ("redline", "ACO-4", "dot"), ("blueline", "igual tiempo", "dashed")],
+    c.legend([("greenline", "OPP-HC", "dot"), ("redline", "ACO-4", "dot"), ("blueline", "igual tiempo", "dashed")],
              x=0.3, top=7.85)
     FIG["functional_scatter"] = c.code()
 
@@ -334,7 +334,7 @@ def stress_extras(order, stress, case_of, TABLE, FIG, NUM):
         for h in HEURISTICS:
             c.dot(x, max(num(by_case[h][n]["heuristic_time"]), 0.31), COLOR[h])
     c.legend([("darkblue", "split", "dot"), ("darkblue", "split: timeout", "open"),
-              ("greenline", "HC-4", "dot"), ("redline", "ACO-4", "dot")], x=6.0, top=3.5)
+              ("greenline", "OPP-HC", "dot"), ("redline", "ACO-4", "dot")], x=6.0, top=3.5)
     FIG["stress_scale"] = c.code()
 
     # Gap per solved scenario, the two heuristics side by side.
@@ -348,7 +348,7 @@ def stress_extras(order, stress, case_of, TABLE, FIG, NUM):
                 c.bar(i + 0.15 + 0.35 * j, 0.33, 0, g, COLOR[h])
             else:
                 c.note(i + 0.31 + 0.35 * j, 0, "0", "top", dy=0.02)
-    c.legend([("greenline", "HC-4", "box"), ("redline", "ACO-4", "box")], x=0.3, top=5.3)
+    c.legend([("greenline", "OPP-HC", "box"), ("redline", "ACO-4", "box")], x=0.3, top=5.3)
     FIG["stress_gap"] = c.code()
     NUM["gap_aco_below_hc"] = str(sum(1 for i in range(len(solved))
                                       if gaps["opp_aco"][i] < gaps["opp_hc"][i]))
@@ -363,7 +363,7 @@ def stress_extras(order, stress, case_of, TABLE, FIG, NUM):
         for h in HEURISTICS:
             r = by_case[h][n]
             c.dot(math.log10(max(num(r["heuristic_time"]), 0.31)), num(r["gap_pct"]), COLOR[h])
-    c.legend([("darkblue", "split (óptimo)", "dot"), ("greenline", "HC-4", "dot"), ("redline", "ACO-4", "dot")],
+    c.legend([("darkblue", "split (óptimo)", "dot"), ("greenline", "OPP-HC", "dot"), ("redline", "ACO-4", "dot")],
              x=6.8, top=5.7)
     FIG["tradeoff"] = c.code()
 
@@ -371,7 +371,7 @@ def stress_extras(order, stress, case_of, TABLE, FIG, NUM):
     def sla(model, n):
         v = num(raw[model][n].get("sla_on_time_pct"))
         return "--" if v is None else es(v, 1) + " \\%"
-    TABLE["sla"] = table(["Caso", "Split", "HC-4", "ACO-4"], [
+    TABLE["sla"] = table(["Caso", "Split", "OPP-HC", "ACO-4"], [
         [n, sla("split", n), sla("opp_hc", n), sla("opp_aco", n)] for n in cases
     ])
 
@@ -385,7 +385,7 @@ def stress_extras(order, stress, case_of, TABLE, FIG, NUM):
         for j, m in enumerate(("split", "opp_hc", "opp_aco")):
             if mem[m][n] is not None:
                 c.bar(i + 0.1 + 0.27 * j, 0.26, 10, mem[m][n], COLOR[m])
-    c.legend([("darkblue", "split", "box"), ("greenline", "HC-4", "box"), ("redline", "ACO-4", "box")],
+    c.legend([("darkblue", "split", "box"), ("greenline", "OPP-HC", "box"), ("redline", "ACO-4", "box")],
              x=12.3, top=3.5)
     FIG["memory"] = c.code()
     for m in HEURISTICS:
@@ -400,7 +400,7 @@ def stress_extras(order, stress, case_of, TABLE, FIG, NUM):
 
     # Convergence of the heuristics on the stress scenarios.
     hc, aco = raw["opp_hc"], raw["opp_aco"]
-    TABLE["convergence"] = table(["Caso", "HC-4: iteraciones", "HC-4: mejor en", "ACO-4: iteraciones",
+    TABLE["convergence"] = table(["Caso", "OPP-HC: iteraciones", "OPP-HC: mejor en", "ACO-4: iteraciones",
                                   "ACO-4: mejor en", "ACO-4: cortó por tiempo"], [
         [n, hc[n]["iterations_run"], hc[n]["best_found_at_iteration"], aco[n]["iterations_run"],
          aco[n]["best_found_at_iteration"], "sí" if aco[n]["timed_out"] == "True" else "no"] for n in cases

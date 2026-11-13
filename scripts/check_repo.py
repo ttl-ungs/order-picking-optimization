@@ -47,6 +47,9 @@ IMPORT_SKIP_FILES = {"tests/run_suite.py"}
 
 # (pattern, why) -- paths and dotted modules that no longer exist.
 STALE = [
+    (r"\bopp_(?:v[1-5]\w*|hc_[1-4]|aco_[1-4]|model_v\w+)\b|\bhc_[1-4]\b|\baco_[1-4]\b",
+     "earlier model versions are not part of the repository (use opp_hc, opp_aco, opp_split, opp_mono)"),
+    (r"\bv5\b|\bfamily_case\b|\bmigrated_case\b", "no reference to earlier versions or removed mechanisms"),
     (r"tests/outputs", "results moved to results/"),
     (r"tests\.opp_test_case\b", "moved to tests.infra.cases.opp_test_case"),
     (r"tests\.family_case\b", "moved to tests.infra.factories.family_case"),
@@ -60,7 +63,7 @@ STALE = [
     (r"tests\.shared_scenarios\.normal\b", "renamed to tests.shared_scenarios.functional"),
 ]
 # Text where the old names are the point (history), not live references.
-STALE_ALLOW = ("meta.md", "scripts/check_repo.py", "analysis/output/")
+STALE_ALLOW = ("scripts/check_repo.py",)
 
 
 def tracked():

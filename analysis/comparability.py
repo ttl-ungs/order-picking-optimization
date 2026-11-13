@@ -1,8 +1,8 @@
 """
-Single source of truth for WHICH v5-vs-heuristic comparisons are valid.
+Single source of truth for WHICH Split-vs-heuristic comparisons are valid.
 
 Builds one row per comparable unit (a functional instance, or a stress
-scenario) with v5's reference outcome and whether the heuristics'
+scenario) with the Split's reference outcome and whether the heuristics'
 outcome (feasible vs infeasible) and objective can be compared against it,
 with the reason when not. Every comparison table or plot should filter on
 these columns instead of re-deciding case by case; see
@@ -11,16 +11,16 @@ docs/specs/comparabilidad_split_heuristicas.md for the rules.
 - functional: the instances in
   tests/shared_scenarios/functional/functional_instances.json (exported
   from opp_split's functional tests), which opp_aco/opp_hc solve in
-  test_case_functional_instances.py as test_instance__<v5 test>[__<k>]. Their v5
-  objective comes from that file (per instance -- the v5 results CSV keeps
+  test_case_functional_instances.py as test_instance__<Split test>[__<k>]. Their Split
+  objective comes from that file (per instance -- the Split results CSV keeps
   only the last solve of tests that solve more than one instance).
-  The OTHER opp_aco/opp_hc functional tests are not comparable with v5, even
-  when they share a test name: most run with one picker where the v5
+  The OTHER opp_aco/opp_hc functional tests are not comparable with the Split, even
+  when they share a test name: most run with one picker where the Split
   test has two (2026-09-28 audit).
 - stress: the 19 scenarios of tests/stress_cases, solved by every model (the
-  same method names in each model's CSV). v5_2_split's
+  same method names in each model's CSV). opp_split's
   reference outcome comes from its stress CSVs as merged by analysis.load
-  (04-19 with W_c = 27, 01-03 unchanged migrated scenarios).
+  (04-19 with W_c = 27, 01-03 unchanged scenarios).
 
 Run:
 
@@ -74,7 +74,7 @@ def functional_rows(fixture_path=FIXTURE_PATH):
         rows.append({
             "tier": "functional", "split_test": name, "heuristic_instance": None, "split_model": "opp_split",
             "split_status": None, "split_obj": None, "comparable_status": False, "comparable_objective": False,
-            "not_comparable_reason": "el test de v5 no llega al solver (rechaza la entrada antes)",
+            "not_comparable_reason": "el test del Split no llega al solver (rechaza la entrada antes)",
             "source": os.path.basename(fixture_path),
         })
     return rows
@@ -82,9 +82,9 @@ def functional_rows(fixture_path=FIXTURE_PATH):
 
 def stress_rows():
     sources, _ = _pick_sources("opp_split", "stress")
-    v5 = _load_sources(sources)
+    split_rows = _load_sources(sources)
     rows = []
-    for _, row in v5.iterrows():
+    for _, row in split_rows.iterrows():
         instance = _extract_instance(row["test"])
         ok = row["status"] == "ok"
         rows.append({
@@ -100,7 +100,7 @@ def stress_rows():
             # late (no earliness to cut).
             "comparable_status": ok,
             "comparable_objective": ok,
-            "not_comparable_reason": "" if ok else "v5 no terminó en 40 min (timeout): no hay referencia",
+            "not_comparable_reason": "" if ok else "el Split no terminó en 40 min (timeout): no hay referencia",
             "source": row["source_file"],
         })
     return rows
@@ -130,7 +130,7 @@ def _seconds(total_time):
     """
     total_time as seconds. A timed-out run stores the text "Ejecución
     detenida por timeout - <minutes>" instead: its limit in seconds is
-    returned (a lower bound on the real time), so speedups against a v5
+    returned (a lower bound on the real time), so speedups against a Split
     timeout are lower bounds.
     """
     value = pd.to_numeric(total_time, errors="coerce")
@@ -150,14 +150,14 @@ def _heuristic_rows(model_dir, tier):
     df = _load_sources(sources)
     if tier == "functional":
         # Only the equivalence instances: the other functional tests don't
-        # share v5's data even when they share its test name.
+        # share the Split's data even when they share its test name.
         df = df[df["instance"].str.startswith(METHOD_PREFIX)]
     return df
 
 
 def _split_functional_times(registry):
     """
-    v5's time per functional instance, from its functional results CSV.
+    the Split's time per functional instance, from its functional results CSV.
     That CSV keeps one row per test METHOD (the last solve), so a time is
     only attributable when the method name is unique in the CSV, the
     fixture has a single instance for it, and the CSV's objective matches
@@ -166,8 +166,8 @@ def _split_functional_times(registry):
     sources, _ = _pick_sources("opp_split", "functional")
     if not sources:
         return {}
-    v5 = _load_sources(sources)
-    unique = v5[~v5["instance"].duplicated(keep=False)].set_index("instance")
+    split_rows = _load_sources(sources)
+    unique = split_rows[~split_rows["instance"].duplicated(keep=False)].set_index("instance")
     functional = registry[(registry["tier"] == "functional") & registry["heuristic_instance"].notna()]
     instances_per_test = functional["split_test"].value_counts()
     times = {}
@@ -191,12 +191,12 @@ def build_results(registry):
     analysis.load), one row per (instance, heuristic):
 
     - heuristic_found_solution: the heuristic reported an objective;
-    - status_matches: it found a solution where v5 did and none where v5
+    - status_matches: it found a solution where the Split did and none where the Split
       proved infeasibility (empty when the status isn't comparable);
-    - gap_pct: 100 * (heuristic - v5) / |v5|, only where the objective is
+    - gap_pct: 100 * (heuristic - the Split) / |the Split|, only where the objective is
       comparable (negative = heuristic better);
     - speedup: split_time / heuristic_time, where both times are known (for
-      v5 timeouts it's a lower bound, v5 having been cut at its time
+      the Split timeouts it's a lower bound, the Split having been cut at its time
       limit: speedup_is_lower_bound).
     """
     split_stress = _load_sources(_pick_sources("opp_split", "stress")[0]).set_index("instance")

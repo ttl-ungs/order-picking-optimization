@@ -1,4 +1,4 @@
-"""Base test case for running v5's stress scenarios through opp_hc.
+"""Base test case for running the stress scenarios through opp_hc.
 
 Mirrors tests/opp_mono/stress/stress_test_case.py's
 assert_stress_pipeline: same three checks (solved, routes cover every
@@ -54,7 +54,7 @@ class OPPHcStressTestCase(OPPTestCase):
         # depot/final are always implicit endpoints of any route (every
         # batch starts at the depot and ends at the final node), but
         # solution_info["routes"] only lists the picking stops in between --
-        # unlike v5's own check, which derives "visited" from active arcs
+        # unlike the exact models' check, which derives "visited" from active arcs
         # and so always includes them. Some stress scenarios (see
         # stress_scenarios.py's module docstring, degeneracy #5) assign
         # an order's location by cycling through EVERY vertex including

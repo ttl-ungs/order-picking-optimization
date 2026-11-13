@@ -9,8 +9,7 @@ second copy drifting apart.
 Every function takes the OPPLocationGraph explicitly. Routes follow
 opp_hc's convention: a list of the picking stops strictly between depot
 and final (depot/final themselves are implicit), and a route is a SIMPLE
-path -- no vertex repeated -- because v5's model forbids revisits (see
-tests/*/functional/test_case_forced_revisit_is_infeasible.py).
+path -- no vertex repeated -- because the exact models forbid revisits.
 """
 
 import heapq
@@ -122,7 +121,7 @@ def best_first_route(location_graph, required_locations: Set, max_expansions: in
     Last-resort exhaustive route search: returns a simple depot -> final
     route (picking stops only) covering every required location, or None
     if none exists within `max_expansions`. Tries the memoized search
-    first, then an un-memoized one (see opp_hc_2's twin method's docstring).
+    first, then an un-memoized one.
     """
     if not required_locations:
         return []
@@ -153,7 +152,7 @@ def _best_first_search(
     far) instead of plain FIFO BFS.
 
     2026-09-26 audit finding: a WAREHOUSE-GRID batch needing ~20 required
-    locations on a 49-node grid genuinely exists a valid route (v5's own
+    locations on a 49-node grid genuinely exists a valid route (the exact
     solver finds one), but plain BFS -- which explores states in the
     order they were first reached, oblivious to how close any of them
     is to actually finishing the route -- needed ~3.7M expansions and
@@ -337,7 +336,7 @@ def reroute_segments(location_graph, route: List, required_locations: Set) -> Li
     improvement by shortest paths between consecutive picks" idea behind
     the Steiner-TSP view of Chen et al. (2013) p.79 and Coruzzolo et al.
     (2023) pp.6-9 (distances between picks = shortest paths), applied
-    under v5's no-revisit constraint -- the avoidance of the rest of the
+    under the no-revisit constraint -- the avoidance of the rest of the
     route is our addition for that constraint.
 
     Keeps the route simple (the new corridor avoids every other route
@@ -414,7 +413,7 @@ def relocate_picks(location_graph, route: List, required_locations: Set, deadlin
     2-opt and reroute_segments can't express this move: 2-opt only
     reverses a contiguous stretch, reroute_segments keeps the pick order.
     Measured 2026-09-26 on realistic_crew_scenario(7): after both, one
-    batch still stayed at 76 route-time units vs 74 for v5's exact Stage 1.
+    batch still stayed at 76 route-time units vs 74 for the Split's exact Stage 1.
 
     O(k^2) candidate moves of 3 Dijkstras each for k picks, so it's much
     more expensive than improve_route -- meant for elite routes only (see
@@ -535,7 +534,7 @@ def reverse_pick_segments(
     almost never closes (the two new junctions must be adjacent cells);
     reversing picks and re-drawing corridors does. Measured 2026-09-26 on
     realistic_crew_scenario(7): the only non-optimal elite route left
-    (76 vs v5's 74) needed exactly this move -- the middle picks visited
+    (76 vs the Split's 74) needed exactly this move -- the middle picks visited
     in reverse, through different corridors.
 
     O(k * max_segment) candidates, each re-realizing up to max_segment + 1
@@ -584,7 +583,7 @@ def polish_route(location_graph, route: List, required_locations: Set, deadline:
     `deadline` (absolute time.time(), optional): stop improving once it
     passes and return the best route so far -- never worse than the input.
     Needed because one call scales with graph size: measured 2026-09-27 on
-    the 100x100 migrated grid (10,000 nodes), ~34 s per call, 30 calls =
+    the 100x100 grid (10,000 nodes), ~34 s per call, 30 calls =
     1007 s of a 1141 s opp_aco run whose Max_time was 1 s.
     """
     best = list(route)

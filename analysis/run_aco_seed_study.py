@@ -1,9 +1,9 @@
 """
 Seed study for opp_aco: how much does a different Seed change the
-result on the v5 stress scenarios? Each (scenario, seed) runs once with
+result on the Split stress scenarios? Each (scenario, seed) runs once with
 the DTO defaults (the same parameters as the stress suite); the spread is
 the difference between the best and worst objective of a scenario across
-seeds, and the gap is against opp_split's objective (None where v5
+seeds, and the gap is against opp_split's objective (None where the Split
 timed out).
 
 Scenario 01 (100x100, ~35 min per run) is excluded by default, as in

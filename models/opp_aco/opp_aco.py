@@ -1,10 +1,11 @@
 """
-Ant Colony Optimization (ACO) heuristic for OPP v4 with picker speed and
-cold chain.
+Ant Colony Optimization (ACO) heuristic for the OPP with picker speed and
+cold chain (OPP-ACO).
 
-Same problem as opp_aco_2 (multi-picker, all constraints validated):
-- Receives: same SolveModelDTO parameters, plus a set of pickers (P)
-- Validates: ALL constraints from opp_aco_2, plus cold-chain eligibility
+Multi-picker, all constraints validated:
+- Receives: the SolveModelDTO parameters, plus a set of pickers (P)
+- Validates: ALL constraints (models/utils/base_constraints_validator.py),
+  plus cold-chain eligibility
 - Optimizes: routes within batches (probabilistic pick-to-pick ACO
   construction after Chen et al. 2013, see _build_batch_route) AND
   the assignment/sequencing of batches to pickers (x_pb), so that batches
@@ -12,9 +13,8 @@ Same problem as opp_aco_2 (multi-picker, all constraints validated):
   sequenced without overlap
 - Output: compatible with build_output
 
-Added on top of opp_aco_2 - picker speed and cold chain, the ACO
-counterpart of opp_hc (itself the Hill Climbing counterpart of opp_split's
-opp_split_stage2_scheduling.zpl additions over opp_v4):
+Picker speed and cold chain, as in the exact models (the ACO counterpart
+of opp_hc and of opp_split's opp_split_stage2_scheduling.zpl):
 
 - Picker speed (V_p): a batch's execution time is no longer a single
   d_b fixed for every picker. Instead T_exec_pb[p, b] = fixed_time(b)
@@ -27,7 +27,7 @@ opp_split_stage2_scheduling.zpl additions over opp_v4):
   pickers (see below) before the roulette runs.
 - Cold chain (T_cold): a (picker, batch) pair is only eligible if
   T_exec_pb[p, b] <= T_cold. Since each ant builds a batch's route
-  BEFORE picking its picker (same order as opp_aco_2's _build_ant_solution
+  BEFORE picking its picker (the order of _build_ant_solution's
   loop), eligibility for _select_picker is computed EXACTLY against that
   ant's own just-built route, not an approximation. If that particular
   route leaves zero pickers eligible, _select_picker falls back to the
@@ -59,13 +59,9 @@ cold-chain-compliant ant (see solve()), so if the loop finishes without
 ever finding one, "infeasible" reflects an honest, exhausted search --
 not a shortcut that gave up before trying.
 
-Deliberately WITHOUT congestion between concurrent pickers (unlike
-opp_aco_3): congestion and picker-speed/cold-chain are orthogonal
-additions over opp_aco_2, and this model only needs the latter. opp_aco_3's
-incremental CongestionTracker reservation and multi-pheromone (m-ACO4)
-architecture are NOT adopted here, matching how opp_hc leaves opp_hc_3's
-congestion pricing out - kept focused on the speed/cold-chain trade-off,
-matching opp_split itself, which also has no congestion (see analysis/config.py).
+Deliberately WITHOUT congestion between concurrent pickers, like opp_hc and
+the exact models (opp_split, opp_mono): the search stays focused on the
+speed/cold-chain trade-off (see analysis/config.py).
 """
 
 import time
@@ -91,12 +87,12 @@ from models.utils.sla import sla_on_time_pct
 
 
 class OPPAntColonyOptimization(Model):
-    """ACO solver for OPP v4 - picker speed + cold chain, no congestion."""
+    """ACO solver for the OPP - picker speed + cold chain, no congestion."""
 
     # Construction attempts per batch per ant before falling back to the
     # exhaustive best-first route (see _build_batch_route/_fallback_route).
     # With pick-to-pick construction one attempt costs ~2-15 ms and
-    # succeeds 50-97% of the time on most of v5's realistic_crew batches
+    # succeeds 50-97% of the time on most of the realistic_crew batches
     # (1-13% on a few hard ones), measured 2026-09-26 -- so a handful of
     # retries is cheap and keeps ants diverse, while the cached fallback
     # bounds the cost of the hard ones. The old edge-by-edge walk needed
@@ -157,7 +153,7 @@ class OPPAntColonyOptimization(Model):
     # stopping (once a compliant solution exists); the rest is reserved for
     # the end-of-iteration elite-route polishing and schedule local search.
     # Only matters on instances that hit the budget at all. Measured
-    # 2026-09-27 on the 100x100 migrated grid with Max_time = 600 s: letting
+    # 2026-09-27 on the 100x100 grid with Max_time = 600 s: letting
     # ants use the whole budget left polishing 11 s and the schedule search
     # none, objective 1,403,120 -- vs 917,328 when post-processing ran in
     # full (1878 s, before the budget covered it).
@@ -194,7 +190,7 @@ class OPPAntColonyOptimization(Model):
 
     def solve(self, params: SolveAcoModelDTO):
         """
-        Solves OPP v4 using the Ant Colony Optimization (ACO) heuristic,
+        Solves the OPP using the Ant Colony Optimization (ACO) heuristic,
         with picker speed and cold chain eligibility.
         """
         if params.Seed is not None:
@@ -227,7 +223,7 @@ class OPPAntColonyOptimization(Model):
         max_time = getattr(params, "_Max_time", None) or float("inf")
         # Absolute deadline for the expensive post-processing too (elite
         # route polishing, schedule local search), not just ant building:
-        # on the 100x100 migrated grid those took ~1090 s of a run whose
+        # on the 100x100 grid those took ~1090 s of a run whose
         # Max_time was 1 s (2026-09-27 phase timing). None = no budget.
         self._deadline = start_time + max_time if max_time != float("inf") else None
         alpha = getattr(params, "_Alpha", 1.0)
@@ -403,7 +399,7 @@ class OPPAntColonyOptimization(Model):
                     required_locations_by_batch,
                 )
 
-                # validate_solution() now checks ONLY opp_aco_2's original
+                # validate_solution() checks ONLY the base
                 # hard constraints (topology/capacity/one-picker-per-batch)
                 # -- cold chain is a soft penalty below, not a hard reject
                 # here, so a single cold-chain-tight batch can no longer
@@ -669,7 +665,7 @@ class OPPAntColonyOptimization(Model):
         (BFS). Replaces an all-pairs Dijkstra precomputation (_sp_dist)
         whose only remaining use was solve()'s reachability pre-check: it
         scanned every vertex per settled node, O(V^3) overall, which never
-        finished on the 100x100 migrated stress grid (V = 10,000 -- ACO
+        finished on the 100x100 stress grid (V = 10,000 -- ACO
         timed out at 40 min there, 2026-09-27) while this is O(V + E).
         """
         seen = {source}
@@ -858,14 +854,14 @@ class OPPAntColonyOptimization(Model):
         Deviation from Chen et al. (our own, forced by the problem
         definition): Chen et al. take pick-to-pick distances from a static
         precomputed table and allow re-walking aisles already traversed.
-        v5 (the exact model these heuristics are compared against) forbids
-        revisiting any vertex (see test_case_forced_revisit_is_infeasible),
+        The exact models (which these heuristics are compared against) forbid
+        revisiting any vertex,
         so the distance used for eta and the path walked are recomputed
         each step with Dijkstra AVOIDING every vertex already on the route
         (and `final`, which may only close the route).
 
         Why this replaced the previous edge-by-edge walk (2026-09-26 audit
-        finding): on v5's realistic_crew_scenario batches (23-26 required
+        finding): on the realistic_crew_scenario batches (23-26 required
         locations on a grid) a random self-avoiding walk over single edges
         boxes itself in long before finishing -- 193/200 constructions on
         realistic_crew_scenario(14)'s B1 ended with every neighbor a dead
@@ -889,7 +885,7 @@ class OPPAntColonyOptimization(Model):
         hybridizing ant tours with local search is standard ACO practice
         (Dorigo & Stuetzle 2004, "Ant Colony Optimization", ch. 3.7) -- our
         choice. Measured 2026-09-26 on realistic_crew_scenario(7): without
-        it ACO's routes summed 451 route-time units vs 425 for v5's exact
+        it ACO's routes summed 451 route-time units vs 425 for the Split's exact
         Stage 1.
         """
         # Chen et al. (2013), Eq. 2: tau^alpha * eta^beta, eta = 1/d, with
@@ -934,7 +930,7 @@ class OPPAntColonyOptimization(Model):
 
         Our own addition, not from the papers. Why it's needed (measured
         2026-09-26 on realistic_crew_scenario(7) with W_c=27): the
-        construction does reach v5's optimal Stage 1 route for most
+        construction does reach the Split's optimal Stage 1 route for most
         batches, but rarely, and in a different ant each time -- an ant's
         cost couples all batches, so one short route inside an otherwise
         worse ant gets no credit. Remembering the best route per batch
@@ -980,11 +976,11 @@ class OPPAntColonyOptimization(Model):
         routes; batch-to-picker assignment/sequencing is outside their
         problem). Why it's needed (measured 2026-09-26 on
         realistic_crew_scenario(7), W_c=27): with every route already
-        equal to v5's optimal Stage 1 routes, ACO still lost to v5 by ~8
+        equal to the Split's optimal Stage 1 routes, ACO still lost to it by ~8
         objective units, from the schedule alone -- ants pick pickers by
         roulette and sequence each picker by earliest due date
         (_sort_picker_queues_by_due_date), which is a good rule of thumb
-        but not optimal against this objective, while v5's Stage 2 solves
+        but not optimal against this objective, while the Split's Stage 2 solves
         the schedule exactly. These are the same neighborhoods opp_hc
         searches (_generate_picker_reassignment_neighbor /
         _generate_sequence_swap_neighbor), applied exhaustively to the
@@ -1075,7 +1071,7 @@ class OPPAntColonyOptimization(Model):
 
         Insertion first because it's cheap and, when it realizes, gives a
         short route (measured 2026-09-27: e.g. realistic_crew_scenario(14)
-        B2 = 154.5 route-time units, v5's exact Stage 1 optimum), while
+        B2 = 154.5 route-time units, the Split's exact Stage 1 optimum), while
         best_first_route's first feasible route can be much longer -- too
         long to be cold-chain-eligible in realistic_crew_cold_chain, where
         that made every ant non-compliant. Cached per required-location
@@ -1243,7 +1239,7 @@ class OPPAntColonyOptimization(Model):
         (same formula as RouteEvaluator._calculate_batch_execution_time --
         kept here too since this copy also drives the reported
         batch_times/batch_completions/tardiness/earliness, same split
-        opp_aco_2/opp_hc use between the search's evaluator and this
+        opp_aco/opp_hc use between the search's evaluator and this
         reporting-only helper).
         """
         return exec_time.T_exec_pb(
