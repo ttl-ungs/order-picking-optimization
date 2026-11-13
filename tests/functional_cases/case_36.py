@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from tests.shared_scenarios.functional.two_stage_scenarios_v5 import (
+from tests.shared_scenarios.functional.two_stage_scenarios import (
     slow_picker_late_order,
     two_batches_same_route,
 )

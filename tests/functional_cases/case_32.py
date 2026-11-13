@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from tests.infra.zimpl.dat_files_builder import build_dat_files
 from tests.infra.cases.exact_model_case import ExactModelTestCase
 
-from tests.shared_scenarios.functional.one_mission_one_picker_grid_graph_v4 import (
+from tests.shared_scenarios.functional.one_mission_one_picker_grid_graph import (
     scenario_one_mission_one_picker_grid_graph,
 )
 

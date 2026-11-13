@@ -1,4 +1,4 @@
-from tests.shared_scenarios.stress.stress_scenarios_v5_designed import realistic_crew_scenario
+from tests.shared_scenarios.stress.stress_scenarios_designed import realistic_crew_scenario
 from tests.infra.cases.opp_test_case import OPPTestCase
 
 

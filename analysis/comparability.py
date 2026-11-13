@@ -6,15 +6,15 @@ scenario) with v5's reference outcome and whether the heuristics'
 outcome (feasible vs infeasible) and objective can be compared against it,
 with the reason when not. Every comparison table or plot should filter on
 these columns instead of re-deciding case by case; see
-docs/specs/comparabilidad_v5_heuristicas.md for the rules.
+docs/specs/comparabilidad_split_heuristicas.md for the rules.
 
 - functional: the instances in
-  tests/shared_scenarios/functional/v5_equivalence_scenarios.json (exported
-  from opp_v5_2_split's functional tests), which aco_4/hc_4 solve in
-  test_case_v5_equivalence.py as test_v5eq__<v5 test>[__<k>]. Their v5
+  tests/shared_scenarios/functional/functional_instances.json (exported
+  from opp_split's functional tests), which opp_aco/opp_hc solve in
+  test_case_functional_instances.py as test_instance__<v5 test>[__<k>]. Their v5
   objective comes from that file (per instance -- the v5 results CSV keeps
   only the last solve of tests that solve more than one instance).
-  The OTHER aco_4/hc_4 functional tests are not comparable with v5, even
+  The OTHER opp_aco/opp_hc functional tests are not comparable with v5, even
   when they share a test name: most run with one picker where the v5
   test has two (2026-09-28 audit).
 - stress: the 19 scenarios of tests/stress_cases, solved by every model (the
@@ -26,9 +26,9 @@ Run:
 
     python -m analysis.comparability
 
-Writes results/comparability/comparability_v5_vs_heuristics.csv (the
-registry) and results/comparability/results_v5_vs_heuristics.csv (the
-registry joined with aco_4's and hc_4's latest results: objective, time,
+Writes results/comparability/comparability_split_vs_heuristics.csv (the
+registry) and results/comparability/results_split_vs_heuristics.csv (the
+registry joined with opp_aco's and opp_hc's latest results: objective, time,
 gap and speedup per instance and heuristic -- see build_results).
 """
 
@@ -38,12 +38,12 @@ import pandas as pd
 
 from analysis.config import OUTPUTS_ROOT
 from analysis.load import _extract_instance, _load_sources, _pick_sources
-from tests.infra.factories.v5_equivalence import FIXTURE_PATH, METHOD_PREFIX, _method_names, load_fixtures
+from tests.infra.factories.functional_instances import FIXTURE_PATH, METHOD_PREFIX, _method_names, load_fixtures
 
-OUTPUT_PATH = os.path.join(OUTPUTS_ROOT, "comparability", "comparability_v5_vs_heuristics.csv")
+OUTPUT_PATH = os.path.join(OUTPUTS_ROOT, "comparability", "comparability_split_vs_heuristics.csv")
 
 COLUMNS = [
-    "tier", "v5_test", "heuristic_instance", "v5_model", "v5_status", "v5_obj",
+    "tier", "split_test", "heuristic_instance", "split_model", "split_status", "split_obj",
     "comparable_status", "comparable_objective", "not_comparable_reason", "source",
 ]
 
@@ -54,11 +54,11 @@ def functional_rows(fixture_path=FIXTURE_PATH):
     for method_name, entry in _method_names(fixtures["instances"]):
         rows.append({
             "tier": "functional",
-            "v5_test": entry["v5_test"],
+            "split_test": entry["split_test"],
             "heuristic_instance": method_name,
-            "v5_model": "opp_v5_2_split",
-            "v5_status": entry["v5_status"],
-            "v5_obj": entry["v5_obj"],
+            "split_model": "opp_split",
+            "split_status": entry["split_status"],
+            "split_obj": entry["split_obj"],
             "comparable_status": entry["comparable_status"],
             "comparable_objective": entry["comparable_objective"],
             "not_comparable_reason": entry["not_comparable_reason"],
@@ -66,14 +66,14 @@ def functional_rows(fixture_path=FIXTURE_PATH):
         })
     for name, reason in sorted(fixtures["excluded"].items()):
         rows.append({
-            "tier": "functional", "v5_test": name, "heuristic_instance": None, "v5_model": "opp_v5_2_split",
-            "v5_status": None, "v5_obj": None, "comparable_status": False, "comparable_objective": False,
+            "tier": "functional", "split_test": name, "heuristic_instance": None, "split_model": "opp_split",
+            "split_status": None, "split_obj": None, "comparable_status": False, "comparable_objective": False,
             "not_comparable_reason": f"excluido: {reason}", "source": os.path.basename(fixture_path),
         })
     for name in fixtures["not_captured"]:
         rows.append({
-            "tier": "functional", "v5_test": name, "heuristic_instance": None, "v5_model": "opp_v5_2_split",
-            "v5_status": None, "v5_obj": None, "comparable_status": False, "comparable_objective": False,
+            "tier": "functional", "split_test": name, "heuristic_instance": None, "split_model": "opp_split",
+            "split_status": None, "split_obj": None, "comparable_status": False, "comparable_objective": False,
             "not_comparable_reason": "el test de v5 no llega al solver (rechaza la entrada antes)",
             "source": os.path.basename(fixture_path),
         })
@@ -81,7 +81,7 @@ def functional_rows(fixture_path=FIXTURE_PATH):
 
 
 def stress_rows():
-    sources, _ = _pick_sources("opp_v5_2_split", "stress")
+    sources, _ = _pick_sources("opp_split", "stress")
     v5 = _load_sources(sources)
     rows = []
     for _, row in v5.iterrows():
@@ -89,11 +89,11 @@ def stress_rows():
         ok = row["status"] == "ok"
         rows.append({
             "tier": "stress",
-            "v5_test": instance,
+            "split_test": instance,
             "heuristic_instance": instance,
-            "v5_model": "opp_v5_2_split",
-            "v5_status": "optimal" if ok else row["status"],
-            "v5_obj": pd.to_numeric(row["obj_val"], errors="coerce") if ok else None,
+            "split_model": "opp_split",
+            "split_status": "optimal" if ok else row["status"],
+            "split_obj": pd.to_numeric(row["obj_val"], errors="coerce") if ok else None,
             # Same scenario builder call on both sides (verified 2026-09-28).
             # No voluntary waiting to rule out: 04-19 have W_c = 27 >
             # orders per batch (waiting never pays), 01-03 have every order
@@ -112,12 +112,12 @@ def build_registry():
 
 # --- results joined with the registry ---------------------------------------
 
-HEURISTICS = ["opp_aco_4", "opp_hc_4"]
+HEURISTICS = ["opp_aco", "opp_hc"]
 
-RESULTS_PATH = os.path.join(OUTPUTS_ROOT, "comparability", "results_v5_vs_heuristics.csv")
+RESULTS_PATH = os.path.join(OUTPUTS_ROOT, "comparability", "results_split_vs_heuristics.csv")
 
 RESULT_COLUMNS = COLUMNS[:-1] + [
-    "heuristic", "v5_time", "v5_time_source",
+    "heuristic", "split_time", "split_time_source",
     "heuristic_obj", "heuristic_time", "heuristic_found_solution", "status_matches",
     "gap_pct", "speedup", "speedup_is_lower_bound", "heuristic_source",
 ]
@@ -155,7 +155,7 @@ def _heuristic_rows(model_dir, tier):
     return df
 
 
-def _v5_functional_times(registry):
+def _split_functional_times(registry):
     """
     v5's time per functional instance, from its functional results CSV.
     That CSV keeps one row per test METHOD (the last solve), so a time is
@@ -163,25 +163,25 @@ def _v5_functional_times(registry):
     fixture has a single instance for it, and the CSV's objective matches
     the fixture's; otherwise the time is left empty.
     """
-    sources, _ = _pick_sources("opp_v5_2_split", "functional")
+    sources, _ = _pick_sources("opp_split", "functional")
     if not sources:
         return {}
     v5 = _load_sources(sources)
     unique = v5[~v5["instance"].duplicated(keep=False)].set_index("instance")
     functional = registry[(registry["tier"] == "functional") & registry["heuristic_instance"].notna()]
-    instances_per_test = functional["v5_test"].value_counts()
+    instances_per_test = functional["split_test"].value_counts()
     times = {}
     for _, row in functional.iterrows():
-        name = row["v5_test"]
+        name = row["split_test"]
         if instances_per_test[name] != 1 or name not in unique.index:
             continue
-        v5_row = unique.loc[name]
-        csv_obj = pd.to_numeric(v5_row["obj_val"], errors="coerce")
-        same_obj = (pd.isna(csv_obj) and pd.isna(row["v5_obj"])) or (
-            pd.notna(csv_obj) and pd.notna(row["v5_obj"]) and abs(csv_obj - row["v5_obj"]) <= 1e-6 * max(1.0, abs(row["v5_obj"]))
+        split_row = unique.loc[name]
+        csv_obj = pd.to_numeric(split_row["obj_val"], errors="coerce")
+        same_obj = (pd.isna(csv_obj) and pd.isna(row["split_obj"])) or (
+            pd.notna(csv_obj) and pd.notna(row["split_obj"]) and abs(csv_obj - row["split_obj"]) <= 1e-6 * max(1.0, abs(row["split_obj"]))
         )
         if same_obj:
-            times[row["heuristic_instance"]] = (_seconds(v5_row["total_time"]), v5_row["source_file"])
+            times[row["heuristic_instance"]] = (_seconds(split_row["total_time"]), split_row["source_file"])
     return times
 
 
@@ -195,12 +195,12 @@ def build_results(registry):
       proved infeasibility (empty when the status isn't comparable);
     - gap_pct: 100 * (heuristic - v5) / |v5|, only where the objective is
       comparable (negative = heuristic better);
-    - speedup: v5_time / heuristic_time, where both times are known (for
+    - speedup: split_time / heuristic_time, where both times are known (for
       v5 timeouts it's a lower bound, v5 having been cut at its time
       limit: speedup_is_lower_bound).
     """
-    v5_stress = _load_sources(_pick_sources("opp_v5_2_split", "stress")[0]).set_index("instance")
-    v5_functional_times = _v5_functional_times(registry)
+    split_stress = _load_sources(_pick_sources("opp_split", "stress")[0]).set_index("instance")
+    split_functional_times = _split_functional_times(registry)
     rows = []
     for model_dir in HEURISTICS:
         results = {tier: _heuristic_rows(model_dir, tier).set_index("instance") for tier in ("functional", "stress")}
@@ -210,11 +210,11 @@ def build_results(registry):
                 continue
             row = {c: reg[c] for c in COLUMNS[:-1]}
             row["heuristic"] = model_dir
-            if reg["tier"] == "stress" and instance in v5_stress.index:
-                row["v5_time"] = _seconds(v5_stress.loc[instance, "total_time"])
-                row["v5_time_source"] = v5_stress.loc[instance, "source_file"]
-            elif instance in v5_functional_times:
-                row["v5_time"], row["v5_time_source"] = v5_functional_times[instance]
+            if reg["tier"] == "stress" and instance in split_stress.index:
+                row["split_time"] = _seconds(split_stress.loc[instance, "total_time"])
+                row["split_time_source"] = split_stress.loc[instance, "source_file"]
+            elif instance in split_functional_times:
+                row["split_time"], row["split_time_source"] = split_functional_times[instance]
 
             tier_results = results[reg["tier"]]
             if instance in tier_results.index:
@@ -225,13 +225,13 @@ def build_results(registry):
                 row["heuristic_source"] = h["source_file"]
                 row["heuristic_found_solution"] = pd.notna(obj)
                 if reg["comparable_status"]:
-                    row["status_matches"] = row["heuristic_found_solution"] == (reg["v5_status"] in ("optimal", "feasible"))
+                    row["status_matches"] = row["heuristic_found_solution"] == (reg["split_status"] in ("optimal", "feasible"))
                 if reg["comparable_objective"] and pd.notna(obj):
-                    gap = 100.0 * (obj - reg["v5_obj"]) / max(abs(reg["v5_obj"]), 1e-9)
+                    gap = 100.0 * (obj - reg["split_obj"]) / max(abs(reg["split_obj"]), 1e-9)
                     row["gap_pct"] = 0.0 if abs(gap) < GAP_TOLERANCE_PCT else gap
-                if pd.notna(row.get("v5_time")) and pd.notna(row["heuristic_time"]) and row["heuristic_time"] > 0:
-                    row["speedup"] = row["v5_time"] / row["heuristic_time"]
-                    row["speedup_is_lower_bound"] = reg["v5_status"] == "timeout"
+                if pd.notna(row.get("split_time")) and pd.notna(row["heuristic_time"]) and row["heuristic_time"] > 0:
+                    row["speedup"] = row["split_time"] / row["heuristic_time"]
+                    row["speedup_is_lower_bound"] = reg["split_status"] == "timeout"
             rows.append(row)
     return pd.DataFrame(rows, columns=RESULT_COLUMNS)
 

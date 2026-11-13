@@ -1,4 +1,4 @@
-"""Check a heuristic solution (opp_hc_4 / opp_aco_4) against opp_v5_1_mono.
+"""Check a heuristic solution (opp_hc / opp_aco) against opp_mono.
 
 The monolithic MIP is the single source of truth for the v5 constraints:
 instead of re-implementing them in Python, the heuristic's values are fixed
@@ -29,7 +29,7 @@ from tests.infra.zimpl.dat_files_builder import (
 )
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-MONO_ZPL = os.path.join(PROJECT_ROOT, "models", "opp_v5_1_mono", "opp_model_v5_1_mono.zpl")
+MONO_ZPL = os.path.join(PROJECT_ROOT, "models", "opp_mono", "opp_mono.zpl")
 
 REL_TOL = 1e-6
 COLD_CHAIN_TOL = 1e-9  # same tolerance mono's u_pb upper bound uses
@@ -45,7 +45,7 @@ def _drop_empty_batches(instance, solution, report):
     use either (agreed with the user, 2026-09-28).
 
     Mono forces EVERY batch in B to be routed, assigned and charged in the
-    objective (its c_b), even one with no orders; opp_hc_4/opp_aco_4 skip
+    objective (its c_b), even one with no orders; opp_hc/opp_aco skip
     empty batches. Left in, mono prices a correct solution above what the
     heuristic reports (e.g. 14.5 vs 6.25) and, with many of them free, SCIP
     can hit its time limit on an otherwise trivial instance. An empty batch
@@ -263,7 +263,7 @@ def _compile_lp(sc, m, m_seq, workdir):
     tests/infra/zimpl/zpl_utils.solve_zpl does (zimpl run from the dat dir,
     mono reads ../dat_files/*)."""
     dat_dir = os.path.join(workdir, "dat_files")
-    zpl_dir = os.path.join(workdir, "opp_v5_1_mono")
+    zpl_dir = os.path.join(workdir, "opp_mono")
     os.makedirs(dat_dir)
     os.makedirs(zpl_dir)
     zpl_path = os.path.join(zpl_dir, os.path.basename(MONO_ZPL))
@@ -402,7 +402,7 @@ def _restrict_to_solution(sc, ev, report):
 
 def check_compliance(meta, instance, solution, time_limit=300.0, keep_workdir=None, restrict=True):
     """Check one solution (as read by verification.solution_store) against
-    opp_v5_1_mono.
+    opp_mono.
 
     Args:
         meta: {"model", "test"}.

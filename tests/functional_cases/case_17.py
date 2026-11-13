@@ -8,7 +8,7 @@ from models.base.opp_location_graph import OPPLocationGraph
 from tests.infra.cases.exact_model_case import ExactModelTestCase
 from tests.infra.zimpl.zpl_utils import extract_active_arcs
 
-from tests.shared_scenarios.functional.scenario_17_v4 import branched_single_mission_route
+from tests.shared_scenarios.functional.scenario_17 import branched_single_mission_route
 
 class Case17(ExactModelTestCase):
 

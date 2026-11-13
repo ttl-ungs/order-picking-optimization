@@ -7,7 +7,7 @@ sys.path.insert(
 )
 
 from tests.infra.cases.exact_model_case import ExactModelTestCase
-from tests.shared_scenarios.functional.single_order_params_v4 import single_order_params
+from tests.shared_scenarios.functional.single_order_params import single_order_params
 from tests.infra.zimpl.dat_files_builder import build_dat_files
 
 

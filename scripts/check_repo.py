@@ -29,8 +29,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 ROOT = os.getcwd()
 TIERS = ("functional", "stress", "diagnostics")
 RESULT_TIERS = {"functional", "stress"}
-# results/<model>/<study>/: a model's own calibration studies (opp_aco_4's
-# ablation, pheromone and seed sweeps, opp_hc_4's budget study), not test-suite runs.
+# results/<model>/<study>/: a model's own calibration studies (opp_aco's
+# ablation, pheromone and seed sweeps, opp_hc's budget study), not test-suite runs.
 RESULT_STUDIES = {"ablation", "pheromone", "seeds", "budget"}
 # results/<dir>/ that hold cross-model outputs instead of one model's runs:
 #   compliance/<model>/<tier>/  verification/ reports (one per run it checks)
@@ -42,7 +42,7 @@ RESULT_CROSS_MODEL_FLAT = {"comparability", "equal_time"}
 # Entry points / scripts whose import would run something or is not a library module.
 # experiments/*/studies/ keeps each study's scripts exactly as they were run;
 # most execute the experiment at import time.
-IMPORT_SKIP_PREFIXES = ("experiments/opp_v5/studies/",)
+IMPORT_SKIP_PREFIXES = ("experiments/exact/studies/",)
 IMPORT_SKIP_FILES = {"tests/run_suite.py"}
 
 # (pattern, why) -- paths and dotted modules that no longer exist.
@@ -54,12 +54,10 @@ STALE = [
     (r"tests\.utils\.zpl_utils\b", "moved to tests.infra.zimpl.zpl_utils"),
     (r"models\.utils\.dat_files_builder\b", "moved to tests.infra.zimpl.dat_files_builder"),
     (r"\bgraphs\.graphs_factory\b", "moved to tests.infra.factories.graphs_factory"),
-    (r"\b(models|tests)\.opp_v5\b|\b(models|tests|results)/opp_v5\b", "opp_v5 was renamed to opp_v5_2_split"),
     (r"tests\.opp_v[24]\.route_assertions\b", "moved to tests.infra.cases.route_assertions"),
     (r"tests\.opp_\w+\.tests\.(normal|stress|diagnostics)\b", "tests/<model>/tests/ was flattened"),
     (r"tests\.support\b|tests/support\b", "tests/support/ was regrouped into tests/infra/{execution,cases,factories,zimpl}"),
     (r"tests\.shared_scenarios\.normal\b", "renamed to tests.shared_scenarios.functional"),
-    (r"\bmodels\.opp\.|\bmodels\.opp_hc\.|\bmodels\.opp_aco\.", "renamed to opp_v1 / opp_hc_1 / opp_aco_1"),
 ]
 # Text where the old names are the point (history), not live references.
 STALE_ALLOW = ("meta.md", "scripts/check_repo.py", "analysis/output/")

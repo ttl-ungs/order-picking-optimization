@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from tests.shared_scenarios.functional.two_stage_scenarios_v5 import two_possible_routes
+from tests.shared_scenarios.functional.two_stage_scenarios import two_possible_routes
 from tests.infra.zimpl.zpl_utils import extract_active_arcs
 from tests.infra.cases.exact_model_case import ExactModelTestCase
 

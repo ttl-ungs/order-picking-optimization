@@ -1,11 +1,11 @@
 """
-Search-budget study for opp_hc_4: does the stress suite's Max_it = 200 /
-Max_imp = 60 (tests/opp_hc_4/stress/v5_stress_test_case.py) cut the
+Search-budget study for opp_hc: does the stress suite's Max_it = 200 /
+Max_imp = 60 (tests/opp_hc/stress/stress_test_case.py) cut the
 search short? Each (scenario, seed) runs with every (Max_it, Max_imp) pair
 in BUDGETS; the delta is against 200/60 on the same scenario and seed.
 
 Why 200/60 is the baseline: the values first appear, uncommented, in the
-functional tests of the commit that added opp_hc_4 (66d77a3, 2026-09-09),
+functional tests of the commit that added opp_hc (66d77a3, 2026-09-09),
 and the stress base test copied them (df7a052, 2026-09-26). No tuning
 behind them is recorded, so this study measures whether they bind.
 
@@ -29,7 +29,7 @@ wall clock running and gets cut by Max_time (seen 2026-10-15).
 ~3-4 min per seed for ids 02-19 (measured 2026-10-14; construction
 dominates, ~0.4-5 s per run).
 
-Writes results/opp_hc_4/budget/output_opp_hc_4_budget_<timestamp>.csv.
+Writes results/opp_hc/budget/output_opp_hc_budget_<timestamp>.csv.
 """
 
 import argparse
@@ -43,9 +43,9 @@ from datetime import datetime
 from analysis.config import OUTPUTS_ROOT
 from analysis.run_equal_time_study import SCENARIOS
 from analysis.aco_study_common import scenario_ids
-from dtos.hc.solve_hc_4_model_dto import SolveHC4ModelDTO
-from models.opp_hc_4 import OPPHillClimbing
-from tests.infra.factories.v5_scenario_adapter import build_model_dto_and_params
+from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
+from models.opp_hc import OPPHillClimbing
+from tests.infra.factories.scenario_adapter import build_model_dto_and_params
 
 # (Max_it, Max_imp). The first one is the baseline every delta is against.
 BUDGETS = [(200, 60), (200, 120), (500, 60), (500, 120)]
@@ -59,8 +59,8 @@ FIELDNAMES = [
 
 
 def solve_hc(scenario, seed, max_it, max_imp):
-    """One opp_hc_4 run; returns status, obj_val, iterations, stop reason and wall-clock time."""
-    model_dto, params = build_model_dto_and_params(scenario, SolveHC4ModelDTO, seed=seed)
+    """One opp_hc run; returns status, obj_val, iterations, stop reason and wall-clock time."""
+    model_dto, params = build_model_dto_and_params(scenario, SolveHCModelDTO, seed=seed)
     params.Max_it, params.Max_imp, params.Max_time = max_it, max_imp, MAX_TIME
 
     log = io.StringIO()
@@ -91,9 +91,9 @@ def solve_hc(scenario, seed, max_it, max_imp):
 
 
 def output_path():
-    out_dir = os.path.join(OUTPUTS_ROOT, "opp_hc_4", "budget")
+    out_dir = os.path.join(OUTPUTS_ROOT, "opp_hc", "budget")
     os.makedirs(out_dir, exist_ok=True)
-    return os.path.join(out_dir, f"output_opp_hc_4_budget_{datetime.now():%Y%m%d_%H%M%S}.csv")
+    return os.path.join(out_dir, f"output_opp_hc_budget_{datetime.now():%Y%m%d_%H%M%S}.csv")
 
 
 def main(argv=None):

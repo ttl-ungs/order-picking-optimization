@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from tests.infra.zimpl.dat_files_builder import build_dat_files
 from models.base.opp_location_graph import OPPLocationGraph
 from tests.infra.cases.exact_model_case import ExactModelTestCase
-from tests.shared_scenarios.functional.scenario_02_v4 import two_orders_two_aisles
+from tests.shared_scenarios.functional.scenario_02 import two_orders_two_aisles
 from tests.infra.zimpl.zpl_utils import extract_active_arcs
 
 

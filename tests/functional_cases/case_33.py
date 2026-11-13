@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from tests.infra.zimpl.dat_files_builder import build_dat_files
 from tests.infra.cases.exact_model_case import ExactModelTestCase
 
-from tests.shared_scenarios.functional.scenario_01_v4 import basic_two_orders_capacity_limit
+from tests.shared_scenarios.functional.scenario_01 import basic_two_orders_capacity_limit
 
 
 class Case33(ExactModelTestCase):

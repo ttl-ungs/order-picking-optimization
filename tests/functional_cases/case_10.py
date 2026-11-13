@@ -8,7 +8,7 @@ from models.base.opp_location_graph import OPPLocationGraph
 from tests.infra.cases.exact_model_case import ExactModelTestCase
 from tests.infra.zimpl.zpl_utils import extract_active_arcs
 
-from tests.shared_scenarios.functional.scenario_07_v4 import test_two_orders_two_locations_two_missions
+from tests.shared_scenarios.functional.scenario_07 import test_two_orders_two_locations_two_missions
 
 class Case10(ExactModelTestCase):
 

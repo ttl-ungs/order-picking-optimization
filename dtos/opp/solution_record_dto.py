@@ -10,7 +10,7 @@ class SolutionRecordDTO:
     itself (the solution_info dict the model already hands to its Observer).
 
     The sets are the model's effective ones, not the input ModelDTO's: e.g.
-    opp_hc_4/opp_aco_4 fall back to P = ["P1"] when a test leaves P unset,
+    opp_hc/opp_aco fall back to P = ["P1"] when a test leaves P unset,
     and the verifier must check against that same picker set.
 
     Holds references only -- nothing is copied or serialized while the model
@@ -67,7 +67,7 @@ class SolutionRecordDTO:
 
     @property
     def params(self):
-        """The model's solve DTO (SolveHC4ModelDTO / SolveAco4ModelDTO)."""
+        """The model's solve DTO (SolveHCModelDTO / SolveAcoModelDTO)."""
         return self._params
 
     @property

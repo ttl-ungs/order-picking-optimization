@@ -7,7 +7,7 @@ sys.path.insert(
 )
 
 from tests.infra.cases.exact_model_case import ExactModelTestCase
-from tests.shared_scenarios.functional.scenario_12_v4 import grid_5x3_two_pickers_four_batches
+from tests.shared_scenarios.functional.scenario_12 import grid_5x3_two_pickers_four_batches
 from tests.infra.zimpl.dat_files_builder import build_dat_files
 from tests.infra.zimpl.zpl_utils import extract_active_arcs
 

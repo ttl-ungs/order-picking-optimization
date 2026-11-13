@@ -1,9 +1,9 @@
 """
-Seed study for opp_aco_4: how much does a different Seed change the
+Seed study for opp_aco: how much does a different Seed change the
 result on the v5 stress scenarios? Each (scenario, seed) runs once with
 the DTO defaults (the same parameters as the stress suite); the spread is
 the difference between the best and worst objective of a scenario across
-seeds, and the gap is against opp_v5_2_split's objective (None where v5
+seeds, and the gap is against opp_split's objective (None where v5
 timed out).
 
 Scenario 01 (100x100, ~35 min per run) is excluded by default, as in
@@ -26,7 +26,7 @@ NOT a unittest test. Keep the machine awake:
 ~45 min per seed for ids 02-19 sequentially (2026-09-29 stress CSV), so
 ~1.5 h for 5 seeds with 3 workers.
 
-Writes results/opp_aco_4/seeds/output_opp_aco_4_seeds_<timestamp>.csv
+Writes results/opp_aco/seeds/output_opp_aco_seeds_<timestamp>.csv
 (one row per run, in completion order).
 """
 
@@ -37,11 +37,11 @@ import io
 import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-from analysis.aco_study_common import gap_pct, output_path, scenario_ids, solve_aco, v5_reference_objectives
+from analysis.aco_study_common import gap_pct, output_path, scenario_ids, solve_aco, split_reference_objectives
 from analysis.run_equal_time_study import SCENARIOS
 
 FIELDNAMES = [
-    "id", "scenario", "seed", "status", "obj_val", "v5_obj", "gap_pct",
+    "id", "scenario", "seed", "status", "obj_val", "split_obj", "gap_pct",
     "route_time_sum", "elapsed_s", "iterations_run", "error",
 ]
 
@@ -73,7 +73,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     ids = scenario_ids(args.id)
-    reference = v5_reference_objectives()
+    reference = split_reference_objectives()
     path = output_path("seeds")
     tasks = sorted(((i, s) for i in ids for s in args.seeds), key=lambda t: -APPROX_SECONDS.get(t[0], 0))
 
@@ -84,8 +84,8 @@ def main(argv=None):
         futures = [pool.submit(run_one, i, s) for i, s in tasks]
         for n, future in enumerate(as_completed(futures), 1):
             row = future.result()
-            row["v5_obj"] = reference.get(row["scenario"])
-            row["gap_pct"] = gap_pct(row.get("obj_val"), row["v5_obj"])
+            row["split_obj"] = reference.get(row["scenario"])
+            row["gap_pct"] = gap_pct(row.get("obj_val"), row["split_obj"])
             writer.writerow(row)
             f.flush()
             gap_text = f"{row['gap_pct']:+.3f}%" if row["gap_pct"] is not None else "-"

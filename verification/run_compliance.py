@@ -1,4 +1,4 @@
-"""Check every solution saved by a test run against opp_v5_1_mono.
+"""Check every solution saved by a test run against opp_mono.
 
 Reads a results CSV written with WRITE_RESULTS_CSV=1 WRITE_SOLUTIONS=1 (its
 solution_file column links one JSON per test), checks each solution with
@@ -7,9 +7,9 @@ results/compliance/<model>/<tier>/compliance_<csv name>.csv. Nothing is
 re-run: only the saved solutions are checked.
 
 Usage:
-    python -m verification.run_compliance --model opp_hc_4 --tier functional
+    python -m verification.run_compliance --model opp_hc --tier functional
         (latest CSV of that model/tier that has a solution_file column)
-    python -m verification.run_compliance results/opp_aco_4/stress/output_....csv
+    python -m verification.run_compliance results/opp_aco/stress/output_....csv
     ... [--test realistic_crew] [--time-limit 300] [--keep-workdir DIR] [--resume]
 """
 
@@ -122,7 +122,7 @@ def main(argv=None):
     pending = [r for r in selected if r["test"] not in done]
 
     print(
-        f"Checking {len(pending)} test(s) from {os.path.relpath(csv_path, PROJECT_ROOT)} against opp_v5_1_mono"
+        f"Checking {len(pending)} test(s) from {os.path.relpath(csv_path, PROJECT_ROOT)} against opp_mono"
         + (f" ({len(kept)} row(s) kept from the existing report)" if kept else ""),
         flush=True,
     )

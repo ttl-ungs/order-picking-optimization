@@ -8,7 +8,7 @@ from models.base.opp_location_graph import OPPLocationGraph
 from tests.infra.cases.exact_model_case import ExactModelTestCase
 from tests.infra.zimpl.zpl_utils import extract_active_arcs
 
-from tests.shared_scenarios.functional.scenario_04_v4 import bidirectional_edges
+from tests.shared_scenarios.functional.scenario_04 import bidirectional_edges
 
 class Case07(ExactModelTestCase):
 

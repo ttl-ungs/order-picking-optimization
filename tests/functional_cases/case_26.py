@@ -7,7 +7,7 @@ sys.path.insert(
 )
 
 from tests.infra.cases.exact_model_case import ExactModelTestCase
-from tests.shared_scenarios.functional.scenario_13_v4 import (
+from tests.shared_scenarios.functional.scenario_13 import (
     bridge_graph_disconnected,
     bridge_graph_two_pickers_four_batches,
 )

@@ -72,6 +72,14 @@ def _build_bridge_graph(connect_right=True):
 
 def bridge_graph_two_pickers_four_batches():
     B = {"B1", "B2", "B3", "B4"}
+    P = {"P1", "P2"}
+
+    x = {(p, b): 0 for p in P for b in B}
+    x[("P1", "B1")] = 1
+    x[("P1", "B2")] = 1
+    x[("P2", "B3")] = 1
+    x[("P2", "B4")] = 1
+
     V, location_graph = _build_bridge_graph(connect_right=True)
 
     w1 = 1.0
@@ -81,11 +89,19 @@ def bridge_graph_two_pickers_four_batches():
 
     cap_vehicle = 6.0
 
-    return V, B, w1, w2, gamma, delta, location_graph, cap_vehicle
+    return V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x
 
 
 def bridge_graph_disconnected():
     B = {"B1", "B2", "B3", "B4"}
+    P = {"P1", "P2"}
+
+    x = {(p, b): 0 for p in P for b in B}
+    x[("P1", "B1")] = 1
+    x[("P1", "B2")] = 1
+    x[("P2", "B3")] = 1
+    x[("P2", "B4")] = 1
+
     V, location_graph = _build_bridge_graph(connect_right=False)
 
     w1 = 1.0
@@ -95,4 +111,4 @@ def bridge_graph_disconnected():
 
     cap_vehicle = 6.0
 
-    return V, B, w1, w2, gamma, delta, location_graph, cap_vehicle
+    return V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x

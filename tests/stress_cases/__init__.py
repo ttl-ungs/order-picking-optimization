@@ -10,7 +10,7 @@ batches), and `bind_cases` creates, for that adapter, one test class per case.
 Each model's stress folder binds the cases in a module of its own:
 
     from tests.stress_cases import bind_cases
-    from tests.opp_v5_2_split.stress.stress_test_case import OPPSplitStressTestCase
+    from tests.opp_split.stress.stress_test_case import OPPSplitStressTestCase
 
     bind_cases(OPPSplitStressTestCase, globals())
 """

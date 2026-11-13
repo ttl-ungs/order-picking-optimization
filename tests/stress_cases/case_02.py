@@ -1,4 +1,4 @@
-from tests.shared_scenarios.stress.stress_scenarios_v5 import migrated_stress_scenario
+from tests.shared_scenarios.stress.stress_scenarios import migrated_stress_scenario
 from tests.infra.cases.opp_test_case import OPPTestCase
 
 

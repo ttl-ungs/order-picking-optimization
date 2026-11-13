@@ -1,7 +1,7 @@
 """
-Ablation study for opp_aco_4's hybrid (ACO + local search) components:
+Ablation study for opp_aco's hybrid (ACO + local search) components:
 how much of its result comes from the ant colony itself and how much from
-each local-search component added on top (see opp_aco_4's header and the
+each local-search component added on top (see opp_aco's header and the
 COMPONENT_FLAGS in analysis/aco_study_common.py).
 
 Variants, each adding to the previous one:
@@ -11,12 +11,12 @@ Variants, each adding to the previous one:
   busqueda_rutas      + local search on every ant's route (2-opt + segment
                       re-routing), elite-route polishing, and recombining
                       each batch's shortest route into the best solution
-  completo            + schedule local search (default opp_aco_4)
+  completo            + schedule local search (default opp_aco)
 
 Everything else (Seed, ants, iterations, alpha/beta/rho, Max_time) is the
-DTO default, so "completo" reproduces a normal opp_aco_4 run. Each
+DTO default, so "completo" reproduces a normal opp_aco run. Each
 (scenario, variant) runs once per seed; the gap is against
-opp_v5_2_split's objective from its newest stress CSV (None where v5
+opp_split's objective from its newest stress CSV (None where v5
 timed out).
 
 NOT a unittest test. Run directly, ideally with nothing else competing for
@@ -31,14 +31,14 @@ without local search), ~110 s per 14x14 run, ~55 s per over_staffed run
 (from the 2026-09-27 stress CSV; ant construction dominates, so the
 variants take similar times).
 
-Writes results/opp_aco_4/ablation/output_opp_aco_4_ablation_<timestamp>.csv.
+Writes results/opp_aco/ablation/output_opp_aco_ablation_<timestamp>.csv.
 """
 
 import argparse
 import csv
 
 from analysis.aco_study_common import (
-    SCENARIOS, gap_pct, output_path, scenario_ids, solve_aco, v5_reference_objectives, warn_if_hash_seed_unset,
+    SCENARIOS, gap_pct, output_path, scenario_ids, solve_aco, split_reference_objectives, warn_if_hash_seed_unset,
 )
 
 VARIANTS = {
@@ -57,7 +57,7 @@ VARIANTS = {
 }
 
 FIELDNAMES = [
-    "id", "scenario", "variant", "seed", "status", "obj_val", "v5_obj", "gap_pct",
+    "id", "scenario", "variant", "seed", "status", "obj_val", "split_obj", "gap_pct",
     "route_time_sum", "elapsed_s", "iterations_run",
 ]
 
@@ -70,7 +70,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     warn_if_hash_seed_unset()
-    reference = v5_reference_objectives()
+    reference = split_reference_objectives()
     path = output_path("ablation")
 
     with open(path, "w", newline="", encoding="utf-8") as f:
@@ -79,14 +79,14 @@ def main(argv=None):
         for test_id in scenario_ids(args.id):
             name, build = SCENARIOS[test_id]
             scenario = build()
-            v5_obj = reference.get(name)
+            split_obj = reference.get(name)
             for variant in args.variants:
                 for seed in args.seeds:
                     result = solve_aco(scenario, seed, components=VARIANTS[variant])
-                    gap = gap_pct(result["obj_val"], v5_obj)
+                    gap = gap_pct(result["obj_val"], split_obj)
                     writer.writerow({
                         "id": test_id, "scenario": name, "variant": variant, "seed": seed,
-                        "v5_obj": v5_obj, "gap_pct": gap, **result,
+                        "split_obj": split_obj, "gap_pct": gap, **result,
                     })
                     f.flush()
                     gap_text = f"{gap:+.3f}%" if gap is not None else "sin referencia v5"

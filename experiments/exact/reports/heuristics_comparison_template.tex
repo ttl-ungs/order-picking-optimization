@@ -1,0 +1,364 @@
+\setupcolors[state=start]
+\setupcolor[hex]
+\definecolor[darkblue][h=003366]
+\definecolor[darkgray][h=e6e6e6]
+\definecolor[redline][h=d9534f]
+\definecolor[blueline][h=5bc0de]
+\definecolor[greenline][h=5cb85c]
+
+\setuphead[section][style=\bfa, color=darkblue, before=\blank, after=\blank]
+\setuphead[subsection][style=\bf, color=black, before=\blank, after=\blank]
+\setuppapersize[A4][A4]
+\setupbodyfont[11pt]
+\setuplayout[width=middle, height=middle, topspace=2cm, bottomspace=2cm]
+\mainlanguage[es]
+
+\starttext
+\title{\bf Comparación de OPP\_v5\_2\_split\crlf con OPP\_hc\_4 y OPP\_aco\_4}
+\blank[big]
+
+\startsection[title={Resumen}]
+\startitemize
+\item {\bf Las soluciones de las dos heurísticas son válidas}: las %%NUM:recomputed_checked%%
+verificadas contra el modelo monolítico cumplen todas las restricciones de v5, y el objetivo
+recalculado coincide con el reportado en todas.
+\item {\bf Coinciden con el exacto en el estado}: donde split encuentra solución, las heurísticas
+también; donde split prueba que no hay, tampoco la encuentran.
+\item {\bf ACO-4 es casi exacto}: alcanza el óptimo en las %%NUM:optimal_functional_opp_aco%%
+instancias funcionales comparables y queda a %%NUM:max_gap_stress_opp_aco%%~\% como máximo en
+stress.
+\item {\bf HC-4 es el más rápido}: en stress es %%NUM:stress_speedup_opp_hc%% veces más rápido
+que split en la mediana, con una brecha de %%NUM:max_gap_stress_opp_hc%%~\% como máximo.
+\item {\bf Escalan donde split no}: en los %%NUM:stress_noref%% escenarios de stress que split no
+termina en 40 minutos, las dos heurísticas dan una solución válida.
+\stopitemize
+\stopsection
+
+\startsection[title={Objetivo y alcance}]
+Este documento compara el modelo exacto OPP\_v5\_2\_split (formulación en dos etapas, resuelta con
+SCIP) con las dos metaheurísticas que resuelven el mismo problema: Hill Climbing (OPP\_hc\_4, en las
+tablas HC-4) y Ant Colony Optimization (OPP\_aco\_4, ACO-4). Las tres resuelven ruteo, asignación y
+secuenciación con velocidades heterogéneas de pickers y cadena de frío.
+
+Las preguntas son cinco: si las soluciones de las heurísticas son válidas para el modelo de v5,
+cuánto se alejan del óptimo, cuánto más rápido llegan, cómo escalan con el tamaño de la instancia
+y cuánta memoria usan.
+
+Los datos son los CSV consolidados:
+\startitemize
+\item \type{results/comparability/results_split_vs_heuristics.csv} — una fila por instancia y
+heurística, con el estado, el objetivo y el tiempo de split y de la heurística, la brecha y el
+cociente de tiempos. Lo escribe \type{python -m analysis.comparability} a partir de los CSV de
+resultados de los tres modelos.
+\item \type{results/opp_hc/stress/}, \type{results/opp_aco/stress/} y
+\type{results/opp_split/stress/} — tamaño de cada instancia, memoria, nivel de servicio y
+convergencia.
+\item \type{results/compliance/opp_hc/} y \type{results/compliance/opp_aco/} — la verificación
+de cada solución de las heurísticas contra las restricciones de v5.
+\stopitemize
+\stopsection
+
+\startsection[title={Los tres métodos}]
+\blank[medium]
+\bTABLE[split=yes, align=middle, frame=on, width=fit]
+\setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
+\setupTABLE[column][3][width=6.5cm, align=flushleft]
+\bTR \bTH Método \eTH \bTH Tipo \eTH \bTH Configuración en stress \eTH \bTH Tope \eTH \eTR
+\bTR \bTD OPP\_v5\_2\_split \eTD \bTD Exacto (ZIMPL + SCIP) \eTD \bTD Etapa 1: un MIP de ruteo por lote, en 6 procesos. Etapa 2: asignación y secuenciación. \eTD \bTD 40 min por test \eTD \eTR
+\bTR \bTD HC-4 \eTD \bTD Búsqueda local \eTD \bTD Hasta %%NUM:hc_max_it%% iteraciones; corta tras %%NUM:hc_max_imp%% sin mejora. \eTD \bTD 30 s de reloj, mirado entre iteraciones \eTD \eTR
+\bTR \bTD ACO-4 \eTD \bTD Colonia de hormigas \eTD \bTD %%NUM:aco_ants%% hormigas, %%NUM:aco_max_it%% iteraciones, $\alpha = %%NUM:aco_alpha%%$, $\beta = %%NUM:aco_beta%%$, %%NUM:aco_route_attempts%% intentos de ruta por lote. \eTD \bTD %%NUM:aco_max_time_min%% min de reloj, mirado entre iteraciones \eTD \eTR
+\eTABLE
+\blank[medium]
+
+Los topes de las heurísticas no interrumpen una iteración en curso: se comparan con el reloj
+al terminar cada una. En el 01 (100×100) eso las lleva a %%NUM:hc_01_min%% y
+%%NUM:aco_01_min%% minutos: HC-4 supera sus 30~s ya en la construcción de la solución inicial, y
+cada iteración de ACO-4 dura más de un cuarto de hora.
+
+Las heurísticas corren una sola vez por instancia, con semilla 1. Los tiempos son de reloj,
+medidos en la misma notebook, e incluyen la preparación de cada test (en split, escribir los
+\type{.dat} y compilar ZIMPL).
+\stopsection
+
+\startsection[title={Qué se compara}]
+Se comparan solo instancias {\em equivalentes}: los tres modelos resuelven exactamente los mismos
+datos. En la suite funcional son las instancias \type{test_instance__*} de las heurísticas, que
+reproducen cada escenario que resuelve un test funcional de split. En stress son los 19 escenarios
+de la suite, que los tres modelos construyen con el mismo generador y los mismos argumentos. Las
+reglas están en \type{docs/specs/comparabilidad_split_heuristicas.md}; en resumen:
+\startitemize
+\item {\bf Estado y objetivo}: split encontró el óptimo y no usa espera voluntaria.
+\item {\bf Solo estado}: split declara la instancia infactible (se verifica que la heurística
+tampoco encuentre solución), o split usa {\em espera voluntaria}. En v5 un lote puede figurar
+como terminado más tarde de lo que termina físicamente, para reducir la penalización por
+adelanto; las heurísticas reportan tiempos reales y no pueden hacerlo, así que ahí el objetivo de
+split es menor por diseño del modelo y no por un plan mejor.
+\item {\bf No comparable}: split no termina, o el test no llega al solver.
+\stopitemize
+
+%%TABLE:coverage%%
+
+Las funcionales que quedan fuera:
+
+%%TABLE:functional_out%%
+
+Los %%NUM:stress_out%% escenarios de stress no comparables son aquellos en los que split no
+termina en 40 minutos: no hay referencia de objetivo. Se usan para ver escala (sección
+\in[sec:escala]) y para comparar las heurísticas entre sí (sección \in[sec:noref]).
+\stopsection
+
+\startsection[title={Validez de las soluciones heurísticas}]
+Cada solución de las heurísticas se verificó contra OPP\_v5\_1\_mono: se fijan los valores de la
+solución sobre las variables del modelo monolítico y SCIP decide si son factibles, sin copiar ni
+reescribir ninguna restricción (\type{verification/run_compliance.py}). También se recalcula el
+objetivo y se compara con el que reporta la heurística.
+
+%%TABLE:compliance%%
+
+Ninguna solución viola una restricción de v5, y el objetivo recalculado coincide con el reportado
+en %%NUM:recomputed_matched%% de las %%NUM:recomputed_checked%% verificadas. Las instancias {\em sin
+solución} son las infactibles: la heurística no devuelve solución y no hay nada que verificar. Por
+lo tanto, las brechas que siguen comparan soluciones válidas del mismo problema, con el objetivo
+bien calculado.
+\stopsection
+
+\startsection[title={Estado}]
+Instancias en las que la heurística coincide con split en el estado: encuentra solución donde split
+la encuentra y no la encuentra donde split prueba que la instancia es infactible.
+
+%%TABLE:status%%
+
+Las dos heurísticas coinciden en todas las instancias comparables en estado. En las
+%%NUM:functional_infeasible%% infactibles no devuelven solución, como corresponde; en las demás
+siempre encuentran una. Hay que leerlo con cuidado: una heurística no prueba infactibilidad, solo no
+encuentra solución. Que coincida con split en las infactibles muestra que no inventa soluciones
+inválidas, y que en las factibles nunca se queda sin respuesta.
+\stopsection
+
+\startsection[title={Suite funcional}]
+
+\startsubsection[title={Calidad de la solución}]
+La brecha es $100 \cdot (z_{\rm heur} - z_{\rm split}) / z_{\rm split}$, sobre las instancias
+comparables en objetivo. {\em Óptimo} cuenta las instancias con brecha nula. Ninguna heurística
+queda por debajo del óptimo de split, como corresponde a soluciones válidas de un problema de
+minimización.
+
+%%TABLE:gap%%
+
+\startitemize
+\item {\bf ACO-4} encuentra el óptimo en las %%NUM:optimal_functional_opp_aco%% instancias
+funcionales.
+\item {\bf HC-4} encuentra el óptimo en %%NUM:optimal_functional_opp_hc%% de las
+%%NUM:functional_both%% funcionales.
+\stopitemize
+
+La brecha en stress está en la sección \in[sec:brecha_stress].
+
+Las %%NUM:missed%% instancias funcionales en las que alguna heurística no llega al óptimo son
+todas de grilla, y en todas es HC-4. Una búsqueda local se queda ahí en un óptimo local: la grilla
+tiene muchas rutas y asignaciones de costo parecido, y los movimientos de a uno no alcanzan para
+salir.
+
+%%TABLE:missed%%
+\stopsubsection
+
+\startsubsection[title={Instancias con espera voluntaria}]
+En %%NUM:wait_count%% instancias funcionales la solución de split demora a propósito algún lote:
+lo reporta terminado más tarde de lo que termina, para acercarlo a la fecha de entrega y reducir
+la penalización por adelanto. Las heurísticas reportan el tiempo en que el lote realmente termina y
+no pueden hacerlo, así que ahí el objetivo de split es menor por diseño del modelo, no por un plan
+mejor. Por eso estas instancias se comparan solo en estado, y la diferencia no es una brecha:
+
+%%TABLE:wait%%
+
+ACO-4 queda por encima de split en %%NUM:wait_aco_above%% de las %%NUM:wait_count%%. La
+especificación de comparabilidad registra que, en estas instancias, tomar las rutas más cortas y
+agregarles la espera óptima reproduce exactamente el objetivo de split: la diferencia es la espera.
+\stopsubsection
+
+\startsubsection[title={Tiempos}]
+Sobre las %%NUM:timed%% instancias comparables en objetivo cuyo tiempo de split se conoce: el CSV
+funcional de split guarda una fila por test, así que el tiempo de una instancia se toma solo
+cuando el test resuelve una sola instancia.
+
+%%TABLE:functional_times%%
+
+\placefigure[force][fig:funcional]{Tiempo total de cada instancia funcional: split contra cada heurística (escala logarítmica en los dos ejes). Debajo de la diagonal, la heurística fue más rápida.}
+{%%FIG:functional_scatter%%}
+
+Las instancias funcionales son chicas y los tiempos de split, del orden de 0,3~s, están
+dominados por el costo fijo de escribir y compilar los modelos. HC-4 es
+%%NUM:functional_speedup_opp_hc%% veces más rápido en la mediana y es más lento que split en
+%%NUM:functional_slower_opp_hc%% de las %%NUM:timed%% instancias. ACO-4 es
+%%NUM:functional_speedup_opp_aco%% veces más rápido en la mediana, pero más lento que split en
+%%NUM:functional_slower_opp_aco%% de las %%NUM:timed%% (los puntos por encima de la diagonal,
+cerca de 1~s): corre sus iteraciones completas aunque la instancia sea trivial.
+\stopsubsection
+\stopsection
+
+\startsection[title={Suite de stress}]
+
+\startsubsection[title={Las instancias}]
+El perfil realista (26 órdenes por lote, dos bandas de velocidad) en grillas de 7×7 a 16×16 y
+cuadrillas de hasta 24 lotes, más tres escenarios heredados de OPP\_v4 (01 a 03). Los tres
+modelos resuelven la misma instancia en cada escenario.
+
+%%TABLE:sizes%%
+
+En los heredados el peso por lote completado $W^c$ es 9 y todas las órdenes llegan tarde por
+construcción; en el perfil realista es 27, mayor que las órdenes por lote, así que la espera
+voluntaria nunca conviene y los objetivos son comparables.
+\stopsubsection
+
+\startsubsection[title={Tiempos}]
+%%TABLE:stress%%
+
+\placefigure[force][fig:stress]{Tiempo total por escenario de stress (escala logarítmica). Las barras sin relleno son los timeouts de split.}
+{%%FIG:stress_times%%}
+
+En los %%NUM:stress_both%% escenarios que split resuelve, HC-4 es %%NUM:stress_speedup_opp_hc%%
+veces más rápido que split en la mediana y ACO-4, %%NUM:stress_speedup_opp_aco%% veces. HC-4
+resuelve todos menos el 01 en menos de 5~s; ACO-4 tarda entre 10~s y 10 minutos, del mismo orden que
+split en los escenarios chicos y bastante menos en los grandes.
+
+El tiempo de split en el 10 es el de la corrida del 26 de septiembre (86~s). La corrida más
+reciente, con el mismo objetivo, marcó 412~s porque la notebook se suspendió durante el test.
+\stopsubsection
+
+\startsubsection[title={Escalabilidad}, reference=sec:escala]
+El mismo tiempo, ahora contra el tamaño de la instancia (lotes × ubicaciones de la grilla).
+
+\placefigure[force][fig:escala]{Tiempo total contra el tamaño de la instancia (escala logarítmica en los dos ejes). Los círculos abiertos son los escenarios que split no termina en 40 minutos.}
+{%%FIG:stress_scale%%}
+
+Split no tiene un tamaño límite único: termina la grilla de 15×15 con 6 lotes pero no la de
+16×16, y con 8 lotes o más no termina ni en 7×7, donde el producto lotes × ubicaciones es chico.
+Son dos paredes distintas: la Etapa 1 crece con la grilla y la Etapa 2 con la cantidad de lotes.
+Las heurísticas no tienen ninguna de las dos: HC-4 se mantiene en segundos en todo el rango salvo
+el 100×100, y ACO-4 en minutos.
+\stopsubsection
+
+\startsubsection[title={Calidad de la solución}, reference=sec:brecha_stress]
+%%TABLE:gap_stress%%
+
+\placefigure[force][fig:brecha]{Brecha contra el óptimo de split en cada escenario que split resuelve. Un 0 indica que la heurística encontró el óptimo.}
+{%%FIG:stress_gap%%}
+
+ACO-4 queda por debajo de HC-4 en %%NUM:gap_aco_below_hc%% de los %%NUM:stress_solved%%
+escenarios. Las dos brechas son chicas: la mayor, %%NUM:max_gap_stress_opp_hc%%~\% de HC-4, es
+en el escenario con cadena de frío (11).
+\stopsubsection
+
+\startsubsection[title={Calidad contra tiempo}]
+Cada punto es un modelo en un escenario que split resuelve. Abajo a la izquierda está lo
+deseable: rápido y cerca del óptimo.
+
+\placefigure[force][fig:tradeoff]{Brecha contra tiempo total en los escenarios de stress que split resuelve (tiempo en escala logarítmica).}
+{%%FIG:tradeoff%%}
+
+Los tres modelos ocupan zonas distintas: split prueba el óptimo (brecha 0) pagando el mayor
+tiempo; ACO-4 queda prácticamente en el óptimo con algo menos de tiempo; HC-4 resigna unas
+centésimas de punto de brecha a cambio de uno o dos órdenes de magnitud de tiempo. Ninguno domina
+a los otros en las dos dimensiones a la vez.
+\stopsubsection
+
+\startsubsection[title={Escenarios sin referencia}, reference=sec:noref]
+En los %%NUM:stress_noref%% escenarios que split no termina, las dos heurísticas encuentran
+solución. No hay óptimo con qué medirlas, pero sí se pueden comparar entre sí:
+
+%%TABLE:noref%%
+
+ACO-4 obtiene el mejor objetivo en %%NUM:noref_aco_better%% de los %%NUM:stress_noref%%, con
+diferencias de menos de 1~\%. La excepción es el 01 (30 lotes en 100×100): ACO-4 alcanza su
+tope de %%NUM:aco_max_time_min%% minutos después de solo %%NUM:aco_01_iterations%% iteraciones, y
+la notebook se suspendió durante esa corrida, así que su objetivo ahí vale como solución factible,
+no como medida de calidad.
+\stopsubsection
+\stopsection
+
+\startsection[title={Nivel de servicio}]
+Porcentaje de órdenes entregadas a tiempo en cada escenario de stress, según la solución de cada
+modelo.
+
+%%TABLE:sla%%
+
+En los heredados (01 a 03) ninguna orden llega a tiempo en ningún modelo, por construcción del
+escenario. En el perfil realista los tres entregan todo a tiempo, salvo en el 11 (cadena de frío),
+donde el límite de frío obliga a demorar algunas órdenes: ahí ACO-4 iguala el nivel de servicio del
+óptimo y HC-4 queda levemente por debajo.
+\stopsection
+
+\startsection[title={Memoria}]
+Memoria pico (RAM) del proceso de cada test, en los escenarios de stress.
+
+\placefigure[force][fig:memoria]{Memoria pico por escenario de stress (escala logarítmica). Split no tiene dato en los timeouts.}
+{%%FIG:memory%%}
+
+Las heurísticas usan unos %%NUM:mem_median_opp_hc%%~MB (HC-4) y %%NUM:mem_median_opp_aco%%~MB
+(ACO-4) en la mediana; en el 100×100 (01) suben a %%NUM:mem_01_opp_hc%% y
+%%NUM:mem_01_opp_aco%%~MB por el tamaño del grafo. ACO-4 tiene picos de hasta
+%%NUM:mem_aco_spike_max%%~MB en algunos escenarios (%%NUM:mem_aco_spikes%%), que no siguen al
+tamaño de la instancia. Split usa entre %%NUM:mem_split_min%% y %%NUM:mem_split_max%%~MB, pero
+esa cifra subestima su consumo: mide solo el proceso del test, sin los seis procesos de la Etapa 1
+ni el de ZIMPL.
+\stopsection
+
+\startsection[title={Convergencia de las heurísticas}]
+Iteraciones que corrió cada heurística en stress y en cuál encontró la mejor solución (0 es la
+solución inicial).
+
+%%TABLE:convergence%%
+
+\startitemize
+\item {\bf HC-4} corta tras %%NUM:hc_max_imp%% iteraciones sin mejora, así que corre entre 60 y
+160 iteraciones. En %%NUM:hc_best_at_start%% escenarios la solución inicial ya era la mejor que
+encontró. Solo en el 03 y el 17 llega al máximo de %%NUM:hc_max_it%% iteraciones. En el 01 no llega
+a iterar: la construcción inicial del 100×100 ya supera su tope de 30~s.
+\item {\bf ACO-4} corre sus %%NUM:aco_max_it%% iteraciones. La mejor solución aparece en cualquier
+punto, de la iteración 1 a la 54, y en la mitad de los escenarios después de la 30: más iteraciones
+podrían mejorarla algo. Solo en el %%NUM:aco_timed_out%% corta por tiempo.
+\stopitemize
+\stopsection
+
+\startsection[title={Limitaciones}]
+\startitemize
+\item Una corrida por instancia, con semilla 1: no se mide la variabilidad de las heurísticas
+entre semillas.
+\item Los tiempos son de reloj en una notebook; si se suspende durante una corrida, la duración
+incluye el tiempo suspendido. Afecta sobre todo al 01 de ACO-4.
+\item La referencia de objetivo existe solo donde split termina: %%NUM:stress_both%% de los
+%%NUM:stress_total%% escenarios de stress. En los otros, la calidad de las heurísticas solo se
+compara entre ellas.
+\item La memoria de split no incluye sus procesos hijos.
+\stopitemize
+\stopsection
+
+\startsection[title={Conclusiones}]
+\startitemize[n]
+\item {\bf Validez:} todas las soluciones de las dos heurísticas cumplen las restricciones de v5,
+verificadas contra el modelo monolítico, y reportan bien su objetivo.
+\item {\bf Estado:} las dos heurísticas coinciden con split en las %%NUM:status_comparable%%
+instancias funcionales comparables en estado y en los %%NUM:stress_both%% escenarios de stress
+que split resuelve, incluidas las infactibles.
+\item {\bf Calidad:} ACO-4 alcanza el óptimo en todas las funcionales y queda a
+%%NUM:max_gap_stress_opp_aco%%~\% como máximo en stress. HC-4 falla el óptimo en
+%%NUM:missed%% instancias de grilla (hasta %%NUM:max_gap_functional_opp_hc%%~\%) y queda a
+%%NUM:max_gap_stress_opp_hc%%~\% como máximo en stress.
+\item {\bf Tiempo:} en stress, HC-4 es el más rápido (%%NUM:stress_speedup_opp_hc%% veces más
+rápido que split en la mediana); ACO-4 lo es %%NUM:stress_speedup_opp_aco%% veces, a cambio de
+una brecha menor.
+\item {\bf Escala:} donde split no termina en 40 minutos (%%NUM:stress_noref%% escenarios), las
+dos heurísticas dan una solución válida: HC-4 en segundos y ACO-4 en minutos, salvo el 01
+(100×100), que les lleva 17 y 35 minutos.
+\item {\bf Recursos:} las heurísticas usan decenas de MB salvo en el grafo de 100×100; ACO-4
+tiene picos puntuales de más de 1~GB.
+\stopitemize
+
+{\bf Recomendación.} Hasta 6 lotes en grillas de hasta 15×15, split da el óptimo probado en
+minutos y es la referencia. Por encima de eso, ACO-4 es la opción cuando importa la calidad: queda
+prácticamente en el óptimo y da siempre una solución válida. HC-4 conviene cuando manda el tiempo
+de respuesta, por ejemplo para replanificar en línea: resigna centésimas de punto de calidad a
+cambio de responder en segundos.
+\stopsection
+
+\stoptext

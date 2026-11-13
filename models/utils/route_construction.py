@@ -1,13 +1,13 @@
-"""Route-construction primitives shared by opp_hc_4 and opp_aco_4.
+"""Route-construction primitives shared by opp_hc and opp_aco.
 
-Moved verbatim (behavior unchanged) out of models/opp_hc_4/opp_hc_4.py so
-that opp_aco_4's pick-to-pick route construction (see its
+Moved verbatim (behavior unchanged) out of models/opp_hc/opp_hc.py so
+that opp_aco's pick-to-pick route construction (see its
 _build_batch_route) can reuse the exact same shortest-path, best-first
-fallback and 2-opt code that opp_hc_4 already validated, instead of a
+fallback and 2-opt code that opp_hc already validated, instead of a
 second copy drifting apart.
 
 Every function takes the OPPLocationGraph explicitly. Routes follow
-opp_hc_4's convention: a list of the picking stops strictly between depot
+opp_hc's convention: a list of the picking stops strictly between depot
 and final (depot/final themselves are implicit), and a route is a SIMPLE
 path -- no vertex repeated -- because v5's model forbids revisits (see
 tests/*/functional/test_case_forced_revisit_is_infeasible.py).
@@ -217,7 +217,7 @@ def build_reversal_prefix_arrays(location_graph, route: List) -> Tuple[List[floa
     the reverse-direction edges among route[0..k] don't exist -- a
     2-opt reversal of route[i:j+1] is only feasible if this is the
     same at both ends of the segment (i.e. zero reverse edges are
-    missing inside it). Shared by two_opt_tighten_route and opp_hc_4's
+    missing inside it). Shared by two_opt_tighten_route and opp_hc's
     _generate_route_neighbor -- see two_opt_tighten_route's docstring for
     why get_distance/has_edge are NOT assumed symmetric here.
     """
@@ -264,7 +264,7 @@ def two_opt_tighten_route(location_graph, route: List) -> List:
     candidate route and re-validating/re-summing it from scratch --
     O(1) per candidate (after an O(n) prefix pass per sweep) instead of
     O(n). This graph can be directed/asymmetric (see e.g.
-    tests/shared_scenarios/functional/scenario_05_v4.py, where L1->L2
+    tests/shared_scenarios/functional/scenario_05.py, where L1->L2
     and L2->L1 have different weights), so get_distance/has_edge are
     NOT assumed symmetric: reversing route[i:j+1] also reverses the
     direction every edge inside it is traversed in, so the reverse-
@@ -418,7 +418,7 @@ def relocate_picks(location_graph, route: List, required_locations: Set, deadlin
 
     O(k^2) candidate moves of 3 Dijkstras each for k picks, so it's much
     more expensive than improve_route -- meant for elite routes only (see
-    opp_aco_4's _recombine_shortest_routes), not every ant. Keeps the
+    opp_aco's _recombine_shortest_routes), not every ant. Keeps the
     route simple and never lengthens it. Picking stops only in/out.
     """
     if not route:
@@ -585,7 +585,7 @@ def polish_route(location_graph, route: List, required_locations: Set, deadline:
     passes and return the best route so far -- never worse than the input.
     Needed because one call scales with graph size: measured 2026-09-27 on
     the 100x100 migrated grid (10,000 nodes), ~34 s per call, 30 calls =
-    1007 s of a 1141 s opp_aco_4 run whose Max_time was 1 s.
+    1007 s of a 1141 s opp_aco run whose Max_time was 1 s.
     """
     best = list(route)
     best_length = _path_length(location_graph, [location_graph.get_depot()] + best + [location_graph.get_final()])
@@ -758,10 +758,10 @@ def stitch_route(
     required locations passed on the way count as picked.
 
     The pick-to-pick (Steiner-TSP) view and the random-proportional rule
-    are Chen et al. (2013), A-TOP, p.79 and Eq. 2 -- opp_aco_4 passes
+    are Chen et al. (2013), A-TOP, p.79 and Eq. 2 -- opp_aco passes
     weight = tau^alpha * (1/d)^beta; see its _build_batch_route for the
     full rationale and the deviations (no revisits, the completability
-    check). opp_hc_4 uses it with weight = (1/d)^beta as a randomized
+    check). opp_hc uses it with weight = (1/d)^beta as a randomized
     multi-start construction.
 
     Backtracking (our own addition, not from the papers): when no
@@ -772,7 +772,7 @@ def stitch_route(
     necessary but not sufficient, so without this some batches almost
     never finished: measured 2026-09-27 on realistic_crew_scenario(13),
     batch B6 succeeded in 0/100 constructions (B5 in 15/100), which made
-    opp_hc_4 report "infeasible" and left opp_aco_4 with only the long
+    opp_hc report "infeasible" and left opp_aco with only the long
     best-first fallback route -- too long for T_cold = 280 in
     realistic_crew_cold_chain, so no ant ever came out compliant.
     Candidates already tried at a step stay removed after backtracking

@@ -3,13 +3,13 @@ from typing import Optional
 
 class ZimplSolutionRecordDTO:
     """
-    Instance + solution of an exact ZIMPL/SCIP model run (opp_v5_1_mono,
-    opp_v5_2_split), the counterpart of SolutionRecordDTO for the heuristics.
+    Instance + solution of an exact ZIMPL/SCIP model run (opp_mono,
+    opp_split), the counterpart of SolutionRecordDTO for the heuristics.
 
     `scenario` is the dict handed to tests/infra/zimpl/dat_files_builder
     .build_dat_files (the instance exactly as the .dat files were written);
     `values` are SCIP's variable values of the solve that produced this
-    record. opp_v5_2_split solves in two stages: its record is the Stage 2
+    record. opp_split solves in two stages: its record is the Stage 2
     solve, and the split pipelines add the Stage 1 values (the routes,
     z_ijb, and r_b) with add_stage1_values once Stage 2 finished.
 

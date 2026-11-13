@@ -2,21 +2,21 @@
 Equal-time study: how good is the exact model's best solution when it
 gets the SAME wall-clock time a heuristic needed?
 
-The stress suites let opp_v5_2_split / opp_v5_1_mono run until SCIP proves
+The stress suites let opp_split / opp_mono run until SCIP proves
 optimality (or the 40-min runner timeout). That measures the exact model's
 quality ceiling, not what it delivers under a heuristic's time budget --
 the standard way to compare a metaheuristic against an exact solver is at
 equal time. Here each v5 model gets, per stress scenario, exactly the
 total_time the heuristic took on that scenario (read from the heuristic's
-latest stress CSV, e.g. results/opp_aco_4/stress/), passed to SCIP as
+latest stress CSV, e.g. results/opp_aco/stress/), passed to SCIP as
 `limits/time`, and we record its best incumbent at that point (if any),
 its dual bound and gap, next to the heuristic's objective.
 
-  - opp_v5_2_split: Stage 1 (one routing MIP per batch) shares the budget
+  - opp_split: Stage 1 (one routing MIP per batch) shares the budget
     evenly over the batches still to solve; Stage 2 (scheduling) gets what
     is left. No complete solution unless every batch got a route AND Stage
     2 found an incumbent in time.
-  - opp_v5_1_mono: one solve with the whole budget.
+  - opp_mono: one solve with the whole budget.
 
 The budget is wall-clock from the start of the model's pipeline (writing
 .dat files, ZIMPL compilation and SCIP), like the heuristic's total_time;
@@ -26,8 +26,8 @@ SCIP's limit only covers its own solve, so `elapsed_s` can slightly exceed
 NOT a unittest test. Run directly (needs `zimpl` on PATH, e.g. the
 optimizacion conda env):
 
-    python -m analysis.run_equal_time_study --budget-from opp_aco_4
-    python -m analysis.run_equal_time_study --budget-from opp_hc_4 --id 04 05
+    python -m analysis.run_equal_time_study --budget-from opp_aco
+    python -m analysis.run_equal_time_study --budget-from opp_hc --id 04 05
 
 Writes results/equal_time/output_equal_time_<budget-from>_<timestamp>.csv,
 one row per (scenario, v5 model).
@@ -41,12 +41,12 @@ import time
 from datetime import datetime
 
 from analysis.config import OUTPUTS_ROOT
-from models.opp_v5_2_split.utils.cold_chain_validation import batches_without_eligible_picker
+from models.opp_split.utils.cold_chain_validation import batches_without_eligible_picker
 from models.utils.solve_registry import get_last
 from tests.infra.zimpl.dat_files_builder import build_dat_files, write_indexed_dat, write_scalar_dat
 from tests.infra.zimpl.zpl_utils import solve_zpl
-from tests.shared_scenarios.stress.stress_scenarios_v5 import migrated_stress_scenario
-from tests.shared_scenarios.stress.stress_scenarios_v5_designed import realistic_crew_scenario
+from tests.shared_scenarios.stress.stress_scenarios import migrated_stress_scenario
+from tests.shared_scenarios.stress.stress_scenarios_designed import realistic_crew_scenario
 
 # Stress test id -> (test method name, as it appears in every model's stress
 # CSV, and the scenario builder) -- the same calls as
@@ -88,10 +88,10 @@ def latest_heuristic_results(model_label):
     # Matched by method name, not file name: the v5 ports were test_case_v5_*.py
     # in older CSVs and test_case_NN.py (v5's own numbering) since the legacy
     # stress tests were removed; no legacy method name collides with v5's.
-    v5_methods = {name for name, _ in SCENARIOS.values()}
+    split_methods = {name for name, _ in SCENARIOS.values()}
     for path in paths:
         with open(path, newline="", encoding="utf-8") as f:
-            rows = [r for r in csv.DictReader(f) if r["test"].split(".")[-1] in v5_methods]
+            rows = [r for r in csv.DictReader(f) if r["test"].split(".")[-1] in split_methods]
         if rows:
             return path, {r["test"].split(".")[-1]: r for r in rows}
     raise SystemExit(f"No stress CSV with v5-ported rows under results/{model_label}/stress/")
@@ -104,8 +104,8 @@ def _last_solve_info():
 
 
 def run_split(scenario, budget):
-    from tests.opp_v5_2_split.config import DAT_DIR, STAGE2_ZPL_PATH
-    from tests.opp_v5_2_split.stage1_decomposition import solve_stage1_decomposed
+    from tests.opp_split.config import DAT_DIR, STAGE2_ZPL_PATH
+    from tests.opp_split.stage1_decomposition import solve_stage1_decomposed
 
     start = time.time()
     build_dat_files(DAT_DIR, scenario)
@@ -154,7 +154,7 @@ def run_split(scenario, budget):
 
 
 def run_mono(scenario, budget):
-    from tests.opp_v5_1_mono.config import DAT_DIR, ZPL_PATH
+    from tests.opp_mono.config import DAT_DIR, ZPL_PATH
 
     start = time.time()
     build_dat_files(DAT_DIR, scenario)
@@ -166,13 +166,13 @@ def run_mono(scenario, budget):
     return status, obj, bound, gap, time.time() - start
 
 
-RUNNERS = {"opp_v5_2_split": run_split, "opp_v5_1_mono": run_mono}
+RUNNERS = {"opp_split": run_split, "opp_mono": run_mono}
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--budget-from", default="opp_aco_4", choices=["opp_aco_4", "opp_hc_4"],
-                        help="Heuristic whose per-scenario total_time is the budget (default: opp_aco_4).")
+    parser.add_argument("--budget-from", default="opp_aco", choices=["opp_aco", "opp_hc"],
+                        help="Heuristic whose per-scenario total_time is the budget (default: opp_aco).")
     parser.add_argument("--models", nargs="+", default=list(RUNNERS), choices=list(RUNNERS))
     parser.add_argument("--id", nargs="+", default=sorted(SCENARIOS), choices=sorted(SCENARIOS), metavar="NN",
                         help="Stress test ids to run (default: all 19).")

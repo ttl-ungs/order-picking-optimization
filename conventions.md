@@ -41,9 +41,9 @@ raiz-del-proyecto/
 │   ├── base/                    # Clases base abstractas compartidas
 │   │   ├── model.py             # Clase abstracta Model (base del patrón Observer)
 │   │   └── opp_location_graph.py# Grafo base de locaciones
-│   ├── opp_v1 ... opp_v4, opp_v5_1_mono, opp_v5_2_split/  # Modelos exactos (v1-v3 PySCIPOpt, v4 y v5.x ZIMPL+SCIP)
-│   ├── opp_hc_1 ... opp_hc_4/   # Heurísticas Hill Climbing
-│   └── opp_aco_1 ... opp_aco_4/ # Metaheurísticas ACO
+│   ├── opp_v1 ... opp_v4, opp_mono, opp_split/  # Modelos exactos (v1-v3 PySCIPOpt, v4 y v5.x ZIMPL+SCIP)
+│   ├── opp_hc_1 ... opp_hc/   # Heurísticas Hill Climbing
+│   └── opp_aco_1 ... opp_aco/ # Metaheurísticas ACO
 ├── observer/                    # Infraestructura del patrón de diseño Observer
 │   └── observer.py              # Clase abstracta Observer
 ├── tests/                       # Suite de testing organizada por modelo
@@ -52,7 +52,7 @@ raiz-del-proyecto/
 │   │   ├── execution/           # runner.py, config.py: ejecuta cada test aislado, con timeout, y escribe el CSV en results/
 │   │   ├── cases/               # opp_test_case.py (TestCase base, OPPTestCase), route_assertions.py
 │   │   ├── factories/           # family_case.py, migrated_case.py (reutilizan tests de otro modelo), graphs_factory.py
-│   │   └── zimpl/               # zpl_utils.py, dat_files_builder.py: soporte de los tests ZIMPL (opp_v2_zpl, opp_v4, opp_v5_1_mono, opp_v5_2_split)
+│   │   └── zimpl/               # zpl_utils.py, dat_files_builder.py: soporte de los tests ZIMPL (opp_v2_zpl, opp_v4, opp_mono, opp_split)
 │   ├── shared_scenarios/        # Todos los escenarios (grafos y parámetros); los propios de un modelo llevan sufijo _vN
 │   │   ├── common/  functional/  stress/
 │   └── opp_hc_2/                # Un directorio por modelo
@@ -65,7 +65,7 @@ raiz-del-proyecto/
 └── results/                     # CSV de resultados (datos generados): results/<modelo>/<functional|stress|stability>/
 ```
 
-Los escenarios ya no viven dentro de cada modelo: están todos en `tests/shared_scenarios/`. Un escenario compartido por varios modelos no lleva sufijo; uno propio de un modelo lleva su sufijo (`scenario_01_v4.py`, `single_order_params_hc4.py`).
+Los escenarios ya no viven dentro de cada modelo: están todos en `tests/shared_scenarios/`. Un escenario compartido por varios modelos no lleva sufijo; uno propio de un modelo lleva su sufijo (`scenario_01.py`, `single_order_params_hc.py`).
 
 
 ### 3. Resolución Dinámica de Rutas (sys.path.insert)

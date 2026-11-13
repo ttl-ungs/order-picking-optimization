@@ -4,7 +4,7 @@
     python -m scripts.run_all                              # functional suites of the HC/ACO models
     python -m scripts.run_all --profile full               # every model (the exact ones use SCIP/zimpl: slow)
     python -m scripts.run_all --tier stress --stress-timeout-minutes 1
-    python -m scripts.run_all --models opp_hc_4,opp_aco_4 --tier all
+    python -m scripts.run_all --models opp_hc,opp_aco --tier all
     python -m scripts.run_all --tier stress --smoke        # only the fast stress tests (scripts/stress_smoke.json)
     python -m scripts.run_all --retries 1                  # re-run a failing suite once (ACO tests without a Seed can flake)
     python -m scripts.run_all --json report.json           # machine-readable result too
@@ -17,7 +17,7 @@ the last time it was regenerated (and the failures known to exist then). A suite
   TIMEOUT   the suite hit its time limit (functional: --timeout seconds for the whole
             suite; stress: --stress-suite-timeout for the whole suite)
   SKIP      needs the `zimpl` binary and it is not on PATH
-Stress suites, and the zimpl-dependent functional suites (opp_v5_1_mono/opp_v5_2_split), run
+Stress suites, and the zimpl-dependent functional suites (opp_mono/opp_split), run
 through tests/run_suite.py with --allow-timeout: a single test that exceeds
 --stress-timeout-minutes / --timeout-minutes is reported but does not make the suite fail.
 Every other functional suite runs via plain `unittest discover` (no per-test cap needed --
@@ -43,8 +43,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 ROOT = os.getcwd()
 BASELINE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "baseline_counts.json")
 SMOKE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stress_smoke.json")
-FAST_MODELS = ["opp_hc_4", "opp_aco_4"]
-NEEDS_ZIMPL = {"opp_v5_1_mono", "opp_v5_2_split"}
+FAST_MODELS = ["opp_hc", "opp_aco"]
+NEEDS_ZIMPL = {"opp_mono", "opp_split"}
 
 COLLECT_CODE = """
 import sys, unittest
@@ -131,7 +131,7 @@ def do_suite(args, baseline, model, tier):
         # Plain `unittest discover` (below) has no per-test cap: a single non-converging
         # instance runs unbounded until this whole suite's --timeout kills the process, wiping
         # out every other test's result with it (no final "Ran N tests" summary line ever gets
-        # printed). opp_v5_1_mono/opp_v5_2_split each have one documented instance that never converges (see
+        # printed). opp_mono/opp_split each have one documented instance that never converges (see
         # analysis/README.md) -- exactly the "many tests, one is fine to time out" case
         # tests.run_suite/TestRunner already handles for the stress tier above. Scoped to
         # NEEDS_ZIMPL only: TestRunner spawns a fresh process per test, which is needless
@@ -181,7 +181,7 @@ def main():
     ap.add_argument("--jobs", type=int, default=2, help="suites run in parallel (default 2)")
     ap.add_argument("--timeout", type=int, default=900, help="seconds for a whole functional suite (default 900)")
     ap.add_argument("--timeout-minutes", type=float, default=None,
-                     help="per test, for opp_v5_1_mono/opp_v5_2_split only (default: TEST_TIMEOUT_MINUTES from .env)")
+                     help="per test, for opp_mono/opp_split only (default: TEST_TIMEOUT_MINUTES from .env)")
     ap.add_argument("--stress-timeout-minutes", type=float, default=1.0, help="per stress test (default 1)")
     ap.add_argument("--stress-suite-timeout", type=int, default=3600, help="seconds for a whole stress suite (default 3600)")
     ap.add_argument("--smoke", action="store_true", help="stress tier: only the fast tests in scripts/stress_smoke.json")

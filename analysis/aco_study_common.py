@@ -1,6 +1,6 @@
 """
-Shared helpers for the opp_aco_4 studies (run_aco_ablation_study.py,
-run_aco_pheromone_study.py): run opp_aco_4 once on a v5 stress scenario
+Shared helpers for the opp_aco studies (run_aco_ablation_study.py,
+run_aco_pheromone_study.py): run opp_aco once on a v5 stress scenario
 with given pheromone parameters / hybrid components, and look up v5's
 objective on that scenario to report the gap.
 
@@ -15,13 +15,13 @@ import time
 
 from analysis.config import OUTPUTS_ROOT
 from analysis.run_equal_time_study import SCENARIOS
-from dtos.aco.solve_aco_4_model_dto import SolveAco4ModelDTO
-from models.opp_aco_4 import OPPAntColonyOptimization
-from models.opp_aco_4.utils import exec_time
+from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
+from models.opp_aco import OPPAntColonyOptimization
+from models.opp_aco.utils import exec_time
 from models.utils.solve_registry import get_last
-from tests.infra.factories.v5_scenario_adapter import build_model_dto_and_params
+from tests.infra.factories.scenario_adapter import build_model_dto_and_params
 
-# Hybrid components of opp_aco_4 (class attributes, see its header), in the
+# Hybrid components of opp_aco (class attributes, see its header), in the
 # order the ablation adds them.
 COMPONENT_FLAGS = (
     "_IMPROVE_ANT_ROUTES",
@@ -31,17 +31,17 @@ COMPONENT_FLAGS = (
 )
 
 
-def v5_reference_objectives():
+def split_reference_objectives():
     """
     {test method name: v5_2_split obj_val or None}, taking for each test
-    the row of the NEWEST opp_v5_2_split stress CSV that has it -- even if
+    the row of the NEWEST opp_split stress CSV that has it -- even if
     that row is a timeout (None then): an older CSV may predate the
     W_c = 27 change (2026-09-26) and hold an objective for a different
     objective function, so it must never be used as a fallback for a test
     the newer run also covered.
     """
     paths = sorted(
-        glob.glob(os.path.join(OUTPUTS_ROOT, "opp_v5_2_split", "stress", "*.csv")),
+        glob.glob(os.path.join(OUTPUTS_ROOT, "opp_split", "stress", "*.csv")),
         key=os.path.getmtime, reverse=True,
     )
     reference = {}
@@ -57,14 +57,14 @@ def v5_reference_objectives():
 
 def solve_aco(scenario, seed, alpha=None, beta=None, rho=None, components=None):
     """
-    One opp_aco_4 run. `alpha`/`beta`/`rho` override the DTO defaults
+    One opp_aco run. `alpha`/`beta`/`rho` override the DTO defaults
     (Alpha 1.0, Beta 2.5, E 0.15) when given; `components` maps flag name
-    (COMPONENT_FLAGS) -> bool, overriding opp_aco_4's defaults (all on) on
+    (COMPONENT_FLAGS) -> bool, overriding opp_aco's defaults (all on) on
     this model instance only. Returns a dict with status, obj_val,
     elapsed_s, route_time_sum (sum over batches of T_travel * route distance
     of the reported solution) and iterations_run.
     """
-    model_dto, params = build_model_dto_and_params(scenario, SolveAco4ModelDTO, seed=seed)
+    model_dto, params = build_model_dto_and_params(scenario, SolveAcoModelDTO, seed=seed)
     if alpha is not None:
         params.Alpha = alpha
     if beta is not None:
@@ -75,7 +75,7 @@ def solve_aco(scenario, seed, alpha=None, beta=None, rho=None, components=None):
     model = OPPAntColonyOptimization(model_dto)
     for flag, enabled in (components or {}).items():
         if flag not in COMPONENT_FLAGS:
-            raise ValueError(f"unknown opp_aco_4 component flag {flag!r}")
+            raise ValueError(f"unknown opp_aco component flag {flag!r}")
         setattr(model, flag, enabled)
 
     start = time.time()
@@ -119,9 +119,9 @@ def warn_if_hash_seed_unset():
 def output_path(kind):
     from datetime import datetime
 
-    out_dir = os.path.join(OUTPUTS_ROOT, "opp_aco_4", kind)
+    out_dir = os.path.join(OUTPUTS_ROOT, "opp_aco", kind)
     os.makedirs(out_dir, exist_ok=True)
-    return os.path.join(out_dir, f"output_opp_aco_4_{kind}_{datetime.now():%Y%m%d_%H%M%S}.csv")
+    return os.path.join(out_dir, f"output_opp_aco_{kind}_{datetime.now():%Y%m%d_%H%M%S}.csv")
 
 
 def scenario_ids(ids):

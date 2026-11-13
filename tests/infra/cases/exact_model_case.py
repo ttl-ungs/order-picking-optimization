@@ -7,7 +7,7 @@ changes from one model to the other is where the .dat files are written
 adapter (OPPTestCaseMono, OPPTestCaseSplit) provides those.
 """
 
-from models.opp_v5_2_split.utils.cold_chain_validation import COLD_CHAIN_TOLERANCE
+from models.opp_split.utils.cold_chain_validation import COLD_CHAIN_TOLERANCE
 from models.utils.solve_registry import get_last
 from tests.infra.cases.opp_test_case import OPPTestCase
 from tests.infra.zimpl.zpl_utils import extract_active_arcs

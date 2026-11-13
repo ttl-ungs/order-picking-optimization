@@ -116,7 +116,7 @@ class OPPLocationGraph:
         plus a tuple-keyed dict lookup) per edge relaxation -- the shortest-
         path loops in models/utils/route_construction.py run tens of
         thousands of times per ACO solve (2026-09-26 profiling: Dijkstra was
-        ~40% of opp_aco_4's runtime).
+        ~40% of opp_aco's runtime).
         """
         if self._weighted_adjacency is None:
             self._weighted_adjacency = {

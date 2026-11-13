@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from tests.infra.zimpl.dat_files_builder import build_dat_files
 from tests.infra.cases.exact_model_case import ExactModelTestCase
 
-from tests.shared_scenarios.functional.scenario_03_v4 import two_possible_routes_batches
+from tests.shared_scenarios.functional.scenario_03 import two_possible_routes_batches
 
 
 class Case28(ExactModelTestCase):

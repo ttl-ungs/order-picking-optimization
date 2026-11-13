@@ -2,16 +2,16 @@
  "_source": "Number of tests of each suite of the four models, collected with `python -m scripts.run_all --update-baseline` (unittest discovery per suite). Regenerate only when tests are added or removed on purpose. Functional: 64 OPP-Split and 63 OPP-Mono (the 37 shared cases plus their own tests), 70 OPP-HC and 71 OPP-ACO (68 per-instance tests plus the tests of their own). Stress: the 19 shared scenarios per model.",
  "counts": {
   "functional": {
-   "opp_aco_4": 71,
-   "opp_hc_4": 70,
-   "opp_v5_2_split": 64,
-   "opp_v5_1_mono": 63
+   "opp_aco": 71,
+   "opp_hc": 70,
+   "opp_split": 64,
+   "opp_mono": 63
   },
   "stress": {
-   "opp_aco_4": 19,
-   "opp_hc_4": 19,
-   "opp_v5_2_split": 19,
-   "opp_v5_1_mono": 19
+   "opp_aco": 19,
+   "opp_hc": 19,
+   "opp_split": 19,
+   "opp_mono": 19
   }
  },
  "known_failures": {}

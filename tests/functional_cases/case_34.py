@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from tests.shared_scenarios.functional.two_stage_scenarios_v5 import (
+from tests.shared_scenarios.functional.two_stage_scenarios import (
     cold_chain_exact_boundary,
     cold_chain_infeasible_for_every_picker,
     heterogeneous_speed_precise,

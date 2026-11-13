@@ -9,7 +9,7 @@ class per case class that solves with that model.
 Each model's test folder binds the cases in a module of its own:
 
     from tests.functional_cases import bind_cases
-    from tests.opp_v5_2_split.opp_test_case_v5_2_split import OPPTestCaseSplit
+    from tests.opp_split.opp_split_test_case import OPPTestCaseSplit
 
     bind_cases(OPPTestCaseSplit, globals())
 

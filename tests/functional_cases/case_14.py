@@ -11,7 +11,7 @@ from models.base.opp_location_graph import OPPLocationGraph
 from tests.infra.cases.exact_model_case import ExactModelTestCase
 from tests.infra.zimpl.zpl_utils import extract_active_arcs
 
-from tests.shared_scenarios.common.six_missions_three_pickers_grid_graph_v4 import (
+from tests.shared_scenarios.common.six_missions_three_pickers_grid_graph import (
     scenario_six_missions_three_pickers_one_period_grid_graph,
 )
 

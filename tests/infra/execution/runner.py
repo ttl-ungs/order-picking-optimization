@@ -76,7 +76,7 @@ def _kill_process_tree(pid):
     """Kill `pid` and every descendant (best effort).
 
     multiprocessing's terminate() kills only the direct child. A test that
-    spawned worker processes of its own -- opp_v5_2_split's Stage 1 runs a
+    spawned worker processes of its own -- opp_split's Stage 1 runs a
     ProcessPoolExecutor -- leaves them orphaned when a timeout terminates
     that child: SCIP keeps optimizing in each worker with nobody left to
     collect the result, holding RAM and burning CPU against every test that
