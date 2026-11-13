@@ -20,9 +20,9 @@ against opp_split's objective from its newest stress CSV.
 NOT a unittest test. Run directly, ideally with nothing else competing for
 CPU and with a fixed hash seed for exact reproducibility:
 
-    PYTHONHASHSEED=0 python -m analysis.run_aco_pheromone_study
-    PYTHONHASHSEED=0 python -m analysis.run_aco_pheromone_study --id 06
-    PYTHONHASHSEED=0 python -m analysis.run_aco_pheromone_study --with-local-search
+    PYTHONHASHSEED=0 python -m experiments.heuristics.aco.run_aco_pheromone_study
+    PYTHONHASHSEED=0 python -m experiments.heuristics.aco.run_aco_pheromone_study --id 06
+    PYTHONHASHSEED=0 python -m experiments.heuristics.aco.run_aco_pheromone_study --with-local-search
 
 Default: id 04 (7x7), seeds 1 2 3 -> 81 runs, roughly 15-20 min (one
 7x7 run without local search took 12.5 s, 2026-09-27; alpha/beta/rho can
@@ -35,7 +35,7 @@ import argparse
 import csv
 import itertools
 
-from analysis.aco_study_common import (
+from experiments.heuristics.aco.aco_study_common import (
     COMPONENT_FLAGS, SCENARIOS, gap_pct, output_path, scenario_ids, solve_aco, split_reference_objectives,
     warn_if_hash_seed_unset,
 )

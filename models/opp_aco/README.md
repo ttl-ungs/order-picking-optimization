@@ -11,7 +11,7 @@ status, output_graph = model.solve(params)    # SolveAcoModelDTO
 
 - **Construction.** Each ant builds, batch by batch, a route with pick-to-pick probabilistic construction (pheromone and visibility, after Chen et al. 2013) and then picks the batch's picker with a roulette over the eligible pickers. Routes never revisit a vertex.
 - **Pheromone.** Two tables: route edges and (batch, picker) pairs. MAX-MIN style bounds, evaporation `E`, deposit `Q`.
-- **Local search.** Route local search (2-opt and segment re-routing) on every ant, elite-route polishing, and a local search on the schedule (`COMPONENT_FLAGS` in `analysis/aco_study_common.py` switches each component off for the ablation study).
+- **Local search.** Route local search (2-opt and segment re-routing) on every ant, elite-route polishing, and a local search on the schedule (`COMPONENT_FLAGS` in `experiments/heuristics/aco/aco_study_common.py` switches each component off for the ablation study).
 - **Cold chain.** Soft during the search (a large objective penalty), hard on the reported answer. The roulette only considers the pickers that make the ant's own route eligible. The only up-front `"infeasible"` is exact: a batch with no eligible picker even with a route time of 0.
 - **Budget.** `A_ants`, `Max_it`, `Max_time`, and `Seed` for reproducibility (`SolveAcoModelDTO`).
 - **Execution time.** `T_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]`, as in the exact models.

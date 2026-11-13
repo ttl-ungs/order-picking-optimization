@@ -1,5 +1,7 @@
 # Experiments on the exact models
 
+For OPP-Split and OPP-Mono (see [../README.md](../README.md) for the other experiments).
+
 Exploration that is not tests: sweeps and calibrations to understand where and why each model stops solving, and to design the stress tests. A test answers "does this instance solve?"; a study gives the curve.
 
 - `exploration.py` — the tool for sweeps, point lists and the split-vs-mono frontier. Each point runs in its own process and is killed from outside when it exhausts `hard_cap_s`: SCIP's `limits/time` is not a hard limit. It writes into the study it is given:
@@ -21,7 +23,7 @@ Exploration that is not tests: sweeps and calibrations to understand where and w
   ```
 - `studies/NN_name/` — one directory per question, holding the points or scripts that were run and the CSVs they produced. CSV names keep the date and time of the run.
 
-Results live here and not in `results/<model>/<tier>/` on purpose: `analysis/load.py` globs that pattern and would take them for test runs.
+Results live here and not in `results/<model>/<tier>/` on purpose: `experiments/common/load.py` globs that pattern and would take them for test runs.
 
 The full conclusions are in the two reports: `docs/thesis/opp_split_exploration.tex` (studies 01–07 and 12) and `docs/thesis/opp_mono_exploration.tex` (studies 08–11); this index only summarizes and points.
 

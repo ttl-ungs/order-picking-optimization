@@ -1,6 +1,6 @@
 # Results
 
-Data produced by the runs; nothing here is code. `analysis/` and `verification/` read it.
+Data produced by the runs; nothing here is code. `experiments/` and `verification/` read it.
 
 ```
 results/
@@ -14,6 +14,6 @@ results/
 ```
 
 - One row per test. The `test` column is the dotted unittest id; models are joined by the last segment, the method name.
-- A run writes `output_<model>_<tier>_tests_<timestamp>.csv`; `analysis/config.py` (`LATEST_FILE_OVERRIDES`) declares which file counts when several exist.
+- A run writes `output_<model>_<tier>_tests_<timestamp>.csv`; `experiments/common/config.py` (`LATEST_FILE_OVERRIDES`) declares which file counts when several exist.
 - Columns: status (`ok`, `failed`, `timeout`), `total_time`, `model_time`, `obj_val`, `peak_rss_mb`, the instance parameters and, for the heuristics, `solution_file`.
 - Runs are produced with `python -m tests.run_suite <model> <tier>` and `WRITE_RESULTS_CSV=1`; the layout is checked by `python -m scripts.check_repo`.

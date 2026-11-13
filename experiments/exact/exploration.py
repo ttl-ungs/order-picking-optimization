@@ -25,7 +25,7 @@ solutions found so far and the peak memory reported so far.
 Each row is flushed as it is measured, so an interrupted run keeps everything
 up to the points in flight. Results go to experiments/exact/studies/<study>/,
 next to the points file that produced them (see experiments/exact/README.md),
-and deliberately NOT to results/<model>/<tier>/, because analysis/load.py globs
+and deliberately NOT to results/<model>/<tier>/, because experiments/common/load.py globs
 that pattern and would pick these files up as if they were test runs.
 
 Columns worth reading together:

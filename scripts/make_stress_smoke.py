@@ -4,7 +4,7 @@
     python -m scripts.make_stress_smoke --max-seconds 5
 
 A stress test qualifies when, in the latest recorded run of its model (results/<model>/stress/,
-read through analysis.load), it finished OK within --max-seconds. Tests are matched by unittest
+read through experiments.common.load), it finished OK within --max-seconds. Tests are matched by unittest
 method name -- the same key the analysis pipeline joins on -- and a test module is included only
 if every test method in it qualifies and no method name is ambiguous within the model. Only the
 Hill Climbing / ACO models are listed: opp_mono/opp_split need the zimpl binary and never converge at
@@ -26,8 +26,8 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from analysis.config import HEURISTIC_MODELS  # noqa: E402
-from analysis.load import load_all  # noqa: E402
+from experiments.common.config import HEURISTIC_MODELS  # noqa: E402
+from experiments.common.load import load_all  # noqa: E402
 
 OUT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stress_smoke.json")
 

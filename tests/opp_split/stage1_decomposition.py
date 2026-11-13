@@ -135,7 +135,7 @@ def solve_stage1_decomposed(dat_dir, max_workers=None, time_budget_seconds=None)
     time_budget_seconds (optional, sequential only): a total wall-clock
     budget for Stage 1, split evenly over the batches still to solve
     (each batch's SCIP limits/time = remaining budget / batches left), for
-    analysis/run_equal_time_study.py. A batch cut by its limit still counts
+    experiments/comparison/run_equal_time_study.py. A batch cut by its limit still counts
     if SCIP had an incumbent route for it; the overall status is then
     "timelimit" instead of "optimal". A batch with no route at all within
     its share ends Stage 1 with that status and no complete solution.

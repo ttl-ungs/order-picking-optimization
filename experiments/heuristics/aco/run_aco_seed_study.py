@@ -20,8 +20,8 @@ close (max ~550 s in the 2026-09-29 stress CSV).
 
 NOT a unittest test. Keep the machine awake:
 
-    caffeinate -dims python -m analysis.run_aco_seed_study
-    python -m analysis.run_aco_seed_study --id 04 06 --seeds 1 2 --workers 2
+    caffeinate -dims python -m experiments.heuristics.aco.run_aco_seed_study
+    python -m experiments.heuristics.aco.run_aco_seed_study --id 04 06 --seeds 1 2 --workers 2
 
 ~45 min per seed for ids 02-19 sequentially (2026-09-29 stress CSV), so
 ~1.5 h for 5 seeds with 3 workers.
@@ -37,8 +37,8 @@ import io
 import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-from analysis.aco_study_common import gap_pct, output_path, scenario_ids, solve_aco, split_reference_objectives
-from analysis.run_equal_time_study import SCENARIOS
+from experiments.heuristics.aco.aco_study_common import gap_pct, output_path, scenario_ids, solve_aco, split_reference_objectives
+from experiments.comparison.run_equal_time_study import SCENARIOS
 
 FIELDNAMES = [
     "id", "scenario", "seed", "status", "obj_val", "split_obj", "gap_pct",

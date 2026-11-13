@@ -20,7 +20,7 @@ import re
 
 import pandas as pd
 
-from analysis.config import (
+from experiments.common.config import (
     LATEST_FILE_OVERRIDES,
     MODEL_DIRS,
     OUTPUTS_ROOT,
@@ -91,7 +91,7 @@ def _pick_csv(model_dir: str, scenario: str) -> "tuple[str, list[str]]":
 def _pick_sources(model_dir: str, scenario: str) -> "tuple[list[tuple[str, object]], list[str]]":
     """
     Like _pick_csv, but returns a list of (path, instances-or-None) sources
-    to merge (see LATEST_FILE_OVERRIDES' list form in analysis/config.py).
+    to merge (see LATEST_FILE_OVERRIDES' list form in experiments/common/config.py).
     A plain filename override or no override gives a single source with no
     instance filter, exactly _pick_csv's choice. A listed file that doesn't
     exist raises, instead of silently dropping its rows.

@@ -53,9 +53,12 @@ raiz-del-proyecto/
 │       ├── functional/          #   test_functional_cases.py + tests propios
 │       └── stress/              #   test_stress_cases.py + adaptador
 ├── results/                     # CSV de resultados: results/<modelo>/<functional|stress>/, compliance/, comparability/, equal_time/
-├── analysis/                    # Lee results/: comparabilidad y estudios de las heurísticas
 ├── verification/                # Verifica soluciones de las heurísticas contra opp_mono; compara opp_split con opp_mono
-├── experiments/exact/           # Exploraciones de los modelos exactos y generadores de los informes
+├── experiments/                 # Lo que no es un test y lee o produce results/, según para quién es
+│   ├── common/                  #   todos los modelos: qué archivos de resultados cuentan
+│   ├── comparison/              #   los modelos entre sí: comparabilidad y tiempo igual
+│   ├── exact/                   #   OPP-Split y OPP-Mono: exploraciones e informes
+│   └── heuristics/              #   OPP-HC y OPP-ACO: estudios (hc/, aco/)
 ├── scripts/                     # check_repo, run_all, make_stress_smoke (ver scripts/README.md)
 ├── .github/workflows/           # CI: ci.yml (por PR) y nightly.yml (programado)
 └── docs/                        # Especificaciones, guía de estilo e informes generados (ver README.md)

@@ -2,7 +2,7 @@
 Ablation study for opp_aco's hybrid (ACO + local search) components:
 how much of its result comes from the ant colony itself and how much from
 each local-search component added on top (see opp_aco's header and the
-COMPONENT_FLAGS in analysis/aco_study_common.py).
+COMPONENT_FLAGS in experiments/heuristics/aco/aco_study_common.py).
 
 Variants, each adding to the previous one:
 
@@ -22,8 +22,8 @@ timed out).
 NOT a unittest test. Run directly, ideally with nothing else competing for
 CPU and with a fixed hash seed for exact reproducibility:
 
-    PYTHONHASHSEED=0 python -m analysis.run_aco_ablation_study
-    PYTHONHASHSEED=0 python -m analysis.run_aco_ablation_study --id 04 --seeds 1 2 3
+    PYTHONHASHSEED=0 python -m experiments.heuristics.aco.run_aco_ablation_study
+    PYTHONHASHSEED=0 python -m experiments.heuristics.aco.run_aco_ablation_study --id 04 --seeds 1 2 3
 
 Default: ids 04 (7x7), 06 (14x14), 15 (over_staffed), seeds 1 2 3 -- 27
 runs, roughly 30 min: ~13-15 s per 7x7 run (measured 2026-09-27, with and
@@ -37,7 +37,7 @@ Writes results/opp_aco/ablation/output_opp_aco_ablation_<timestamp>.csv.
 import argparse
 import csv
 
-from analysis.aco_study_common import (
+from experiments.heuristics.aco.aco_study_common import (
     SCENARIOS, gap_pct, output_path, scenario_ids, solve_aco, split_reference_objectives, warn_if_hash_seed_unset,
 )
 

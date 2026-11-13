@@ -19,12 +19,12 @@ docs/specs/comparabilidad_split_heuristicas.md for the rules.
   test has two (2026-09-28 audit).
 - stress: the 19 scenarios of tests/stress_cases, solved by every model (the
   same method names in each model's CSV). opp_split's
-  reference outcome comes from its stress CSVs as merged by analysis.load
+  reference outcome comes from its stress CSVs as merged by experiments.common.load
   (04-19 with W_c = 27, 01-03 unchanged scenarios).
 
 Run:
 
-    python -m analysis.comparability
+    python -m experiments.comparison.comparability
 
 Writes results/comparability/comparability_split_vs_heuristics.csv (the
 registry) and results/comparability/results_split_vs_heuristics.csv (the
@@ -36,8 +36,8 @@ import os
 
 import pandas as pd
 
-from analysis.config import OUTPUTS_ROOT
-from analysis.load import _extract_instance, _load_sources, _pick_sources
+from experiments.common.config import OUTPUTS_ROOT
+from experiments.common.load import _extract_instance, _load_sources, _pick_sources
 from tests.infra.factories.functional_instances import FIXTURE_PATH, METHOD_PREFIX, _method_names, load_fixtures
 
 OUTPUT_PATH = os.path.join(OUTPUTS_ROOT, "comparability", "comparability_split_vs_heuristics.csv")
@@ -188,7 +188,7 @@ def _split_functional_times(registry):
 def build_results(registry):
     """
     The registry joined with each heuristic's latest results (as picked by
-    analysis.load), one row per (instance, heuristic):
+    experiments.common.load), one row per (instance, heuristic):
 
     - heuristic_found_solution: the heuristic reported an objective;
     - status_matches: it found a solution where the Split did and none where the Split

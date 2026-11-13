@@ -2,7 +2,7 @@
 
 Shared by build_functional_comparison and build_heuristics_comparison, so both
 documents compare the same base: the registry that `python -m
-analysis.comparability` writes (see docs/specs/comparabilidad_split_heuristicas.md).
+experiments.comparison.comparability` writes (see docs/specs/comparabilidad_split_heuristicas.md).
 A functional the Split test is comparable when the registry marks all its instances
 as comparable in status; the stress scenarios are the 19 of the suite.
 """

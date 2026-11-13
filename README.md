@@ -29,9 +29,8 @@ checked on the status, and their solutions are verified against OPP-Mono (`verif
 - `observer/` — the Observer pattern: models notify; each model's `utils/output_handler.py` prints.
 - `tests/` — `functional_cases/` and `stress_cases/` hold each case once; each `tests/<model>/` binds a model to them (`bind_cases`) and holds the tests of its own; `shared_scenarios/` has the graphs and scenarios; `infra/` has the runner and helpers; `run_suite.py` is the entry point.
 - `results/` — CSVs of the runs: `results/<model>/<functional|stress>/`, studies of a model (`ablation`, `pheromone`, `seeds`, `budget`), `compliance/`, `comparability/` and `equal_time/`.
-- `analysis/` — reads `results/`: the comparability registry and the studies of OPP-HC and OPP-ACO.
 - `verification/` — checks saved heuristic solutions against OPP-Mono and compares OPP-Split with OPP-Mono.
-- `experiments/exact/` — explorations of where each exact model stops solving, and the generators of the reports in `docs/thesis/`.
+- `experiments/` — everything that is not a test and reads or produces `results/`, split by who it is for: `common/` (all models: which result files count), `comparison/` (models against each other), `exact/` (OPP-Split and OPP-Mono) and `heuristics/` (OPP-HC, OPP-ACO). See [experiments/README.md](experiments/README.md).
 - `scripts/` — repository checks (`check_repo`, `run_all`, `make_stress_smoke`).
 - `docs/` — specs, the style guide and the generated reports; `conventions.md` — the binding conventions.
 
@@ -43,9 +42,8 @@ checked on the status, and their solutions are verified against OPP-Mono (`verif
 | [dtos/README.md](dtos/README.md) | The parameter and result containers. |
 | [tests/README.md](tests/README.md) | How the cases are shared and how to run them. |
 | [results/README.md](results/README.md) | Layout of the result files. |
-| [analysis/README.md](analysis/README.md) | The comparability registry and the studies of the heuristics. |
+| [experiments/README.md](experiments/README.md) | Which experiments exist, for which models, and how they work. |
 | [verification/README.md](verification/README.md) | Checking the heuristics' solutions against OPP-Mono. |
-| [experiments/exact/README.md](experiments/exact/README.md) | Explorations of the exact models and the reports generated from them (`docs/thesis/`). |
 | [scripts/README.md](scripts/README.md) | Repository checks and CI. |
 | [docs/specs/comparabilidad_split_heuristicas.md](docs/specs/comparabilidad_split_heuristicas.md) | Which results of the exact models and the heuristics can be compared. |
 | [conventions.md](conventions.md) | The binding conventions. |

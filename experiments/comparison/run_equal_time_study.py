@@ -26,8 +26,8 @@ SCIP's limit only covers its own solve, so `elapsed_s` can slightly exceed
 NOT a unittest test. Run directly (needs `zimpl` on PATH, e.g. the
 optimizacion conda env):
 
-    python -m analysis.run_equal_time_study --budget-from opp_aco
-    python -m analysis.run_equal_time_study --budget-from opp_hc --id 04 05
+    python -m experiments.comparison.run_equal_time_study --budget-from opp_aco
+    python -m experiments.comparison.run_equal_time_study --budget-from opp_hc --id 04 05
 
 Writes results/equal_time/output_equal_time_<budget-from>_<timestamp>.csv,
 one row per (scenario, model).
@@ -40,7 +40,7 @@ import os
 import time
 from datetime import datetime
 
-from analysis.config import OUTPUTS_ROOT
+from experiments.common.config import OUTPUTS_ROOT
 from models.opp_split.utils.cold_chain_validation import batches_without_eligible_picker
 from models.utils.solve_registry import get_last
 from tests.infra.zimpl.dat_files_builder import build_dat_files, write_indexed_dat, write_scalar_dat

@@ -7,8 +7,8 @@ name: Nightly
 # A stress test that reaches the cap is reported as a timeout and does NOT fail the job (many
 # stress instances are unsolvable by design); failures and errors do. opp_mono/opp_split's functional
 # suites run here too (exact-zimpl job, zimpl installed via conda-forge) -- their stress suites
-# are still skipped: analysis/README.md records most of their stress tests hitting the 25 min
-# per-test cap, which would push a single suite past this job's own budget.
+# are still skipped: most of their stress tests hit the per-test cap, which would push a
+# single suite past this job's own budget.
 
 on:
   schedule:

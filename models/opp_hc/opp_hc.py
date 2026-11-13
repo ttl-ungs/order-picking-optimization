@@ -59,7 +59,7 @@ the exact models (opp_split, opp_mono): modelling it would require re-pricing
 T_exec_pb's route/service time against the other pickers' reservations every
 time a batch's route OR its assigned picker's speed changes, so it is left
 out to keep the search space (and what is being measured) focused on the
-speed/cold-chain trade-off (see analysis/config.py).
+speed/cold-chain trade-off (see experiments/common/config.py).
 """
 
 import time

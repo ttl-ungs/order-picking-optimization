@@ -52,7 +52,7 @@ finishes without finding one, "infeasible" reflects an exhausted search.
 
 Deliberately WITHOUT congestion between concurrent pickers, like opp_hc and
 the exact models (opp_split, opp_mono): the search stays focused on the
-speed/cold-chain trade-off (see analysis/config.py).
+speed/cold-chain trade-off (see experiments/common/config.py).
 """
 
 import time
@@ -99,7 +99,7 @@ class OPPAntColonyOptimization(Model):
 
     # The other hybrid (ACO + local search) components, each switchable on
     # its own so their contribution can be measured separately
-    # (analysis/run_aco_ablation_study.py). All on by default:
+    # (experiments/heuristics/aco/run_aco_ablation_study.py). All on by default:
     # - elite-route polishing of each batch's record route
     #   (route_construction.polish_route, in solve() and _fallback_route);
     _POLISH_ELITE_ROUTES = True

@@ -5,7 +5,7 @@ Este documento define **qué resultados de los modelos exactos (`opp_split`, `op
 La fuente de verdad es el registro `results/comparability/comparability_split_vs_heuristics.csv`, que se genera con:
 
 ```
-python -m analysis.comparability
+python -m experiments.comparison.comparability
 ```
 
 Toda tabla o gráfico que compare el Split con las heurísticas debe filtrar por sus columnas `comparable_status` y `comparable_objective`, en lugar de decidir caso por caso. Las tablas de este documento son una foto del 2026-09-28; si cambian los tests, manda el CSV.
@@ -15,7 +15,7 @@ Toda tabla o gráfico que compare el Split con las heurísticas debe filtrar por
 | Qué | Instancias de las heurísticas | Referencia del Split |
 |---|---|---|
 | **Funcional** | `test_instance__<test del Split>[__<k>]` en `tests/opp_{aco,hc}/functional/test_case_functional_instances.py` | Estado y objetivo por instancia en `tests/shared_scenarios/functional/functional_instances.json` |
-| **Estrés** | Los casos de `tests/stress_cases/` (19 escenarios), con el mismo nombre de método en los CSV de los cuatro modelos | CSV de estrés de `opp_split`, combinados por `analysis.load`: 04–19 con W_c = 27 y 01–03 de las corridas consolidadas |
+| **Estrés** | Los casos de `tests/stress_cases/` (19 escenarios), con el mismo nombre de método en los CSV de los cuatro modelos | CSV de estrés de `opp_split`, combinados por `experiments.common.load`: 04–19 con W_c = 27 y 01–03 de las corridas consolidadas |
 | **Tiempo igual** | CSV de estrés de cada heurística | `results/equal_time/output_equal_time_<heurística>_*.csv`, donde el Split corre con el tiempo de la heurística como límite |
 
 **Para comparar funcionales se usan solo las instancias `test_instance__*`**: son las que resuelven exactamente los mismos datos que el Split. Los otros tests funcionales de opp_aco y opp_hc (`invalid_speed_rejected` y, en ACO, `unreachable_required_location`) no tienen un par en el Split.
@@ -97,7 +97,7 @@ Los otros 9 son comparables en estado y objetivo.
 
 ## Cómo cruzar los datos
 
-**El cruce ya está hecho:** `python -m analysis.comparability` también escribe `results/comparability/results_split_vs_heuristics.csv`. Tiene una fila por instancia (funcional o de estrés) y por heurística, y usa los CSV de opp_aco y opp_hc que elige `analysis.load`.
+**El cruce ya está hecho:** `python -m experiments.comparison.comparability` también escribe `results/comparability/results_split_vs_heuristics.csv`. Tiene una fila por instancia (funcional o de estrés) y por heurística, y usa los CSV de opp_aco y opp_hc que elige `experiments.common.load`.
 
 | Columna | Qué es |
 |---|---|

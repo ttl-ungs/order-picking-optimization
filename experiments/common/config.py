@@ -18,7 +18,7 @@ should need to change.
 
 import os
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 OUTPUTS_ROOT = os.path.join(PROJECT_ROOT, "results")
 
 # label -> directory name under results/
@@ -47,7 +47,7 @@ GRID_STRESS_INSTANCES = (
 # rows) or (filename, instance names to take from it); when two sources
 # have the same instance, the earlier source wins.
 # Only labels present in MODEL_DIRS are ever looked up here (see
-# analysis/load.py).
+# experiments/common/load.py).
 LATEST_FILE_OVERRIDES = {
     # The results that count are consolidated runs under fixed names (no
     # timestamp), whatever a later run writes next to them.

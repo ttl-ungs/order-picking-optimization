@@ -99,7 +99,7 @@ def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
     # A limit-cut solve ("timelimit" etc., only possible when
     # time_limit_seconds was given) may still hold a feasible incumbent:
     # read it too, so a time-budgeted run reports its best solution found
-    # instead of nothing (analysis/run_equal_time_study.py). The returned
+    # instead of nothing (experiments/comparison/run_equal_time_study.py). The returned
     # status stays "timelimit" -- callers that require a proven
     # "optimal"/"feasible" answer are unaffected.
     has_incumbent = status in ("optimal", "feasible") or (

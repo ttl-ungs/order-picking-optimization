@@ -23,8 +23,8 @@ fix they also depended on PYTHONHASHSEED.
 NOT a unittest test. Keep the machine awake: a suspended run keeps its
 wall clock running and gets cut by Max_time (seen 2026-10-15).
 
-    caffeinate -dims python -m analysis.run_hc_budget_study
-    python -m analysis.run_hc_budget_study --id 03 17 18 --seeds 1 2
+    caffeinate -dims python -m experiments.heuristics.hc.run_hc_budget_study
+    python -m experiments.heuristics.hc.run_hc_budget_study --id 03 17 18 --seeds 1 2
 
 ~3-4 min per seed for ids 02-19 (measured 2026-10-14; construction
 dominates, ~0.4-5 s per run).
@@ -40,9 +40,9 @@ import os
 import time
 from datetime import datetime
 
-from analysis.config import OUTPUTS_ROOT
-from analysis.run_equal_time_study import SCENARIOS
-from analysis.aco_study_common import scenario_ids
+from experiments.common.config import OUTPUTS_ROOT
+from experiments.comparison.run_equal_time_study import SCENARIOS
+from experiments.heuristics.aco.aco_study_common import scenario_ids
 from dtos.hc.solve_hc_model_dto import SolveHCModelDTO
 from models.opp_hc import OPPHillClimbing
 from tests.infra.factories.scenario_adapter import build_model_dto_and_params

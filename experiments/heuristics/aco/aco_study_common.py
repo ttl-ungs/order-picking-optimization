@@ -13,8 +13,8 @@ import glob
 import os
 import time
 
-from analysis.config import OUTPUTS_ROOT
-from analysis.run_equal_time_study import SCENARIOS
+from experiments.common.config import OUTPUTS_ROOT
+from experiments.comparison.run_equal_time_study import SCENARIOS
 from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
 from models.opp_aco import OPPAntColonyOptimization
 from models.opp_aco.utils import exec_time

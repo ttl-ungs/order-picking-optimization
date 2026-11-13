@@ -34,7 +34,7 @@ RESULT_TIERS = {"functional", "stress"}
 RESULT_STUDIES = {"ablation", "pheromone", "seeds", "budget"}
 # results/<dir>/ that hold cross-model outputs instead of one model's runs:
 #   compliance/<model>/<tier>/  verification/ reports (one per run it checks)
-#   comparability/, equal_time/  flat CSVs (analysis.comparability, the
+#   comparability/, equal_time/  flat CSVs (experiments.comparison.comparability, the
 #                                equal-time study)
 RESULT_CROSS_MODEL_NESTED = {"compliance"}
 RESULT_CROSS_MODEL_FLAT = {"comparability", "equal_time"}

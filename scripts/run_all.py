@@ -131,8 +131,8 @@ def do_suite(args, baseline, model, tier):
         # Plain `unittest discover` (below) has no per-test cap: a single non-converging
         # instance runs unbounded until this whole suite's --timeout kills the process, wiping
         # out every other test's result with it (no final "Ran N tests" summary line ever gets
-        # printed). opp_mono/opp_split each have one documented instance that never converges (see
-        # analysis/README.md) -- exactly the "many tests, one is fine to time out" case
+        # printed). opp_mono/opp_split each have one documented instance that never converges
+        # -- exactly the "many tests, one is fine to time out" case
         # tests.run_suite/TestRunner already handles for the stress tier above. Scoped to
         # NEEDS_ZIMPL only: TestRunner spawns a fresh process per test, which is needless
         # overhead for the HC/ACO suites below (fast, never expected to hang).
