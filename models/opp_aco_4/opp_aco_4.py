@@ -81,7 +81,7 @@ from models.base.model import Model
 from models.base.opp_location_graph import OPPLocationGraph
 import models.utils.solve_registry as solve_registry
 import models.utils.route_construction as route_construction
-from models.opp_aco_2.utils.route_solution import RouteSolution
+from models.utils.route_solution import RouteSolution
 from models.opp_aco_4.utils.route_evaluator import RouteEvaluator
 from models.opp_aco_4.utils.constraints_validator import ConstraintsValidator
 from models.opp_aco_4.utils import exec_time

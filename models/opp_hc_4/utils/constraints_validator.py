@@ -34,7 +34,7 @@ opp_hc_2 is picker speed + cold chain, kept orthogonal to congestion.
 
 from typing import Dict, List, Set
 
-from models.opp_hc_2.utils.constraints_validator import (
+from models.utils.base_constraints_validator import (
     ConstraintsValidator as BaseConstraintsValidator,
 )
 from models.opp_v5_2_split.utils.cold_chain_validation import COLD_CHAIN_TOLERANCE
