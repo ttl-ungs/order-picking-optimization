@@ -20,6 +20,7 @@ import argparse
 import collections
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -44,14 +45,15 @@ for tid in walk(unittest.TestLoader().discover(start_dir=sys.argv[1], pattern="t
 
 
 def discover(model):
-    """{module ident (e.g. '04' or 'picker_speed'): [method names]} for tests/<model>/stress."""
+    """{case id (e.g. '04'): [method names]} for tests/<model>/stress."""
     out = subprocess.run([sys.executable, "-c", LIST_CODE, os.path.join("tests", model, "stress")],
                          capture_output=True, text=True, check=True).stdout
     modules = collections.defaultdict(list)
     for line in out.splitlines():
         if line.startswith("ID "):
-            parts = line[3:].strip().split(".")
-            modules[parts[0][len("test_case_"):]].append(parts[-1])
+            *_, module, class_name, method = line[3:].strip().split(".")
+            case = re.match(r"(?:Case|Stress)(\d+)", class_name)
+            modules[case.group(1) if case else module[len("test_case_"):]].append(method)
     return modules
 
 

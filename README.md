@@ -41,7 +41,7 @@ The project is implemented in Python and uses `PySCIPOpt` as the optimization en
 
 - `models/base/model.py` contains the abstract base model shared by all optimization approaches.
 - `models/opp_v1/` contains the original OPP implementation and its related classes; later exact models are `opp_v2`..`opp_v4`, `opp_v5_1_mono` (monolithic) and `opp_v5_2_split` (two-stage), and the heuristics are `opp_hc_1`..`opp_hc_4` (Hill Climbing) and `opp_aco_1`..`opp_aco_4` (Ant Colony Optimization).
-- `tests/<model>/functional/` and `tests/<model>/stress/` contain each model's tests (`test_case_NN.py`).
+- `tests/<model>/functional/` and `tests/<model>/stress/` bind each model to the cases shared by the models (`tests/functional_cases`, `tests/stress_cases`) and hold the tests of its own.
 - `tests/shared_scenarios/` contains every reusable warehouse scenario used by the tests.
 - `results/<model>/<functional|stress|stability>/` holds the CSV results produced by the test runs, read by `analysis/`.
 

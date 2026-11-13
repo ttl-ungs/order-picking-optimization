@@ -50,7 +50,7 @@ from tests.shared_scenarios.stress.stress_scenarios_v5_designed import realistic
 
 # Stress test id -> (test method name, as it appears in every model's stress
 # CSV, and the scenario builder) -- the same calls as
-# tests/opp_v5_2_split/stress/test_case_<id>.py.
+# tests/stress_cases/case_<id>.py.
 SCENARIOS = {
     "01": ("test_25_orders_per_batch_30_batches_100x100", lambda: migrated_stress_scenario(30, 30, 750, 100, 100)),
     "02": ("test_10_orders_per_batch", lambda: migrated_stress_scenario(10, 10, 100, 10, 10)),

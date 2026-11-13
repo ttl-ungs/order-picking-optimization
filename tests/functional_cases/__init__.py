@@ -18,10 +18,7 @@ docstring ("Case 24a"). The letters follow the alphabetical order of the
 methods of the case.
 """
 
-import importlib
-import inspect
-import pkgutil
-import unittest
+from tests.infra.cases.binding import bind_package_cases
 
 
 def bind_cases(adapter, namespace):
@@ -31,10 +28,4 @@ def bind_cases(adapter, namespace):
     OPPTestCaseSplit). The copies are added to `namespace` under the name of the
     case class, so that the runner can find each test by its dotted name.
     """
-    for module_info in sorted(pkgutil.iter_modules(__path__), key=lambda info: info.name):
-        module = importlib.import_module(f"{__name__}.{module_info.name}")
-        for name, case in vars(module).items():
-            if inspect.isclass(case) and issubclass(case, unittest.TestCase) and case.__module__ == module.__name__:
-                namespace[name] = type(
-                    name, (adapter, case), {"__module__": namespace["__name__"], "__doc__": case.__doc__}
-                )
+    bind_package_cases(__name__, __path__, adapter, namespace)

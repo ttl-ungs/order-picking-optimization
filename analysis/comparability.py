@@ -17,8 +17,8 @@ docs/specs/comparabilidad_v5_heuristicas.md for the rules.
   The OTHER aco_4/hc_4 functional tests are not comparable with v5, even
   when they share a test name: most run with one picker where the v5
   test has two (2026-09-28 audit).
-- stress: the 19 scenarios of tests/opp_v5_2_split/stress (ported to
-  aco_4/hc_4 as test_case_NN.py with v5's numbering and method names). v5_2_split's
+- stress: the 19 scenarios of tests/stress_cases, solved by every model (the
+  same method names in each model's CSV). v5_2_split's
   reference outcome comes from its stress CSVs as merged by analysis.load
   (04-19 with W_c = 27, 01-03 unchanged migrated scenarios).
 

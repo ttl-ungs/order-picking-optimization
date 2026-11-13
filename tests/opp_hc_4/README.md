@@ -40,8 +40,8 @@ tests/opp_hc_4/
 │   ├── test_case_v5_equivalence.py         # the functional cases of the thesis, one test per instance (status checked against the Split)
 │   └── test_case_invalid_speed_rejected.py # case 36c: a non-positive picker speed is refused
 └── stress/
-    ├── v5_stress_test_case.py      # base: runs a v5 stress scenario through this model
-    └── test_case_{01..19}.py       # v5's 19 stress scenarios, same numbering and method names as opp_v5_2_split
+    ├── v5_stress_test_case.py      # adapter: solves a stress scenario with this model and checks the solution
+    └── test_stress_cases.py        # binds the 19 shared stress cases (tests/stress_cases) to that adapter
 ```
 
 The functional tier runs the instances of the thesis' functional cases

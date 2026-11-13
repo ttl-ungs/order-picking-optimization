@@ -113,7 +113,7 @@ def check_naming(files):
     for (model, tier), names in sorted(by_dir.items()):
         numbers = []
         for n in names:
-            if n == "test_functional_cases.py":  # binds tests/functional_cases to the model
+            if n in ("test_functional_cases.py", "test_stress_cases.py"):  # bind the shared cases to the model
                 continue
             m = re.fullmatch(r"test_case_(\d+|[a-z0-9_]+)\.py", n)
             if not m:
@@ -128,6 +128,9 @@ def check_naming(files):
     shared = sorted(int(m.group(1)) for f in files if (m := re.fullmatch(r"tests/functional_cases/case_(\d\d)\.py", f)))
     if shared != list(range(1, len(shared) + 1)):
         errors.append(f"tests/functional_cases: case numbering not continuous (found {shared})")
+    stress = sorted(int(m.group(1)) for f in files if (m := re.fullmatch(r"tests/stress_cases/case_(\d\d)\.py", f)))
+    if stress != list(range(1, len(stress) + 1)):
+        errors.append(f"tests/stress_cases: case numbering not continuous (found {stress})")
     return errors
 
 
