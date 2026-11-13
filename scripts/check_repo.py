@@ -127,6 +127,8 @@ def _check_result_path(f):
       results/compliance/<opp_model>/<tier>/<file>
       results/comparability/<file>, results/equal_time/<file>
     """
+    if f == "results/README.md":
+        return []
     parts = f.split("/")[1:]
     top = parts[0]
     if top.startswith("opp_"):
