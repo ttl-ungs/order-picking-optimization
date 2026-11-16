@@ -3,7 +3,7 @@ from typing import List, Optional
 
 class ComplianceReportDTO:
     """
-    Outcome of checking one heuristic solution against opp_v5_1_mono
+    Outcome of checking one heuristic solution against opp_mono
     (verification/mono_compliance.py).
 
     Three layers, cheapest first:

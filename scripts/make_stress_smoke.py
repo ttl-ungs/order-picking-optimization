@@ -4,10 +4,10 @@
     python -m scripts.make_stress_smoke --max-seconds 5
 
 A stress test qualifies when, in the latest recorded run of its model (results/<model>/stress/,
-read through analysis.load), it finished OK within --max-seconds. Tests are matched by unittest
+read through experiments.common.load), it finished OK within --max-seconds. Tests are matched by unittest
 method name -- the same key the analysis pipeline joins on -- and a test module is included only
 if every test method in it qualifies and no method name is ambiguous within the model. Only the
-Hill Climbing / ACO models are listed: opp_v4/opp_v5_2_split need the zimpl binary and never converge at
+Hill Climbing / ACO models are listed: opp_mono/opp_split need the zimpl binary and never converge at
 stress scale.
 
 `python -m scripts.run_all --tier stress --smoke` then runs just those files through
@@ -20,13 +20,14 @@ import argparse
 import collections
 import json
 import os
+import re
 import subprocess
 import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from analysis.config import STABILITY_MODELS  # noqa: E402  (the six HC/ACO models)
-from analysis.load import load_all  # noqa: E402
+from experiments.common.config import HEURISTIC_MODELS  # noqa: E402
+from experiments.common.load import load_all  # noqa: E402
 
 OUT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stress_smoke.json")
 
@@ -44,14 +45,15 @@ for tid in walk(unittest.TestLoader().discover(start_dir=sys.argv[1], pattern="t
 
 
 def discover(model):
-    """{module ident (e.g. '04' or 'picker_speed'): [method names]} for tests/<model>/stress."""
+    """{case id (e.g. '04'): [method names]} for tests/<model>/stress."""
     out = subprocess.run([sys.executable, "-c", LIST_CODE, os.path.join("tests", model, "stress")],
                          capture_output=True, text=True, check=True).stdout
     modules = collections.defaultdict(list)
     for line in out.splitlines():
         if line.startswith("ID "):
-            parts = line[3:].strip().split(".")
-            modules[parts[0][len("test_case_"):]].append(parts[-1])
+            *_, module, class_name, method = line[3:].strip().split(".")
+            case = re.match(r"(?:Case|Stress)(\d+)", class_name)
+            modules[case.group(1) if case else module[len("test_case_"):]].append(method)
     return modules
 
 
@@ -63,7 +65,7 @@ def main():
     df = load_all(verbose=False)
     stress = df[df["scenario"] == "stress"]
     models = {}
-    for model in STABILITY_MODELS:
+    for model in HEURISTIC_MODELS:
         rows = stress[stress["model"] == model]
         fast = set(rows[(rows["status"] == "ok") & (rows["total_time"] <= args.max_seconds)]["instance"])
         modules = discover(model)

@@ -1,8 +1,7 @@
 import os
 
 # Cold-chain limit written when a scenario does not define one: large enough
-# that no batch is ever excluded (same value the opp_v5_2_split migrated tests use to
-# neutralize the cold chain for the v4 baseline).
+# that no batch is ever excluded (the cold chain is disabled).
 DEFAULT_T_COLD = 1_000_000_000.0
 
 
@@ -133,8 +132,8 @@ def build_dat_files(tmpdir, scenario_data):
     if "X_pb" in scenario_data:
         write_indexed_dat(os.path.join(tmpdir, "x_pb.dat"), scenario_data["X_pb"])
 
-    # Heterogeneous picker speed and cold-chain limit (read by opp_v5_1_mono and
-    # opp_v5_2_split's stage 2). Scenarios that predate them get V_p = 1.0 for
+    # Heterogeneous picker speed and cold-chain limit (read by opp_mono and
+    # opp_split's stage 2). Scenarios that predate them get V_p = 1.0 for
     # every picker and no binding cold-chain limit, i.e. the original problem.
     speeds = scenario_data.get("V_p") or {p: 1.0 for p in scenario_data["P"]}
     write_indexed_dat(os.path.join(tmpdir, "velocities.dat"), speeds)

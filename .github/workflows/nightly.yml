@@ -1,14 +1,14 @@
 name: Nightly
 
 # The slow suites that do not belong in a pull request: every stress test of the Hill Climbing /
-# ACO models with a per-test cap, and the legacy exact models (opp_v1..v3, SCIP only).
+# ACO models with a per-test cap, and the functional suites of the exact models (zimpl needed).
 # Can also be started by hand (Actions -> Nightly -> Run workflow).
 #
 # A stress test that reaches the cap is reported as a timeout and does NOT fail the job (many
-# stress instances are unsolvable by design); failures and errors do. opp_v4/opp_v5_1_mono/opp_v5_2_split's functional
+# stress instances are unsolvable by design); failures and errors do. opp_mono/opp_split's functional
 # suites run here too (exact-zimpl job, zimpl installed via conda-forge) -- their stress suites
-# are still skipped: analysis/README.md records most of their stress tests hitting the 25 min
-# per-test cap, which would push a single suite past this job's own budget.
+# are still skipped: most of their stress tests hit the per-test cap, which would push a
+# single suite past this job's own budget.
 
 on:
   schedule:
@@ -49,30 +49,8 @@ jobs:
           name: stress-report
           path: stress-report.json
 
-  legacy-exact:
-    name: Functional tests, exact models opp_v1..v3
-    runs-on: ubuntu-latest
-    timeout-minutes: 150
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: requirements.txt
-      - run: pip install -r requirements.txt
-      # opp_v3 has one known failure (test_bridge_earliness_order_size), recorded in the baseline.
-      - run: >
-          python -m scripts.run_all --models opp_v1,opp_v2,opp_v3 --tier functional --jobs 3
-          --timeout 7200 --json legacy-report.json
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: legacy-report
-          path: legacy-report.json
-
   exact-zimpl:
-    name: Functional tests, exact models opp_v4/opp_v5_1_mono/opp_v5_2_split (needs zimpl)
+    name: Functional tests, exact models opp_mono/opp_split (needs zimpl)
     runs-on: ubuntu-latest
     timeout-minutes: 150
     steps:
@@ -99,14 +77,12 @@ jobs:
       - name: Put zimpl on PATH
         run: echo "$CONDA/envs/zimpl-env/bin" >> "$GITHUB_PATH"
       - run: zimpl --version
-      # opp_v4 (46 tests): 45/46 converge, 1 hits the 25 min cap. opp_v5_2_split (63 tests) and
-      # opp_v5_1_mono (62 tests): all but one converge; that one (test_case_30's feasible variant,
-      # the same pathological case as opp_v4, see analysis/README.md) hits the cap, which run_all
-      # reports without failing the suite. opp_v5_1_mono also has its known test_case_06 failure
-      # (scripts/baseline_counts.json). Each suite takes ~30 min on a laptop, most of it that cap.
+      # opp_split (64 tests) and opp_mono (63 tests): all but one converge; that one
+      # (the feasible variant of case 30) hits the per-test cap, which run_all reports without
+      # failing the suite. Each suite takes ~30 min on a laptop, most of it that cap.
       # --timeout is a per-suite ceiling (all its tests summed), not per test.
       - run: >
-          python -m scripts.run_all --models opp_v4,opp_v5_1_mono,opp_v5_2_split --tier functional --jobs 2
+          python -m scripts.run_all --models opp_mono,opp_split --tier functional --jobs 2
           --timeout 3600 --json exact-zimpl-report.json
       - uses: actions/upload-artifact@v7
         if: always()

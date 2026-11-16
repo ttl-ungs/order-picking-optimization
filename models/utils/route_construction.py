@@ -1,16 +1,15 @@
-"""Route-construction primitives shared by opp_hc_4 and opp_aco_4.
+"""Route-construction primitives shared by opp_hc and opp_aco.
 
-Moved verbatim (behavior unchanged) out of models/opp_hc_4/opp_hc_4.py so
-that opp_aco_4's pick-to-pick route construction (see its
+Moved verbatim (behavior unchanged) out of models/opp_hc/opp_hc.py so
+that opp_aco's pick-to-pick route construction (see its
 _build_batch_route) can reuse the exact same shortest-path, best-first
-fallback and 2-opt code that opp_hc_4 already validated, instead of a
+fallback and 2-opt code that opp_hc already validated, instead of a
 second copy drifting apart.
 
 Every function takes the OPPLocationGraph explicitly. Routes follow
-opp_hc_4's convention: a list of the picking stops strictly between depot
+opp_hc's convention: a list of the picking stops strictly between depot
 and final (depot/final themselves are implicit), and a route is a SIMPLE
-path -- no vertex repeated -- because v5's model forbids revisits (see
-tests/*/functional/test_case_forced_revisit_is_infeasible.py).
+path -- no vertex repeated -- because the exact models forbid revisits.
 """
 
 import heapq
@@ -21,16 +20,12 @@ from typing import Dict, List, Optional, Set, Tuple
 
 # Backtracks allowed per stitch_route construction (see its docstring):
 # each costs about one construction step (a Dijkstra + a Tarjan pass).
-# Measured 2026-09-27 on realistic_crew_scenario(13) and (16), 20
-# constructions per batch per setting: 0 -> 30 backtracks raised most
-# batches' success rate noticeably (e.g. 13x13 B1 forwards 55% -> 80%)
-# for ~2x the time per construction; 30 -> 200 helped a few batches
-# further (13x13 B5 forwards 10% -> 50%) but cost another ~3x and left
-# others flat or lower (16x16 B6 forwards 50% -> 20%, within noise).
-# With both directions tried (stitch_route_either_way), 30 already gives
-# every measured batch >= 45% success in at least one direction, so the
-# extra time is better spent on the other direction than on deeper
-# backtracking.
+# Going from 0 to 30 backtracks raises the success rate of most batches
+# noticeably for about twice the time per construction; going on to 200 helps
+# only a few batches and costs several times more. With both directions tried
+# (stitch_route_either_way), 30 already gives every measured batch a good
+# success rate in at least one direction, so the extra time is better spent
+# on the other direction than on deeper backtracking.
 STITCH_MAX_BACKTRACKS = 30
 
 
@@ -122,7 +117,7 @@ def best_first_route(location_graph, required_locations: Set, max_expansions: in
     Last-resort exhaustive route search: returns a simple depot -> final
     route (picking stops only) covering every required location, or None
     if none exists within `max_expansions`. Tries the memoized search
-    first, then an un-memoized one (see opp_hc_2's twin method's docstring).
+    first, then an un-memoized one.
     """
     if not required_locations:
         return []
@@ -152,16 +147,13 @@ def _best_first_search(
     `node` to the closest ORIGINAL required location, steps taken so
     far) instead of plain FIFO BFS.
 
-    2026-09-26 audit finding: a WAREHOUSE-GRID batch needing ~20 required
-    locations on a 49-node grid genuinely exists a valid route (v5's own
-    solver finds one), but plain BFS -- which explores states in the
-    order they were first reached, oblivious to how close any of them
-    is to actually finishing the route -- needed ~3.7M expansions and
-    ~3GB to find it, because it burns almost all of that budget on
-    partial paths that still have most of the batch left to visit,
-    before ever getting to the few that are nearly done. Ordering the
-    frontier by "fewest locations left" first fixed most batches
-    outright, but a "few locations left, all of them far away" state
+    Why not plain BFS: on a warehouse-grid batch needing ~20 required
+    locations a valid route exists, but plain BFS explores states in the
+    order they were first reached, oblivious to how close any of them is to
+    finishing the route, so it burns almost all of its budget on partial
+    paths that still have most of the batch left to visit. Ordering the
+    frontier by "fewest locations left" first fixes most batches, but a
+    "few locations left, all of them far away" state
     can still rank ahead of a "few locations left, all of them nearby"
     one on that key alone -- dist_to_nearest_required (from
     multi_source_distances) breaks that tie by real graph distance,
@@ -217,7 +209,7 @@ def build_reversal_prefix_arrays(location_graph, route: List) -> Tuple[List[floa
     the reverse-direction edges among route[0..k] don't exist -- a
     2-opt reversal of route[i:j+1] is only feasible if this is the
     same at both ends of the segment (i.e. zero reverse edges are
-    missing inside it). Shared by two_opt_tighten_route and opp_hc_4's
+    missing inside it). Shared by two_opt_tighten_route and opp_hc's
     _generate_route_neighbor -- see two_opt_tighten_route's docstring for
     why get_distance/has_edge are NOT assumed symmetric here.
     """
@@ -229,18 +221,14 @@ def build_reversal_prefix_arrays(location_graph, route: List) -> Tuple[List[floa
     rev_prefix = [0.0] * n
     rev_broken_count = [0] * n
     for t in range(n - 1):
-        # route[t] -> route[t + 1] is one of the route's own edges,
-        # which is always feasible for a route this is called on
-        # (topology-valid, or the current sweep state in
-        # two_opt_tighten_route), so get_distance here is always
-        # finite. The reverse direction may not exist at all
-        # (get_distance returns float("inf")): rev_broken_count
-        # tracks that separately (used to reject any candidate whose
-        # reversed segment would need this edge) so a 0.0 placeholder
-        # is used for rev_prefix's running sum instead -- letting an
-        # "inf" into the cumulative sum would poison every later
-        # prefix value (inf - inf = nan), including for ranges that
-        # never touch this broken edge.
+        # route[t] -> route[t + 1] is one of the route's own edges, so
+        # get_distance here is always finite. The reverse direction may not
+        # exist at all (get_distance returns float("inf")): rev_broken_count
+        # tracks that separately (to reject any candidate whose reversed
+        # segment would need this edge) and a 0.0 placeholder goes into
+        # rev_prefix's running sum, because an "inf" there would poison every
+        # later prefix value (inf - inf = nan), even for ranges that never
+        # touch the broken edge.
         fwd_prefix[t + 1] = fwd_prefix[t] + get_distance(route[t], route[t + 1])
         edge_ok = has_edge(route[t + 1], route[t])
         rev_prefix[t + 1] = rev_prefix[t] + (
@@ -264,7 +252,7 @@ def two_opt_tighten_route(location_graph, route: List) -> List:
     candidate route and re-validating/re-summing it from scratch --
     O(1) per candidate (after an O(n) prefix pass per sweep) instead of
     O(n). This graph can be directed/asymmetric (see e.g.
-    tests/shared_scenarios/functional/scenario_05_v4.py, where L1->L2
+    tests/shared_scenarios/functional/scenario_05.py, where L1->L2
     and L2->L1 have different weights), so get_distance/has_edge are
     NOT assumed symmetric: reversing route[i:j+1] also reverses the
     direction every edge inside it is traversed in, so the reverse-
@@ -337,7 +325,7 @@ def reroute_segments(location_graph, route: List, required_locations: Set) -> Li
     improvement by shortest paths between consecutive picks" idea behind
     the Steiner-TSP view of Chen et al. (2013) p.79 and Coruzzolo et al.
     (2023) pp.6-9 (distances between picks = shortest paths), applied
-    under v5's no-revisit constraint -- the avoidance of the rest of the
+    under the no-revisit constraint -- the avoidance of the rest of the
     route is our addition for that constraint.
 
     Keeps the route simple (the new corridor avoids every other route
@@ -413,12 +401,12 @@ def relocate_picks(location_graph, route: List, required_locations: Set, deadlin
 
     2-opt and reroute_segments can't express this move: 2-opt only
     reverses a contiguous stretch, reroute_segments keeps the pick order.
-    Measured 2026-09-26 on realistic_crew_scenario(7): after both, one
-    batch still stayed at 76 route-time units vs 74 for v5's exact Stage 1.
+    After both, a batch can still stay slightly above the Split's exact
+    Stage 1 optimum.
 
     O(k^2) candidate moves of 3 Dijkstras each for k picks, so it's much
     more expensive than improve_route -- meant for elite routes only (see
-    opp_aco_4's _recombine_shortest_routes), not every ant. Keeps the
+    opp_aco's _recombine_shortest_routes), not every ant. Keeps the
     route simple and never lengthens it. Picking stops only in/out.
     """
     if not route:
@@ -533,10 +521,8 @@ def reverse_pick_segments(
 
     two_opt_tighten_route reverses raw vertex stretches, which on a grid
     almost never closes (the two new junctions must be adjacent cells);
-    reversing picks and re-drawing corridors does. Measured 2026-09-26 on
-    realistic_crew_scenario(7): the only non-optimal elite route left
-    (76 vs v5's 74) needed exactly this move -- the middle picks visited
-    in reverse, through different corridors.
+    reversing picks and re-drawing corridors does (the middle picks visited
+    in reverse, through different corridors).
 
     O(k * max_segment) candidates, each re-realizing up to max_segment + 1
     corridors: meant for elite routes only, like relocate_picks. Keeps the
@@ -583,9 +569,8 @@ def polish_route(location_graph, route: List, required_locations: Set, deadline:
 
     `deadline` (absolute time.time(), optional): stop improving once it
     passes and return the best route so far -- never worse than the input.
-    Needed because one call scales with graph size: measured 2026-09-27 on
-    the 100x100 migrated grid (10,000 nodes), ~34 s per call, 30 calls =
-    1007 s of a 1141 s opp_aco_4 run whose Max_time was 1 s.
+    Needed because one call scales with graph size: on the 100x100 grid
+    (10,000 nodes) one call takes tens of seconds.
     """
     best = list(route)
     best_length = _path_length(location_graph, [location_graph.get_depot()] + best + [location_graph.get_final()])
@@ -645,9 +630,8 @@ def keeps_route_completable(undirected: Dict, pick, visited: Set, remaining: Set
     the subtler "pocket" case a plain connectivity BFS misses -- a
     required location at the end of a one-wide dead-end corridor is
     connected, but can only be entered and left through the same
-    vertex (measured 2026-09-26 on realistic_crew_scenario(7): with
-    connectivity alone, ~85% of constructions still fell back to the
-    exhaustive search, every time because of such a pocket).
+    vertex; with connectivity alone most constructions would still fall back
+    to the exhaustive search because of such pockets.
 
     Our own addition (not from Chen et al., whose routes may revisit
     aisles, so they never hit this). Still not sufficient -- two
@@ -657,8 +641,7 @@ def keeps_route_completable(undirected: Dict, pick, visited: Set, remaining: Set
     necessary condition -- a directed simple path is also an undirected
     one -- just a weaker filter. (A first version followed
     get_neighbors, i.e. out-edges only, and wrongly rejected every pick
-    on directed test graphs such as test_case_pre_check_uses_tightened_
-    route's -- caught by the functional suite, 2026-09-26.)
+    on directed graphs).
     """
     if final in visited:
         return False
@@ -682,8 +665,8 @@ def simple_path_component(undirected: Dict, s, t, blocked: Set) -> Set:
     # Virtual s-t edge (if not already an edge): spliced into s's and
     # t's neighbor lists only; every other vertex iterates its cached
     # adjacency set directly, filtering `blocked` inline, instead of
-    # materializing a filtered list per visit (this runs ~20x per ant
-    # route -- 2026-09-26 profiling put it at ~40% of ACO runtime).
+    # materializing a filtered list per visit (this runs about 20 times per ant
+    # route, so it is a hot spot).
     if t in undirected[s]:
         extra = {}
     else:
@@ -758,10 +741,10 @@ def stitch_route(
     required locations passed on the way count as picked.
 
     The pick-to-pick (Steiner-TSP) view and the random-proportional rule
-    are Chen et al. (2013), A-TOP, p.79 and Eq. 2 -- opp_aco_4 passes
+    are Chen et al. (2013), A-TOP, p.79 and Eq. 2 -- opp_aco passes
     weight = tau^alpha * (1/d)^beta; see its _build_batch_route for the
     full rationale and the deviations (no revisits, the completability
-    check). opp_hc_4 uses it with weight = (1/d)^beta as a randomized
+    check). opp_hc uses it with weight = (1/d)^beta as a randomized
     multi-start construction.
 
     Backtracking (our own addition, not from the papers): when no
@@ -770,11 +753,9 @@ def stitch_route(
     a randomized depth-first search with keeps_route_completable as the
     pruning rule, bounded by `max_backtracks`. keeps_route_completable is
     necessary but not sufficient, so without this some batches almost
-    never finished: measured 2026-09-27 on realistic_crew_scenario(13),
-    batch B6 succeeded in 0/100 constructions (B5 in 15/100), which made
-    opp_hc_4 report "infeasible" and left opp_aco_4 with only the long
-    best-first fallback route -- too long for T_cold = 280 in
-    realistic_crew_cold_chain, so no ant ever came out compliant.
+    never finish, which would make opp_hc report "infeasible" and leave
+    opp_aco with only the long best-first fallback route, too long to be
+    cold-chain compliant.
     Candidates already tried at a step stay removed after backtracking
     to it, so the search never repeats a branch.
     """
@@ -788,12 +769,10 @@ def stitch_route(
     def open_step(current):
         dist, prev = dijkstra(location_graph, current, forbidden=(visited | {final}) - {current}, targets=remaining)
         weights = {}
-        # sorted(): roulette walks `weights` in insertion order, and a set of
-        # str iterates in an order that changes with PYTHONHASHSEED, so the
-        # same Seed used to pick different locations in different processes
-        # (measured 2026-10-14: up to 0.5% objective spread on stress 03, and
-        # stress 11 infeasible in 2 of 7 processes). Same probabilities, fixed
-        # order -- results now depend on Seed alone.
+        # sorted(): the roulette walks `weights` in insertion order, and a set
+        # of str iterates in an order that changes with PYTHONHASHSEED, so the
+        # same Seed would pick different locations in different processes.
+        # Same probabilities, fixed order: results depend on Seed alone.
         for r in sorted(remaining):
             if r in dist:
                 weights[r] = weight(current, r, dist[r] if dist[r] > 0 else 0.01)
@@ -852,13 +831,11 @@ def insertion_route(location_graph, required_locations: Set, rng=None) -> Option
     multi-start diversity. Returns the full depot ... final route or None
     if the corridors can't be realized.
 
-    Why (our own use of it, measured 2026-09-27): stitch_route's
-    distance-greedy choice leaves far picks for last, and on
-    realistic_crew_scenario(13)'s B6 the route crossed the grid's right
-    column early and cut off the three picks left on it -- 0/100
-    constructions finished, even with 200 backtracks, because the fatal
-    move is many steps before the dead end. Insertion places every pick
-    in a globally coherent order from the start.
+    Why (our own use of it): stitch_route's distance-greedy choice leaves far
+    picks for last, and a route can cross a grid column early and cut off the
+    picks left on it; the fatal move is many steps before the dead end, so
+    backtracking does not fix it. Insertion places every pick in a globally
+    coherent order from the start.
     """
     depot = location_graph.get_depot()
     final = location_graph.get_final()
@@ -942,15 +919,13 @@ def stitch_route_either_way(
     market sequence", p.18617) and run their S-shape baseline on reversed
     routes too (p.18620) -- but they reverse a finished route, while this
     BUILDS the route from the other end, which changes which picks the
-    greedy choice leaves for last. Why (measured 2026-09-27):
+    greedy choice leaves for last. Why:
     stitch_route's distance-greedy choice leaves the picks far from where
     it STARTS for last, and some batches have a cluster of those that an
-    early move cuts off -- realistic_crew_scenario(13)'s B6 has three
-    picks on the grid's right column near the final node, and forward
-    construction finished 0-5% of the time even with backtracking;
-    backwards (starting next to them) it finished 75%. Other batches
-    show the opposite pattern (16x16's B4: forwards ~0-15%, backwards
-    100%), so callers alternate between the two directions.
+    early move cuts off: forward construction can almost never finish them
+    even with backtracking, while building backwards (starting next to them)
+    finishes most of the time. Other batches show the opposite pattern, so
+    callers alternate between the two directions.
     """
     if not backwards:
         return stitch_route(location_graph, required_locations, weight, undirected, rng, max_backtracks)

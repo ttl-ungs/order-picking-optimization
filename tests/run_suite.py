@@ -1,23 +1,22 @@
 """Single parametrized entry point for running a model's test suite.
 
-Replaces the ~24 near-identical per-model execute_tests.py /
-execute_stress_tests.py scripts (one pair per model, differing only in the
-model_name/test_type strings passed to TestRunner) with one script driven by
-CLI arguments. Two legacy models (opp_v1, opp_v2) predate TestRunner entirely
-(plain unittest.TextTestRunner, no CSV output, no timeout) and keep their own
-execute_tests.py/execute_stress_tests.py unchanged -- they don't fit this
-runner's contract.
+Runs each test of a model's suite in its own process (TestRunner), with a
+per-test timeout, and writes the results to results/<model>/<tier>/.
 
 Usage:
-    python -m tests.run_suite opp_hc_2 functional
-    python -m tests.run_suite opp_hc_3 stress
-    python -m tests.run_suite opp_hc_3 stress --id 04
-        (equivalent to the old `python tests/opp_hc_3/execute_stress_tests.py 04`
-        -- runs only test_case_04.py instead of the full suite)
+    python -m tests.run_suite opp_hc functional
+    python -m tests.run_suite opp_hc stress
+    python -m tests.run_suite opp_hc stress --id 04
+        (runs only case 04 instead of the full suite)
+
+A case id NN selects the module test_case_NN.py and the shared cases whose
+class is named Case<NN>... or Stress<NN>... (see tests/functional_cases and
+tests/stress_cases).
 """
 
 import argparse
 import os
+import re
 import sys
 import unittest
 
@@ -30,15 +29,24 @@ from tests.infra.execution.config import STRESS_TEST_TIMEOUT_MINUTES, TEST_TIMEO
 from tests.infra.execution.runner import TestRunner
 
 
+def selected_by_id(test_id, case_ids):
+    """Whether the test with this dotted id belongs to one of the cases `case_ids`."""
+    *_, module, class_name, _method = test_id.split(".")
+    return any(
+        module == f"test_case_{case_id}" or re.match(rf"(Case|Stress){re.escape(case_id)}(?!\d)", class_name)
+        for case_id in case_ids
+    )
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("model", help="Model directory name under tests/, e.g. opp_hc_2, opp_aco_3, opp_v4.")
+    parser.add_argument("model", help="Model directory name under tests/, e.g. opp_hc, opp_aco, opp_split, opp_mono.")
     parser.add_argument("tier", choices=["functional", "stress"])
     parser.add_argument(
         "--id",
         metavar="NN",
         nargs="+",
-        help="Run only test_case_<id>.py for each given id instead of the full suite.",
+        help="Run only the case with each given id instead of the full suite.",
     )
     parser.add_argument(
         "--timeout-minutes",
@@ -57,10 +65,8 @@ def main(argv=None):
     if not os.path.isdir(start_dir):
         parser.error(f"No such directory: {start_dir}")
 
-    patterns = ["test_*.py"]
     if args.id:
-        patterns = [f"test_case_{i}.py" for i in args.id]
-        print(f"Modo individual: Buscando {', '.join(patterns)}")
+        print(f"Modo individual: casos {', '.join(args.id)}")
 
     timeout_minutes = args.timeout_minutes or (
         STRESS_TEST_TIMEOUT_MINUTES if args.tier == "stress" else TEST_TIMEOUT_MINUTES
@@ -74,15 +80,15 @@ def main(argv=None):
         write_solutions=WRITE_SOLUTIONS,
     )
 
-    test_ids = []
-    for pattern in patterns:
-        suite = unittest.TestLoader().discover(start_dir=start_dir, pattern=pattern)
-        test_ids += [t for t in TestRunner.collect_test_ids(suite) if t not in test_ids]
+    suite = unittest.TestLoader().discover(start_dir=start_dir, pattern="test_*.py")
+    test_ids = TestRunner.collect_test_ids(suite)
+    if args.id:
+        test_ids = [t for t in test_ids if selected_by_id(t, args.id)]
 
     results = runner.run(test_ids)
     label = f"{args.tier.upper()} TESTS ({args.model})"
     if args.id:
-        label += f" [{', '.join(patterns)}]"
+        label += f" [{', '.join(args.id)}]"
     runner.print_summary(results, label)
 
     sys.exit(0 if runner.succeeded(results, allow_timeout=args.allow_timeout) else 1)

@@ -1,15 +1,14 @@
 """
-Pre-solve input validation for opp_v4.
+Pre-solve input validation shared by the four models.
 
-opp_model_v4.zpl takes the batch assignment (B_nb) and batch composition as
-fixed *parameters*, not decision variables -- unlike opp_v2/opp_v3 (where
-"order n belongs to exactly one batch" and "the batch fits the vehicle" were
-constraints on decision variables and infeasible input was rejected by the
-solver).
-These checks re-add, in Python before ZIMPL/SCIP ever runs, the two
-input-validity conditions opp_hc_2/opp_aco_2/opp_hc_3/opp_aco_3 still reject
-as infeasible for the same instance, so the "same constraints" equivalence
-claimed by every model's README actually holds for opp_v4 too.
+The ZIMPL models (opp_mono, opp_split) take the batch assignment (B_nb) and
+batch composition as fixed *parameters*, not decision variables, so the solver
+cannot reject "order n belongs to exactly one batch" or "the batch fits the
+vehicle" by itself.
+These checks reject, in Python before ZIMPL/SCIP ever runs, the two
+input-validity conditions that opp_hc and opp_aco also reject as infeasible
+for the same instance, so every model gives the same answer on an invalid
+input.
 """
 
 
@@ -49,8 +48,8 @@ def orders_without_exactly_one_batch(B_nb: dict, N, tolerance: float = 1e-9) -> 
     Returns the set of orders n in N whose assignment across batches
     (sum_b B_nb[(n, b)]) is not exactly 1 -- i.e. left unassigned, or assigned
     to two or more batches at once. Mirrors the "sum_b y[n,b] == 1"
-    constraint opp_v2/opp_v3/opp_hc_2/opp_aco_2 enforce on the batch
-    assignment decision variable.
+    constraint the heuristics enforce on the batch
+    assignment.
     """
     if not N:
         return set()

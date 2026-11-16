@@ -1,93 +1,36 @@
 # Tests
 
-This document describes a workflow to design and maintain OPP (v1 and v2) tests consistently.
-
-## Objectives
-
-- Validate feasible routes on representative graphs.
-- Verify penalties for tardiness/earliness with controlled scenarios.
-- Cover multi picker and multi batch cases.
-- Include infeasible cases with clear causes.
+The four models (OPP-Split, OPP-Mono, OPP-HC, OPP-ACO) run the same cases: the 38 functional cases
+and the 19 stress scenarios of the thesis.
 
 ## Structure
 
-- tests/shared_scenarios: definition of graphs and base assignments (shared by every model; model-specific ones carry a `_vN` suffix).
-- tests/<model>/functional and tests/<model>/stress: test cases per model (`test_case_NN.py`).
-- tests/infra/: shared test infrastructure, in four groups: `execution/` (runner, config), `cases/` (`OPPTestCase`, `route_assertions`), `factories/` (`family_case`, `migrated_case`, `graphs_factory`) and `zimpl/` (helpers of the ZIMPL-based tests).
-- tests/run_suite.py: single entry point to run a model's suite. Repo-wide checks and runs (`check_repo`, `run_all`) live in `scripts/`.
+- `tests/functional_cases/` — `case_NN.py`, each functional case written once. A case builds an instance and solves it with `self.solve(...)` or `self.run_pipeline(...)`; it does not know which model runs it. Each test method carries its label in the docstring ("Case 24a"; letters follow the alphabetical order of the case's methods).
+- `tests/stress_cases/` — `case_NN.py`, each stress scenario written once; it calls `self.assert_stress_pipeline(scenario)`.
+- `tests/<model>/functional/` and `tests/<model>/stress/` — bind the model to the shared cases (`test_functional_cases.py`, `test_stress_cases.py`, using `bind_cases` and the model's adapter) and hold the tests of its own.
+- OPP-Split and OPP-Mono run the functional cases with their exact assertions (objective and routes). OPP-HC and OPP-ACO run the same instances through `test_functional_cases.py` (one test per instance of the functional cases, captured from OPP-Split's runs, with the same case class and test name as in the Split) and check the status against the Split's.
+- Tests of their own, beyond the shared cases: OPP-Split (`test_case_24b.py`, the pre-flight check that no picker can run a batch within the cold-chain limit, and `test_case_38.py`), OPP-Mono (`test_case_38.py`), OPP-HC (`test_case_invalid_speed_rejected.py`, case 36c) and OPP-ACO (case 36c and `test_case_unreachable_required_location.py`).
+- `tests/shared_scenarios/` — graphs and scenarios shared by every model (`common/`, `functional/`, `stress/`).
+- `tests/infra/` — `execution/` (runner, config), `cases/` (`OPPTestCase`, `ExactModelTestCase`, `binding.py`, `route_assertions`), `factories/` (functional instances, scenario adapter, graphs) and `zimpl/` (helpers of the ZIMPL-based tests).
+- `tests/run_suite.py` — single entry point to run a model's suite. Repo-wide checks and runs (`check_repo`, `run_all`) live in `scripts/`.
 
-## Workflow per graph (recommended)
+## Conventions for a case
 
-1) Happy path
-- Use a minimal set of orders that activates key nodes.
-- Validate that the route visits all required locations.
-- For a single batch, use `assert_route_covers_orders`.
-- For multiple batches, use `assert_batch_routes_cover_locations`.
-
-2) Penalties (tardiness/earliness)
-- Reuse the same graph and assignments (N, a, y) for stability.
-- Isolate the penalty term:
-  - w1 = 0.0, w2 = 1.0
-  - gamma = 0.0 (ignore earliness)
-  - delta = 1.0
-- Tardiness case:
-  - due_date very low (e.g. 0.0) to force ta_n > 0.
-- Best case:
-  - due_date high (e.g. 100.0) to expect ta_n ~= 0.
-- Measure the sum with `OPPTestCase.sum_vars_with_prefix(model, "ta_")`.
-
-3) Multi picker / multi batch
-- Define x and y so each picker has 1+ batches.
-- Validate routes per batch (`assert_batch_routes_cover_locations`).
-- Allow shared locations across batches when the case needs it.
-
-4) Infeasible
-- Force a specific cause:
-  - Duplicate a location within the same batch.
-  - Vehicle capacity too low.
-  - Disconnected graph for a required location.
-- Validate status "infeasible".
-
-### Test Parameter Combinations
-
-Suggested parameter mixes to exercise different behaviors in tests:
-
-- Baseline feasibility: `w1=1`, `w2=1`, `gamma=1`, `delta=1`, moderate `due_date`, and `cap_vehicle` >= sum of `cap_n` per batch.
-- Tardiness sensitivity (no `due_date` change): fix `due_date`, set `w1=0`, `w2=1`, `gamma=0`, `delta=1`, and vary `beta_picking` or `cap_n`.
-- Earliness sensitivity: fix high `due_date`, set `w1=0`, `w2=1`, `gamma=1`, `delta=0`, and lower `cap_n` or `beta_time`.
-- Route/time emphasis: set `w1>0`, `w2=0`, then vary graph weights (`d(i,j)`) or `beta_time`.
-- Capacity infeasible: set `cap_vehicle` below the sum of `cap_n` for a batch.
-- Assignment stress: use multiple batches per picker and shared locations across batches.
-- Disconnected graph: remove a required edge so at least one required node is unreachable.
-
-## Recommended helpers
-
-- `OPPTestCase.normalize_due_dates(orders, override, default)`
-- `OPPTestCase.apply_weight_overrides(w1, w2, gamma, delta, ...)`
-- `OPPTestCase.sum_vars_with_prefix(model, prefix)`
-
-Using these helpers avoids duplication and makes tests easier to maintain.
-
-## Considerations
-
-Common layouts (per Gemini) are:
-
-| Distribution | Graph Structure | Common Use |
-| --- | --- | --- |
-| Single block | Simple grid (m x n). | Small warehouses, easy implementation. |
-| Multi block | Grids connected by intermediate nodes. | Large distribution centers (Amazon, logistics hubs). |
-| Non traditional | Graphs with diagonal edges (Fishbone). | High density warehouses with intensive picking. |
-
-It would be useful to research this further.
+- Isolate the term under test with the objective weights (for example `W_c = 0`, `W_pen = 1`, `W_e = 0`, `W_t = 1` for tardiness).
+- Validate that routes visit every required location (`assert_route_covers_orders`, `assert_batch_routes_cover_locations`).
+- For infeasible cases force one cause (duplicated location in a batch, vehicle capacity too low, disconnected graph) and assert the status `"infeasible"`.
+- Use the helpers `OPPTestCase.normalize_due_dates`, `apply_weight_overrides` and `sum_vars_with_prefix`.
+- Assertions are never relaxed to make a test pass.
 
 ## Execution
 
 From the repository root:
 
-python -m unittest tests.opp_v2.functional.test_case_{number}
+```bash
+python -m tests.run_suite opp_hc functional
+python -m tests.run_suite opp_split functional --id 24
+python -m unittest tests.opp_hc.functional.test_case_invalid_speed_rejected
+```
 
-Or run a whole suite with the timeout/CSV runner:
-
-python -m tests.run_suite opp_v2 functional
-
-Settings (per-test timeouts, whether to write result CSVs) come from a local `.env`; copy `.env.example` to `.env` to change them. `.env` itself is not versioned.
+Settings (per-test timeouts, whether to write result CSVs) come from a local `.env`; copy
+`.env.example` to `.env` to change them. `.env` itself is not versioned.

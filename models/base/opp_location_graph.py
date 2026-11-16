@@ -54,7 +54,7 @@ class OPPLocationGraph:
         # invalidated by add_edge. Route-construction hot loops used to do
         # `for n in get_vertices(): if has_edge(current, n)` -- an O(V) scan
         # (re-allocating an OPPLocation + hashing it per candidate) just to
-        # find a handful of real neighbors. Profiled at ~82% of opp_aco_2's
+        # find a handful of real neighbors. Profiled at ~82% of opp_aco's
         # total runtime on a 100-node stress instance (has_edge: 87M calls).
         # get_neighbors() is O(1) amortized after the first call per graph.
         self._adjacency = None
@@ -94,7 +94,7 @@ class OPPLocationGraph:
         the O(V) `has_edge` scan this replaces in route-construction hot
         loops -- see the comment in __init__ for the profiling that found this.
 
-        Sorted, same as get_vertices(): some callers (e.g. opp_hc_2's BFS
+        Sorted, same as get_vertices(): some callers (e.g. opp_hc's BFS
         state-space search) rely on a deterministic exploration order to
         pick a specific route when several equally-short ones exist --
         swapping in insertion order here would silently change which route
@@ -116,7 +116,7 @@ class OPPLocationGraph:
         plus a tuple-keyed dict lookup) per edge relaxation -- the shortest-
         path loops in models/utils/route_construction.py run tens of
         thousands of times per ACO solve (2026-09-26 profiling: Dijkstra was
-        ~40% of opp_aco_4's runtime).
+        ~40% of opp_aco's runtime).
         """
         if self._weighted_adjacency is None:
             self._weighted_adjacency = {

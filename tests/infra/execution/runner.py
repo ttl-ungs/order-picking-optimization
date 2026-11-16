@@ -23,7 +23,7 @@ def _peak_rss_mb():
     AND native allocations like PySCIPOpt's C-level SCIP state) of the
     CURRENT process since it started, in MB. Read from the OS, not
     tracemalloc: tracemalloc only sees Python-level allocations, which would
-    badly UNDERSTATE memory for exact-model tests (opp_v2/v3/v4/v5_1_mono/v5_2_split), whose
+    badly UNDERSTATE memory for exact-model tests (opp_mono, opp_split), whose
     actual RAM cost is dominated by SCIP's native branch-and-bound state.
 
     Unix: getrusage's ru_maxrss (bytes on macOS/BSD, KB on Linux), normalized
@@ -76,7 +76,7 @@ def _kill_process_tree(pid):
     """Kill `pid` and every descendant (best effort).
 
     multiprocessing's terminate() kills only the direct child. A test that
-    spawned worker processes of its own -- opp_v5_2_split's Stage 1 runs a
+    spawned worker processes of its own -- opp_split's Stage 1 runs a
     ProcessPoolExecutor -- leaves them orphaned when a timeout terminates
     that child: SCIP keeps optimizing in each worker with nobody left to
     collect the result, holding RAM and burning CPU against every test that
@@ -107,11 +107,9 @@ def _save_solution(sr, test_name, solutions_dir, solve_data):
     try:
         from verification.solution_store import write_solution_record
 
-        # <module>.<method>.json: the class name is dropped to stay under
-        # Windows' 260-char path limit (git can't index longer paths by
-        # default); the full unittest id is kept inside the JSON ("test").
+        # <module>.<class>.<method>.json: the id of the test as it appears in the CSV.
         parts = test_name.split(".")
-        path = os.path.join(solutions_dir, f"{parts[0]}.{parts[-1]}.json")
+        path = os.path.join(solutions_dir, f"{'.'.join(parts[-3:])}.json")
         write_solution_record(record, test_name, path)
         solve_data["solution_file"] = os.path.relpath(path, _PROJECT_ROOT).replace(os.sep, "/")
     except Exception as e:
@@ -172,7 +170,7 @@ class TestRunner:
         # Ej: output_opp_hc_stress_tests_20231024_153000.csv
         csv_filename = f"output_{model_name}_{test_type}_tests_{timestamp}.csv"
 
-        # Ej: results/opp_hc_1/stress/output_opp_hc_stress_tests_20231024_153000.csv
+        # Ej: results/opp_hc/stress/output_opp_hc_stress_tests_20231024_153000.csv
         self.csv_path = os.path.join(
             project_root, "results", model_name, test_type, csv_filename
         )

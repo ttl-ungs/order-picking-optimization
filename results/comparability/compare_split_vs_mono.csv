@@ -1,0 +1,83 @@
+tier,test,group,split_status,mono_status,split_obj,mono_obj,verdict,detail
+functional,test_basic_two_orders_capacity_limit,functional,ok,ok,30.0,30.0,same_solution,
+functional,test_two_orders_two_aisles,functional,ok,ok,795.0,795.0,same_solution,
+functional,test_two_orders_two_aisles_one_picking_point_per_order,functional,ok,ok,795.0,795.0,same_solution,
+functional,test_two_orders_two_aisles_using_one_aisle,functional,ok,ok,846.0,846.0,same_solution,
+functional,test_every_route_is_optimal_when_all_arrive_in_time,functional,ok,ok,30.000000000000053,30.00000000000096,alternative_optimum,differs in routes
+functional,test_shorter_route_is_chosen_when_the_longer_one_is_late,functional,ok,ok,20.000000000000263,20.000000000000185,same_solution,
+functional,test_repeated_picking_locations,functional,ok,ok,,,both_infeasible,neither model returned an objective (split stopped before Stage 2)
+functional,test_repeated_picking_locations_2,functional,ok,ok,69.0,69.0,same_solution,
+functional,test_two_orders_two_locations,functional,ok,ok,1833.0,1833.0,same_solution,
+functional,test_two_orders_two_locations_two_missions,functional,ok,ok,1509.0,1509.0,same_solution,
+functional,test_four_orders_two_locations_two_missions,functional,ok,ok,3666.0,3665.999999999999,alternative_optimum,differs in assignment
+functional,test_two_periods_two_orders_per_vehicle,functional,ok,ok,3086.9999999999754,3086.9999961653775,alternative_optimum,"differs in routes, assignment"
+functional,test_one_period_two_orders_per_vehicle,functional,ok,ok,3086.9999999999754,3086.9999961653775,alternative_optimum,"differs in routes, assignment"
+functional,test_3_orders_1_mission_1_picker,functional,ok,ok,889.0,889.0,alternative_optimum,differs in routes
+functional,test_6_orders_3_missions_2_pickers,functional,ok,ok,1338.0,1337.9999999999925,alternative_optimum,"differs in routes, assignment"
+functional,test_branched_single_mission_route,functional,ok,ok,2512.5,2512.5,same_solution,
+functional,test_detour_single_mission_route,functional,ok,ok,4518.0,4518.0,same_solution,
+functional,test_longer_single_mission_duplicate_location,functional,ok,ok,25.0,25.0,alternative_optimum,differs in routes
+functional,test_longer_single_mission_penalties,functional,ok,ok,0.0,0.0,alternative_optimum,differs in routes
+functional,test_longer_single_mission_route,functional,ok,ok,25.0,25.0,alternative_optimum,differs in routes
+functional,test_grid_multi_location_orders,functional,ok,ok,2619.9999999999877,2620.0,alternative_optimum,differs in assignment
+functional,test_bridge_disconnected_required_location,functional,ok,ok,,,both_infeasible,neither model returned an objective (split stopped before Stage 2)
+functional,test_earliness_when_batch_finishes_before_due_date,functional,ok,ok,10126.0,10126.0,same_solution,
+functional,test_tardiness_when_batch_finishes_after_due_date,functional,ok,ok,154.0,154.0,same_solution,
+functional,test_longer_route_is_assigned_to_the_faster_picker,functional,ok,ok,15.999999999999966,16.0,same_solution,
+functional,test_routes_are_exported_and_used_by_scheduling,functional,ok,ok,15.999999999999966,16.0,same_solution,
+functional,test_cold_chain_filters_out_the_slow_picker,functional,ok,ok,9.0,9.0,same_solution,
+functional,test_preflight_detects_when_no_picker_is_eligible,functional,ok,,,,no_mono_result,mono has no row for this test
+functional,test_grid_batch_infeasible_order_size,functional,ok,ok,,,both_infeasible,neither model returned an objective
+functional,test_grid_duplicate_location_within_batch,functional,ok,ok,2434.0000000003433,2433.999999999733,alternative_optimum,"differs in routes, assignment"
+functional,test_grid_multi_location_orders_with_capacities,functional,ok,ok,2619.9999999999877,2620.0,alternative_optimum,differs in assignment
+functional,test_grid_order_size_bigger_than_cart_infeasible,functional,ok,ok,,,both_infeasible,neither model returned an objective
+functional,test_grid_penalties_due_date,functional,ok,ok,0.0,0.0,alternative_optimum,"differs in routes, assignment"
+functional,test_grid_penalties_order_size_equal_to_cart,functional,ok,ok,156.00000000000003,155.99999999999986,alternative_optimum,"differs in routes, assignment"
+functional,test_grid_shared_locations_across_batches,functional,ok,ok,3223.9999999998945,3224.0000000000273,alternative_optimum,differs in assignment
+functional,test_bridge_disconnected_required_location_with_capacities,functional,ok,ok,,,both_infeasible,neither model returned an objective (split stopped before Stage 2)
+functional,test_bridge_earliness_order_size,functional,ok,ok,20899.000000000004,20899.000000000025,alternative_optimum,differs in assignment
+functional,test_bridge_shared_locations_across_batches,functional,ok,ok,2463.00000000002,2462.999999999994,alternative_optimum,differs in assignment
+functional,test_bridge_tardiness_beta_picking,functional,ok,ok,13478.999999999915,13479.000000000102,alternative_optimum,"differs in routes, assignment"
+functional,test_basic_two_orders_with_different_weights,functional,ok,ok,58.049999999999976,58.05,alternative_optimum,differs in assignment
+functional,test_due_dates_tight_vs_relaxed,functional,ok,ok,0.0,0.0,same_solution,
+functional,test_one_empty_batch_allowed,functional,ok,ok,327.0000000000001,327.00000000000006,alternative_optimum,"differs in routes, assignment"
+functional,test_fractional_and_zero_capacities_feasible,functional,timeout,timeout,,,same_status,"split timeout, mono timeout"
+functional,test_fractional_and_zero_capacities_infeasible,functional,ok,ok,,,both_infeasible,neither model returned an objective
+functional,test_order_assigned_to_multiple_batches_infeasible,functional,ok,ok,,,both_infeasible,neither model returned an objective (split stopped before Stage 2)
+functional,test_order_assigned_to_single_batch_feasible,functional,ok,ok,100.0,100.0,same_solution,
+functional,test_single_order_exceeds_vehicle,functional,ok,ok,,,both_infeasible,neither model returned an objective
+functional,test_service_time_mixed,functional,ok,ok,106.5,106.5,same_solution,
+functional,test_service_time_one,functional,ok,ok,81.0,81.0,same_solution,
+functional,test_service_time_zero,functional,ok,ok,29.999999999999524,30.0,alternative_optimum,differs in assignment
+functional,test_no_eligible_picker_returns_infeasible_gracefully,functional,ok,ok,,,both_infeasible,neither model returned an objective
+functional,test_picker_exactly_at_the_cold_chain_limit_is_still_eligible,functional,ok,ok,9.0,9.0,same_solution,
+functional,test_completion_time_matches_the_documented_formula_exactly,functional,ok,ok,15.999999999999966,16.0,same_solution,
+functional,test_cold_limit_applies_to_each_batch_not_the_whole_shift,functional,ok,ok,27.0,27.0,same_solution,
+functional,test_cold_limit_tolerance_keeps_a_picker_within_rounding_noise,functional,ok,ok,9.0,9.0,same_solution,
+functional,test_fixed_time_counts_toward_the_cold_limit,functional,ok,ok,,,both_infeasible,neither model returned an objective
+functional,test_batches_are_split_when_fast_picker_is_only_twice_as_fast,functional,ok,ok,25.0,25.0,same_solution,
+functional,test_fast_picker_takes_both_batches_when_four_times_faster,functional,ok,ok,16.5,16.5,same_solution,
+functional,test_non_positive_speed_is_rejected_before_solving,functional,ok,ok,,,both_infeasible,neither model returned an objective
+functional,test_tardiness_uses_the_speed_scaled_route_time,functional,ok,ok,310.0,310.0,same_solution,
+functional,test_batch_is_delayed_while_early_orders_outweigh_completion_weight,functional,ok,ok,20.0,20.0,same_solution,
+functional,test_batch_is_not_delayed_when_completion_weight_dominates,functional,ok,ok,78.0,78.0,same_solution,
+functional,test_route_that_must_revisit_a_vertex_is_infeasible,functional,ok,ok,,,both_infeasible,neither model returned an objective (split stopped before Stage 2)
+stress,test_25_orders_per_batch_30_batches_100x100,stress,timeout,no_result,,,not_both_solved,"split timeout, mono no_result"
+stress,test_10_orders_per_batch,stress,ok,timeout,29033.99999999998,,not_both_solved,"split ok, mono timeout"
+stress,test_8_orders_per_batch_7x7_320_orders,stress,timeout,timeout,,,same_status,"split timeout, mono timeout"
+stress,test_realistic_crew_7x7_warehouse,stress,ok,timeout,149217.6666666672,,not_both_solved,"split ok, mono timeout"
+stress,test_realistic_crew_13x13_warehouse,stress,ok,timeout,241253.91666666543,,not_both_solved,"split ok, mono timeout"
+stress,test_realistic_crew_14x14_warehouse,stress,ok,timeout,256564.3333333334,,not_both_solved,"split ok, mono timeout"
+stress,test_realistic_crew_15x15_warehouse,stress,ok,timeout,271907.6666666667,,not_both_solved,"split ok, mono timeout"
+stress,test_realistic_crew_16x16_warehouse,stress,timeout,timeout,,,same_status,"split timeout, mono timeout"
+stress,test_realistic_crew_rectangular_warehouse,stress,ok,timeout,275019.3033333333,,not_both_solved,"split ok, mono timeout"
+stress,test_realistic_crew_scheduling_heavy,stress,ok,timeout,112079.4899999909,,not_both_solved,"split ok, mono timeout"
+stress,test_realistic_crew_cold_chain,stress,ok,timeout,182253.54999999946,,not_both_solved,"split ok, mono timeout"
+stress,test_larger_crew_8_batches_4_pickers,stress,timeout,timeout,,,same_status,"split timeout, mono timeout"
+stress,test_larger_crew_10_batches_5_pickers,stress,timeout,timeout,,,same_status,"split timeout, mono timeout"
+stress,test_larger_crew_12_batches_6_pickers,stress,timeout,timeout,,,same_status,"split timeout, mono timeout"
+stress,test_over_staffed_wave_6_batches_9_pickers,stress,ok,timeout,97914.9166666672,,not_both_solved,"split ok, mono timeout"
+stress,test_large_crew_single_wave,stress,timeout,timeout,,,same_status,"split timeout, mono timeout"
+stress,test_large_crew_three_second_batches,stress,timeout,timeout,,,same_status,"split timeout, mono timeout"
+stress,test_large_crew_half_second_batches,stress,timeout,timeout,,,same_status,"split timeout, mono timeout"
+stress,test_large_crew_two_batches_each,stress,timeout,timeout,,,same_status,"split timeout, mono timeout"

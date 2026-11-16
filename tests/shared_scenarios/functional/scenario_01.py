@@ -8,6 +8,7 @@ from models.base.opp_location_graph import OPPLocationGraph
 def basic_two_orders_capacity_limit():
     V = {"L1", "L2", "L3", "L4"}
     B = {"B1", "B2"}
+    P = {"P1", "P2"}
 
     location_graph = OPPLocationGraph(depot_node="L1", final_node="L4")
 
@@ -28,4 +29,8 @@ def basic_two_orders_capacity_limit():
 
     cap_vehicle = 5.0
 
-    return V, B, w1, w2, gamma, delta, location_graph, cap_vehicle
+    x = {(p, b): 0 for p in P for b in B}
+    x[("P1", "B1")] = 1
+    x[("P2", "B2")] = 1
+
+    return V, P, B, w1, w2, gamma, delta, location_graph, cap_vehicle, x

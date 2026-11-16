@@ -1,54 +1,18 @@
 {
- "_source": "Tests discovered on main before the 2026-09 reorganization (git worktree of main, unittest discovery per suite), with the old model names mapped to the current ones (opp->opp_v1, opp_hc->opp_hc_1, opp_aco->opp_aco_1) and tier normal->functional. opp_v5_1_mono did not exist then: its counts (52 functional = opp_v5_2_split's 53 minus the one test that needs a separate stage 1; 8 stress) were collected from its own tree when it was added (2026-09-21). Both opp_v5 stress suites were redesigned on 2026-09-23 (19 tests each; old-to-new numbering in meta.md). Regenerate with `python -m scripts.run_all --update-baseline` only when tests are added or removed on purpose. opp_hc_4/opp_aco_4 regenerated on 2026-09-29: #17 added the 67 test_v5eq__* functional tests (130 each) and #19 removed their legacy stress tests (19 each, the v5 ports). 2026-09-29: test_case_06 of both opp_v5 models replaced by a v5-specific shortest-route test (+1 test each; +1 test_v5eq__* per heuristic), and opp_v5_1_mono's known failure (the old test_two_possible_routes) removed.",
+ "_source": "Number of tests of each suite of the four models, collected with `python -m scripts.run_all --update-baseline` (unittest discovery per suite). Regenerate only when tests are added or removed on purpose. Functional: 64 OPP-Split and 63 OPP-Mono (the 37 shared cases plus their own tests), 70 OPP-HC and 71 OPP-ACO (68 per-instance tests plus the tests of their own). Stress: the 19 shared scenarios per model.",
  "counts": {
   "functional": {
-   "opp_v1": 18,
-   "opp_aco_1": 48,
-   "opp_aco_2": 48,
-   "opp_aco_3": 59,
-   "opp_aco_4": 131,
-   "opp_hc_1": 46,
-   "opp_hc_2": 46,
-   "opp_hc_3": 51,
-   "opp_hc_4": 131,
-   "opp_v2": 33,
-   "opp_v2_zpl": 1,
-   "opp_v3": 48,
-   "opp_v4": 46,
-   "opp_v5_2_split": 64,
-   "opp_v5_1_mono": 63
+   "opp_aco": 71,
+   "opp_hc": 70,
+   "opp_split": 64,
+   "opp_mono": 63
   },
   "stress": {
-   "opp_aco_1": 34,
-   "opp_aco_2": 20,
-   "opp_aco_3": 20,
-   "opp_aco_4": 19,
-   "opp_hc_1": 34,
-   "opp_hc_2": 43,
-   "opp_hc_3": 20,
-   "opp_hc_4": 19,
-   "opp_v2": 7,
-   "opp_v3": 34,
-   "opp_v4": 8,
-   "opp_v5_2_split": 19,
-   "opp_v5_1_mono": 19
+   "opp_aco": 19,
+   "opp_hc": 19,
+   "opp_split": 19,
+   "opp_mono": 19
   }
  },
- "known_failures": {
-  "functional/opp_v3": {
-   "failures": 1,
-   "errors": 0,
-   "note": "test_bridge_earliness_order_size: numeric-precision assertion, fails identically on main"
-  },
-  "functional/opp_v2": {
-   "failures": 1,
-   "errors": 0,
-   "note": "test_bridge_earliness_order_size: same big-M precision assertion as opp_v3 (1.2e+21 not <= 1e-06); fails identically on main"
-  },
-  "functional/opp_v1": {
-   "failures": 1,
-   "errors": 0,
-   "note": "test_3_orders_1_mission_1_picker (test_case_15, was test_opp_model_15): the output graph differs from the expected one; fails identically on main. The whole opp_v1 suite takes ~8 min (real SCIP solves)."
-  }
- }
+ "known_failures": {}
 }

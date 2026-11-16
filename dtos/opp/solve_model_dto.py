@@ -142,8 +142,8 @@ class SolveModelDTO:
     @property
     def Seed(self) -> int:
         """
-        Optional RNG seed for reproducible heuristic runs (opp_hc_2/opp_hc_3/
-        opp_aco_2/opp_aco_3 -- opp_v4 is exact, no randomness involved).
+        Optional RNG seed for reproducible heuristic runs (opp_hc/opp_aco --
+        the exact models have no randomness).
         Default None preserves the previous (unseeded, non-reproducible)
         behavior: every solve() call reads/advances the shared global
         `random` module state, so two runs of the same instance with the

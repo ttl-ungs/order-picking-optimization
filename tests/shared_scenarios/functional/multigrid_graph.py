@@ -36,7 +36,13 @@ def multigrid_5x5_3x3_five_pickers_twelve_batches(
     h_weight=3,
     connector_weight=2,
 ):
+    P = {f"P{i}" for i in range(1, 6)}
     B = {f"B{i}" for i in range(1, 13)}
+
+    x = {(p, b): 0 for p in P for b in B}
+    sorted_pickers = sorted(P)
+    for i, b in enumerate(sorted(B)):
+        x[(sorted_pickers[i % len(sorted_pickers)], b)] = 1
 
     graph = OPPLocationGraph("A1", "B9")
 
@@ -74,7 +80,7 @@ def multigrid_5x5_3x3_five_pickers_twelve_batches(
 
     cap_vehicle = 10.0
 
-    return graph.get_vertices(), B, w1, w2, gamma, delta, graph, cap_vehicle
+    return graph.get_vertices(), P, B, w1, w2, gamma, delta, graph, cap_vehicle, x
 
 
 CORRIDOR_PATH = [
@@ -100,7 +106,10 @@ def multigrid_5x5_3x3_single_picker_single_batch_corridor(
     corridor_weight=1,
     connector_weight=1,
 ):
+    P = {"P1"}
     B = {"B1"}
+    x = {("P1", "B1"): 1}
+
     graph = OPPLocationGraph("A1", "B9")
 
     _add_grid(
@@ -140,4 +149,4 @@ def multigrid_5x5_3x3_single_picker_single_batch_corridor(
 
     cap_vehicle = 50.0
 
-    return graph.get_vertices(), B, w1, w2, gamma, delta, graph, cap_vehicle
+    return graph.get_vertices(), P, B, w1, w2, gamma, delta, graph, cap_vehicle, x
