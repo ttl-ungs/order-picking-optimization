@@ -85,7 +85,7 @@ import models.utils.route_construction as route_construction
 from models.base.model import Model
 from models.base.opp_location_graph import OPPLocationGraph
 from dtos.opp.model_dto import ModelDTO
-from models.opp_hc_2.utils.route_solution import RouteSolution
+from models.utils.route_solution import RouteSolution
 from models.opp_hc_4.utils.route_evaluator import RouteEvaluator
 from models.opp_hc_4.utils.constraints_validator import ConstraintsValidator
 from models.opp_v5_2_split.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
