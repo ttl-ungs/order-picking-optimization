@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from models.opp_split.utils.cold_chain_validation import invalid_speeds
+from models.utils.cold_chain_validation import invalid_speeds
 from tests.infra.cases.exact_model_case import ExactModelTestCase
 from tests.infra.zimpl.dat_files_builder import build_dat_files
 from tests.infra.zimpl.zpl_utils import solve_zpl
@@ -26,10 +26,8 @@ class OPPTestCaseMono(ExactModelTestCase):
         OPPTestCaseSplit.run_pipeline so the same case runs on both models.
         `route_times` are the r_b values the model itself chose.
         """
-        # V_p[p] is a divisor in the model's T_exec_pb; a speed of 0 divides by
-        # zero at ZIMPL compile time and a negative one silently yields a
-        # negative duration. Reject before ZIMPL ever sees it (same guard
-        # OPPTestCaseSplit.run_pipeline applies).
+        # Reject a non-positive speed before ZIMPL runs (see
+        # models/utils/cold_chain_validation.invalid_speeds).
         bad_speeds = invalid_speeds(scenario["V_p"])
         self.assertFalse(
             bad_speeds,

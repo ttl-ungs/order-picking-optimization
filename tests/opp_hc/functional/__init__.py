@@ -1,1 +1,1 @@
-# Normal tests directory
+"""Functional tests of OPP-HC."""

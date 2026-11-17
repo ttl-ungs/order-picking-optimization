@@ -1,58 +1,24 @@
 """
-Ant Colony Optimization (ACO) heuristic for the OPP with picker speed and
-cold chain (OPP-ACO).
+Ant Colony Optimization heuristic for the OPP (OPP-ACO).
 
-Multi-picker, all constraints validated:
-- Receives: the SolveModelDTO parameters, plus a set of pickers (P)
-- Validates: ALL constraints (models/utils/base_constraints_validator.py),
-  plus cold-chain eligibility
-- Optimizes: routes within batches (probabilistic pick-to-pick ACO
-  construction after Chen et al. 2013, see _build_batch_route) AND
-  the assignment/sequencing of batches to pickers (x_pb), so that batches
-  on different pickers run in parallel and batches on the same picker are
-  sequenced without overlap
-- Output: compatible with build_output
+Each ant builds, batch by batch, a route (probabilistic pick-to-pick
+construction after Chen et al. 2013, see _build_batch_route) and then chooses
+the batch's picker; each picker's batches are sequenced by due date. As in
+the exact models, a batch run by picker p takes T_exec_pb[p, b] =
+fixed_time(b) + route_time(b) / V_p[p] (setup and picking do not depend on
+the speed; travel and service do), and a (picker, batch) pair is eligible
+only if T_exec_pb[p, b] <= T_cold. Pickers do not interfere with each other.
 
-Picker speed and cold chain, as in the exact models (the ACO counterpart
-of opp_hc and of opp_split's opp_split_stage2_scheduling.zpl):
-
-- Picker speed (V_p): a batch's execution time is no longer a single
-  d_b fixed for every picker. Instead T_exec_pb[p, b] = fixed_time(b)
-  + route_time(b) / V_p[p], where fixed_time (setup + picking) doesn't
-  depend on speed and route_time (travel + service) does. Faster pickers
-  finish the same route sooner. This changes _select_picker's roulette:
-  the (batch, picker) pheromone table is unchanged (still learns which
-  picker suits which batch), but at selection time the candidate pool is
-  filtered down to the batch's CURRENT ant's route's cold-chain-eligible
-  pickers (see below) before the roulette runs.
-- Cold chain (T_cold): a (picker, batch) pair is only eligible if
-  T_exec_pb[p, b] <= T_cold. Since each ant builds a batch's route
-  BEFORE picking its picker (the order of _build_ant_solution's
-  loop), eligibility for _select_picker is computed EXACTLY against that
-  ant's own just-built route, not an approximation. If that particular
-  route leaves zero pickers eligible, _select_picker falls back to the
-  full unrestricted roulette -- see below for what happens to that ant's
-  solution.
-
-Cold chain is enforced as a HARD constraint on the reported final answer,
-but a SOFT one (a large objective penalty) during the search itself, so a
-single cold-chain-tight batch does not make the validator reject an ant's
-whole solution and starve the pheromone updates of every other batch (see
-models/opp_aco/utils/constraints_validator.py, and _deposit_solution, whose
-pheromone deposit is filtered per batch, not per solution).
-
-Infeasibility detection is honest: there is no up-front estimate that could
-wrongly declare a feasible instance infeasible. The only up-front
-short-circuit is exact: batches_without_eligible_picker is fed a route_time
-of EXACTLY 0.0 for every batch (the best physically possible case), so a
-batch flagged there is impossible under ANY route or picker. Every other
-batch gets a genuine full run of the ACO loop; best_global_solution is only
-set from a fully cold-chain-compliant ant (see solve()), so if the loop
-finishes without finding one, "infeasible" reflects an exhausted search.
-
-Deliberately WITHOUT congestion between concurrent pickers, like opp_hc and
-the exact models (opp_split, opp_mono): the search stays focused on the
-speed/cold-chain trade-off (see experiments/common/config.py).
+Cold chain. The ant builds a batch's route before choosing its picker, so the
+picker roulette runs over the pickers that are eligible for that very route.
+The limit is a hard constraint on the reported answer and a soft one (a large
+objective penalty) during the search: one tight batch must not make the
+validator reject the ant's whole solution and starve the pheromone of every
+other batch (see utils/constraints_validator.py and _deposit_solution, which
+deposits per batch). The only up-front "infeasible" verdicts are exact: a
+batch no picker could run within T_cold even with a route time of 0, or a
+required location that cannot be reached. Otherwise "infeasible" means the
+search ended without a compliant ant.
 """
 
 import time
@@ -72,34 +38,30 @@ from models.utils.route_solution import RouteSolution
 from models.opp_aco.utils.route_evaluator import RouteEvaluator
 from models.opp_aco.utils.constraints_validator import ConstraintsValidator
 from models.opp_aco.utils import exec_time
-from models.opp_split.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
+from models.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
 from models.utils.input_validation import orders_without_exactly_one_batch
 from models.utils.sla import sla_on_time_pct
 
 
 class OPPAntColonyOptimization(Model):
-    """ACO solver for the OPP - picker speed + cold chain, no congestion."""
+    """ACO solver for the OPP with picker speeds and a cold-chain limit."""
 
-    # Construction attempts per batch per ant before falling back to the exhaustive
-    # best-first route (see _build_batch_route/_fallback_route). One pick-to-pick
-    # attempt is cheap (a few ms) and succeeds on most batches, so a handful of
-    # retries keeps ants diverse, while the cached fallback bounds the cost of the
-    # hard ones.
+    # Construction attempts per batch and ant before falling back to
+    # _fallback_route. An attempt is cheap and succeeds on most batches, so a
+    # few retries keep the ants diverse; the cached fallback bounds the cost of
+    # the hard batches.
     _MAX_ROUTE_ATTEMPTS_PER_BATCH = 10
 
-    # Cap for the best-first fallback route search, same value and
-    # rationale as opp_hc's _MAX_BFF_EXPANSIONS (shared search, see
-    # models/utils/route_construction.best_first_route).
+    # Cap on the node expansions of the best-first fallback search (the value
+    # opp_hc uses; see route_construction.best_first_route).
     _MAX_BFF_EXPANSIONS = 2_000_000
 
-    # Local search (2-opt + segment re-routing, see
-    # route_construction.improve_route) on every ant's route -- see
-    # _build_batch_route's docstring.
+    # Local search (route_construction.improve_route) on every ant's route.
     _IMPROVE_ANT_ROUTES = True
 
-    # The other hybrid (ACO + local search) components, each switchable on
-    # its own so their contribution can be measured separately
-    # (experiments/heuristics/aco/run_aco_ablation_study.py). All on by default:
+    # The other local-search components. Each has its own switch so that
+    # experiments/heuristics/aco/run_aco_ablation_study.py can measure it
+    # separately; all are on by default:
     # - elite-route polishing of each batch's record route
     #   (route_construction.polish_route, in solve() and _fallback_route);
     _POLISH_ELITE_ROUTES = True
@@ -129,18 +91,14 @@ class OPPAntColonyOptimization(Model):
     # objective drives the picker pheromone and the best-so-far solution.
     _MMAS_TAU_MIN_RATIO = 1.0 / 50.0
 
-    # Share of params.Max_time that ant construction may use before stopping (once
-    # a compliant solution exists); the rest is reserved for the end-of-iteration
-    # elite-route polishing and schedule local search. Only matters on instances
-    # that hit the budget.
+    # Share of params.Max_time the ants may use (once a compliant solution
+    # exists); the rest is kept for the elite-route polishing and the schedule
+    # local search. It only matters on instances that reach the budget.
     _ANT_BUDGET_SHARE = 0.5
 
-    # Multiplier applied to ConstraintsValidator.cold_chain_violation() (a time-unit
-    # overrun) before adding it to an ant solution's cost: cold chain is a soft
-    # constraint during the search (see constraints_validator.py). Large enough to
-    # dominate the search away from violations (the marginal objective per unit of
-    # time is W_c, usually single-to-low-double digits) without a Big-M-style
-    # constant: this is a heuristic penalty, not a MIP constraint.
+    # Multiplier of a cold-chain overrun (in time units) when it is added to an
+    # ant's cost. Large enough to dominate the objective's marginal cost per
+    # unit of time (W_c); it is a plain cost comparison, not a big-M.
     _COLD_CHAIN_PENALTY_WEIGHT = 1000.0
 
     def __init__(self, dto: ModelDTO):
@@ -153,11 +111,11 @@ class OPPAntColonyOptimization(Model):
         self._fallback_cache: Dict[frozenset, Optional[List[str]]] = {}
         self._fallback_calls = 0
         self._required_by_batch: Dict[str, Set[str]] = {}
-        # Underlying UNDIRECTED adjacency, for the completability check in
-        # route_construction.stitch_route (see keeps_route_completable).
+        # Undirected adjacency, for the completability check of
+        # route_construction.stitch_route (keeps_route_completable).
         self._undirected_adjacency = route_construction.undirected_adjacency(self.location_graph)
-        # Same warehouse with edges reversed, for backwards construction
-        # (see route_construction.stitch_route_either_way).
+        # The same warehouse with its edges reversed, to build routes backwards
+        # (route_construction.stitch_route_either_way).
         self._reversed_graph = route_construction.reversed_graph(self.location_graph)
 
     def solve(self, params: SolveAcoModelDTO):
@@ -193,8 +151,7 @@ class OPPAntColonyOptimization(Model):
         num_ants = getattr(params, "_A_ants", 15)
         max_it = getattr(params, "_Max_it", 60)
         max_time = getattr(params, "_Max_time", None) or float("inf")
-        # Absolute deadline for the expensive post-processing too (elite route
-        # polishing, schedule local search), not just ant building. None = no budget.
+        # Deadline of the whole solve, post-processing included. None = no budget.
         self._deadline = start_time + max_time if max_time != float("inf") else None
         alpha = getattr(params, "_Alpha", 1.0)
         beta = getattr(params, "_Beta", 2.5)
@@ -270,13 +227,8 @@ class OPPAntColonyOptimization(Model):
 
         picker_pheromones = self._initialize_picker_pheromones()
 
-        # Batch->required-locations is fixed for the whole solve() (batch
-        # assignments don't change), yet _find_required_locations used to
-        # be recomputed once per ant per batch. Profiling a 100-order/20-
-        # batch stress instance showed this (and the validator's identical
-        # _get_required_locations) at ~18% of total runtime combined.
-        # Precomputing it once here turns 900 ants x 20 batches worth of
-        # recomputation into 20 calls.
+        # The required locations of a batch are fixed for the whole solve:
+        # compute them once instead of once per ant and batch.
         required_locations_by_batch = {
             batch: self._find_required_locations(batch, batch_assignments[batch], params.A)
             for batch in self.B
@@ -287,18 +239,10 @@ class OPPAntColonyOptimization(Model):
         self._tau_min = self._tau_max * self._MMAS_TAU_MIN_RATIO
         pheromones = self._initialize_pheromones(required_locations_by_batch)
 
-        # Exact (not estimated) reachability pre-check: if a required
-        # location can't be reached from the depot, or can't reach `final`,
-        # NO route -- built by any ant, in any iteration -- could ever
-        # visit it. This is a static graph-topology fact -- two linear-time
-        # searches (_reachable_from: forwards from the depot, and over the
-        # reversed graph from `final`) -- so it costs almost nothing to
-        # check upfront instead of letting every ant of
-        # every iteration exhaust _MAX_ROUTE_ATTEMPTS_PER_BATCH on a batch
-        # that was never solvable in the first place (same "honest
-        # infeasibility, no shortcut before trying" philosophy as the
-        # cold-chain pre-check above -- this is just the topology half of
-        # it, not a substitute for the search on batches that pass it).
+        # Exact reachability pre-check: a required location that cannot be
+        # reached from the depot, or cannot reach `final`, is on no route. Two
+        # linear-time searches settle it, instead of letting every ant exhaust
+        # its attempts on a batch that cannot be routed.
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
         from_depot = self._reachable_from(self.location_graph, depot)
@@ -321,12 +265,9 @@ class OPPAntColonyOptimization(Model):
         best_global_solution = None
         best_global_cost = float("inf")
         iteration = 0
-        # "Iteration of convergence": which iteration last improved
-        # best_global_solution (always cold-chain-compliant, see below) --
-        # distinct from `iteration`/`max_it` (iterations actually run vs.
-        # the configured LIMIT).
+        # Iteration at which best_global_solution last improved.
         best_found_at_iteration = 0
-        # Shortest route found so far for each batch, by any ant (see
+        # Shortest route any ant has found for each batch (see
         # _recombine_shortest_routes).
         shortest_route_by_batch: Dict[str, Tuple[float, List[str]]] = {}
 
@@ -338,14 +279,10 @@ class OPPAntColonyOptimization(Model):
             iteration_best_route_by_batch: Dict[str, Tuple[float, List[str]]] = {}
 
             for ant in range(num_ants):
-                # Wall-clock budget (params.Max_time): checked per ant, so a
-                # very large instance can stop mid-iteration -- but only
-                # once a cold-chain-compliant solution exists (this
-                # iteration's or an earlier one's), so the budget can never
-                # produce a false "infeasible" (same honesty rule as the
-                # pre-checks above). Ants stop at _ANT_BUDGET_SHARE of the
-                # budget, leaving the rest for polishing the best routes and
-                # schedule (which honor the full deadline, see _deadline).
+                # Max_time is checked per ant, but only once a compliant
+                # solution exists, so the budget never produces a false
+                # "infeasible". Ants stop at _ANT_BUDGET_SHARE of the budget;
+                # the polishing and the schedule search use the rest.
                 if (
                     time.time() - start_time > max_time * self._ANT_BUDGET_SHARE
                     and (best_global_solution is not None or feasible_ant_solutions)
@@ -357,10 +294,8 @@ class OPPAntColonyOptimization(Model):
                     required_locations_by_batch,
                 )
 
-                # validate_solution() checks only the base hard constraints
-                # (topology/capacity/one-picker-per-batch); cold chain is a soft penalty below,
-                # so a single cold-chain-tight batch does not starve the pheromone updates of
-                # the other batches in the same ant (see constraints_validator.py).
+                # Only the base hard constraints: the cold chain is the soft
+                # penalty below (see utils/constraints_validator.py).
                 if ant_solution is None or not validator.validate_solution(ant_solution):
                     continue
 
@@ -373,31 +308,26 @@ class OPPAntColonyOptimization(Model):
                 base_cost = evaluator.evaluate(ant_solution)
                 violation = validator.cold_chain_violation(ant_solution)
                 cost = base_cost + self._COLD_CHAIN_PENALTY_WEIGHT * violation
-                # Per-batch compliance set: which batches' route/picker
-                # pheromone this ant is allowed to reinforce (see
-                # _deposit_solution's docstring for why this must be
-                # per-batch, not all-or-nothing for the whole solution).
+                # The batches whose pheromone this ant may reinforce (see
+                # _deposit_solution).
                 compliant_batches = validator.compliant_batches(ant_solution)
                 ant_solutions.append((ant_solution, cost, compliant_batches))
 
                 if violation == 0.0:
                     feasible_ant_solutions.append((ant_solution, base_cost))
 
-            # When a batch's iteration-best route beats that batch's record, polish it with
-            # the expensive elite-route local search (route_construction.polish_route:
-            # pick-level 2-opt + or-opt relocation + improve_route) before storing it as
-            # the batch's best-so-far route -- used by _recombine_shortest_routes and as
-            # MMAS's best-so-far deposit. Only on a new record, not every iteration: one
-            # polish is costly on large grids while records are comparatively rare.
+            # A batch's iteration-best route that beats its record is polished
+            # (route_construction.polish_route) before it becomes the batch's
+            # best-so-far route. Only on a new record: a polish is costly on
+            # large grids and records are rare.
             records = [
                 (batch, route)
                 for batch, (length, route) in iteration_best_route_by_batch.items()
                 if length < shortest_route_by_batch.get(batch, (float("inf"), None))[0] - 1e-9
             ]
             for index, (batch, route) in enumerate(records):
-                # Under a budget, each record gets an equal share of what is left, keeping one
-                # more share for the schedule local search below, so the first polishes on a
-                # huge grid cannot use all of it.
+                # Under a budget each record gets an equal share of the time
+                # left, with one more share kept for the schedule local search.
                 polish_deadline = None
                 if self._deadline is not None:
                     left = max(self._deadline - time.time(), 0.0)
@@ -415,11 +345,8 @@ class OPPAntColonyOptimization(Model):
             if not ant_solutions:
                 continue
 
-            # best_global_solution is tracked ONLY among cold-chain-COMPLIANT
-            # ants (base_cost, unpenalized -- violation is 0 for these
-            # anyway) so the reported final answer always satisfies
-            # T_cold exactly, even though the search itself tolerates
-            # temporary violations to keep learning.
+            # best_global_solution only ever comes from a cold-chain-compliant
+            # ant, so the reported answer always respects T_cold.
             best_improved = False
             if feasible_ant_solutions:
                 iter_best_feasible_solution, iter_best_feasible_cost = min(
@@ -559,19 +486,15 @@ class OPPAntColonyOptimization(Model):
         return {p: self._picker_speed(p, params) for p in self.P}
 
     def _fixed_time(self, batch: str, batch_assignments: Dict[str, Set[str]], params: SolveAcoModelDTO) -> float:
-        """Setup + picking time -- the part of T_exec_pb that does NOT depend on picker speed."""
+        """Setup + picking time of a batch: the part of T_exec_pb that does not depend on the picker."""
         orders = batch_assignments.get(batch, set())
         return exec_time.fixed_time(orders, params.C_n, params.T_setup, params.T_pick)
 
     def _route_time(
         self, route: List[str], params: SolveAcoModelDTO, distance: Optional[float] = None
     ) -> float:
-        """
-        Travel time (T_travel * distance) + service time -- opp_split's
-        R_b, the part scaled by V_p. Pass `distance` when the caller
-        already computed it, to avoid recomputing it (it does not depend on
-        the picker).
-        """
+        """Travel + service time of a route: the part of T_exec_pb the picker's
+        speed divides. `distance` may be passed when the caller already has it."""
         return exec_time.route_time(self.location_graph, route, params.T_travel, params.S, distance)
 
     def _T_exec_pb(
@@ -579,7 +502,7 @@ class OPPAntColonyOptimization(Model):
         batch_assignments: Dict[str, Set[str]], params: SolveAcoModelDTO,
         distance: Optional[float] = None,
     ) -> float:
-        """See _route_time's docstring for why `distance` can be passed in precomputed."""
+        """T_exec_pb[picker, batch] for `route` (`distance` as in _route_time)."""
         orders = batch_assignments.get(batch, set())
         return exec_time.T_exec_pb(
             self.location_graph, route, orders, picker,
@@ -591,8 +514,7 @@ class OPPAntColonyOptimization(Model):
         self, batch: str, route: List[str], batch_assignments: Dict[str, Set[str]], params: SolveAcoModelDTO,
     ) -> List[str]:
         """Pickers p for which T_exec_pb[p, batch] <= T_cold, given `route`."""
-        # Route distance doesn't depend on picker -- compute it once
-        # instead of once per picker (see _route_time's docstring).
+        # The distance does not depend on the picker: compute it once.
         distance = self._calculate_route_distance(route)
         return [
             p for p in self.P
@@ -603,9 +525,9 @@ class OPPAntColonyOptimization(Model):
     @staticmethod
     def _reachable_from(location_graph, source: str) -> Set[str]:
         """
-        Every vertex reachable from `source` along `location_graph`'s edges
-        (BFS), O(V + E). An all-pairs Dijkstra would be O(V^3), which never
-        finishes on the 100x100 stress grid (V = 10,000).
+        Every vertex reachable from `source` (BFS, O(V + E)). An all-pairs
+        shortest-path computation is out of reach on the 100x100 stress grid
+        (V = 10,000).
         """
         seen = {source}
         frontier = [source]
@@ -621,14 +543,11 @@ class OPPAntColonyOptimization(Model):
 
     def _initialize_pheromones(self, required_locations_by_batch: Dict[str, Set[str]]) -> Dict[Tuple[str, str], float]:
         """
-        Pheromone on (pick, pick) pairs, following Chen et al. (2013),
-        A-TOP, p.81: tau_ij lives on every pair of picks (plus the depot)
-        an ant can travel between, not on aisle edges. Here that is, per
+        Pheromone on (pick, pick) pairs, after Chen et al. (2013), p.81: per
         batch, every ordered pair among {depot} + its required locations +
-        {final} (depot only as origin, final only as destination -- they
-        open/close the route). Pairs are shared across batches: two
-        batches needing the same two locations learn from each other,
-        since the geometry between them is the same.
+        {final} (the depot only as origin, the final node only as
+        destination). Pairs are shared across batches: two batches that need
+        the same two locations learn from each other.
         """
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
@@ -643,7 +562,7 @@ class OPPAntColonyOptimization(Model):
         return pheromones
 
     def _initialize_picker_pheromones(self) -> Dict[Tuple[str, str], float]:
-        """Initializes the batch/picker assignment pheromone table (x_pb) with a base value of 1.0."""
+        """(batch, picker) assignment pheromone, starting at 1.0."""
         return {(b, p): 1.0 for b in self.B for p in self.P}
 
     def _build_ant_solution(
@@ -657,9 +576,9 @@ class OPPAntColonyOptimization(Model):
         required_locations_by_batch: Dict[str, Set[str]],
     ) -> Optional[RouteSolution]:
         """
-        Each ant constructs a feasible route per batch AND assigns every
-        batch that has orders to a COLD-CHAIN-ELIGIBLE picker (x_pb).
-        Returns a RouteSolution, or None if the ant got stuck building a route.
+        One ant: a route per batch and, for every batch with orders, a picker
+        chosen among those eligible for that route. Returns a RouteSolution,
+        or None if the ant could not build some route.
         """
         solution = RouteSolution(self.B, self.location_graph, batch_assignments, self.P)
         picker_load = {p: 0 for p in self.P}
@@ -672,9 +591,8 @@ class OPPAntColonyOptimization(Model):
 
             if required_locations:
                 route = None
-                # Alternate construction direction between attempts, from a
-                # random side (see route_construction.stitch_route_either_way
-                # for why both are needed).
+                # Alternate the construction direction between attempts,
+                # starting from a random side.
                 first_backwards = random.random() < 0.5
                 for attempt in range(self._MAX_ROUTE_ATTEMPTS_PER_BATCH):
                     backwards = first_backwards != (attempt % 2 == 1)
@@ -705,7 +623,7 @@ class OPPAntColonyOptimization(Model):
         batch_assignments: Dict[str, Set[str]],
         due_dates: Dict[str, float],
     ) -> None:
-        """Reorders every picker's queue by ascending earliest-due-date among the orders in each batch."""
+        """Order every picker's queue by the earliest due date among each batch's orders."""
         due_dates = due_dates if isinstance(due_dates, dict) else {}
 
         def due_date_key(batch: str):
@@ -730,13 +648,11 @@ class OPPAntColonyOptimization(Model):
         params: SolveAcoModelDTO,
     ) -> str:
         """
-        Roulette-wheel selection of a picker for a batch, combining the
-        (batch, picker) pheromone with a load-balancing visibility term,
-        restricted to pickers that are cold-chain-eligible for THIS ant's
-        just-built route. Falls back to the unrestricted pool if none are
-        eligible (see header) so the ant still produces a complete
-        solution -- it will simply fail the cold-chain validator and get
-        discarded, like any other infeasible ant.
+        Roulette-wheel choice of a batch's picker: the (batch, picker)
+        pheromone times a load-balancing visibility, over the pickers that
+        are cold-chain-eligible for the route this ant just built. If none
+        is, the roulette runs over every picker, so the ant still yields a
+        complete solution (penalized for the overrun).
         """
         eligible = self._eligible_pickers_for_batch(batch, route, {batch: orders}, params)
         candidates = eligible if eligible else self.P
@@ -770,63 +686,45 @@ class OPPAntColonyOptimization(Model):
         backwards: bool = False,
     ) -> Optional[List[str]]:
         """
-        Probabilistically constructs a batch route (depot ... final, a
-        simple path) visiting every required location.
+        Probabilistic route for a batch (depot ... final, a simple path)
+        through every required location.
 
-        Pick-to-pick construction, following Chen et al. (2013), "An ant
-        colony optimization routing algorithm for two order pickers with
-        congestion consideration" (A-TOP), Computers & Industrial
-        Engineering 66:77-85: the ant "travels from one pick to another"
-        (p.79), i.e. picker routing is treated as a Steiner-TSP over the
-        pick locations, not as a walk over individual aisle edges. At each
-        step the ant chooses the NEXT REQUIRED LOCATION r among those still
-        unvisited with the Ant System random-proportional rule (their Eq. 2,
-        p.81):
+        Pick-to-pick construction after Chen et al. (2013), "An ant colony
+        optimization routing algorithm for two order pickers with congestion
+        consideration", Computers & Industrial Engineering 66:77-85: the ant
+        travels from one pick to another, choosing the next required location
+        r with the Ant System random-proportional rule (their Eq. 2, p.81),
 
             p(r) = tau[last, r]^alpha * eta[r]^beta / sum(...),
             eta[r] = 1 / dist(current, r)
 
-        and walks the shortest path to it. Coruzzolo et al. (2023),
-        Logistics 7:61 (pp.6-9), use the same Steiner-TSP view with
-        precomputed shortest-path distances for their routing step.
+        and walks the shortest path to it. Coruzzolo et al. (2023), Logistics
+        7:61 (pp.6-9), route over precomputed shortest paths in the same way.
+        Choosing among picks instead of single edges matters: with 23-26
+        required locations on a grid, a random self-avoiding walk boxes
+        itself in long before finishing.
 
-        Deviation from Chen et al. (our own, forced by the problem
-        definition): Chen et al. take pick-to-pick distances from a static
-        precomputed table and allow re-walking aisles already traversed.
-        The exact models (which these heuristics are compared against) forbid
-        revisiting any vertex,
-        so the distance used for eta and the path walked are recomputed
-        each step with Dijkstra AVOIDING every vertex already on the route
-        (and `final`, which may only close the route).
+        Unlike Chen et al., who read pick-to-pick distances from a static
+        table and may re-walk an aisle, the exact models forbid revisiting a
+        vertex. So the distance in eta and the path walked are recomputed at
+        every step with Dijkstra, avoiding the vertices already on the route
+        (and `final`, which may only close it).
 
-        Why it picks among required locations instead of walking edge by
-        edge: on batches with 23-26 required locations on a grid, a random
-        self-avoiding walk over single edges boxes itself in long before
-        finishing. Connecting the picks by shortest non-revisiting paths
-        removes those dead ends almost always.
+        Returns None when the construction corners itself (no candidate pick
+        passes route_construction.keeps_route_completable, or `final` cannot
+        be reached without a revisit). _build_ant_solution retries and, after
+        _MAX_ROUTE_ATTEMPTS_PER_BATCH failures, uses _fallback_route.
 
-        Returns None if the stitching still paints itself into a corner
-        (no candidate pick passes route_construction.keeps_route_completable, or `final` is
-        unreachable without revisiting); _build_ant_solution then retries
-        and, after _MAX_ROUTE_ATTEMPTS_PER_BATCH failures, uses
-        _fallback_route (our own addition, not from the papers): the same
-        exhaustive best-first search opp_hc uses.
-
-        Finally the route is tightened by local search when
-        _IMPROVE_ANT_ROUTES is set: 2-opt (shared with opp_hc) alternated
-        with segment re-routing (shortest corridor between consecutive
-        picks), see models/utils/route_construction.improve_route. Chen et
-        al. apply no local search; Coruzzolo et al. do (on batches), and
-        hybridizing ant tours with local search is standard ACO practice
-        (Dorigo & Stuetzle 2004, "Ant Colony Optimization", ch. 3.7) -- our
-        choice. Without it the routes are clearly longer than the Split's
-        exact Stage 1 routes.
+        With _IMPROVE_ANT_ROUTES the route is then tightened by
+        route_construction.improve_route (2-opt alternated with segment
+        re-routing). Hybridizing ant tours with local search is standard ACO
+        practice (Dorigo & Stuetzle 2004, "Ant Colony Optimization", ch.
+        3.7); without it the routes are clearly longer than OPP-Split's Stage
+        1 routes.
         """
-        # Chen et al. (2013), Eq. 2: tau^alpha * eta^beta, eta = 1/d, with
-        # pheromone indexed by (previous pick, next pick) in the route's
-        # depot -> final direction -- so when building backwards (from the
-        # final node, see stitch_route_either_way) the construction's
-        # current -> r step is the route's r -> current pair.
+        # The pheromone is indexed by (previous pick, next pick) in the route's
+        # depot -> final direction, so when building backwards the step
+        # current -> r is the route's pair (r, current).
         if backwards:
             def weight(current, r, d):
                 return (pheromones.get((r, current), self._tau_min) ** alpha) * ((1.0 / d) ** beta)
@@ -856,23 +754,17 @@ class OPPAntColonyOptimization(Model):
         evaluator: RouteEvaluator,
     ) -> Optional[Tuple[RouteSolution, float]]:
         """
-        Try the best-so-far solution with every batch's route swapped for
-        the shortest route any ant has built for that batch so far
-        (keeping its picker assignment and sequence). Returns the new
-        (solution, cost) if it is valid, cold-chain compliant and strictly
-        cheaper, else None.
+        Try the best-so-far solution with every batch's route replaced by the
+        shortest route any ant has built for that batch, keeping pickers and
+        sequence. Returns (solution, cost) if the result is valid, cold-chain
+        compliant and strictly cheaper, else None.
 
-        Our own addition, not from the papers. Why it's needed: the
-        construction does reach the Split's optimal Stage 1 route for most
-        batches, but rarely, and in a different ant each time -- an ant's
-        cost couples all batches, so one short route inside an otherwise
-        worse ant gets no credit. Remembering the best route per batch
-        and recombining is an elitist memory (in the spirit of the
-        best-so-far deposit of elitist Ant System / MMAS, Dorigo &
-        Stuetzle 2004, ch. 3.3-3.4), applied per batch because batches'
-        routes are independent of each other. A shorter route is not
-        always cheaper under this objective (finishing earlier can add
-        earliness when W_c is small), hence the evaluator decides.
+        An ant's cost couples all its batches, so a short route inside an
+        otherwise worse ant gets no credit. This elitist memory per batch (in
+        the spirit of the best-so-far deposit of elitist Ant System and MMAS,
+        Dorigo & Stuetzle 2004, ch. 3.3-3.4) recovers it; routes of different
+        batches are independent. A shorter route is not always cheaper
+        (finishing earlier can add earliness), hence the evaluator decides.
         """
         candidate = best_solution.copy()
         changed = False
@@ -897,28 +789,19 @@ class OPPAntColonyOptimization(Model):
         evaluator: RouteEvaluator,
     ) -> Tuple[RouteSolution, float]:
         """
-        First-improvement local search over the SCHEDULE of `solution`
-        (routes fixed): (1) move one batch to another picker, at any
-        position of that picker's sequence; (2) swap two batches' positions
-        within a picker's sequence; (3) exchange two batches between
-        different pickers. A move is accepted only if the result is valid,
-        cold-chain compliant and strictly cheaper; repeats until no move
-        improves. Returns the (possibly unchanged) solution and its cost.
+        First-improvement local search on the schedule of `solution`, routes
+        fixed: (1) move a batch to any position of another picker's sequence;
+        (2) swap two batches within a picker's sequence; (3) exchange two
+        batches between pickers. A move is kept only if the result is valid,
+        cold-chain compliant and strictly cheaper; it repeats until no move
+        improves. Returns the solution and its cost.
 
-        Our own addition, not from the papers (Chen et al.'s ACO only
-        routes; batch-to-picker assignment/sequencing is outside their
-        problem). Why it's needed: even with every route equal to the
-        Split's optimal Stage 1 routes, ACO can lose to it from the schedule
-        alone -- ants pick pickers by
-        roulette and sequence each picker by earliest due date
-        (_sort_picker_queues_by_due_date), which is a good rule of thumb
-        but not optimal against this objective, while the Split's Stage 2 solves
-        the schedule exactly. These are the same neighborhoods opp_hc
-        searches (_generate_picker_reassignment_neighbor /
-        _generate_sequence_swap_neighbor), applied exhaustively to the
-        best-so-far solution only, and only when it changes (a sweep is
-        O(B^2 * P) evaluations -- cheap next to a full ant colony
-        iteration at these sizes).
+        Chen et al.'s ACO only routes. Here ants pick pickers by roulette and
+        sequence each picker by earliest due date, a good rule but not
+        optimal for this objective, so even with optimal routes the schedule
+        alone can lose to OPP-Split's Stage 2. These are opp_hc's
+        neighborhoods, applied exhaustively to the best-so-far solution (a
+        sweep is O(B^2 * P) evaluations).
         """
         deadline = self._deadline
 
@@ -937,7 +820,7 @@ class OPPAntColonyOptimization(Model):
         for _ in range(10 * max(len(batches), 1)):
             improved = False
             if out_of_time():
-                break  # Max_time (see solve()): keep the best schedule so far
+                break  # out of time: keep the best schedule so far
 
             for batch in batches:
                 if out_of_time():
@@ -994,20 +877,16 @@ class OPPAntColonyOptimization(Model):
     def _fallback_route(self, required_locations: Set[str]) -> Optional[List[str]]:
         """
         Deterministic route for a batch whose ant constructions all failed:
-        the farthest-insertion order (route_construction.insertion_route,
-        Rosenkrantz, Stearns & Lewis 1977) realized forwards, else on the
-        reversed graph, else the exhaustive best-first search
-        (best_first_route, within _MAX_BFF_EXPANSIONS) -- polished with
-        route_construction.polish_route. A full depot ... final list, or
-        None if none of them finds a simple route.
+        the farthest-insertion order (route_construction.insertion_route;
+        Rosenkrantz, Stearns & Lewis 1977) forwards, else on the reversed
+        graph, else the exhaustive best-first search (best_first_route,
+        within _MAX_BFF_EXPANSIONS), polished with polish_route. Returns the
+        full depot ... final list, or None if no simple route is found.
 
-        Insertion first because it's cheap and, when it realizes, gives a
-        short route (often the Split's exact Stage 1 optimum), while
-        best_first_route's first feasible route can be much longer -- too
-        long to be cold-chain-eligible in realistic_crew_cold_chain, where
-        that made every ant non-compliant. Cached per required-location
-        set: all of this is deterministic, and without the cache a batch
-        that needs it would pay for it once per ant.
+        Insertion goes first because it is cheap and gives a short route; the
+        first route best_first_route finds can be long enough to break the
+        cold chain. Cached per set of required locations, since the result
+        is deterministic.
         """
         key = frozenset(required_locations)
         if key not in self._fallback_cache:
@@ -1034,7 +913,7 @@ class OPPAntColonyOptimization(Model):
     def _find_required_locations(
         self, batch: str, orders: Set[str], A: Dict
     ) -> Set[str]:
-        """Finds all locations that MUST be visited for a given batch's orders."""
+        """Find all locations that must be visited for a batch's orders."""
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
         required = set()
@@ -1052,20 +931,16 @@ class OPPAntColonyOptimization(Model):
         batch_routes: List[Tuple[str, List[str]]],
     ) -> None:
         """
-        MAX-MIN update of the (pick, pick) route pheromone (see the
-        _MMAS_TAU_MIN_RATIO comment for sources and why): evaporate every
-        pair, tau <- (1 - rho) tau, then deposit delta tau = 1 on the
-        consecutive-pick pairs of each (batch, route) in `batch_routes` -- per batch, its
-        iteration-best and best-so-far (shortest) routes -- and clamp to
-        [tau_min, tau_max].
+        MAX-MIN update of the (pick, pick) route pheromone (sources at
+        _MMAS_TAU_MIN_RATIO): evaporate every pair, tau <- (1 - rho) tau,
+        deposit 1 on the consecutive-pick pairs of each (batch, route) in
+        `batch_routes` (per batch, its iteration-best and its best-so-far
+        route) and clamp to [tau_min, tau_max].
 
-        Pairs are taken over the route's PICKS (Chen et al. 2013, p.81:
-        delta tau_ij for the pick-to-pick moves), in the order the route
-        first reaches them, depot first and final last -- matching what
-        _build_batch_route chooses. No cold-chain filter is needed here
-        (unlike picker pheromone): these are the SHORTEST routes found,
-        and a shorter route can only lower T_exec_pb, never cause a
-        T_cold violation.
+        Pairs follow the order in which the route first reaches its picks,
+        depot first and final last, as _build_batch_route chooses them. No
+        cold-chain filter is needed: these are the shortest routes found, and
+        a shorter route can only lower T_exec_pb.
         """
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
@@ -1091,14 +966,11 @@ class OPPAntColonyOptimization(Model):
         best_global_cost: float = float('inf')
     ) -> None:
         """
-        Evaporation + deposit on the (batch, picker) pheromone table (route
+        Evaporation and deposit on the (batch, picker) pheromone (the route
         pheromone has its own update, _update_route_pheromones). Each entry
-        in `ant_solutions` is a (solution, cost, compliant_batches) triple
-        -- see _deposit_solution's docstring for why deposit is filtered to
-        `compliant_batches` instead of depositing for the whole solution.
-        Ant System style (every ant deposits Q / cost) plus an elitist x2
-        deposit for the best-so-far solution -- unchanged from the
-        previous version of this model.
+        of `ant_solutions` is (solution, cost, compliant_batches). Ant System
+        style: every ant deposits Q / cost, and the best-so-far solution
+        deposits twice.
         """
         for key in picker_pheromones:
             picker_pheromones[key] *= (1.0 - evaporation_rate)
@@ -1110,9 +982,7 @@ class OPPAntColonyOptimization(Model):
             self._deposit_solution(solution, picker_pheromones, q_factor / cost, batches=compliant_batches)
 
         if best_global_solution and best_global_cost < float('inf') and best_global_cost > 0:
-            # best_global_solution is only ever set from a cold-chain-
-            # compliant ant (see solve()'s feasible_ant_solutions), so every
-            # one of its batches is compliant -- deposit for all of them.
+            # Every batch of best_global_solution is compliant: deposit for all.
             self._deposit_solution(best_global_solution, picker_pheromones, (q_factor / best_global_cost) * 2.0)
 
     def _deposit_solution(
@@ -1123,19 +993,13 @@ class OPPAntColonyOptimization(Model):
         batches: Optional[Set[str]] = None,
     ) -> None:
         """
-        Deposit pheromone on the (batch, picker) pairs used by a solution,
-        restricted to `batches` (None means every batch in self.B -- used
-        for the elitist best_global_solution deposit, always fully
-        cold-chain-compliant by construction).
+        Deposit on the (batch, picker) pairs of a solution, restricted to
+        `batches` (None = every batch).
 
-        Restricting the deposit to cold-chain-COMPLIANT batches matters: depositing
-        for a batch's route/picker pheromone even when THAT batch violates T_cold
-        reinforces exactly the edges and assignment that caused the violation,
-        and the compliant route can then never be found again (premature
-        convergence onto the wrong pattern). Skipping the deposit for
-        individually-violating batches, while still depositing for every other,
-        compliant batch of the same ant solution, lets sibling batches keep
-        learning while one stays cold-chain-tight.
+        Only cold-chain-compliant batches deposit: reinforcing the assignment
+        of a batch that breaks T_cold would make the search converge on the
+        very pattern that causes the violation. The other batches of the same
+        ant still deposit, so they keep learning while one stays tight.
         """
         target_batches = batches if batches is not None else self.B
         for batch in target_batches:
@@ -1153,11 +1017,7 @@ class OPPAntColonyOptimization(Model):
         """
         T_exec_pb = T_setup + T_pick * sum(C_n)          [fixed, no speed]
                   + (T_travel * travel_distance + service_time) / V_p[picker]
-        (same formula as RouteEvaluator._calculate_batch_execution_time --
-        kept here too since this copy also drives the reported
-        batch_times/batch_completions/tardiness/earliness, same split
-        opp_aco/opp_hc use between the search's evaluator and this
-        reporting-only helper).
+        Same formula as RouteEvaluator's; this copy feeds the reported times.
         """
         return exec_time.T_exec_pb(
             self.location_graph, route, orders, picker,
@@ -1167,7 +1027,7 @@ class OPPAntColonyOptimization(Model):
     def _build_solution_info(
         self, solution: RouteSolution, cost: float, params: SolveAcoModelDTO
     ) -> dict:
-        """Structures the data expected by the output_handler (Picker assignments, Tardiness, Earliness)."""
+        """Build the solution information dictionary for OutputHandler."""
         solution_info = {
             "status": "optimal",
             "objective_value": cost,
@@ -1212,7 +1072,7 @@ class OPPAntColonyOptimization(Model):
         return solution_info
 
     def _build_solution_output(self, solution: RouteSolution) -> OPPLocationGraph:
-        """Converts the ACO route solution into the OPPLocationGraph format required by the output builder."""
+        """Convert the route solution into the OPPLocationGraph the output builder expects."""
         output_graph = OPPLocationGraph(
             depot_node=self.location_graph.get_depot(),
             final_node=self.location_graph.get_final(),

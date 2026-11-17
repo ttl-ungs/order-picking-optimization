@@ -26,12 +26,11 @@ class Case22(ExactModelTestCase):
 
     def test_earliness_when_batch_finishes_before_due_date(self):
         """Case 22a."""
-        # Usamos los DTOs antiguos de V2 solo para sacarles los datos limpios
         params, model_dto = single_order_params(
             due_date_value=10000.0, start_time=self.start_time
         )
 
-        # Extracción para ZIMPL
+        # Arcs (E) and distances (D_ij) of the graph
         E, D_ij = set(), {}
         for i in model_dto.location_graph.get_vertices():
             for j in model_dto.location_graph.get_vertices():
@@ -91,7 +90,7 @@ class Case22(ExactModelTestCase):
         self.assertIn(status, ("optimal", "feasible"))
 
         ta, ea = self.extract_tardiness_earliness(var_values, "O1")
-        self.assertGreater(ea, 0.0, "Expected positive earliness") #!
+        self.assertGreater(ea, 0.0, "Expected positive earliness")
         self.assertAlmostEqual(ta, 0.0, places=4, msg="Expected zero tardiness")
 
     def test_tardiness_when_batch_finishes_after_due_date(self):
@@ -100,7 +99,7 @@ class Case22(ExactModelTestCase):
             due_date_value=0.0, start_time=self.start_time
         )
 
-        # Extracción para ZIMPL (Misma logica)
+        # Arcs (E) and distances (D_ij) of the graph
         E, D_ij = set(), {}
         for i in model_dto.location_graph.get_vertices():
             for j in model_dto.location_graph.get_vertices():

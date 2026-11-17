@@ -20,7 +20,7 @@ class TestOPPHillClimbingInvalidSpeedRejected(OPPTestCaseHC):
     Case 36c: a speed of 0 would divide by zero in T_exec_pb, and a negative
     one would yield a negative duration; both must be refused up front, not
     crash or silently look "eligible" for any T_cold. The check is
-    invalid_speeds() in models/opp_split/utils/cold_chain_validation.py, shared by
+    invalid_speeds() in models/utils/cold_chain_validation.py, shared by
     OPP-ACO and OPP-HC and called before any batch is evaluated.
     """
 

@@ -1,11 +1,8 @@
 """
-Route-based solution representation shared by the heuristics (Hill Climbing and Ant Colony Optimization).
-
-Represents a solution as a collection of routes for each batch, plus the
-assignment of each batch to a picker (x_pb) and the processing order (sequence)
-of the batches assigned to each picker. Batches assigned to different pickers
-run in parallel; batches assigned to the same picker run one after another,
-in sequence order.
+Solution representation shared by the heuristics: a route per batch, the
+picker of each batch (x_pb) and the order of the batches on each picker.
+Batches of different pickers run in parallel; those of the same picker run
+one after the other, in sequence order.
 """
 
 from typing import Dict, List, Set, Optional
@@ -13,7 +10,7 @@ from copy import deepcopy
 
 
 class RouteSolution:
-    """Represents a solution with explicit routes for each batch and a picker assignment."""
+    """A route per batch, a picker per batch and a batch sequence per picker."""
 
     def __init__(
         self,
@@ -46,11 +43,9 @@ class RouteSolution:
         self.sequence: Dict[str, List[str]] = {p: [] for p in self.pickers}
 
     def set_batch_route(self, batch: str, route: List):
-        """Set the route for a batch."""
         self.routes[batch] = route.copy()
 
     def get_batch_route(self, batch: str) -> List:
-        """Get the route for a batch."""
         return self.routes[batch].copy()
 
     def assign_batch_to_picker(self, batch: str, picker: str, position: Optional[int] = None):
@@ -70,11 +65,11 @@ class RouteSolution:
             self.sequence[picker].insert(max(position, 0), batch)
 
     def get_batch_picker(self, batch: str) -> Optional[str]:
-        """Get the picker assigned to a batch (None if not assigned)."""
+        """The picker assigned to a batch (None if not assigned)."""
         return self.picker_of.get(batch)
 
     def get_picker_sequence(self, picker: str) -> List[str]:
-        """Get the ordered list of batches assigned to a picker."""
+        """The ordered list of batches assigned to a picker."""
         return list(self.sequence.get(picker, []))
 
     def set_picker_sequence(self, picker: str, batches: List[str]):
@@ -84,7 +79,7 @@ class RouteSolution:
             self.picker_of[batch] = picker
 
     def copy(self) -> "RouteSolution":
-        """Create a deep copy of the solution."""
+        """Deep copy of the routes, the assignment and the sequences (the graph is shared)."""
         new_solution = RouteSolution(self.batches, self.location_graph, self.batch_assignments, self.pickers)
         new_solution.routes = deepcopy(self.routes)
         new_solution.picker_of = deepcopy(self.picker_of)
@@ -103,23 +98,19 @@ class RouteSolution:
         for batch in self.batches:
             route = self.routes[batch]
 
-            # Initialize all arcs to 0
             for i in self.location_graph.get_vertices():
                 for j in self.location_graph.get_vertices():
                     z[(i, j, batch)] = 0
 
-            # Add depot -> first location
             depot = self.location_graph.get_depot()
             final = self.location_graph.get_final()
 
             if route:
                 z[(depot, route[0], batch)] = 1
 
-                # Add edges between locations
                 for i in range(len(route) - 1):
                     z[(route[i], route[i+1], batch)] = 1
 
-                # Add last location -> final
                 z[(route[-1], final, batch)] = 1
 
         return z

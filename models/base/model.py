@@ -3,6 +3,10 @@ from observer.observer import Observer
 
 
 class Model(ABC):
+    """Base class of the heuristic solvers: the subject of the Observer
+    pattern. A solver computes and calls notify(); its observers (the output
+    handlers) print or store the result."""
+
     def __init__(self):
         self._observers = []
 

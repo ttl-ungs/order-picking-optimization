@@ -3,28 +3,19 @@ from dtos.opp.solve_model_dto import SolveModelDTO
 
 class SolveAcoModelDTO(SolveModelDTO):
     """
-    Parameters of the Ant Colony Optimization heuristic (OPP-ACO): the colony's
-    hyperparameters, the time budget, the picker speeds and the cold-chain limit.
-    Inherits from SolveModelDTO to maintain the exact models' constraints and inputs.
-
-    The execution time per (picker, batch) is the one of the exact models:
-        T_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]
-    where fixed_time(b) = T_setup + T_pick * sum(C_n over b's orders)
-    does NOT depend on picker speed (setup/picking are manual work, not
-    walking), and route_time(b) = T_travel * travel_distance + service_time
-    is the part scaled by how fast the picker walks/scans.
-
-    There is no congestion between concurrent pickers, like in the exact models.
+    Parameters of the Ant Colony Optimization heuristic (OPP-ACO): the
+    problem's parameters (SolveModelDTO) plus the colony's hyperparameters,
+    the time budget, the picker speeds and the cold-chain limit.
     """
 
     def __init__(self):
         super().__init__()
-        self._A_ants = 15  # Renamed from _A to avoid collision with visitation matrix A
+        self._A_ants = 15  # not _A: A is the visit matrix
         self._Max_it = 60
-        self._Alpha = 1.0  # Importance of accumulated pheromone
-        self._Beta = 2.5  # Importance of visibility (inverse distance)
-        self._E = 0.15  # Pheromone evaporation rate
-        self._Q = 100.0  # Pheromone deposit factor
+        self._Alpha = 1.0
+        self._Beta = 2.5
+        self._E = 0.15
+        self._Q = 100.0
         self._V_p: dict = {}
         self._T_cold: float = float("inf")
         self._Max_time: float = 1800.0
@@ -85,19 +76,15 @@ class SolveAcoModelDTO(SolveModelDTO):
 
     @property
     def Max_time(self) -> float:
-        """Wall-clock budget (seconds) for the ant colony loop -- the ACO
-        counterpart of SolveHCModelDTO.Max_time. When it runs out, the
+        """Wall-clock budget (seconds) of the solve. When it runs out the
         current iteration stops building ants, its ants still update the
         best solution, and the run ends. It never ends a run that has no
-        cold-chain-compliant solution yet (see OPP-ACO's solve()), so it
-        can't turn a solvable instance into a false "infeasible". Default
-        1800 s: above every realistic_crew stress run measured on
-        2026-09-27 (<= ~410 s), so it only bounds the very large instances
-        -- e.g. the 100x100 grid, where the full 60 iterations
-        would take ~5 h -- while staying under the stress runner's 40-min
-        timeout. Measured there with 600 s: objective 1,061,148, vs 917,328
-        when ACO ran ~1878 s (before the budget also covered the
-        post-processing); 1800 s gives it about that same time back."""
+        cold-chain-compliant solution yet, so it cannot turn a solvable
+        instance into a false "infeasible". The default of 1800 s is above
+        every realistic-crew stress run (at most ~410 s) and below the
+        stress runner's 40-minute timeout, so it only bounds the very large
+        instances (the 100x100 grid would need about 5 h for its 60
+        iterations)."""
         return self._Max_time
 
     @Max_time.setter
@@ -106,8 +93,7 @@ class SolveAcoModelDTO(SolveModelDTO):
 
     @property
     def V_p(self) -> dict:
-        """dict {picker: speed}. A picker missing from this dict defaults to
-        speed 1.0 (see OPP-ACO's _picker_speed), which makes the speed a no-op."""
+        """dict {picker: speed}. A picker missing from it has speed 1.0."""
         return self._V_p
 
     @V_p.setter
@@ -116,10 +102,8 @@ class SolveAcoModelDTO(SolveModelDTO):
 
     @property
     def T_cold(self) -> float:
-        """Cold-chain deadline (seconds): the max allowed T_exec_pb[p, b]
-        for a (picker, batch) pair to remain eligible for that assignment.
-        Default +inf disables the cold chain entirely (every picker is eligible
-        for every batch)."""
+        """Cold-chain limit: the largest T_exec_pb[p, b] for which the pair
+        (picker, batch) is eligible. The default, +inf, disables it."""
         return self._T_cold
 
     @T_cold.setter

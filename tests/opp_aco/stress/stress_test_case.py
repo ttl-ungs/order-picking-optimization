@@ -48,16 +48,9 @@ class OPPAcoStressTestCase(OPPTestCase):
                 )
 
     def _assert_routes_cover_requirements(self, solution_info, scenario):
-        # depot/final are always implicit endpoints of any route (every
-        # batch starts at the depot and ends at the final node), but
-        # solution_info["routes"] only lists the picking stops in between --
-        # unlike the exact models' check, which derives "visited" from active arcs
-        # and so always includes them. Some stress scenarios (see
-        # stress_scenarios.py's module docstring, degeneracy #5) assign
-        # an order's location by cycling through EVERY vertex including
-        # depot/final, so this must be added back or a batch that
-        # (nonsensically) "requires" the depot/final node would always
-        # look like it misses it.
+        # solution_info["routes"] lists only the stops between the depot and the
+        # final node. The plain-grid scenarios can make an order "require" one
+        # of those two, so both count as visited.
         endpoints = {scenario["depot"], scenario["final"]}
         for batch, visited in solution_info["routes"].items():
             required = {

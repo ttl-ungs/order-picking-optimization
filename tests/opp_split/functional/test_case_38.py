@@ -15,9 +15,9 @@ class Case38SimplePathLimit(OPPTestCaseSplit):
 
     one_input_arc_per_node / one_output_arc_per_node (`<= 1`) make every route a
     simple path, so a pick list that forces a walk through the same vertex
-    twice has no route -- even though a picker could walk it. Found on
-    2026-09-23 on small grids a batch nearly saturates. If the `<= 1` limit is
-    ever relaxed, this test's expectation flips to a feasible route.
+    twice has no route -- even though a picker could walk it. It shows up on
+    small grids that a batch nearly saturates. If the `<= 1` limit is ever
+    relaxed, this test's expectation flips to a feasible route.
     """
 
     def test_route_that_must_revisit_a_vertex_is_infeasible(self):

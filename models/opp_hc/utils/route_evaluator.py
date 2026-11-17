@@ -1,18 +1,17 @@
 """
-Objective function evaluator for opp_hc (picker speed, no congestion).
+Objective function evaluator for opp_hc.
 
-A batch's execution time depends on WHICH picker runs it: the travel+service portion is divided by
-that picker's speed (V_p), while setup/picking time stays fixed (same split
-as opp_split_stage2_scheduling.zpl's T_exec_pb -- see models/opp_hc/opp_hc.py
-header). Batches on the same picker still run sequentially; batches on
-different pickers still run in parallel.
+A batch's execution time depends on the picker that runs it: the travel +
+service part is divided by the picker's speed (V_p); setup and picking are
+not. Batches of the same picker run one after the other; pickers work in
+parallel.
 """
 
 from typing import Dict, List, Set
 
 
 class RouteEvaluator:
-    """Evaluates the opp_hc objective function (picker-speed-aware)."""
+    """Evaluates the opp_hc objective function."""
 
     def __init__(
         self,
@@ -55,24 +54,18 @@ class RouteEvaluator:
         self.T_due_n = T_due_n
         self.M = M
         self.V_p = V_p or {}
-        # batch_assignments is immutable for the lifetime of this evaluator
-        # (only picker/route/sequence change during search, never which
-        # orders belong to which batch), so the order->batch lookup evaluate()
-        # needs can be built once here instead of an O(N*B) scan per call.
+        # Batch composition never changes during a run, so the order -> batch
+        # lookup is built once.
         self._order_to_batch = {
             order: batch
             for batch, orders in self.batch_assignments.items()
             for order in orders
         }
 
-        # Incremental evaluate() cache -- see evaluate_incremental()'s
-        # docstring. _last_* reflects the last COMMITTED solution
-        # (commit()); _pending_* is the tentative result of the most recent
-        # evaluate_incremental() call, promoted to _last_* only if that same
-        # solution is what gets committed. Assumes the SET of batches with
-        # orders assigned to a picker never changes across the whole run
-        # (only WHICH picker, route, and sequence position do) -- true for
-        # every move opp_hc.py's solve() loop generates.
+        # Cache of evaluate_incremental(): _last_* belongs to the last
+        # committed solution, _pending_* to the last one scored, which
+        # commit() promotes. It assumes the set of batches with orders never
+        # changes during a run (only their picker, route and position do).
         self._last_solution = None
         self._last_batch_times: Dict[str, float] = {}
         self._last_earliness_by_batch: Dict[str, float] = {}
@@ -92,7 +85,7 @@ class RouteEvaluator:
         self._pending_objective = 0.0
 
     def picker_speed(self, picker: str) -> float:
-        """Speed of `picker`; defaults to 1.0 when unset (no-op)."""
+        """Speed of `picker` (1.0 when unset)."""
         return self.V_p.get(picker, 1.0)
 
     def evaluate(self, solution) -> float:
@@ -127,9 +120,8 @@ class RouteEvaluator:
         return objective
 
     def _batch_order_contributions(self, batch: str, completion_time: float):
-        """This batch's own contribution to evaluate()'s earliness_total/
-        tardiness_total (every order in the batch shares the same
-        completion_time)."""
+        """Earliness and tardiness of the orders of one batch (they all share
+        its completion time)."""
         earliness = 0.0
         tardiness = 0.0
         for order in self.batch_assignments.get(batch, set()):
@@ -141,13 +133,9 @@ class RouteEvaluator:
         return earliness, tardiness
 
     def _recompute_picker_suffix(self, picker, new_seq, solution, batch_times, start_idx) -> Set[str]:
-        """Recompute cumulative completion times for new_seq[start_idx:]
-        under `picker`, given batch_times already holds the correct
-        cumulative for new_seq[start_idx - 1] (or starts from 0.0 if
-        start_idx == 0) -- see evaluate_incremental()'s docstring for why
-        everything strictly before start_idx is guaranteed unaffected.
-        Mutates batch_times in place; returns the set of batches whose
-        value actually changed."""
+        """Recompute the completion times of new_seq[start_idx:] on `picker`,
+        given that batch_times is right up to start_idx - 1. Mutates
+        batch_times and returns the batches whose value changed."""
         changed = set()
         cumulative = batch_times[new_seq[start_idx - 1]] if start_idx > 0 else 0.0
         for batch in new_seq[start_idx:]:
@@ -161,25 +149,14 @@ class RouteEvaluator:
 
     def _compute_batch_completions_incremental(self, solution):
         """
-        Same batch_times dict compute_batch_completions(solution) would
-        return, computed by reusing the last COMMITTED solution's cached
-        values wherever nothing relevant changed, instead of re-walking
-        every picker's whole sequence from position 0. Also returns the set
-        of batches whose completion time is actually different from the
-        cache, so evaluate_incremental() knows which orders' earliness/
-        tardiness need recomputing too.
+        Same batch_times as compute_batch_completions(solution), reusing the
+        last committed solution's values, plus the set of batches whose
+        completion time changed.
 
-        For a given picker, `new_seq`'s first `first_idx` entries are
-        identical (same batches, same order) to `old_seq`'s -- whether
-        `old_seq == new_seq` (only a route changed, found by comparing
-        routes directly) or `old_seq != new_seq` (a reassignment/swap
-        changed membership or order, found via their common prefix length).
-        Either way, completion times up to that shared prefix are provably
-        identical to what's already cached (they only depend on which
-        batches come before them and those batches' own routes, both
-        unchanged), so only _recompute_picker_suffix from that point
-        onward is needed -- never the whole sequence, and never a picker
-        whose sequence AND every one of its batches' routes are unchanged.
+        A completion time depends only on the batches that come before on the
+        same picker and on their routes. So on each picker everything before
+        the first batch whose position or route changed is still valid, and
+        only the sequence from there on is recomputed.
         """
         batch_times = dict(self._last_batch_times)
         changed_batches: Set[str] = set()
@@ -209,21 +186,12 @@ class RouteEvaluator:
 
     def evaluate_incremental(self, solution) -> float:
         """
-        Same value evaluate(solution) would return, computed as a delta
-        from the last COMMITTED solution (see commit()) instead of
-        recomputing every batch's completion time and every order's
-        earliness/tardiness from scratch on every call -- a single 2-opt
-        move, picker reassignment, or sequence swap only ever changes a
-        bounded suffix of one (or two, for a reassignment) pickers'
-        sequences (see _compute_batch_completions_incremental), so only
-        the orders belonging to batches in that suffix need their
-        earliness/tardiness contribution redone; everything else is reused
-        untouched.
+        Same value as evaluate(solution), computed as a delta from the last
+        committed solution: a move changes only a suffix of one or two
+        pickers' sequences, so only the orders of those batches are re-priced.
 
-        Does NOT mutate the committed cache -- see commit(), which solve()
-        calls only once it has decided to keep `solution` as the new
-        current_solution (a candidate scored here and then rejected must
-        not corrupt the cache the NEXT candidate diffs against).
+        The committed cache is not touched: solve() calls commit() only when
+        it keeps `solution`.
         """
         if self._last_solution is None:
             objective = self.evaluate(solution)
@@ -284,10 +252,8 @@ class RouteEvaluator:
         return objective
 
     def commit(self, solution) -> None:
-        """Make `solution` the baseline evaluate_incremental() diffs
-        against from now on. Call this exactly when solve() accepts
-        `solution` as the new current_solution -- never for a candidate
-        that ends up rejected."""
+        """Make `solution` the baseline of evaluate_incremental(). Call it
+        exactly when solve() accepts `solution`."""
         if self._pending_solution is solution:
             self._last_solution = solution
             self._last_batch_times = self._pending_batch_times
@@ -299,9 +265,7 @@ class RouteEvaluator:
             self._last_objective = self._pending_objective
             return
 
-        # solution wasn't the one most recently scored incrementally
-        # (shouldn't happen given how solve() uses this class -- defensive
-        # fallback so the cache can't silently go stale/incorrect instead).
+        # Defensive: `solution` was not the last one scored incrementally.
         self.evaluate_incremental(solution)
         self._last_solution = solution
         self._last_batch_times = self._pending_batch_times
@@ -314,11 +278,9 @@ class RouteEvaluator:
 
     def compute_batch_completions(self, solution) -> Dict[str, float]:
         """
-        Compute c_b[b]: the completion time of each batch, given the picker
-        it is assigned to (which now also determines its speed) and its
-        position within that picker's sequence. Pickers process their
-        assigned batches sequentially starting from time zero; different
-        pickers work in parallel.
+        c_b[b]: the completion time of each batch, given its picker (and so
+        its speed) and its position in that picker's sequence. Each picker
+        runs its batches one after the other from time zero.
         """
         batch_times: Dict[str, float] = {}
 

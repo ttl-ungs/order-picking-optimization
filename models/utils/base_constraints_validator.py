@@ -1,7 +1,7 @@
 """
-Constraints validator shared by the heuristics.
-
-Validates ALL constraints from the exact model to ensure solutions are feasible.
+Constraints validator shared by the heuristics: the routing and assignment
+constraints of the exact models, checked on a RouteSolution. The numbers in
+the comments are those of the constraints in models/opp_mono/opp_mono.zpl.
 """
 
 from typing import Dict, List, Set
@@ -42,64 +42,54 @@ class ConstraintsValidator:
         return True
 
     def _validate_batch_picker_assignment(self, solution, batch: str) -> bool:
-        """(14) Every batch with orders must be assigned to exactly one picker."""
+        """(14) Every batch with orders is assigned to exactly one picker."""
         if not self.batch_assignments.get(batch):
             return True
         return solution.get_batch_picker(batch) in self.P
 
     def _validate_batch_route(self, batch: str, route: list) -> bool:
-        """Validate a single batch route against all constraints."""
+        """Validate one batch's route (the interior stops, without depot and final node)."""
         depot = self.location_graph.get_depot()
         final = self.location_graph.get_final()
 
-        # (6) Start from depot
+        # (1) The depot connects to the first stop
         if route and not self.location_graph.has_edge(depot, route[0]):
             return False
 
-        # (7) Finish at final
+        # (2) The last stop connects to the final node
         if route and not self.location_graph.has_edge(route[-1], final):
             return False
 
-        # (8) Cannot return to depot
+        # (3) No return to the depot
         for i in range(1, len(route)):
             if route[i] == depot:
                 return False
 
-        # (9) Cannot leave final
-        # (implicitly satisfied if route ends at final in path, not traverses it)
-
-        # (10), (11) Force visit required locations
+        # (5), (6) Every required location is visited
         required = self._get_required_locations(batch)
         if not required.issubset(set(route)):
             return False
 
-        # (12) Articles capacity - sum of C_n for orders in batch
+        # Vehicle capacity (the exact models validate it on the input)
         orders = self.batch_assignments[batch]
         total_capacity = sum(self.C_n.get(order, 0) for order in orders)
         if total_capacity > self.C_v:
             return False
 
-        # (13) Flow conservation - implicitly satisfied in a simple path
-
-        # (14), (15) One input/output arc per node - implicitly satisfied in a path
-
-        # (17) No loops
+        # (8), (9) No location twice. With it, a list of stops is a simple
+        # path, which also gives (4) and the flow conservation (7).
         if len(route) != len(set(route)):
             return False
 
-        # (25) Only valid edges
+        # Every arc of the route exists
         if not self._validate_edges(route):
             return False
 
         return True
 
     def _get_required_locations(self, batch: str) -> Set:
-        """Get all locations required by orders in batch.
-
-        batch_assignments/A never change for the lifetime of a validator
-        instance (one instance per solve() call), so this is memoized --
-        profiling showed it recomputed once per ant per batch otherwise.
-        """
+        """Locations the orders of `batch` must visit. Memoized: the batch
+        composition never changes during the life of a validator."""
         cached = self._required_locations_cache.get(batch)
         if cached is not None:
             return cached

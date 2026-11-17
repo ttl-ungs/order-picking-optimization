@@ -1,29 +1,19 @@
 ##############################################################################
-# OPP Model - ETAPA 2: Asignacion + secuenciacion + cadena de frio
+# OPP-Split, Stage 2: assignment, sequencing and cold chain.
 #
-# Recibe como dato el resultado de la Etapa 1 (tiempo de ruta por lote,
-# R_b[b]) y ya NO decide nada sobre el ruteo: aca solo se decide que
-# picker hace cada lote, en que orden, y se controla tardanza/adelanto y el
-# limite de tiempo fuera de frio.
+# Takes the route time of each batch from Stage 1 (R_b[b]) as data and
+# decides which picker runs each batch and in which order, pricing the
+# completion times and the earliness and tardiness of the orders.
 #
-# Novedades respecto al modelo original:
-#   - Pickers heterogeneos por velocidad (V_p). Asumimos que la velocidad
-#     escala el tiempo de traslado+servicio (R_b), pero NO el setup ni
-#     el tiempo de picking en si (T_setup, T_pick), que se consideran
-#     ligados a la tarea y no al desplazamiento. Si en la practica el
-#     picking tambien depende de la destreza/velocidad del picker, esos
-#     terminos se pueden mover dentro del numerador que se divide por V_p
-#     sin romper nada de lo que sigue.
-#   - La duracion del lote pasa de ser VARIABLE (con Big-M
-#     para linkearla) a ser un PARAMETRO precalculado: al ser R_b[b] un dato fijo (ya optimizado
-#     en la Etapa 1), T_exec_pb[p,b] = F_b[b] + R_b[b]/V_p[p]
-#     es un numero conocido antes de resolver. Esto elimina la necesidad de
-#     Big-M para linkear "tiempo de ejecucion" con "tiempo de procesamiento"
-#     (ver comentario en batch_completion_floor) y elimina la variable u_pb.
-#   - Restriccion dura de cadena de frio: un lote solo puede asignarse a un
-#     picker si, a la velocidad de ESE picker, el lote se arma en menos de
-#     T_cold. Se implementa restringiendo el dominio de las variables al
-#     conjunto PB_elig, no como restriccion aparte.
+#   - Picker speeds (V_p). The speed scales the travel + service time (R_b)
+#     but not the setup or the picking itself (T_setup, T_pick), which belong
+#     to the task and not to the walk.
+#   - Because R_b[b] is data, the time picker p needs for batch b,
+#     T_exec_pb[p,b] = F_b[b] + R_b[b] / V_p[p], is known before solving. It
+#     is a parameter, so linking it to the completion time needs no big-M.
+#   - Cold chain: a batch can go to a picker only if, at that picker's speed,
+#     it is assembled within T_cold. It is enforced on the domain of the
+#     variables (the set PB_elig), not as a constraint.
 ##############################################################################
 
 
@@ -37,7 +27,7 @@ set B := { read "../dat_files/data_B.dat" as "<1s>" comment "#" };
 
 
 ##############################################################################
-# PARAMETERS - datos originales
+# PARAMETERS - read from the instance
 ##############################################################################
 
 param W_c   := read "../dat_files/params.dat" as "1n" skip 0 comment "#";
@@ -55,51 +45,41 @@ param C_n[N]      := read "../dat_files/cap_n.dat"    as "<1s> 2n" comment "#";
 param T_due_n[N]  := read "../dat_files/due_date.dat" as "<1s> 2n" comment "#";
 param B_nb[N * B] := read "../dat_files/B_nb.dat"     as "<1s,2s> 3n" comment "#";
 
-##############################################################################
-# PARAMETERS - nuevos
-##############################################################################
-
-# R_b[b] : tiempo de traslado+servicio optimo del lote b (salida Etapa 1)
+# R_b[b] : travel + service time of batch b on its best route (Stage 1)
 param R_b[B] := read "../dat_files/route_time_b.dat" as "<1s> 2n" comment "#";
 
-# V_p[p] : factor de velocidad del picker p (1.0 = referencia; >1 = mas rapido)
+# V_p[p] : speed factor of picker p (1.0 = reference; > 1 = faster)
 param V_p[P] := read "../dat_files/velocities.dat" as "<1s> 2n" comment "#";
 
-# T_cold : tiempo maximo (mismas unidades que T_exec_pb) que un lote puede
-#          estar fuera de la camara de frio durante el armado
+# T_cold : longest time (same units as T_exec_pb) a batch may spend out of
+#          the cold room while it is assembled
 param T_cold := read "../dat_files/cold.dat" as "1n" comment "#";
 
-# EPS : tolerancia de punto flotante del chequeo de cadena de frio
+##############################################################################
+# PARAMETERS - derived
+##############################################################################
+
+# EPS : floating-point tolerance of the cold-chain check. It is the one
+#       models/utils/cold_chain_validation.py and the heuristics use, so a
+#       batch with T_exec_pb == T_cold up to rounding is eligible everywhere.
 param EPS := 1e-9;
 
-# F_b[b] : parte de la duracion del lote que NO depende de la ruta
-#          (setup + picking en si), por lo tanto tampoco del picker
-#          bajo el supuesto de arriba
+# F_b[b] : part of the batch's duration that does not depend on the route
+#          (setup + picking), and therefore not on the picker either
 param F_b[<b> in B] :=
     T_setup + T_pick * (sum <n> in N: C_n[n] * B_nb[n,b]);
 
-# T_exec_pb[p,b] : tiempo de ejecucion del lote b si lo hace el picker p.
-#                  Ya NO es variable de decision: es un dato derivado.
+# T_exec_pb[p,b] : time picker p needs to run batch b
 param T_exec_pb[<p,b> in P * B] :=
     F_b[b] + R_b[b] / V_p[p];
 
-# PB_elig : combinaciones (picker, lote) que cumplen la restriccion de frio.
-#           Si un lote queda sin NINGUN picker elegible, el batching de la
-#           etapa previa genero un lote inviable para congelados: hay que
-#           detectarlo ANTES de resolver (ver chequeo mas abajo), no dejar
-#           que el solver devuelva "infactible" sin mas explicacion.
-#           Tolerancia +EPS: misma que usan models/opp_hc y
-#           models/opp_aco para el mismo chequeo (y que ya usaba
-#           models/opp_split/utils/cold_chain_validation.py, que replica este
-#           set en Python) -- antes esta linea comparaba con <= estricto,
-#           sin margen, mientras esos otros si lo tenian (hallazgo de
-#           auditoria 2026-09-10): un T_exec_pb == T_cold con error de
-#           redondeo de punto flotante podia quedar afuera de PB_elig aca
-#           pero adentro en los otros modulos, para el mismo dato.
+# PB_elig : (picker, batch) pairs that respect the cold chain
 set PB_elig := { <p,b> in P * B with T_exec_pb[p,b] <= T_cold + EPS };
 
-# Chequeo de factibilidad basica: lotes sin ningun picker elegible.
-# (si esta lista no esta vacia, el modelo va a dar infactible seguro)
+# Batches no picker can run within T_cold. If there is one, the model is
+# infeasible; models/utils/cold_chain_validation.py computes the same set in
+# Python to report it before solving (ZIMPL rejects the empty sum of
+# assign_exactly_one_picker when it compiles).
 set B_no_eligible_picker := { <b> in B with (sum <p> in P with <p,b> in PB_elig: 1) == 0 };
 
 
@@ -107,19 +87,19 @@ set B_no_eligible_picker := { <b> in B with (sum <p> in P with <p,b> in PB_elig:
 # VARIABLES
 ##############################################################################
 
-# x_pb[p,b] : 1 si el lote b es asignado al picker p (solo pares elegibles)
+# x_pb[p,b] : 1 if batch b is assigned to picker p (eligible pairs only)
 var x_pb[PB_elig] binary;
 
-# c_pb[p,b] : tiempo de completitud del lote b en la agenda del picker p
+# c_pb[p,b] : completion time of batch b in picker p's schedule
 var c_pb[PB_elig] >= 0;
 
-# c_b[b] : tiempo de completitud del lote b (independiente del picker)
+# c_b[b] : completion time of batch b, whoever runs it
 var c_b[B] >= 0;
 
-# y_bk[b,k] : 1 si, en el picker que comparten, el lote b va antes que el k
+# y_bk[b,k] : 1 if batch b goes before batch k on the picker they share
 var y_bk[<b,k> in B * B with b < k] binary;
 
-# ta_n[n] / ea_n[n] : tardanza / adelanto de la orden n
+# ta_n[n] / ea_n[n] : tardiness / earliness of order n
 var ta_n[N] >= 0;
 var ea_n[N] >= 0;
 
@@ -139,18 +119,17 @@ minimize obj:
 # CONSTRAINTS
 ##############################################################################
 
-#################### Asignacion (solo pares elegibles por frio) ##############
+################### Assignment (cold-chain eligible pairs) ###################
 
 subto assign_exactly_one_picker:
     forall <b> in B:
         sum <p> in P with <p,b> in PB_elig:
             x_pb[p,b] == 1;
 
-##################### Tiempo de completitud (sin Big-M) #######################
+############################## Completion time ###############################
 
-# Antes esto eran DOS restricciones con Big-M (d_b variable). Ahora
-# T_exec_pb es un numero conocido, asi que "si x_pb=1, c_pb >= T_exec_pb" es
-# directamente lineal: no hace falta linealizar nada.
+# T_exec_pb is a number, so "if x_pb = 1 then c_pb >= T_exec_pb" is linear
+# as it stands.
 subto batch_completion_floor:
     forall <p,b> in PB_elig:
         T_exec_pb[p,b] * x_pb[p,b] <= c_pb[p,b];
@@ -159,9 +138,9 @@ subto c_b_lower_bound:
     forall <p,b> in PB_elig:
         c_pb[p,b] - M * (1 - x_pb[p,b]) <= c_b[b];
 
-###################### Secuenciamiento sin solapamiento #######################
-# OJO: como la velocidad depende del picker, hay que usar T_exec_pb[p,k]
-# (no una duracion unica por lote).
+######################## Sequencing without overlap ##########################
+# The duration is the one of the picker that runs the batch (T_exec_pb[p,k]):
+# with heterogeneous speeds a batch has no single duration.
 
 subto non_overlap_1:
     forall <p> in P:
@@ -175,31 +154,14 @@ subto non_overlap_2:
             c_pb[p,b] >= c_pb[p,k] + T_exec_pb[p,b]
                          - M_seq * (2 - x_pb[p,b] - x_pb[p,k] + y_bk[b,k]);
 
-########################### Earliness y tardiness #############################
-# Filtradas por B_nb[n,b]==1: antes se generaba una fila por cada (p,b,n) sin
-# importar si el pedido n estaba en el lote b (siempre no-binding si no).
+########################## Earliness and tardiness ###########################
+# Rows exist only for the orders of each batch (B_nb[n,b] == 1): for any
+# other pair the row would never bind.
 
 subto tardiness_definition:
     forall <p,b,n> in P * B * N with B_nb[n,b] == 1 and <p,b> in PB_elig:
         c_pb[p,b] - T_due_n[n] - M * (2 - x_pb[p,b] - B_nb[n,b]) <= ta_n[n];
 
-# subto tardiness_definition:
-#     forall <b,n> in B * N with B_nb[n,b] == 1:
-#         c_b[b] - T_due_n[n] <= ta_n[n];
-
 subto earliness_definition:
     forall <p,b,n> in P * B * N with B_nb[n,b] == 1 and <p,b> in PB_elig:
         T_due_n[n] - c_pb[p,b] - M * (2 - x_pb[p,b] - B_nb[n,b]) <= ea_n[n];
-
-# subto earliness_definition:
-#     forall <b,n> in B * N with B_nb[n,b] == 1:
-#         T_due_n[n] - c_b[b] <= ea_n[n]
-
-############### (Opcional) limite de frio incluyendo espera/despacho ##########
-# Si ademas del tiempo de armado importa cuanto tiempo pasa el lote ya
-# armado hasta que se despacha (c_b), descomentar y ajustar:
-#
-# param T_despacho_max := read "../dat_files/despacho.dat" as "1n" comment "#";
-# subto cold_chain_dispatch:
-#     forall <b> in B:
-#         c_b[b] <= T_despacho_max;

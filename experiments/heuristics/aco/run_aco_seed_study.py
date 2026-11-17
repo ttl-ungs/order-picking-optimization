@@ -9,8 +9,8 @@ timed out).
 Scenario 01 (100x100, ~35 min per run) is excluded by default, as in
 run_hc_budget_study.py.
 
-Results depend on Seed alone since stitch_route iterates its candidates in
-sorted order (models/utils/route_construction.py, 2026-10-19).
+Results depend on Seed alone: stitch_route iterates its candidates in sorted
+order (models/utils/route_construction.py).
 
 Runs are spread over --workers processes. Running in parallel makes the
 runs compete for CPU, so elapsed_s is NOT comparable with the stress suite's

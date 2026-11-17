@@ -1,11 +1,9 @@
 class OPPLocation:
-    """
-    Simple location class for order picking.
-    """
+    """A warehouse location: its id and its type (picking, depot, final or aisle)."""
 
     def __init__(self, location_id, type="picking"):
         self.location_id = location_id
-        self.type = type  # or 'depot' or 'final' or 'aisle'
+        self.type = type
 
     def __repr__(self):
         return f"OPPLocation({self.location_id})"
@@ -20,26 +18,20 @@ class OPPLocation:
 
 
 class OPPLocationGraph:
-    """
-    Simple graph class for managing warehouse locations and distances.
-    """
+    """Directed warehouse graph: locations, arcs with distances, a depot and a final node."""
 
     def __init__(self, depot_node=None, final_node=None):
         """
-        Initialize empty location graph.
+        Empty graph.
 
         Args:
-            depot_node: Starting location
-            final_node: Ending location
+            depot_node: id of the location every route starts from
+            final_node: id of the location every route ends at
         """
         self.distances = {}
-        # Mirrors `distances` but keyed by raw (from_id, to_id) tuples instead
-        # of OPPLocation pairs, so has_edge/get_distance -- the hottest calls
-        # in the search loops -- can look up a distance without allocating a
-        # fresh OPPLocation (and hashing it) on every call. `distances` itself
-        # is kept as-is: some callers (to_string, _find_paths, __eq__, and
-        # tests/infra/cases/route_assertions.py) rely on it being keyed by
-        # OPPLocation objects with a `.location_id` attribute.
+        # `distances` again, keyed by (from_id, to_id). has_edge and
+        # get_distance are the hottest calls of the search loops, and this
+        # saves them building and hashing an OPPLocation per call.
         self._distance_by_id = {}
         self.depot_node = OPPLocation(depot_node, "depot") if depot_node else None
         self.final_node = OPPLocation(final_node, "final") if final_node else None
@@ -50,16 +42,12 @@ class OPPLocationGraph:
         self._vertices_sorted = (
             sorted([depot_node, final_node]) if depot_node and final_node else []
         )
-        # Adjacency cache for get_neighbors(), built lazily on first access and
-        # invalidated by add_edge. Route-construction hot loops used to do
-        # `for n in get_vertices(): if has_edge(current, n)` -- an O(V) scan
-        # (re-allocating an OPPLocation + hashing it per candidate) just to
-        # find a handful of real neighbors. Profiled at ~82% of opp_aco's
-        # total runtime on a 100-node stress instance (has_edge: 87M calls).
-        # get_neighbors() is O(1) amortized after the first call per graph.
+        # Adjacency of get_neighbors(), built on first use and invalidated by
+        # add_edge: finding a vertex's neighbors by scanning every vertex with
+        # has_edge is O(V) per call and dominated opp_aco's runtime.
         self._adjacency = None
-        # (neighbor, distance) pairs per vertex, same order as get_neighbors;
-        # built lazily, invalidated by add_edge (see get_weighted_neighbors).
+        # (neighbor, distance) pairs per vertex, in get_neighbors() order;
+        # same lazy cache.
         self._weighted_adjacency = None
 
     def add_vertex(self, vertex, type="picking"):
@@ -83,22 +71,17 @@ class OPPLocationGraph:
 
         self.distances[(OPPLocation(from_vertex), OPPLocation(to_vertex))] = distance
         self._distance_by_id[(from_vertex, to_vertex)] = distance
-        self._adjacency = None  # invalidate cache
+        self._adjacency = None
         self._weighted_adjacency = None
 
     def get_neighbors(self, vertex):
         """
-        Vertex IDs directly reachable from `vertex` (i.e. has_edge(vertex, n)
-        is True), without scanning every other vertex. Builds the adjacency
-        list once per graph (amortized O(1) per call after that), instead of
-        the O(V) `has_edge` scan this replaces in route-construction hot
-        loops -- see the comment in __init__ for the profiling that found this.
+        Ids of the vertices directly reachable from `vertex`, from an
+        adjacency list built once per graph.
 
-        Sorted, same as get_vertices(): some callers (e.g. opp_hc's BFS
-        state-space search) rely on a deterministic exploration order to
-        pick a specific route when several equally-short ones exist --
-        swapping in insertion order here would silently change which route
-        gets returned.
+        Sorted, like get_vertices(): the searches rely on a deterministic
+        exploration order to return the same route when several are equally
+        short.
         """
         if self._adjacency is None:
             adjacency = {}
@@ -112,11 +95,7 @@ class OPPLocationGraph:
     def get_weighted_neighbors(self, vertex):
         """
         [(neighbor, distance), ...] for `vertex`, in get_neighbors() order.
-        Saves Dijkstra-style loops one get_distance() call (a method call
-        plus a tuple-keyed dict lookup) per edge relaxation -- the shortest-
-        path loops in models/utils/route_construction.py run tens of
-        thousands of times per ACO solve (2026-09-26 profiling: Dijkstra was
-        ~40% of opp_aco's runtime).
+        Saves the shortest-path loops one get_distance() call per edge.
         """
         if self._weighted_adjacency is None:
             self._weighted_adjacency = {
@@ -146,7 +125,7 @@ class OPPLocationGraph:
         return self._vertices_sorted
 
     def getPaths(self, origin_vertex, destination_vertex):
-        """Public method to get all paths from origin to destination."""
+        """All simple paths from origin to destination."""
         if (
             origin_vertex not in self.get_vertices()
             or destination_vertex not in self.get_vertices()
@@ -155,7 +134,7 @@ class OPPLocationGraph:
         return self._find_paths(origin_vertex, destination_vertex)
 
     def _find_paths(self, origin_vertex, destination_vertex, visited=None):
-        """Find all paths from origin to destination using DFS."""
+        """All simple paths from origin to destination, by depth-first search."""
         if visited is None:
             visited = set()
 

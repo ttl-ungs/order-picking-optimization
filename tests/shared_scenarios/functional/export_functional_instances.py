@@ -2,8 +2,8 @@
 Export opp_split's functional-test instances for the heuristic
 equivalence suite (see tests/infra/factories/functional_instances.py).
 
-Runs every test of tests/opp_split/functional (needs zimpl and SCIP,
-e.g. the optimizacion conda env) with two spies installed:
+Runs every test of tests/opp_split/functional (needs zimpl and SCIP) with two
+spies installed:
 
 - build_dat_files: every scenario dict a test writes to the .dat files is
   captured (deep copy) as one instance, tagged with the test method name;
@@ -46,7 +46,7 @@ EXCLUDED = {
 }
 
 
-# Tests whose the Split solve doesn't finish (they time out in tests/run_suite.py
+# Tests the Split does not finish solving (they time out in tests/run_suite.py
 # too): captured, then stopped before solving.
 KNOWN_SOLVER_TIMEOUTS = {
     "test_fractional_and_zero_capacities_feasible",

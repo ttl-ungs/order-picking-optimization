@@ -9,15 +9,15 @@
 
 Why this exists rather than more stress tests: a test answers "does this one
 instance solve", while a sweep gives the curve -- where an axis bends, where it
-breaks, and how the search tree behaves on the way. The 2026-09-22/23 runs are
-what showed that batches is the tightest axis for Stage 2, that warehouse size
+breaks, and how the search tree behaves on the way. The sweeps are what
+showed that batches is the tightest axis for Stage 2, that warehouse size
 is what breaks Stage 1, and that realistic (tiered) picker speeds shrink the
 solvable region far below what uniform speeds suggest.
 
 Every configuration is solved in its OWN process and killed from outside when
 its wall-clock budget (`hard_cap_s`) runs out. That is not optional: SCIP's
 `limits/time` is only checked between operations, and a single huge LP ran a
-300s limit out to 3079s on 2026-09-23; Stage 1 has no limit at all. The kill
+300s limit out to 3079s; Stage 1 has no limit at all. The kill
 covers the whole process tree, so a zimpl compile or SCIP solve in flight goes
 with it. The row still gets written, with the stage the point died in, the
 solutions found so far and the peak memory reported so far.
@@ -56,8 +56,8 @@ Points file (--points) is a JSON list of objects:
 `model` is "split" (default), "mono", or "pair" (the same instance solved by
 both, split first; writes two rows). Missing `hard_cap_s` takes --hard-cap.
 `"stage1_only": true` stops the split after Stage 1 -- for questions that are
-purely about routing. (A `"closure"` key in older points files is ignored: the
-Stage 1 metric closure was removed on 2026-09-23.)
+purely about routing. (A `"closure"` key in the points files of studies 05 and
+07 is ignored: the Stage 1 metric closure it switched no longer exists.)
 `"stage1_workers": n` (split only) sets OPP_STAGE1_WORKERS for that point, so
 sequential and parallel Stage 1 can be compared within one points file.
 `"relax_le1": true` removes the `<= 1` per-vertex limits (Stage 1's in the

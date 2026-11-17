@@ -91,7 +91,7 @@ class Case26(ExactModelTestCase):
         a = {(n, v): 0 for n in N for v in V}
         y = {(n, b): 0 for n in N for b in B}
 
-        # Test puente roto -> debe fallar
+        # The bridge is broken: no route exists
         cap_n = {n: 2.0 for n in N}
         status, _, _, _, _ = self._solve_bridge_zpl(N, a, y, cap_n, disconnected=True)
         self.assertEqual(status, "infeasible")

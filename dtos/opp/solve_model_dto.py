@@ -1,6 +1,10 @@
 from typing import Dict, Set
 
 class SolveModelDTO:
+    """The parameters of the problem: objective weights, capacities, the
+    visit matrix (A), the batch composition (B_nb), times, due dates and the
+    big-M. The heuristics' DTOs extend it with their own parameters."""
+
     def __init__(self):
         self._W_c: float = None
         self._W_pen: float = None
@@ -142,16 +146,9 @@ class SolveModelDTO:
     @property
     def Seed(self) -> int:
         """
-        Optional RNG seed for reproducible heuristic runs (opp_hc/opp_aco --
-        the exact models have no randomness).
-        Default None preserves the previous (unseeded, non-reproducible)
-        behavior: every solve() call reads/advances the shared global
-        `random` module state, so two runs of the same instance with the
-        same hyperparameters can produce different search trajectories and
-        final objective values with no way to reproduce a specific one.
-        Added 2026-08-28 (code audit finding) -- pass an explicit int here
-        to make a run's randomness reproducible for debugging or for
-        reporting a specific result.
+        RNG seed of the heuristics (the exact models have no randomness).
+        With None, the default, a run uses the global `random` state and
+        cannot be reproduced; pass an int to make it reproducible.
         """
         return self._seed
 
@@ -161,7 +158,7 @@ class SolveModelDTO:
 
 
     def is_batch_assignment_valid(self) -> bool:
-        # Return False if any order is assigned to more than one batch
+        """False if some order is assigned to more than one batch."""
         order_batch_count: Dict[str, int] = {}
         for (order, batch), value in self._B_nb.items():
             if value > 0.5:
@@ -169,7 +166,7 @@ class SolveModelDTO:
         return all(count <= 1 for count in order_batch_count.values())
 
     def is_capacity_valid(self) -> bool:
-        # Return False if any batch exceeds the vehicle capacity constraint
+        """False if some batch exceeds the vehicle capacity."""
         batch_assignments = self.extract_batch_assignments()
         for batch, orders in batch_assignments.items():
             total = sum(self._C_n.get(order, 0) for order in orders)
@@ -178,11 +175,11 @@ class SolveModelDTO:
         return True
 
     def extract_batch_assignments(self) -> Dict[str, Set[str]]:
-        # Extract which orders belong to each batch from B_nb parameter
+        """The orders of each batch, from B_nb."""
         unique_batches = {batch for (order, batch) in self._B_nb.keys()}
 
         batch_assignments = {b: set() for b in unique_batches}
         for (order, batch), value in self._B_nb.items():
-            if value > 0.5:  # Treat as binary
+            if value > 0.5:
                 batch_assignments[batch].add(order)
         return batch_assignments

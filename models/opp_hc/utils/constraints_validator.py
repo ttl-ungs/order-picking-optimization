@@ -1,25 +1,13 @@
 """
 Constraints validator for opp_hc.
 
-Extends the base validator (models/utils/base_constraints_validator.py: all
-topology/capacity/assignment constraints, enforced as HARD constraints via
-validate_solution()) with cold-chain eligibility. Unlike those, cold chain is
-deliberately NOT folded into validate_solution():
-
-validate_solution() runs once, right after the initial construction. If a
-cold-chain-ineligible batch made it fail, the WHOLE initial solution would be
-thrown away and the Hill Climbing loop would never get to run the 2-opt and
-reassignment moves that might fix that one batch.
-
-So cold chain is a SOFT constraint during the search (see
-cold_chain_violation(), consumed as a large cost penalty by opp_hc.py's
-_search_cost/_route_local_search_cost) and a HARD constraint only on what is
-reported as the final answer (see validate_cold_chain_strict(), used by
-opp_hc.py's solve() to decide what may become best_feasible_solution).
-validate_solution() itself checks ONLY the base hard constraints: an initial
-solution with a cold-chain-ineligible batch is accepted, and Hill Climbing
-gets a full-budget chance to fix it, guided by the penalty biasing the
-accept/reject decisions towards compliance.
+Extends the base validator (topology, capacity and assignment, all hard) with
+the cold chain, which is deliberately kept out of validate_solution(): that
+check runs once on the initial solution, and rejecting it for one ineligible
+batch would throw it away before the search could repair it with 2-opt or a
+reassignment. So the cold chain is soft during the search
+(cold_chain_violation(), a cost penalty in opp_hc.py) and hard only on the
+reported answer (validate_cold_chain_strict()).
 """
 
 from typing import Dict, List, Set
@@ -27,7 +15,7 @@ from typing import Dict, List, Set
 from models.utils.base_constraints_validator import (
     ConstraintsValidator as BaseConstraintsValidator,
 )
-from models.opp_split.utils.cold_chain_validation import COLD_CHAIN_TOLERANCE
+from models.utils.cold_chain_validation import COLD_CHAIN_TOLERANCE
 
 
 class ConstraintsValidator(BaseConstraintsValidator):
@@ -58,11 +46,9 @@ class ConstraintsValidator(BaseConstraintsValidator):
         self.V_p = V_p or {}
         self.T_cold = T_cold
 
-        # Incremental cold_chain_violation() cache -- see
-        # cold_chain_violation_incremental()'s docstring. _last_* reflects
-        # the last COMMITTED solution (commit()); _pending_* is the tentative
-        # result of the most recent cold_chain_violation_incremental() call,
-        # promoted to _last_* only if that same solution gets committed.
+        # Cache of cold_chain_violation_incremental(): _last_* belongs to the
+        # last committed solution, _pending_* to the last one scored, which
+        # commit() promotes.
         self._last_solution = None
         self._last_overrun_by_batch: Dict[str, float] = {}
         self._last_total_violation = 0.0
@@ -72,21 +58,16 @@ class ConstraintsValidator(BaseConstraintsValidator):
 
     def validate_solution(self, solution) -> bool:
         """
-        The base hard constraints only (topology, capacity,
-        exactly-one-picker-per-batch) -- cold chain is intentionally NOT
-        checked here anymore (see module docstring). An initial solution
-        with a cold-chain-ineligible batch is still accepted here, so Hill
-        Climbing gets a chance to fix it.
+        The base hard constraints only (topology, capacity, one picker per
+        batch). The cold chain is not checked here (see the module docstring).
         """
         return super().validate_solution(solution)
 
     def validate_cold_chain_strict(self, solution) -> bool:
         """
-        HARD cold-chain check: every batch with orders must be assigned to
-        a picker whose T_exec_pb is within T_cold. Used to decide
-        whether a solution may become the reported best_feasible_solution
-        -- NOT used to gate the search itself (see cold_chain_violation()
-        for that; module docstring explains why).
+        Hard cold-chain check: every batch with orders is assigned to a picker
+        whose T_exec_pb is within T_cold. Decides whether a solution may be
+        reported; the search itself uses cold_chain_violation().
         """
         for batch in self.B:
             orders = self.batch_assignments.get(batch)
@@ -105,15 +86,10 @@ class ConstraintsValidator(BaseConstraintsValidator):
 
     def cold_chain_violation(self, solution) -> float:
         """
-        Total cold-chain overrun across every batch with orders: sum of
-        max(0, T_exec_pb[assigned_picker, b] - T_cold - COLD_CHAIN_TOLERANCE).
-        Zero exactly when validate_cold_chain_strict() would return True --
-        the tolerance is subtracted here too, so a T_exec_pb within tolerance
-        of T_cold has no overrun (otherwise a solution could never reach the
-        zero-violation state validate_cold_chain_strict() accepts). Consumed by opp_hc.py as a large
-        search-cost penalty, so Hill Climbing is biased toward (and, once
-        it reaches zero, satisfies) cold chain without needing to
-        hard-reject a solution that hasn't gotten there yet.
+        Total cold-chain overrun: the sum over the batches with orders of
+        max(0, T_exec_pb[picker, b] - T_cold - COLD_CHAIN_TOLERANCE). It is
+        zero exactly when validate_cold_chain_strict() holds (the tolerance
+        is subtracted here too, so that state is reachable).
         """
         total = 0.0
         for batch in self.B:
@@ -133,9 +109,7 @@ class ConstraintsValidator(BaseConstraintsValidator):
         return total
 
     def _batch_overrun(self, batch: str, solution) -> float:
-        """This batch's own contribution to cold_chain_violation()'s total
-        -- see that method's docstring for why it can be computed (and
-        cached) independently, per batch."""
+        """Overrun of one batch; it depends only on the batch's own route and picker."""
         orders = self.batch_assignments.get(batch)
         if not orders:
             return 0.0
@@ -148,10 +122,8 @@ class ConstraintsValidator(BaseConstraintsValidator):
         return max(0.0, self.T_exec_pb(batch, route, picker) - self.T_cold - COLD_CHAIN_TOLERANCE)
 
     def _diff_batches(self, a, b) -> Set[str]:
-        """Batches whose route or assigned picker differs between two
-        solutions (a sequence-order-only change, e.g. a swap move, reports
-        no differing batches here -- cold chain doesn't depend on
-        position/order, only on (batch, route, picker))."""
+        """Batches whose route or picker differs between two solutions (a
+        change of sequence order alone does not affect the cold chain)."""
         changed = set()
         for batch in self.B:
             if a.get_batch_route(batch) != b.get_batch_route(batch):
@@ -162,20 +134,13 @@ class ConstraintsValidator(BaseConstraintsValidator):
 
     def cold_chain_violation_incremental(self, solution) -> float:
         """
-        Same value cold_chain_violation(solution) would return, computed as
-        a delta from the last COMMITTED solution (see commit()) instead of
-        recomputing every batch's T_exec_pb from scratch every call: unlike
-        the objective's completion times (which cascade through a picker's
-        whole sequence), a batch's cold-chain overrun depends only on its
-        OWN route and picker, never on other batches or on sequence order
-        -- so only batches that actually changed need their overrun
-        recomputed; everything else is reused from the cache untouched.
+        Same value as cold_chain_violation(solution), computed as a delta from
+        the last committed solution: a batch's overrun depends only on its
+        own route and picker, so only the batches that changed are recomputed.
 
-        Does NOT mutate the committed cache itself -- see commit(), which
-        solve() calls only once it has decided to keep `solution` as the
-        new current_solution (a candidate that gets scored here and then
-        rejected must not corrupt the cache the NEXT candidate diffs
-        against).
+        The committed cache is not touched: solve() calls commit() only when
+        it keeps `solution`, so a rejected candidate cannot corrupt the
+        baseline of the next one.
         """
         if self._last_solution is None:
             total = self.cold_chain_violation(solution)
@@ -204,27 +169,22 @@ class ConstraintsValidator(BaseConstraintsValidator):
         return total
 
     def commit(self, solution) -> None:
-        """Make `solution` the baseline cold_chain_violation_incremental()
-        diffs against from now on. Call this exactly when solve() accepts
-        `solution` as the new current_solution -- never for a candidate
-        that ends up rejected."""
+        """Make `solution` the baseline of cold_chain_violation_incremental().
+        Call it exactly when solve() accepts `solution`."""
         if self._pending_solution is solution:
             self._last_solution = solution
             self._last_overrun_by_batch = self._pending_overrun_by_batch
             self._last_total_violation = self._pending_total_violation
             return
 
-        # solution wasn't the one most recently scored incrementally
-        # (shouldn't happen given how solve() uses this class -- defensive
-        # fallback so the cache can't silently go stale/incorrect instead).
+        # Defensive: `solution` was not the last one scored incrementally.
         self._last_solution = solution
         self._last_overrun_by_batch = {b: self._batch_overrun(b, solution) for b in self.B}
         self._last_total_violation = sum(self._last_overrun_by_batch.values())
 
     def T_exec_pb(self, batch: str, route: list, picker: str) -> float:
-        """Same formula as opp_split_stage2_scheduling.zpl's T_exec_pb: fixed setup/
-        picking time (speed-independent) plus travel+service time divided
-        by the picker's speed."""
+        """T_exec_pb as in opp_split_stage2_scheduling.zpl: setup and picking
+        time plus the travel + service time divided by the picker's speed."""
         fixed_time = self.T_setup + self.T_pick * sum(
             self.C_n.get(order, 0) for order in self.batch_assignments.get(batch, set())
         )

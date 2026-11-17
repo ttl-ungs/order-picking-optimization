@@ -3,17 +3,9 @@ from dtos.opp.solve_model_dto import SolveModelDTO
 
 class SolveHCModelDTO(SolveModelDTO):
     """
-    Parameters of the Hill Climbing heuristic (OPP-HC): the search budget, the
-    picker speeds and the cold-chain limit.
-
-    The execution time per (picker, batch) is the one of the exact models:
-        T_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]
-    where fixed_time(b) = T_setup + T_pick * sum(C_n over b's orders)
-    does NOT depend on picker speed (setup/picking are manual work, not
-    walking), and route_time(b) = T_travel * travel_distance + service_time
-    is the part scaled by how fast the picker walks/scans.
-
-    There is no congestion between concurrent pickers, like in the exact models.
+    Parameters of the Hill Climbing heuristic (OPP-HC): the problem's
+    parameters (SolveModelDTO) plus the search budget, the picker speeds and
+    the cold-chain limit.
     """
 
     def __init__(self):
@@ -26,6 +18,7 @@ class SolveHCModelDTO(SolveModelDTO):
 
     @property
     def Max_it(self) -> int:
+        """Maximum number of iterations of the main loop."""
         return self._Max_it
 
     @Max_it.setter
@@ -34,6 +27,7 @@ class SolveHCModelDTO(SolveModelDTO):
 
     @property
     def Max_imp(self) -> int:
+        """Iterations without improvement after which the search stops."""
         return self._Max_imp
 
     @Max_imp.setter
@@ -42,7 +36,7 @@ class SolveHCModelDTO(SolveModelDTO):
 
     @property
     def Max_time(self) -> float:
-        """Wall-clock time budget (seconds) for the hill climbing main loop."""
+        """Wall-clock budget (seconds) of the main loop."""
         return self._Max_time
 
     @Max_time.setter
@@ -51,8 +45,7 @@ class SolveHCModelDTO(SolveModelDTO):
 
     @property
     def V_p(self) -> dict:
-        """dict {picker: speed}. A picker missing from this dict defaults to
-        speed 1.0 (see OPP-HC's _picker_speed), which makes the speed a no-op."""
+        """dict {picker: speed}. A picker missing from it has speed 1.0."""
         return self._V_p
 
     @V_p.setter
@@ -61,10 +54,8 @@ class SolveHCModelDTO(SolveModelDTO):
 
     @property
     def T_cold(self) -> float:
-        """Cold-chain deadline (seconds): the max allowed T_exec_pb[p, b]
-        for a (picker, batch) pair to remain eligible for that assignment.
-        Default +inf disables the cold chain entirely (every picker is eligible
-        for every batch)."""
+        """Cold-chain limit: the largest T_exec_pb[p, b] for which the pair
+        (picker, batch) is eligible. The default, +inf, disables it."""
         return self._T_cold
 
     @T_cold.setter

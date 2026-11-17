@@ -2,6 +2,8 @@ import unittest
 
 
 class OPPTestCase(unittest.TestCase):
+    """Base of every test case: helpers to prepare the parameters of an instance."""
+
     def setUp(self):
         self.start_time = 0
 

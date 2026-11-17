@@ -6,29 +6,29 @@ DEFAULT_T_COLD = 1_000_000_000.0
 
 
 def write_set_dat(path, elements):
-    """Escribe un set de strings, uno por linea, entre comillas (formato ZIMPL)."""
+    """Write a set of strings, one quoted element per line."""
     with open(path, "w") as f:
         for e in sorted(elements):
             f.write(f'"{e}"\n')
 
 
 def write_edge_dat(path, edges):
-    """Escribe pares (i, j) que forman el set E. Formato ZIMPL: \"<i>\" \"<j>\"."""
+    """Write the pairs (i, j) of the set E, two quoted names per line."""
     with open(path, "w") as f:
         for i, j in sorted(edges):
             f.write(f'"{i}" "{j}"\n')
 
 
 def write_scalar_dat(path, value):
-    """Escribe un escalar (numerico o string) en un .dat de una sola linea."""
+    """Write a scalar (number or string) as a one-line .dat."""
     with open(path, "w") as f:
         f.write(f"{value}\n")
 
 
 def write_scalar_params(path, **kwargs):
     """
-    Escribe escalares en orden en un .dat de una columna.
-    El .zpl los lee con `use N` (posicion).
+    Write scalars in order, one per line. The .zpl reads them by position
+    (`skip N`).
     """
     with open(path, "w") as f:
         for val in kwargs.values():
@@ -37,11 +37,9 @@ def write_scalar_params(path, **kwargs):
 
 def write_indexed_dat(path, data):
     """
-    Escribe parametros indexados por un set.
-    data: dict {key: value}, donde key es string o tupla de strings.
-
-    Formato ZIMPL clave simple:  \"<key>\" value
-    Formato ZIMPL clave doble:   \"<k1>\" \"<k2>\" value
+    Write a parameter indexed by a set. `data` is {key: value}, where a key is
+    a string or a tuple of strings; each part of the key is written quoted,
+    followed by the value.
     """
     with open(path, "w") as f:
         for key, val in sorted(data.items()):
@@ -79,10 +77,9 @@ def _compute_m_seq(scenario_data):
 
 
 # The scenario dict of the most recent build_dat_files() call, kept by
-# reference (no copy) so zpl_utils.solve_zpl can attach the instance to the
-# solve's ZimplSolutionRecordDTO (saved when WRITE_SOLUTIONS is set). Each
-# test runs in its own subprocess, so this never crosses between tests --
-# same pattern as models/utils/solve_registry.py.
+# reference so that zpl_utils.solve_zpl can attach the instance to the solve's
+# ZimplSolutionRecordDTO. Each test runs in its own process, so it never
+# crosses between tests (like models/utils/solve_registry.py).
 _last_scenario = None
 
 
@@ -92,10 +89,7 @@ def last_scenario():
 
 
 def build_dat_files(tmpdir, scenario_data):
-    """
-    Recibe un dict con todos los datos del escenario y escribe los .dat
-    en tmpdir. Devuelve el path del directorio.
-    """
+    """Write every .dat file of the scenario in `tmpdir` and return that directory."""
     global _last_scenario
     _last_scenario = scenario_data
     write_set_dat(os.path.join(tmpdir, "data_N.dat"), scenario_data["N"])
@@ -132,9 +126,9 @@ def build_dat_files(tmpdir, scenario_data):
     if "X_pb" in scenario_data:
         write_indexed_dat(os.path.join(tmpdir, "x_pb.dat"), scenario_data["X_pb"])
 
-    # Heterogeneous picker speed and cold-chain limit (read by opp_mono and
-    # opp_split's stage 2). Scenarios that predate them get V_p = 1.0 for
-    # every picker and no binding cold-chain limit, i.e. the original problem.
+    # Picker speeds and cold-chain limit (read by opp_mono and by opp_split's
+    # Stage 2). A scenario that does not define them gets V_p = 1.0 for every
+    # picker and a limit that never binds.
     speeds = scenario_data.get("V_p") or {p: 1.0 for p in scenario_data["P"]}
     write_indexed_dat(os.path.join(tmpdir, "velocities.dat"), speeds)
     write_scalar_dat(

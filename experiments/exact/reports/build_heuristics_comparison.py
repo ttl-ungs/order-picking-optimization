@@ -49,7 +49,7 @@ def pct(value, dec=2):
 
 
 def instance_ids():
-    """{the Split method: [case id, ...]} from the split run, to label instances like the mono report."""
+    """{Split method: [case id, ...]} from the split run, to label instances like the mono report."""
     split = load(SPLIT_RUN)
     ids = case_ids(set(split) | set(load(MONO_RUN)))
     out = {}

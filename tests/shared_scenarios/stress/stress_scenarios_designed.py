@@ -1,30 +1,21 @@
-"""Stress scenarios designed to exercise what the models decide, instead of plain grids.
+"""Stress scenarios designed to exercise what the models decide.
 
-`grid_stress_scenario` builds plain grids of a given size, but it carries five properties that inflate difficulty
-without modelling anything a warehouse does:
+`grid_stress_scenario` builds plain grids, which carry five properties that
+inflate difficulty without modelling anything a warehouse does:
 
-1. `|P| >= |B|` in six of the eight scenarios. Every batch goes to exactly one
-   picker, so at most `|B|` pickers are ever used; when `|P| == |B|` each batch
-   takes its own and NO non-overlap constraint binds, leaving Stage 2 as a plain
-   assignment problem. Sequencing -- the reason Stage 2 exists -- is exercised by
-   two of the eight.
-2. Due dates fixed at 30 while a batch's fixed time alone is 101 plus 64-72 of
-   routing, so every order is late (`sla_on_time_pct = 0.0`) and the earliness
-   half of the objective never activates.
-3. Every `V_p = 1.0`, so no stress scenario exercises the picker speeds.
-4. Order weights of 10.0 make `F_b` (101) outweigh the route (64-72),
-   so improving the routing barely moves the objective.
-5. Orders map to locations by `sorted_locations[i % len(V)]` and to batches by
-   the same index, so a batch's locations come out striped across the grid at a
-   spacing set by the batch COUNT -- changing `|B|` changes each batch's
-   geometry, not just the instance size.
+1. Usually as many pickers as batches: each batch takes its own picker, no
+   non-overlap constraint binds and Stage 2 is a plain assignment problem.
+2. Due dates far below any completion time, so every order is late and the
+   earliness half of the objective never acts.
+3. Every `V_p = 1.0`: the picker speeds are not exercised.
+4. Order weights that make the fixed time of a batch outweigh its route, so a
+   better route barely moves the objective.
+5. Orders mapped to locations and to batches by the same index, so the
+   geometry of a batch changes with the number of batches.
 
-These builders avoid all five. They also stress the two stages on separate axes,
-which is what makes them useful for comparing the split against the monolithic
-model: orders and grid size drive Stage 1's routing, while the batches-per-picker
-ratio drives Stage 2's sequencing. Loading the routing axis heavily while keeping
-batches inside the solvable band is precisely where a decomposed Stage 1 should
-pull ahead of a formulation that has to solve routing and scheduling at once.
+These builders avoid all five and stress the two stages on separate axes:
+orders and grid size drive the routing (Stage 1), while the batches-per-picker
+ratio drives the sequencing (Stage 2).
 """
 
 import random
@@ -170,14 +161,12 @@ def designed_stress_scenario(
         for i, order in enumerate(order_ids)
     }
 
-    # W_c must exceed the largest batch's order count (times W_pen * W_e,
-    # both 1 here), or the Split gains by voluntary waiting: c_pb >= T_exec_pb lets it
-    # report a batch LATER than it physically finishes, and a delay of d costs
-    # W_c * d while cutting earliness by up to (orders in the batch) * d.
-    # With W_c = 9 and 26 orders per batch a delay paid ~17 per unit, so the
-    # Split's optimum waited and no heuristic -- which reports real completion
-    # times -- could match it. Above the bound a delay never pays and earliness
-    # still counts in the objective.
+    # W_c must exceed the largest batch's order count (times W_pen * W_e, both
+    # 1 here). Below that the exact models gain by reporting a batch later than
+    # it physically finishes (c_pb >= T_exec_pb): a delay of d costs W_c * d
+    # and cuts earliness by up to (orders in the batch) * d. The heuristics
+    # report real completion times and could not match such an optimum. Above
+    # the bound a delay never pays, and earliness still counts.
     w_ea_ta, w_ea = 1.0, 1.0
     max_orders_per_batch = -(-orders // batches)  # round-robin: ceil(orders / batches)
     w_full = max_orders_per_batch * w_ea_ta * w_ea + 1.0

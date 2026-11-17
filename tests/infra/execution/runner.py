@@ -5,7 +5,7 @@ import subprocess
 import sys
 import time
 import unittest
-from datetime import datetime  # NUEVO IMPORT
+from datetime import datetime
 
 try:
     import resource  # Unix only
@@ -19,27 +19,20 @@ _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.
 
 def _peak_rss_mb():
     """
-    Peak resident set size (RAM actually used, all of it -- Python objects
-    AND native allocations like PySCIPOpt's C-level SCIP state) of the
-    CURRENT process since it started, in MB. Read from the OS, not
-    tracemalloc: tracemalloc only sees Python-level allocations, which would
-    badly UNDERSTATE memory for exact-model tests (opp_mono, opp_split), whose
-    actual RAM cost is dominated by SCIP's native branch-and-bound state.
+    Peak resident set size of the current process, in MB, read from the OS.
+    tracemalloc sees only Python allocations and would badly understate the
+    exact models, whose memory is mostly SCIP's native state.
 
-    Unix: getrusage's ru_maxrss (bytes on macOS/BSD, KB on Linux), normalized
-    to MB. Windows has no `resource` module: uses the process's
-    PeakWorkingSetSize instead. Returns None if neither is available.
+    Unix: getrusage's ru_maxrss (bytes on macOS/BSD, KB on Linux). Windows:
+    the process's PeakWorkingSetSize. None if neither is available.
     """
     if resource is not None:
         raw = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         divisor = (1024 * 1024) if sys.platform == "darwin" else 1024
         return raw / divisor
     if sys.platform == "win32":
-        # Guarded because this runs in _run_test_child BEFORE the result is
-        # queued: any exception here (e.g. `from ctypes import wintypes`
-        # failing under memory pressure) would kill the child silently and
-        # the parent would report "no_result", discarding the test's real
-        # outcome. A missing memory figure must never cost us the result.
+        # Guarded: this runs in the child before the result is queued, and an
+        # exception here would lose the test's outcome for a memory figure.
         try:
             import ctypes
             from ctypes import wintypes
@@ -76,12 +69,9 @@ def _kill_process_tree(pid):
     """Kill `pid` and every descendant (best effort).
 
     multiprocessing's terminate() kills only the direct child. A test that
-    spawned worker processes of its own -- opp_split's Stage 1 runs a
-    ProcessPoolExecutor -- leaves them orphaned when a timeout terminates
-    that child: SCIP keeps optimizing in each worker with nobody left to
-    collect the result, holding RAM and burning CPU against every test that
-    runs afterwards, so one timeout silently corrupts the timings of all
-    the tests behind it.
+    spawned workers of its own (opp_split's parallel Stage 1) would leave
+    them orphaned on a timeout, with SCIP still running in each and
+    distorting the timings of every test that runs afterwards.
     """
     if sys.platform == "win32":
         subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)], capture_output=True)
@@ -96,11 +86,11 @@ def _kill_process_tree(pid):
 
 
 def _save_solution(sr, test_name, solutions_dir, solve_data):
-    """Write the heuristic's solution record (if the model attached one) as
-    JSON under solutions_dir and link it from the CSV row as solution_file,
-    a path relative to the project root. Runs after `duration` was taken,
-    so serializing never counts towards the test's reported time. A failure
-    here is reported in the row instead of costing the test's result."""
+    """Write the solution record (if the model attached one) as JSON under
+    solutions_dir and link it from the CSV row as solution_file, a path
+    relative to the project root. It runs after `duration` was taken, so it
+    does not count towards the test's time; a failure here is reported in the
+    row instead of costing the test's result."""
     record = getattr(sr, "solution_record", None)
     if record is None or solve_data is None:
         return
@@ -165,12 +155,10 @@ class TestRunner:
         self.write_csv = write_csv
 
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # Ej: 20231024_153000
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        # Ej: output_opp_hc_stress_tests_20231024_153000.csv
         csv_filename = f"output_{model_name}_{test_type}_tests_{timestamp}.csv"
 
-        # Ej: results/opp_hc/stress/output_opp_hc_stress_tests_20231024_153000.csv
         self.csv_path = os.path.join(
             project_root, "results", model_name, test_type, csv_filename
         )

@@ -1,3 +1,5 @@
+"""The result of the last solve of the process. Every model registers it and
+the test runner reads it to record the objective and the times."""
 from dtos.opp.solve_result import SolveResult
 
 _last_solve_result: "SolveResult | None" = None

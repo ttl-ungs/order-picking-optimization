@@ -1,10 +1,11 @@
-"""Write/read a heuristic's solution record (instance + solution) as JSON.
+"""Write/read a solution record (instance + solution) as JSON.
 
 One file per test, written by the test runner when WRITE_SOLUTIONS is set
-(tests/infra/execution/runner.py) and read back by verification/ to re-check
-the solution against opp_mono without re-running the heuristic.
+(tests/infra/execution/runner.py) and read back by verification/ without
+running the model again.
 
-Format (format_version 1), every id (order, batch, picker, vertex) stored as
+Format of a heuristic's record (format_version 1). Every id (order, batch,
+picker, vertex) is stored as
 a string -- ZIMPL reads them as strings anyway (dat_files_builder quotes
 every element), and it keeps JSON's string-only object keys from silently
 turning an int vertex id into a different key than the same id in a list:

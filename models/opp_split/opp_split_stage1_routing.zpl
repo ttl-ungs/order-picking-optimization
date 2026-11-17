@@ -1,16 +1,16 @@
 ##############################################################################
-# OPP Model - ETAPA 1: Ruteo por lote (independiente del picker)
+# OPP-Split, Stage 1: the route of each batch.
 #
-# Como ningun termino de ruteo depende de que picker ejecuta el
-# lote ni del orden entre lotes, el ruteo optimo de cada lote b se puede
-# resolver de forma totalmente independiente de la asignacion/secuenciacion.
-# Este modelo resuelve, para TODOS los lotes a la vez (no interactuan entre
-# si), el camino de menor tiempo (traslado + atencion en cada ubicacion)
-# que visita las ubicaciones requeridas del lote.
+# No routing term depends on which picker runs a batch or on the order
+# between batches, so the best route of each batch is found without knowing
+# the assignment or the sequence. For every batch in B the model finds the
+# path of least time (travel + service at each location) from the depot to
+# the final node through the batch's required locations. Batches do not
+# interact, which is why the runner can solve them one at a time.
 #
-# Salida para la Etapa 2: r_b[b], el tiempo de traslado+servicio
-# del lote b bajo la mejor ruta posible (todavia SIN aplicar velocidad de
-# picker ni tiempos de setup/picking, que son independientes de la ruta).
+# Output for Stage 2: r_b[b], the travel + service time of batch b on its
+# best route, before the picker speed and without setup or picking time
+# (neither depends on the route).
 ##############################################################################
 
 
@@ -18,16 +18,16 @@
 # SETS
 ##############################################################################
 
-# N : ordenes de clientes
+# N : customer orders
 set N := { read "../dat_files/data_N.dat" as "<1s>" comment "#" };
 
-# V : locaciones totales del almacen (incluye v_start y v_end)
+# V : warehouse locations (includes v_start and v_end)
 set V := { read "../dat_files/data_V.dat" as "<1s>" comment "#" };
 
-# B : lotes de pedidos factibles
+# B : batches of orders
 set B := { read "../dat_files/data_B.dat" as "<1s>" comment "#" };
 
-# E : arcos validos del grafo de locaciones
+# E : arcs of the location graph
 set E := { read "../dat_files/data_E.dat" as "<1s,2s>" comment "#" };
 
 
@@ -35,26 +35,27 @@ set E := { read "../dat_files/data_E.dat" as "<1s,2s>" comment "#" };
 # PARAMETERS
 ##############################################################################
 
-# v_start / v_end : nodo de inicio (deposito) y nodo final de cada ruta
+# v_start / v_end : depot and final node of every route
 param v_start := read "../dat_files/depot.dat" as "1s" comment "#";
 param v_end   := read "../dat_files/final.dat" as "1s" comment "#";
 
-# T_travel : tiempo por unidad de distancia
+# T_travel : time per unit of distance
 param T_travel := read "../dat_files/params.dat" as "1n" skip 4 comment "#";
 
-# D_ij[(i,j)] : distancia entre locaciones i y j (solo arcos validos)
+# D_ij[i,j] : distance of arc (i,j)
 param D_ij[E] := read "../dat_files/distances.dat" as "<1s,2s> 3n" comment "#";
 
-# S_i[i] : tiempo de servicio en la locacion i
+# S_i[i] : service time at location i
 param S_i[V] := read "../dat_files/service_time.dat" as "<1s> 2n" comment "#";
 
-# A_ni[n,i] : 1 si la orden n debe visitar la locacion i, 0 si no
+# A_ni[n,i] : 1 if order n must visit location i
 param A_ni[N * V] := read "../dat_files/a_ni.dat" as "<1s,2s> 3n" comment "#";
 
-# B_nb[n,b] : 1 si el lote b contiene la orden n, 0 si no
+# B_nb[n,b] : 1 if batch b contains order n
 param B_nb[N * B] := read "../dat_files/B_nb.dat" as "<1s,2s> 3n" comment "#";
 
-# L_b[b] : numero de locaciones distintas requeridas por el lote b (para GG)
+# L_b[b] : number of distinct locations batch b must visit (the load of
+#          the Gavish-Graves flow)
 param L_b[<b> in B] :=
     sum <i> in V with (i != v_start and i != v_end and (sum <n> in N : A_ni[n,i] * B_nb[n,b]) >= 1) : 1;
 
@@ -63,24 +64,23 @@ param L_b[<b> in B] :=
 # VARIABLES
 ##############################################################################
 
-# z_ijb[i,j,b] : 1 si el arco valido (i,j) esta incluido en el lote b
+# z_ijb[i,j,b] : 1 if the route of batch b uses arc (i,j)
 var z_ijb[E * B] binary;
 
-# q_ijb[i,j,b] : flujo de carga de Gavish-Graves: cantidad de locaciones
-#                requeridas del lote b que todavia faltan visitar al recorrer
-#                el arco valido (i,j). Solo existe para eliminar subtours.
+# q_ijb[i,j,b] : Gavish-Graves load flow: required locations of batch b
+#                still to visit when the route crosses arc (i,j). It only
+#                exists to eliminate subtours.
 var q_ijb[E * B] >= 0;
 
-# r_b[b] : tiempo de traslado + servicio del lote b bajo la mejor ruta
-#               (esto es lo que se exporta a la Etapa 2)
+# r_b[b] : travel + service time of batch b on its route (what Stage 2
+#          receives)
 var r_b[B] >= 0;
 
 
 ##############################################################################
 # OBJECTIVE
 #
-# Como los lotes no interactuan entre si, minimizar la suma es equivalente
-# a minimizar cada r_b[b] por separado.
+# Batches do not interact, so minimizing the sum minimizes each r_b[b].
 ##############################################################################
 
 minimize obj:
@@ -91,7 +91,7 @@ minimize obj:
 # CONSTRAINTS
 ##############################################################################
 
-############################### Rutas de lote ################################
+################################ Batch routes ################################
 
 subto start_from_depot:
     forall <b> in B:
@@ -113,7 +113,7 @@ subto no_outflow_final:
         sum <i, j> in E with i == v_end and v_start != v_end:
             z_ijb[i, j, b] == 0;
 
-####################### Visita y conservacion de flujo #######################
+####################### Visits and flow conservation #########################
 
 subto force_visit_inflow:
     forall <b> in B:
@@ -135,6 +135,8 @@ subto route_flow_conservation:
             (sum <g, i> in E: z_ijb[g, i, b])
             - (sum <i, j> in E: z_ijb[i, j, b]) == 0;
 
+# At most one arc in and one arc out of every node: a route is a simple
+# path and never goes through the same location twice.
 subto one_input_arc_per_node:
     forall <b> in B:
         forall <i> in V with i != v_start:
@@ -147,7 +149,7 @@ subto one_output_arc_per_node:
             sum <i, j> in E:
                 z_ijb[i, j, b] <= 1;
 
-#################### Subtour elimination y flujo de carga ####################
+#################### Subtour elimination (load flow) #########################
 
 subto load_flow_bound:
     forall <b> in B:
@@ -166,12 +168,11 @@ subto load_flow_conservation:
             - (sum <i, j> in E: q_ijb[i, j, b])
             == if (sum <n> in N: A_ni[n,i] * B_nb[n,b]) >= 1 then 1 else 0 end;
 
-########################## Tiempo de ruta del lote ############################
+############################## Batch route time ##############################
 
-# r_b[b] = traslado (distancia * T_travel) + servicio en cada ubicacion
-# visitada. NO incluye T_setup ni T_pick: esos son independientes de la
-# ruta elegida (dependen solo de la composicion del lote), asi que no hace
-# falta que el solver de la Etapa 1 los cargue - se suman en la Etapa 2.
+# Travel (distance * T_travel) plus service at every visited location.
+# T_setup and T_pick are left out: they depend only on the batch's orders,
+# not on the route, and Stage 2 adds them.
 subto define_route_time:
     forall <b> in B:
         r_b[b] ==

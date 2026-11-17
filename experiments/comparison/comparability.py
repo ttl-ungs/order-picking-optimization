@@ -14,13 +14,12 @@ docs/specs/comparabilidad_split_heuristicas.md for the rules.
   test_functional_cases.py with the Split's case and test names (<Case>.<test>[__<k>]). Their Split
   objective comes from that file (per instance -- the Split results CSV keeps
   only the last solve of tests that solve more than one instance).
-  The OTHER opp_aco/opp_hc functional tests are not comparable with the Split, even
-  when they share a test name: most run with one picker where the Split
-  test has two (2026-09-28 audit).
+  The heuristics' tests of their own (invalid speed, unreachable location)
+  have no pair in the Split.
 - stress: the 19 scenarios of tests/stress_cases, solved by every model (the
   same method names in each model's CSV). opp_split's
   reference outcome comes from its stress CSVs as merged by experiments.common.load
-  (04-19 with W_c = 27, 01-03 unchanged scenarios).
+  (04-19 with W_c = 27, 01-03 with W_c = 9).
 
 Run:
 
@@ -98,7 +97,7 @@ def stress_rows():
             "split_model": "opp_split",
             "split_status": "optimal" if ok else row["status"],
             "split_obj": pd.to_numeric(row["obj_val"], errors="coerce") if ok else None,
-            # Same scenario builder call on both sides (verified 2026-09-28).
+            # Same scenario builder call on both sides.
             # No voluntary waiting to rule out: 04-19 have W_c = 27 >
             # orders per batch (waiting never pays), 01-03 have every order
             # late (no earliness to cut).

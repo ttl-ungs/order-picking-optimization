@@ -128,14 +128,11 @@ def do_suite(args, baseline, model, tier):
         return dict(model=model, tier=tier, status=status, ran=ran, expected=expected,
                     detail=f"failures={failures} errors={errors} per-test timeouts={timeouts}")
     if model in NEEDS_ZIMPL:
-        # Plain `unittest discover` (below) has no per-test cap: a single non-converging
-        # instance runs unbounded until this whole suite's --timeout kills the process, wiping
-        # out every other test's result with it (no final "Ran N tests" summary line ever gets
-        # printed). opp_mono/opp_split each have one documented instance that never converges
-        # -- exactly the "many tests, one is fine to time out" case
-        # tests.run_suite/TestRunner already handles for the stress tier above. Scoped to
-        # NEEDS_ZIMPL only: TestRunner spawns a fresh process per test, which is needless
-        # overhead for the HC/ACO suites below (fast, never expected to hang).
+        # `unittest discover` (below) has no per-test cap: one instance that never converges
+        # would run until the suite's --timeout kills the process and wipes out every other
+        # test's result. The exact models each have such an instance, so their suites go
+        # through tests.run_suite, which caps each test. The HC/ACO suites are fast and do
+        # not need a process per test.
         cmd = [sys.executable, "-m", "tests.run_suite", model, "functional", "--allow-timeout"]
         if args.timeout_minutes is not None:
             cmd += ["--timeout-minutes", str(args.timeout_minutes)]

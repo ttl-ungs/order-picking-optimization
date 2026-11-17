@@ -4,10 +4,8 @@ Max_imp = 60 (tests/opp_hc/stress/stress_test_case.py) cut the
 search short? Each (scenario, seed) runs with every (Max_it, Max_imp) pair
 in BUDGETS; the delta is against 200/60 on the same scenario and seed.
 
-Why 200/60 is the baseline: the values first appear, uncommented, in the
-functional tests of the commit that added opp_hc (66d77a3, 2026-09-09),
-and the stress base test copied them (df7a052, 2026-09-26). No tuning
-behind them is recorded, so this study measures whether they bind.
+200/60 is the baseline because it is what the tests use. No tuning behind
+those values is recorded, so this study measures whether they bind.
 
 The 200/60 rows across seeds also give the seed-to-seed spread of the
 objective (how much a different draw changes the result).
@@ -16,12 +14,11 @@ Everything else is the stress suite's setting: Max_time 30 s. Scenario 01
 (100x100) is excluded by default: its initial construction alone exceeds
 Max_time, so the search never iterates and the budget is irrelevant there.
 
-Results depend on Seed alone since stitch_route iterates its candidates in
-sorted order (models/utils/route_construction.py, 2026-10-19); before that
-fix they also depended on PYTHONHASHSEED.
+Results depend on Seed alone: stitch_route iterates its candidates in sorted
+order (models/utils/route_construction.py).
 
 NOT a unittest test. Keep the machine awake: a suspended run keeps its
-wall clock running and gets cut by Max_time (seen 2026-10-15).
+wall clock running and gets cut by Max_time.
 
     caffeinate -dims python -m experiments.heuristics.hc.run_hc_budget_study
     python -m experiments.heuristics.hc.run_hc_budget_study --id 03 17 18 --seeds 1 2

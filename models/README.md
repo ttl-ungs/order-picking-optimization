@@ -16,7 +16,7 @@ the earliness and tardiness penalties. Variable and parameter names follow the t
 Shared code:
 
 - `base/` — `Model` (abstract solver with the Observer hooks `attach()` / `notify()`) and `OPPLocationGraph` (directed warehouse graph with depot and final node).
-- `utils/` — used by the heuristics: `route_construction.py` (self-avoiding routes through the required locations), `route_solution.py`, `base_constraints_validator.py` and `sla.py`; used by every model: `input_validation.py` (capacity and one-batch-per-order checks before solving) and `solve_registry.py` (the last solve, read by the test runner to record the objective).
+- `utils/` — used by the heuristics: `route_construction.py` (self-avoiding routes through the required locations), `route_solution.py`, `base_constraints_validator.py` and `sla.py`; used by every model: `input_validation.py` (capacity and one-batch-per-order checks before solving), `cold_chain_validation.py` (batches without an eligible picker, non-positive speeds, and the cold-chain tolerance) and `solve_registry.py` (the last solve, read by the test runner to record the objective).
 
 The Python side of the exact models is not in this directory: `tests/infra/zimpl/` writes the `.dat`
 files into a temporary workspace (a copy of the `.zpl` next to a `dat_files/` directory, see

@@ -1,65 +1,30 @@
 """
-Hill Climbing heuristic for the OPP with picker speed and cold chain (OPP-HC).
+Hill Climbing heuristic for the OPP (OPP-HC).
 
-Multi-picker, all constraints validated:
-- Receives: the SolveModelDTO parameters, plus a set of pickers (P)
-- Validates: ALL constraints (models/utils/base_constraints_validator.py),
-  plus cold-chain eligibility
-- Optimizes: routes within batches (2-opt) AND the assignment/sequencing of
-  batches to pickers, so that batches on different pickers run in parallel
-  and batches on the same picker are sequenced without overlap
-- Output: compatible with build_output
+Decides the route of each batch, the picker that runs it and the order of the
+batches on each picker. As in the exact models, a batch run by picker p takes
+T_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p] (setup and picking
+do not depend on the speed; travel and service do), and a (picker, batch)
+pair is eligible only if T_exec_pb[p, b] <= T_cold. Pickers do not interfere
+with each other.
 
-Picker speed and cold chain, as in the exact models (the Hill Climbing
-counterpart of opp_split's opp_split_stage2_scheduling.zpl):
+Cold chain. It is a hard constraint on the reported answer and a soft one (a
+large cost penalty) during the search, so an initial solution with an
+ineligible batch is not discarded before the search can repair it. The only
+up-front "infeasible" is exact: a batch no picker could run within T_cold
+even with a route time of 0. Otherwise "infeasible" means the search used its
+whole budget without reaching a compliant solution.
 
-- Picker speed (V_p): a batch's execution time is no longer a single
-  d_b fixed for every picker. Instead T_exec_pb[p, b] = fixed_time(b)
-  + route_time(b) / V_p[p], where fixed_time (setup + picking) doesn't
-  depend on speed and route_time (travel + service) does. Faster pickers
-  finish the same route sooner.
-- Cold chain (T_cold): a (picker, batch) pair is only eligible if
-  T_exec_pb[p, b] <= T_cold.
-
-Cold chain is enforced as a HARD constraint on the reported final answer,
-but a SOFT one (a large cost penalty, _search_cost/_route_local_search_
-cost) during the search itself, so a cold-chain-ineligible initial batch
-does not discard the whole solution before Hill Climbing gets a chance to fix
-it via 2-opt/reassignment (see models/opp_hc/utils/constraints_validator.py).
-
-Infeasibility detection is honest: there is no up-front estimate that could
-wrongly declare a feasible instance infeasible. The only up-front
-short-circuit is exact: batches_without_eligible_picker is fed a route_time
-of EXACTLY 0.0 for every batch (the best physically possible case), so a
-batch flagged there is impossible under ANY route or picker. Every other
-batch gets a genuine full run of the Hill Climbing loop; the reported answer (best_feasible_
-solution) is only ever set when every batch is fully cold-chain-compliant
-(see solve()), so if the loop finishes without ever reaching that,
-"infeasible" reflects an honest, exhausted search budget -- not a
-shortcut that gave up before trying.
-
-Search scheme and sources. The main loop is stochastic, first-improvement
-hill climbing (Hoos & Stuetzle 2004, "Stochastic Local Search:
-Foundations and Applications"; see also Talbi 2009, "Metaheuristics: From
-Design to Implementation", ch. 2): each iteration draws ONE random move
-and ONE random neighbor and accepts it iff it lowers the current cost --
-it does not scan the whole neighborhood first (not steepest descent). The
-one exception is inside the route move, which takes the best 2-opt
-reversal of the chosen batch's route (Croes 1958, "A method for solving
-traveling-salesman problems"). The neighborhoods -- reassign a batch to
-another picker, swap two batches in a picker's sequence -- play the role
-of the swap/insert moves Coruzzolo et al. (2023), Logistics 7:61, use in
-their local search for order batching/sequencing; the nearest-neighbor
-initial routing follows their routing step (p.9). None of the papers in
-the thesis bibliography uses Hill Climbing itself; the initial-route
-portfolio (_initial_route) cites its own sources.
-
-Deliberately WITHOUT congestion between concurrent pickers, like opp_aco and
-the exact models (opp_split, opp_mono): modelling it would require re-pricing
-T_exec_pb's route/service time against the other pickers' reservations every
-time a batch's route OR its assigned picker's speed changes, so it is left
-out to keep the search space (and what is being measured) focused on the
-speed/cold-chain trade-off (see experiments/common/config.py).
+Search. Stochastic first-improvement hill climbing (Hoos & Stuetzle 2004,
+"Stochastic Local Search: Foundations and Applications"; Talbi 2009,
+"Metaheuristics: From Design to Implementation", ch. 2): each iteration draws
+one random move and one random neighbor and accepts it iff it lowers the
+cost. The route move is the exception: it takes the best 2-opt reversal of
+the chosen batch's route (Croes 1958). The other two moves -- reassign a
+batch to another picker, swap two batches in a picker's sequence -- play the
+role of the swap/insert moves of Coruzzolo et al. (2023), Logistics 7:61,
+whose nearest-neighbor routing step (p.9) is also the base of the initial
+routes (see _initial_route for the rest of its sources).
 """
 
 import time
@@ -77,20 +42,17 @@ from dtos.opp.model_dto import ModelDTO
 from models.utils.route_solution import RouteSolution
 from models.opp_hc.utils.route_evaluator import RouteEvaluator
 from models.opp_hc.utils.constraints_validator import ConstraintsValidator
-from models.opp_split.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
+from models.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
 from models.utils.input_validation import orders_without_exactly_one_batch
 from models.utils.sla import sla_on_time_pct
 
 
 class OPPHillClimbing(Model):
-    """Hill Climbing solver for the OPP - picker speed + cold chain, no congestion."""
+    """Hill Climbing solver for the OPP with picker speeds and a cold-chain limit."""
 
-    # Multiplier applied to a cold-chain overrun (a time-unit amount) before
-    # adding it to a search cost: cold chain is a soft constraint during the
-    # search (see constraints_validator.py). Large enough to dominate the
-    # search away from violations (the marginal objective per unit of time is
-    # W_c, usually single-to-low-double digits) without a Big-M-style
-    # constant: this is a plain cost comparison, not a MIP constraint.
+    # Multiplier of a cold-chain overrun (in time units) when it is added to a
+    # search cost. Large enough to dominate the objective's marginal cost per
+    # unit of time (W_c); it is a plain cost comparison, not a big-M.
     _COLD_CHAIN_PENALTY_WEIGHT = 1000.0
 
     def __init__(self, dto: ModelDTO):
@@ -102,10 +64,8 @@ class OPPHillClimbing(Model):
         self.P = sorted(dto.P) if getattr(dto, "P", None) else ["P1"]
         self._undirected_adjacency = route_construction.undirected_adjacency(self.location_graph)
         self._reversed_graph = route_construction.reversed_graph(self.location_graph)
-        # Per-solve() caches for values that are invariant for the whole
-        # search (batch_assignments never changes once a run starts -- only
-        # picker/route/sequence do): reset at the top of solve(), read-only
-        # afterwards. See _fixed_time and _generate_feasible_neighbor.
+        # Per-solve caches: which orders are in which batch never changes
+        # during a run, so they are filled once in solve().
         self._fixed_time_cache: Dict[str, float] = {}
         self._batches_with_orders_cache: List[str] = []
 
@@ -139,10 +99,7 @@ class OPPHillClimbing(Model):
 
         batch_assignments = params.extract_batch_assignments()
 
-        # batch_assignments is fixed for the rest of this run (only picker/
-        # route/sequence change during search), so these two per-batch
-        # values -- recomputed from scratch on every call otherwise -- can
-        # be built once here instead.
+        # Batch composition is fixed for the whole run: compute these once.
         self._fixed_time_cache = {}
         self._batches_with_orders_cache = [b for b in self.B if batch_assignments[b]]
 
@@ -225,23 +182,17 @@ class OPPHillClimbing(Model):
             self._register_infeasible(params, time.time() - wall_clock_start)
             return "infeasible", None
 
-        # current_cost drives ACCEPT/REJECT decisions during the search
-        # (objective + cold-chain penalty, see _search_cost) -- it is NOT
-        # the reported obj_val. best_feasible_solution/best_feasible_cost
-        # (tracked separately, using the real objective with zero penalty)
-        # are what actually get reported: the search is free to wander
-        # through cold-chain-violating states along the way, but only ever
-        # reports one that's fully compliant.
+        # current_cost (objective + cold-chain penalty) drives accept/reject.
+        # What is reported is best_feasible_*: the real objective of the best
+        # fully compliant solution seen.
         current_cost, current_objective, current_violation = self._search_cost(current_solution, evaluator, validator)
         evaluator.commit(current_solution)
         validator.commit(current_solution)
 
         best_feasible_solution = None
         best_feasible_cost = float("inf")
-        # "Iteration of convergence": WHEN best_feasible_solution was last
-        # improved (not current_cost/search_cost, which can wander through
-        # cold-chain-violating states -- see comment above). 0 means the
-        # initial construction was already the best feasible answer found.
+        # Iteration at which best_feasible_solution last improved (0 = the
+        # initial construction).
         best_found_at_iteration = 0
         if current_violation == 0.0:
             best_feasible_solution = current_solution.copy()
@@ -272,8 +223,7 @@ class OPPHillClimbing(Model):
                 neighbor_solution, evaluator, validator
             )
 
-            # First-improvement acceptance of one random neighbor
-            # (stochastic hill climbing, Hoos & Stuetzle 2004 -- see header).
+            # First-improvement acceptance of one random neighbor.
             if neighbor_cost < current_cost:
                 current_solution = neighbor_solution
                 current_cost = neighbor_cost
@@ -296,10 +246,7 @@ class OPPHillClimbing(Model):
         print(f"Iterations: {iteration}" + (" (stopped: time budget exceeded)" if timed_out else ""))
 
         if best_feasible_solution is None:
-            # The search ran its full budget (iterations, stagnation, or
-            # time) and never reached a cold-chain-compliant solution --
-            # an honest "infeasible", not a shortcut that gave up before
-            # trying (see header/constraints_validator.py docstrings).
+            # The whole budget went by without a cold-chain-compliant solution.
             print("ERROR: Hill Climbing never found a cold-chain-compliant solution within its search budget")
             self._register_infeasible(params, elapsed)
             return "infeasible", None
@@ -384,11 +331,8 @@ class OPPHillClimbing(Model):
         return {p: self._picker_speed(p, params) for p in self.P}
 
     def _fixed_time(self, batch: str, batch_assignments: Dict[str, Set[str]], params: SolveHCModelDTO) -> float:
-        """Setup + picking time -- the part of T_exec_pb that does NOT depend
-        on picker speed. Cached per batch (see solve()'s _fixed_time_cache):
-        batch_assignments/C_n/T_setup/T_pick are all invariant for the
-        duration of a run, so this is the same value every time for a given
-        batch."""
+        """Setup + picking time of a batch: the part of T_exec_pb that does not
+        depend on the picker. Cached, since it never changes during a run."""
         cached = self._fixed_time_cache.get(batch)
         if cached is not None:
             return cached
@@ -399,12 +343,8 @@ class OPPHillClimbing(Model):
         return fixed_time
 
     def _route_time(self, route: List, params: SolveHCModelDTO, distance: Optional[float] = None) -> float:
-        """
-        Travel time (T_travel * distance) + service time -- opp_split's
-        R_b, the part scaled by V_p. Pass `distance` when the caller
-        already computed it (e.g. a 2-opt candidate's distance) to avoid
-        recomputing it a second time via _calculate_route_distance.
-        """
+        """Travel + service time of a route: the part of T_exec_pb the picker's
+        speed divides. `distance` may be passed when the caller already has it."""
         if not route:
             return 0.0
 
@@ -420,7 +360,7 @@ class OPPHillClimbing(Model):
         batch_assignments: Dict[str, Set[str]], params: SolveHCModelDTO,
         distance: Optional[float] = None,
     ) -> float:
-        """See _route_time's docstring for why `distance` can be passed in precomputed."""
+        """T_exec_pb[picker, batch] for `route` (`distance` as in _route_time)."""
         fixed_time = self._fixed_time(batch, batch_assignments, params)
         speed = self._picker_speed(picker, params)
         return fixed_time + self._route_time(route, params, distance=distance) / speed
@@ -429,9 +369,7 @@ class OPPHillClimbing(Model):
         self, batch: str, route: List, batch_assignments: Dict[str, Set[str]], params: SolveHCModelDTO,
     ) -> List[str]:
         """Pickers p for which T_exec_pb[p, batch] <= T_cold, given `route`."""
-        # Route distance doesn't depend on picker -- compute it once
-        # instead of once per picker (each _T_exec_pb call would otherwise
-        # recompute it independently; see _route_time's docstring).
+        # The distance does not depend on the picker: compute it once.
         distance = self._calculate_route_distance(route)
         return [
             p for p in self.P
@@ -445,15 +383,10 @@ class OPPHillClimbing(Model):
         params: SolveHCModelDTO,
     ) -> Optional[RouteSolution]:
         """
-        Generate an initial solution respecting topology/capacity/one-
-        picker-per-batch. Returns None only if some batch's required
-        locations genuinely can't be routed at all (disconnected graph,
-        etc.) -- NOT if a batch comes out cold-chain-ineligible under its
-        (heuristic) route: that no longer aborts construction, since the
-        exact impossibility pre-check in solve() already ruled out the
-        only case where no route could ever fix it, and Hill Climbing gets
-        a full search budget to try for every other batch (see header /
-        constraints_validator.py's module docstring).
+        Initial solution that respects topology, capacity and one picker per
+        batch. Returns None only if some batch cannot be routed at all (e.g.
+        a disconnected graph); a batch that comes out cold-chain-ineligible
+        is kept for the search to repair.
         """
         solution = RouteSolution(self.B, self.location_graph, batch_assignments, self.P)
         route_time: Dict[str, float] = {}
@@ -493,34 +426,28 @@ class OPPHillClimbing(Model):
 
     def _initial_route(self, required_locations: Set) -> Optional[List]:
         """
-        Initial route for one batch: the shortest of the deterministic
-        nearest-neighbor construction (_generate_feasible_route), the
-        farthest-insertion order realized forwards and backwards
-        (route_construction.insertion_route; Rosenkrantz, Stearns & Lewis
-        1977) and _MULTI_START_CONSTRUCTIONS randomized pick-to-pick
-        constructions alternating forwards/backwards
-        (route_construction.stitch_route_either_way with weight
-        (1/d)^beta, each tightened by improve_route), then polished with the elite-route
-        local search (route_construction.polish_route: pick-level 2-opt,
-        or-opt relocation, vertex 2-opt, segment re-routing). The
-        exhaustive best-first search (_generate_feasible_route_bff) only
-        runs if every construction fails.
+        Initial route of a batch: the shortest of
+        - the nearest-neighbor construction (_generate_feasible_route),
+        - the farthest-insertion order, forwards and backwards
+          (route_construction.insertion_route; Rosenkrantz, Stearns & Lewis
+          1977),
+        - _MULTI_START_CONSTRUCTIONS randomized pick-to-pick constructions,
+          alternating forwards and backwards (stitch_route_either_way, after
+          Chen et al. 2013), each tightened by improve_route,
+        then polished with route_construction.polish_route. The exhaustive
+        best-first search (_generate_feasible_route_bff) runs only if every
+        construction fails.
 
-        Multi-start construction + local search is a standard way to
-        diversify a Hill Climbing start (e.g. the multi-start local search
-        Coruzzolo et al. 2023 use for batching, Logistics 7:61); the pick-
-        to-pick construction itself is Chen et al. (2013)'s (see
-        stitch_route). Our own choice to use them here: with the
-        nearest-neighbor start + vertex 2-opt alone the routes are clearly
-        longer than the Split's exact Stage 1 routes, and on hard batches
-        nearest-neighbor can get stuck without any route at all.
+        The nearest-neighbor start with 2-opt alone gives routes clearly
+        longer than OPP-Split's Stage 1 routes, and on hard batches it can
+        find no route at all; hence the portfolio (multi-start local search,
+        as Coruzzolo et al. 2023 use for batching).
         """
         candidates = []
         greedy = self._generate_feasible_route(required_locations)
         if greedy is not None:
             candidates.append(greedy)
-        # Farthest-insertion order, forwards and on the reversed graph (see
-        # route_construction.insertion_route / reversed_graph).
+        # Farthest-insertion order, forwards and on the reversed graph.
         for graph, flip in ((self.location_graph, False), (self._reversed_graph, True)):
             full = route_construction.insertion_route(graph, required_locations)
             if full is not None:
@@ -528,8 +455,7 @@ class OPPHillClimbing(Model):
                 candidates.append(full[1:-1])
         beta = self._MULTI_START_BETA
         for attempt in range(self._MULTI_START_CONSTRUCTIONS):
-            # Alternate forwards / backwards construction (see
-            # route_construction.stitch_route_either_way for why).
+            # Alternate forwards and backwards constructions.
             full = route_construction.stitch_route_either_way(
                 self.location_graph, self._reversed_graph, required_locations,
                 lambda current, r, d: (1.0 / d) ** beta,
@@ -556,13 +482,10 @@ class OPPHillClimbing(Model):
         params: SolveHCModelDTO,
     ) -> None:
         """
-        Distribute batches with orders across pickers, greedily balancing
-        load among each batch's COLD-CHAIN-ELIGIBLE pickers when it has
-        any. A batch with NO eligible picker under its current route
-        (possible now that construction no longer aborts on this -- see
-        _generate_initial_feasible_solution) gets a best-effort pick: the
-        picker that minimizes T_exec_pb, i.e. gets it closest to
-        compliant, for Hill Climbing to try to finish the job on.
+        Distribute the batches across pickers, balancing the load among each
+        batch's cold-chain-eligible pickers. A batch with no eligible picker
+        under its current route goes to the picker that minimizes T_exec_pb,
+        the closest to compliant, for the search to repair.
         """
         load = {p: 0 for p in self.P}
         batches_to_assign = [b for b in self.B if batch_assignments[b]]
@@ -602,9 +525,9 @@ class OPPHillClimbing(Model):
 
     def _generate_feasible_route(self, required_locations: Set) -> Optional[List]:
         """
-        Dijkstra-based nearest-neighbor route construction -- the nearest-neighbor TSP heuristic over shortest-
-        path distances that Coruzzolo et al. (2023), Logistics 7:61, p.9,
-        use for routing, here with no-revisit paths (the exact models' constraint).
+        Nearest-neighbor route over shortest-path distances (the routing step
+        of Coruzzolo et al. 2023, Logistics 7:61, p.9), on paths that never
+        revisit a location, as the exact models require.
         """
         if not required_locations:
             return []
@@ -650,23 +573,12 @@ class OPPHillClimbing(Model):
         return route_construction.build_reversal_prefix_arrays(self.location_graph, route)
 
     def _two_opt_tighten_route(self, route: List) -> List:
-        """
-        Distance-minimizing 2-opt over `route` (see models/utils/
-        route_construction.py's two_opt_tighten_route). Used to tighten the
-        nearest-neighbor/BFS construction's route BEFORE it's used for the
-        cold-chain eligibility pre-check or as the Hill Climbing search's
-        starting point (see _generate_initial_feasible_solution's call
-        site for why this matters).
-        """
+        """Distance-minimizing 2-opt over `route` (route_construction.two_opt_tighten_route)."""
         return route_construction.two_opt_tighten_route(self.location_graph, route)
 
-    # Hard safety valve on the best-first search's node expansions. The search
-    # orders partial paths by locations still required, then by graph distance
-    # to the nearest one (see _bff_search), so most batches of ~20-26 required
-    # locations on a ~50-256-node grid resolve well below this cap; a minority
-    # on the largest grids needs it. Raising the constant is not the fix for a
-    # batch that exhausts it: that is a larger instance than the search was
-    # designed for.
+    # Cap on the node expansions of the best-first search. Most batches of
+    # 20-26 required locations on grids of 50-256 nodes resolve well below it;
+    # a batch that exhausts it is larger than the search was designed for.
     _MAX_BFF_EXPANSIONS = 2_000_000
 
     def _generate_feasible_route_bff(self, required_locations: Set) -> Optional[List]:
@@ -683,22 +595,13 @@ class OPPHillClimbing(Model):
         self, solution: RouteSolution, evaluator: "RouteEvaluator", validator: "ConstraintsValidator"
     ) -> Tuple[float, float, float]:
         """
-        Objective + a large penalty for any cold-chain overrun -- drives
-        ALL accept/reject decisions during the search (initial cost,
-        neighbor acceptance). Returns (cost, objective, violation)
-        separately (not just cost) so solve() can reuse objective/
-        violation after accepting `solution` instead of recomputing them a
-        second time -- neither is the reported obj_val: see solve()'s
-        best_feasible_solution/best_feasible_cost, tracked separately with
-        the real (unpenalized) objective, only from fully compliant states.
+        Objective plus a large penalty for any cold-chain overrun: what every
+        accept/reject decision of the search compares. Returns (cost,
+        objective, violation) so solve() can reuse the last two.
 
-        Uses evaluate_incremental()/cold_chain_violation_incremental()
-        (diffed against each object's last COMMITTED solution) rather than
-        evaluate()/cold_chain_violation() -- solve() is responsible for
-        calling evaluator.commit(solution)/validator.commit(solution)
-        whenever it actually accepts `solution` as the new current_solution
-        (see their docstrings for why a rejected candidate must not
-        trigger a commit).
+        Both are computed incrementally against the last committed solution,
+        so solve() must commit() on the evaluator and the validator whenever
+        it accepts `solution`.
         """
         objective = evaluator.evaluate_incremental(solution)
         violation = validator.cold_chain_violation_incremental(solution)
@@ -710,13 +613,10 @@ class OPPHillClimbing(Model):
         batch_assignments: Dict[str, Set[str]], params: SolveHCModelDTO,
     ) -> float:
         """
-        Cheap per-route proxy used ONLY to pick the best 2-opt candidate
-        inside _generate_route_neighbor (distance + cold-chain-overrun
-        penalty for THIS batch alone) -- avoids recomputing the whole
-        solution's objective (earliness/tardiness across every order) for
-        every one of the O(n^2) candidates a 2-opt sweep considers. The
-        OUTER accept/reject decision in solve() still uses the real,
-        whole-solution _search_cost to decide whether to keep the result.
+        Cost of one batch's route (distance plus its own cold-chain overrun),
+        used only to pick the best 2-opt candidate without re-evaluating the
+        whole solution for each of the O(n^2) reversals. Whether the move is
+        kept is decided in solve() with _search_cost.
         """
         distance = self._calculate_route_distance(route)
         t_exec = self._T_exec_pb(batch, route, picker, batch_assignments, params, distance=distance)
@@ -730,13 +630,10 @@ class OPPHillClimbing(Model):
         params: SolveHCModelDTO,
     ) -> Optional[RouteSolution]:
         """
-        Generate a neighbor via one of three moves:
-        - 2-opt on a batch's route (topology-feasible only -- cold chain
-          is judged by the OUTER accept/reject step in solve(), via
-          _search_cost, not filtered out here)
-        - Reassign a batch to a different picker (any picker -- same
-          reasoning: the outer step judges whether it actually helps)
-        - Swap the processing order of two batches on the same picker
+        Generate a neighbor with one of three moves: 2-opt on a batch's
+        route, reassigning a batch to another picker, or swapping two batches
+        in a picker's sequence. Moves are only checked for topology; solve()
+        judges the cold chain through _search_cost.
         """
         batches_with_orders = self._batches_with_orders_cache
 
@@ -756,34 +653,15 @@ class OPPHillClimbing(Model):
         params: SolveHCModelDTO,
     ) -> Optional[RouteSolution]:
         """
-        Full 2-opt on a randomly selected batch's route: every
-        topologically feasible reversal is scored by the same distance +
-        cold-chain-overrun penalty _route_local_search_cost computes
-        (this batch's own cost alone), and the single best (steepest-
-        descent) improving one is kept -- deliberately NOT required to
-        already be fully cold-chain-compliant (see
-        _generate_feasible_neighbor's docstring): a move that reduces the
-        overrun without eliminating it is still progress, and the outer
-        solve() loop decides whether the resulting whole solution is
-        actually better.
+        Best 2-opt reversal of a randomly chosen batch's route, scored by
+        _route_local_search_cost. A reversal that reduces the cold-chain
+        overrun without removing it still counts as an improvement.
 
-        Each candidate's cost is derived from a distance DELTA (see
-        _two_opt_tighten_route's docstring for why get_distance/has_edge
-        are NOT assumed symmetric here) instead of building a new route
-        list, re-validating it end-to-end, and re-summing its distance/
-        T_exec_pb from scratch for every one of the O(n^2) reversals a
-        sweep considers. This is valid because:
-        - a reversal never changes `route`'s node set, so a duplicate-
-          nodes/required-locations check would trivially pass for any
-          candidate (already true of `route` itself) and doesn't need
-          doing per candidate -- only topology (edge existence) actually
-          varies between candidates;
-        - fixed_time and service_time depend on which orders/locations
-          are in the batch, not on the route's ORDER, so T_exec_pb is an
-          affine function of distance alone for a fixed batch/picker
-          (t_exec = intercept + (T_travel / speed) * distance) and can be
-          evaluated from a candidate's distance without recomputing
-          _T_exec_pb/_route_time per candidate.
+        Each candidate is scored from its distance delta instead of building
+        and re-validating a new route: a reversal keeps the node set, so only
+        the existence of the reversed edges has to be checked, and for a
+        fixed batch and picker T_exec_pb is an affine function of the
+        distance. Distances and edges are not assumed symmetric.
         """
         batches_with_routes = [b for b in self.B if solution.get_batch_route(b)]
         if not batches_with_routes:
@@ -815,10 +693,8 @@ class OPPHillClimbing(Model):
             violation = max(0.0, t_exec - params.T_cold)
             return params.T_travel * distance + self._COLD_CHAIN_PENALTY_WEIGHT * violation
 
-        # See _build_reversal_prefix_arrays' docstring for what these mean;
-        # same construction as _two_opt_tighten_route, just a single pass
-        # here (this method returns the single best 2-opt move, not a
-        # fully-tightened route).
+        # Prefix arrays of _build_reversal_prefix_arrays; a single pass, since
+        # only the best move is returned.
         fwd_prefix, rev_prefix, rev_broken_count = self._build_reversal_prefix_arrays(route)
 
         best_i = best_j = None
@@ -876,13 +752,9 @@ class OPPHillClimbing(Model):
         params: SolveHCModelDTO,
     ) -> Optional[RouteSolution]:
         """
-        Move a random batch to a different picker (any picker, route
-        untouched) -- NOT restricted to cold-chain-eligible ones anymore
-        (see _generate_feasible_neighbor's docstring): the outer solve()
-        loop's _search_cost penalizes a resulting overrun and rejects the
-        move if it doesn't help, so this can freely explore reassigning a
-        currently-ineligible batch towards a picker that gets it closer to
-        (or all the way to) compliance.
+        Move a random batch to another picker, keeping its route. Any picker
+        is allowed: _search_cost penalizes an overrun, so the move can bring
+        an ineligible batch closer to compliance.
         """
         batches_with_orders = self._batches_with_orders_cache
         if not batches_with_orders:
@@ -960,7 +832,7 @@ class OPPHillClimbing(Model):
         return output_graph
 
     def _build_solution_info(self, solution: RouteSolution, objective_value: float, params: SolveHCModelDTO) -> dict:
-        """Build solution information dictionary for OutputHandler (compatible with opp_aco's format)."""
+        """Build the solution information dictionary for OutputHandler."""
         solution_info = {
             "status": "optimal",
             "objective_value": objective_value,
@@ -1016,10 +888,6 @@ class OPPHillClimbing(Model):
         """
         T_exec_pb = T_setup + T_pick * sum(C_n)          [fixed, no speed]
                   + (T_travel * travel_distance + service_time) / V_p[picker]
-        (same formula as RouteEvaluator._calculate_batch_execution_time --
-        kept here too since this copy also drives the reported
-        batch_times/batch_completions/tardiness/earliness, same split
-        opp_hc/opp_aco use between the search's evaluator and this
-        reporting-only helper).
+        Same formula as RouteEvaluator's; this copy feeds the reported times.
         """
         return self._T_exec_pb(batch, route, picker, params.extract_batch_assignments(), params)

@@ -12,10 +12,8 @@ from tests.shared_scenarios.functional.scenario_02 import two_orders_two_aisles
 
 
 class Case02(ExactModelTestCase):
-    """
-    Test 2.1: Medium. 8 vertex, 8 edges, 2 orders, 2 missions.
-    Purpose: To test the functionality of the model when it has to follow a route.
-    """
+    """Medium instance: 8 vertices, 8 edges, 2 orders, 2 batches. Each batch has
+    to follow a route through several locations."""
 
     def test_two_orders_two_aisles(self):
         """Case 2a."""
@@ -45,16 +43,16 @@ class Case02(ExactModelTestCase):
         M = 1000.0
 
         due_date = {"O1": 15.0, "O2": 15.0}
-        # Adaptación de variables para el formato ZIMPL V4
+        # Parameter names of the ZIMPL models
         A_ni = a if "a" in locals() else {}
         B_nb = y if "y" in locals() else {}
         C_n = cap_n if "cap_n" in locals() else {}
         T_due_n = due_date if "due_date" in locals() else {}
 
-        # Tiempo de servicio por defecto (si V2 no lo tenía explícito)
+        # No service time at any location
         S_i = {v: 0.0 for v in V}
 
-        # Generación de conjunto de Arcos válidos E y distancias D_ij
+        # Arcs (E) and distances (D_ij) of the graph
         E = set()
         D_ij = {}
         for i in location_graph.get_vertices():
@@ -120,7 +118,7 @@ class Case02(ExactModelTestCase):
             status, ("optimal", "feasible"), "El modelo no encontró una solución."
         )
 
-        # Aserción Genérica de V4: Cada lote se asigna a 1 picker
+        # Every batch is assigned to exactly one picker
         assignments = {b: 0 for b in B}
         for key, val in var_values.items():
             if key.lower().startswith("x_pb") and val > 0.5:
@@ -135,7 +133,7 @@ class Case02(ExactModelTestCase):
                 f"El lote {b} no fue asignado exactamente a un picker.",
             )
 
-        # Extracción de grafo resultante
+        # Graph of the arcs the solution uses
         active_arcs = extract_active_arcs(var_values, B)
         output_graph = OPPLocationGraph(
             depot_node=location_graph.get_depot(), final_node=location_graph.get_final()
@@ -173,7 +171,6 @@ class Case02(ExactModelTestCase):
             "El modelo no encontró una solución.",
         )
         self.assertEqual(output_graph, expected_graph)
-        # --- NUEVAS VALIDACIONES INTELIGENTES V4 ---
         if len(P) > 1 and len(B) > 1:
             self.assert_workload_balance(var_values, P, B, max_difference=1)
             

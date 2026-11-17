@@ -13,11 +13,10 @@ class Case12(ExactModelTestCase):
     """
     Case 12 has no active tests.
 
-    It checked that the orders of a batch fit in the cart (12 orders, 6 missions,
-    3 pickers, two missions per picker and two orders per mission), but the
-    models take the batch composition as data and no longer evaluate the cart
-    capacity, so the check no longer applies. The vehicle capacity is validated
-    before solving instead (models/utils/input_validation.py; see case 25d).
+    Whether the orders of a batch fit in the cart is not decided by the models,
+    which take the batch composition as data: the vehicle capacity is validated
+    before solving (models/utils/input_validation.py; see case 25d). The number
+    is kept so that the cases stay numbered continuously.
     """
 
 

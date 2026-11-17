@@ -1,3 +1,3 @@
 """
-Utilities for OPP Ant Colony Optimization (picker speed + cold chain).
+Utilities of OPP-ACO: objective evaluation, constraint validation and output.
 """
