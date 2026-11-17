@@ -67,10 +67,10 @@ raiz-del-proyecto/
 Los escenarios no viven dentro de cada modelo: están todos en `tests/shared_scenarios/`.
 
 
-### 3. Resolución Dinámica de Rutas (sys.path.insert)
-Para asegurar que cualquier test o script sea ejecutable de forma directa desde la terminal o el IDE sin fallas de importación (ModuleNotFoundError), se utiliza un hack estricto de resolución dinámica del path de ejecución.
+### 3. Ejecución e imports
+Todo se ejecuta desde la raíz del repositorio con `python -m` (`python -m tests.run_suite ...`, `python -m scripts.check_repo`, `python -m experiments...`), y todos los imports son absolutos a partir de la raíz (`from models.opp_hc import ...`). No se admiten imports relativos.
 
-* El Snippet Obligatorio: En la cabecera de todo archivo ejecutable principal (test, script de estrés, ejemplo de uso), se DEBE incluir exactamente el siguiente bloque de código antes de cualquier importación local:
+* **Archivos que además se ejecutan directamente:** Los casos de test y los scripts que también se corren como archivo suelto (por ejemplo desde el IDE) llevan, antes de cualquier import local, exactamente este bloque:
 
 ```python
 import sys
@@ -78,11 +78,10 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 ```
 
-    (Nota: El número de saltos de directorio ".." debe ajustarse exactamente según la profundidad del archivo respecto a la raíz del proyecto para que el path apunte siempre al root).
+    (El número de saltos `".."` se ajusta a la profundidad del archivo para que el path apunte a la raíz.)
 
-* ¿Para qué se usa? Permite que Python reconozca la raíz del proyecto como el directorio de búsqueda de módulos prioritario, garantizando que los entornos virtuales y entornos de CI/CD funcionen de manera idéntica.
-
-* Prohibición Absoluta: NO se permite el uso de variables de entorno manuales, manipulación con sys.path.append(), inicializaciones con pathlib para alterar el sys path, ni ninguna otra variante sintáctica. Tampoco se admiten imports relativos en archivos ejecutables. Todos los imports deben ser absolutos a partir del root del proyecto (from models.opp_hc import ...).
+* Los módulos que solo se importan o se corren con `python -m` no lo llevan.
+* **Prohibición:** No se usa ninguna otra forma de alterar el path (`sys.path.append()`, `pathlib`, variables de entorno manuales).
 
 ### 4. Convenciones para la Creación de Tests
 El marco de validación científica de la tesis exige que los cuatro modelos resuelvan los mismos casos bajo las mismas condiciones.
@@ -100,23 +99,20 @@ El marco de validación científica de la tesis exige que los cuatro modelos res
 ### 5. Convenciones de Documentación (Docs Conventions)
 
 #### 5.1. Código Fuente (Módulos, Clases y Métodos)
-Los comentarios deben ser en inglés.
-Se debe utilizar obligatoriamente el formato de Docstrings de Google (PEP 257) para documentar:
-1.  **Propósito:** Breve descripción del objetivo del componente.
-2.  **Argumentos (`Args`):** Enumeración de parámetros indicando nombre, tipo y descripción.
-3.  **Retornos (`Returns`):** Tipo de dato devuelto y significado.
+Los comentarios y docstrings se escriben en inglés.
+Cada módulo, clase y método público lleva un docstring que dice su propósito y, sobre todo, el porqué de lo que no es evidente (una decisión de diseño, una tolerancia, un caso borde). Cuando los parámetros o el valor devuelto no se entienden por su nombre y su tipo, se documentan con las secciones `Args` y `Returns` del formato de Google.
 
 *Ejemplo en código:*
 ```python
 def validate_vehicle_capacity(self, route: list, batch_id: int) -> bool:
-    """Comprueba que la carga total de las órdenes asignadas al lote no exceda la capacidad del vehículo.
+    """Check that the load of the orders assigned to the batch fits in the vehicle.
 
     Args:
-        route (list): Lista ordenada de nodos visitados en el viaje.
-        batch_id (int): Identificador del lote bajo evaluación.
+        route (list): Ordered list of the nodes visited in the trip.
+        batch_id (int): The batch under evaluation.
 
     Returns:
-        bool: True si la ruta es factible a nivel de capacidad, False en caso contrario.
+        bool: True if the route is feasible for the capacity, False otherwise.
     """
 ```
 
@@ -129,12 +125,13 @@ Los métodos de prueba no deben documentar la mecánica del código, sino la **i
 
 ### 6. Convenciones de Arquitectura: Herencia, DTOs y Patrón Observer
 
-* **Herencia de Modelos:** Todo solver debe heredar de la clase base abstracta `Model` (`models/base/model.py`). Esto obliga a implementar la firma unificada del método `solve()` y hereda los mecanismos para interactuar con observadores.
-* **Encapsulamiento mediante DTOs:** Queda estrictamente **prohibido** el paso de parámetros primitivos sueltos en las firmas de los métodos principales de inicialización o resolución. Toda la información de entrada debe viajar encapsulada en objetos contenedores (`ModelDTO`, `SolveModelDTO`).
+* **Modelos exactos:** OPP-Split y OPP-Mono son archivos ZIMPL (`.zpl`) que resuelve SCIP; no tienen clase Python. Los puntos siguientes sobre herencia y Observer aplican a las heurísticas (OPP-HC, OPP-ACO).
+* **Herencia de Modelos:** Toda heurística debe heredar de la clase base abstracta `Model` (`models/base/model.py`). Esto obliga a implementar la firma unificada del método `solve()` y hereda los mecanismos para interactuar con observadores.
+* **Encapsulamiento mediante DTOs:** Queda estrictamente **prohibido** el paso de parámetros primitivos sueltos en las firmas de los métodos principales de inicialización o resolución. Toda la información de entrada debe viajar encapsulada en objetos contenedores (`ModelDTO`, `SolveModelDTO` y sus subclases `SolveHCModelDTO`, `SolveAcoModelDTO`).
 * **Patrón Observer para Salidas (Output):** La lógica de cálculo matemática está desacoplada al 100% de la lógica de visualización o guardado de resultados.
     * Un modelo **NUNCA** debe contener sentencias `print()` de resultados intermedios, ni guardar archivos CSV o logs de solución dentro de su algoritmo principal.
     * Al finalizar el cálculo, el modelo debe invocar obligatoriamente a `self.notify(result_data)`.
-    * Cada modelo debe tener asignado su propio `utils/output_handler.py` que herede de `Observer` (`observer/observer.py`). Este handler se acopla dinámicamente en tiempo de ejecución (normalmente en los métodos de configuración de los tests) mediante `model.attach(handler)`.
+    * Cada heurística debe tener asignado su propio `utils/output_handler.py` que herede de `Observer` (`observer/observer.py`). Este handler se acopla dinámicamente en tiempo de ejecución (normalmente en los métodos de configuración de los tests) mediante `model.attach(handler)`.
 
 ---
 
