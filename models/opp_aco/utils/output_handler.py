@@ -71,7 +71,7 @@ class OutputHandler(Observer):
             if batch_completions:
                 print("Batch Completion Times (c_b):")
                 for batch, completion_time in sorted(batch_completions.items()):
-                    print(f"  v_{batch} (Batch {batch}): {completion_time:.4f}")
+                    print(f"  c_{batch} (Batch {batch}): {completion_time:.4f}")
                 print("-" * 50)
 
             tardiness = solution_info.get("tardiness", {})

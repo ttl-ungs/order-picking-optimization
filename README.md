@@ -18,7 +18,8 @@ Sequencing and Picking Routing*.
 | OPP-HC | `models/opp_hc/` | Hill Climbing heuristic (Python). |
 | OPP-ACO | `models/opp_aco/` | Ant Colony Optimization heuristic (Python). |
 
-All four solve the same cases: the 38 functional cases and the 19 stress scenarios of the thesis.
+All four solve the same cases: the 38 functional cases (37 in `tests/functional_cases/` plus case 38,
+which each exact model holds as a test of its own) and the 19 stress scenarios of the thesis.
 The exact models are checked against the exact optimum (objective and routes); the heuristics are
 checked on the status, and their solutions are verified against OPP-Mono (`verification/`).
 

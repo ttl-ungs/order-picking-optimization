@@ -5,8 +5,8 @@ Data produced by the runs; nothing here is code. `experiments/` and `verificatio
 ```
 results/
 ├── <model>/<tier>/             opp_split, opp_mono, opp_hc, opp_aco; tier = functional | stress
-│   ├── output_<model>_<tier>_tests.csv      the consolidated run that counts (fixed name, no timestamp)
-│   └── solutions/<run>/*.json               solutions saved with WRITE_SOLUTIONS=1 (heuristics only)
+│   ├── output_<model>_<tier>_tests.csv      the consolidated run that counts (fixed name, no timestamp; opp_split stress: ..._tests_parallel.csv, Stage 1 on 6 workers)
+│   └── solutions/<run>/*.json               solutions saved with WRITE_SOLUTIONS=1
 ├── <model>/<study>/            studies of a model: ablation, pheromone, seeds (opp_aco), budget (opp_hc)
 ├── compliance/<model>/<tier>/  verification of the heuristics' saved solutions against opp_mono
 ├── comparability/              which results can be compared (registry), the cross with the heuristics, Split vs Mono
