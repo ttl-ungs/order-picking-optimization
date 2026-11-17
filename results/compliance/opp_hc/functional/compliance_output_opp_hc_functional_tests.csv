@@ -11,7 +11,7 @@ test_functional_cases.Case17.test_branched_single_mission_route,opp_hc,compliant
 test_functional_cases.Case21.test_bridge_disconnected_required_location,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
 test_functional_cases.Case26.test_bridge_disconnected_required_location_with_capacities,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
 test_functional_cases.Case26.test_bridge_earliness_order_size__1,opp_hc,compliant,597462.5,597462.5,optimal,21087.5,optimal,597462.5,False,,,,,0.1376957893371582
-test_functional_cases.Case26.test_bridge_earliness_order_size__2,opp_hc,compliant,595505.0,595505.0,optimal,22697.0,optimal,595505.0,False,,,,,0.09675383567810059
+test_functional_cases.Case26.test_bridge_earliness_order_size__2,opp_hc,compliant,596853.5,596853.5,optimal,21348.5,optimal,596853.5,False,,,"SCIP levels ran on the routes' subgraph: 12 of 12 nodes, 13 of 30 arcs",,0.2904224395751953
 test_functional_cases.Case26.test_bridge_shared_locations_across_batches,opp_hc,compliant,2463.0,2463.0,optimal,2463.0,optimal,2463.0,False,,,,,0.09943795204162598
 test_functional_cases.Case26.test_bridge_tardiness_beta_picking__1,opp_hc,compliant,5325.0,5325.0,optimal,5325.0,optimal,5325.0,False,,,,,0.11008524894714355
 test_functional_cases.Case26.test_bridge_tardiness_beta_picking__2,opp_hc,compliant,13479.0,13479.0,optimal,13479.0,optimal,13479.0,False,,,,,0.09901952743530273
