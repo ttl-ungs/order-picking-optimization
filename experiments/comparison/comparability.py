@@ -35,8 +35,8 @@ import os
 
 import pandas as pd
 
-from experiments.common.config import OUTPUTS_ROOT
-from experiments.common.load import _extract_instance, _load_sources, _pick_sources
+from experiments.common.config import OUTPUTS_ROOT, result_csv
+from experiments.common.load import _extract_instance, load_results
 from tests.infra.factories.functional_instances import FIXTURE_PATH, case_instances, load_fixtures
 
 OUTPUT_PATH = os.path.join(OUTPUTS_ROOT, "comparability", "comparability_split_vs_heuristics.csv")
@@ -83,8 +83,7 @@ def functional_rows(fixture_path=FIXTURE_PATH):
 
 
 def stress_rows():
-    sources, _ = _pick_sources("opp_split", "stress")
-    split_rows = _with_case(_load_sources(sources))
+    split_rows = _with_case(load_results("opp_split", "stress"))
     rows = []
     for _, row in split_rows.iterrows():
         instance = _extract_instance(row["test"])
@@ -154,10 +153,9 @@ def _seconds(total_time):
 
 def _heuristic_rows(model_dir, tier):
     """One row per instance of the heuristic's CSV that the registry covers."""
-    sources, _ = _pick_sources(model_dir, tier)
-    if not sources:
+    if not os.path.exists(result_csv(model_dir, tier)):
         return pd.DataFrame(columns=["instance", "obj_val", "total_time", "source_file"])
-    return _with_case(_load_sources(sources))
+    return _with_case(load_results(model_dir, tier))
 
 
 def _split_functional_times(registry):
@@ -168,10 +166,9 @@ def _split_functional_times(registry):
     fixture has a single instance for it, and the CSV's objective matches
     the fixture's; otherwise the time is left empty.
     """
-    sources, _ = _pick_sources("opp_split", "functional")
-    if not sources:
+    if not os.path.exists(result_csv("opp_split", "functional")):
         return {}
-    split_rows = _with_case(_load_sources(sources)).set_index(["case", "instance"])
+    split_rows = _with_case(load_results("opp_split", "functional")).set_index(["case", "instance"])
     functional = registry[(registry["tier"] == "functional") & registry["heuristic_instance"].notna()]
     instances_per_test = functional.groupby(["case", "split_test"]).size()
     times = {}
@@ -203,7 +200,7 @@ def build_results(registry):
       the Split timeouts it's a lower bound, the Split having been cut at its time
       limit: speedup_is_lower_bound).
     """
-    split_stress = _with_case(_load_sources(_pick_sources("opp_split", "stress")[0])).set_index(["case", "instance"])
+    split_stress = _with_case(load_results("opp_split", "stress")).set_index(["case", "instance"])
     split_functional_times = _split_functional_times(registry)
     rows = []
     for model_dir in HEURISTICS:

@@ -26,45 +26,12 @@ SCENARIOS = ["functional", "stress"]
 # The two heuristics (the models whose own randomness a seed study measures).
 HEURISTIC_MODELS = ["opp_hc", "opp_aco"]
 
-# Stress tests 01-03 (grid_stress_scenario): the scenarios that keep W_c = 9, unlike
-# the designed ones (04-19, W_c = 27, see stress_scenarios_designed.py).
-GRID_STRESS_INSTANCES = (
-    "test_25_orders_per_batch_30_batches_100x100",
-    "test_10_orders_per_batch",
-    "test_8_orders_per_batch_7x7_320_orders",
-)
-
-# (model_label, scenario) -> exact filename (relative to its output dir),
-# or a list of sources merged in order: each source is a filename (all its
-# rows) or (filename, instance names to take from it); when two sources
-# have the same instance, the earlier source wins.
-# Only labels present in MODEL_DIRS are ever looked up here (see
-# experiments/common/load.py).
-LATEST_FILE_OVERRIDES = {
-    # The results that count are consolidated runs under fixed names (no
-    # timestamp), whatever a later run writes next to them.
-    ("opp_mono", "functional"): "output_opp_mono_functional_tests.csv",
-    # Stress 04-19 use W_c = 27 (to rule out the voluntary-wait exploit of the
-    # exact models), a different objective function than 01-03 (W_c = 9). Mono
-    # was only run on 01-04 with the current stress suite (04 timed out at
-    # 40 min), so only those are read from its file; the rest are reported as
-    # missing instead of being taken from runs with W_c = 9.
-    ("opp_mono", "stress"): [
-        ("output_opp_mono_stress_tests.csv",
-         GRID_STRESS_INSTANCES + ("test_realistic_crew_7x7_warehouse",)),
-    ],
-    ("opp_split", "functional"): "output_opp_split_functional_tests.csv",
-    # opp_hc / opp_aco: one row per current test, every row taken from a run
-    # saved with WRITE_SOLUTIONS, so each links to its solution JSON
-    # (solution_file) and to its row in results/compliance/ (all verified
-    # against opp_mono). opp_aco's 100x100 row (objective 988,252) includes a
-    # 4-minute laptop suspension, so it is 6.9% above a discarded run without
-    # a saved solution (924,536).
-    ("opp_hc", "functional"): "output_opp_hc_functional_tests.csv",
-    ("opp_hc", "stress"): "output_opp_hc_stress_tests.csv",
-    ("opp_aco", "functional"): "output_opp_aco_functional_tests.csv",
-    ("opp_aco", "stress"): "output_opp_aco_stress_tests.csv",
-    # opp_split stress, Stage 1 on 6 workers ("_parallel"): the timeouts (40
-    # min) are kept from earlier runs of the same scenarios.
-    ("opp_split", "stress"): "output_opp_split_stress_tests_parallel.csv",
-}
+# The results that count are consolidated runs under a fixed name, without a
+# timestamp: results/<model>/<tier>/output_<model>_<tier>_tests.csv. A new run
+# writes a timestamped file next to it, which nothing reads until it replaces
+# the consolidated one. OPP-Split's stress run solved Stage 1 on 6 workers,
+# hence its "_parallel" suffix.
+def result_csv(model: str, tier: str) -> str:
+    """Path of the consolidated results CSV of a model and tier."""
+    suffix = "_parallel" if (model, tier) == ("opp_split", "stress") else ""
+    return os.path.join(OUTPUTS_ROOT, MODEL_DIRS[model], tier, f"output_{model}_{tier}_tests{suffix}.csv")
