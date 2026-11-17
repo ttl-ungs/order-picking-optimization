@@ -2,7 +2,7 @@ from typing import Dict, Set
 
 class SolveModelDTO:
     """The parameters of the problem: objective weights, capacities, the
-    visit matrix (A), the batch composition (B_nb), times, due dates and the
+    visit matrix (A_ni), the batch composition (B_nb), times, due dates and the
     big-M. The heuristics' DTOs extend it with their own parameters."""
 
     def __init__(self):
@@ -19,7 +19,6 @@ class SolveModelDTO:
         self._S: dict = None
         self._T_due_n: dict = None
         self._M: float = None
-        self._X: dict = None
         self._B_nb: dict = None
         self._seed: int = None
 
@@ -126,14 +125,6 @@ class SolveModelDTO:
     @M.setter
     def M(self, value: float):
         self._M = value
-
-    @property
-    def X(self) -> dict:
-        return self._X
-
-    @X.setter
-    def X(self, value: dict):
-        self._X = value
 
     @property
     def B_nb(self) -> dict:
