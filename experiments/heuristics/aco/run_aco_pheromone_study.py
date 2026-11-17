@@ -83,7 +83,7 @@ def main(argv=None):
                     print(f"[{test_id}] a={alpha} b={beta} rho={rho} seed {seed}: "
                           f"obj {result['obj_val']} ({gap_text}), {result['elapsed_s']:.1f}s")
 
-    print(f"\nResultados en {path}")
+    print(f"\nResults in {path}")
 
 
 if __name__ == "__main__":

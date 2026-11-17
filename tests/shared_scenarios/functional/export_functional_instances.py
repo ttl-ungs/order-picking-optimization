@@ -189,7 +189,7 @@ def main():
              entry["not_comparable_reason"]) = comparability(entry)
         if not new:
             not_captured.append(name)
-        print(f"{name}: {[(e['split_status'], e['split_obj'], e['not_comparable_reason']) for e in new] or 'sin instancia (no llega al solver)'}")
+        print(f"{name}: {[(e['split_status'], e['split_obj'], e['not_comparable_reason']) for e in new] or 'no instance (never reaches the solver)'}")
 
     with open(FIXTURE_PATH, "w", encoding="utf-8") as f:
         json.dump({
@@ -199,7 +199,7 @@ def main():
             "not_captured": sorted(not_captured),
             "cases": {name: case_of[name] for name in list(EXCLUDED) + sorted(not_captured)},
         }, f, indent=1, sort_keys=True)
-    print(f"\n{len(instances)} instancias en {FIXTURE_PATH}")
+    print(f"\n{len(instances)} instances in {FIXTURE_PATH}")
 
 
 if __name__ == "__main__":

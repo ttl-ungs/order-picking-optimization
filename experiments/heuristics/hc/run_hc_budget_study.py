@@ -124,7 +124,7 @@ def main(argv=None):
                     print(f"[{test_id}] seed {seed} {max_it}/{max_imp}: {result['status']} obj {result['obj_val']} "
                           f"({delta_text}), {result['iterations_run']} it, {result['elapsed_s']:.1f}s", flush=True)
 
-    print(f"\nResultados en {path}")
+    print(f"\nResults in {path}")
 
 
 if __name__ == "__main__":

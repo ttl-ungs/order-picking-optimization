@@ -101,8 +101,6 @@ class Case18(ExactModelTestCase):
                 if not output_graph.has_edge(i, j):
                     output_graph.add_edge(i, j, location_graph.get_distance(i, j))
 
-        print("Output graph:", output_graph.to_string())
-
         self.assertIn(
             status,
             ("optimal", "feasible"),

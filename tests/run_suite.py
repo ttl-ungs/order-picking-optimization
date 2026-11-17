@@ -66,7 +66,7 @@ def main(argv=None):
         parser.error(f"No such directory: {start_dir}")
 
     if args.id:
-        print(f"Modo individual: casos {', '.join(args.id)}")
+        print(f"Single cases: {', '.join(args.id)}")
 
     timeout_minutes = args.timeout_minutes or (
         STRESS_TEST_TIMEOUT_MINUTES if args.tier == "stress" else TEST_TIMEOUT_MINUTES

@@ -131,7 +131,7 @@ Los métodos de prueba no deben documentar la mecánica del código, sino la **i
 * **Patrón Observer para Salidas (Output):** La lógica de cálculo matemática está desacoplada al 100% de la lógica de visualización o guardado de resultados.
     * Un modelo **NUNCA** debe contener sentencias `print()` de resultados intermedios, ni guardar archivos CSV o logs de solución dentro de su algoritmo principal.
     * Al finalizar el cálculo, el modelo debe invocar obligatoriamente a `self.notify(result_data)`.
-    * Cada heurística debe tener asignado su propio `utils/output_handler.py` que herede de `Observer` (`observer/observer.py`). Este handler se acopla dinámicamente en tiempo de ejecución (normalmente en los métodos de configuración de los tests) mediante `model.attach(handler)`.
+    * Cada heurística debe tener asignado su propio `utils/output_handler.py` que herede de `Observer` (`observer/observer.py`). Este handler se acopla en tiempo de ejecución mediante `model.attach(handler)` cuando se quiere ver el resultado; hoy nada en el repositorio lo acopla. Los tests de las heurísticas acoplan su propio observador, `SolutionInfoCapture`, para verificar la solución notificada.
 
 ---
 
