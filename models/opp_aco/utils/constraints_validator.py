@@ -30,7 +30,7 @@ from models.utils.base_constraints_validator import (
     ConstraintsValidator as BaseConstraintsValidator,
 )
 from models.opp_aco.utils import exec_time
-from models.opp_split.utils.cold_chain_validation import COLD_CHAIN_TOLERANCE
+from models.utils.cold_chain_validation import COLD_CHAIN_TOLERANCE
 
 
 class ConstraintsValidator(BaseConstraintsValidator):

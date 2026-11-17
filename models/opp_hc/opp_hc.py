@@ -77,7 +77,7 @@ from dtos.opp.model_dto import ModelDTO
 from models.utils.route_solution import RouteSolution
 from models.opp_hc.utils.route_evaluator import RouteEvaluator
 from models.opp_hc.utils.constraints_validator import ConstraintsValidator
-from models.opp_split.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
+from models.utils.cold_chain_validation import batches_without_eligible_picker, invalid_speeds
 from models.utils.input_validation import orders_without_exactly_one_batch
 from models.utils.sla import sla_on_time_pct
 

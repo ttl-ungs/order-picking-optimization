@@ -90,7 +90,7 @@ param T_exec_pb[<p,b> in P * B] :=
 #           que el solver devuelva "infactible" sin mas explicacion.
 #           Tolerancia +EPS: misma que usan models/opp_hc y
 #           models/opp_aco para el mismo chequeo (y que ya usaba
-#           models/opp_split/utils/cold_chain_validation.py, que replica este
+#           models/utils/cold_chain_validation.py, que replica este
 #           set en Python) -- antes esta linea comparaba con <= estricto,
 #           sin margen, mientras esos otros si lo tenian (hallazgo de
 #           auditoria 2026-09-10): un T_exec_pb == T_cold con error de

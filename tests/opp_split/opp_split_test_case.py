@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from tests.infra.zimpl.dat_files_builder import build_dat_files, write_indexed_dat, write_scalar_dat
-from models.opp_split.utils.cold_chain_validation import (
+from models.utils.cold_chain_validation import (
     batches_without_eligible_picker, invalid_speeds,
 )
 from dtos.opp.solve_result import SolveResult

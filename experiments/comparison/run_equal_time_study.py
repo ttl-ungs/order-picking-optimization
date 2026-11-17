@@ -41,7 +41,7 @@ import time
 from datetime import datetime
 
 from experiments.common.config import OUTPUTS_ROOT
-from models.opp_split.utils.cold_chain_validation import batches_without_eligible_picker
+from models.utils.cold_chain_validation import batches_without_eligible_picker
 from models.utils.solve_registry import get_last
 from tests.infra.zimpl.dat_files_builder import build_dat_files, write_indexed_dat, write_scalar_dat
 from tests.infra.zimpl.zpl_utils import solve_zpl
