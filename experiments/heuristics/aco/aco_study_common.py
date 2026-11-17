@@ -110,8 +110,8 @@ def warn_if_hash_seed_unset():
     # PYTHONHASHSEED is fixed, so two runs with the same Seed can differ
     # slightly (149,217.67 vs 149,219.75 on 7x7).
     if os.environ.get("PYTHONHASHSEED") is None:
-        print("AVISO: PYTHONHASHSEED no está fijado; los resultados pueden variar levemente entre corridas. "
-              "Para reproducibilidad exacta: PYTHONHASHSEED=0 python -m ...")
+        print("WARNING: PYTHONHASHSEED is not set; results may vary slightly between runs. "
+              "For an exactly reproducible run: PYTHONHASHSEED=0 python -m ...")
 
 
 def output_path(kind):

@@ -177,7 +177,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     source_path, heuristic = latest_heuristic_results(args.budget_from)
-    print(f"Presupuestos tomados de {source_path}")
+    print(f"Budgets taken from {source_path}")
 
     out_dir = os.path.join(OUTPUTS_ROOT, "equal_time")
     os.makedirs(out_dir, exist_ok=True)
@@ -190,7 +190,7 @@ def main(argv=None):
             name, build = SCENARIOS[test_id]
             row = heuristic.get(name)
             if row is None or row["status"] != "ok":
-                print(f"[{test_id}] {name}: {args.budget_from} no tiene resultado ok, se saltea")
+                print(f"[{test_id}] {name}: {args.budget_from} has no ok result, skipped")
                 continue
             budget = float(row["total_time"])
             heuristic_obj = float(row["obj_val"])
@@ -207,10 +207,10 @@ def main(argv=None):
                 })
                 f.flush()
                 shown = f"{obj:.2f}" if obj is not None else "sin solucion"
-                print(f"[{test_id}] {model}: {status}, obj {shown} (heuristica {heuristic_obj:.2f}), "
-                      f"presupuesto {budget:.1f}s, usado {elapsed:.1f}s")
+                print(f"[{test_id}] {model}: {status}, obj {shown} (heuristic {heuristic_obj:.2f}), "
+                      f"budget {budget:.1f}s, used {elapsed:.1f}s")
 
-    print(f"\nResultados en {out_path}")
+    print(f"\nResults in {out_path}")
 
 
 if __name__ == "__main__":

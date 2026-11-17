@@ -2,7 +2,7 @@ from typing import Dict, Set
 
 class SolveModelDTO:
     """The parameters of the problem: objective weights, capacities, the
-    visit matrix (A_ni), the batch composition (B_nb), times, due dates and the
+    visit matrix (A, the model's A_ni), the batch composition (B_nb), times, due dates and the
     big-M. The heuristics' DTOs extend it with their own parameters."""
 
     def __init__(self):

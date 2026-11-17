@@ -265,9 +265,9 @@ class TestRunner:
             print("\nAll tests passed.")
 
         if self.write_csv:
-            print(f"\n✅ Resultados guardados en:\n{self.csv_path}")
+            print(f"\n✅ Results written to:\n{self.csv_path}")
         if self.solutions_dir and os.path.isdir(self.solutions_dir):
-            print(f"\n✅ Soluciones guardadas en:\n{self.solutions_dir}")
+            print(f"\n✅ Solutions written to:\n{self.solutions_dir}")
 
     def write_results_csv(self, results: list):
         param_keys = list(

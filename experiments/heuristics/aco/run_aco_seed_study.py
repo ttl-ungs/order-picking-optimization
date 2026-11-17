@@ -92,7 +92,7 @@ def main(argv=None):
             print(f"[{n}/{len(tasks)}] {row['id']} seed {row['seed']}: {row['status']} obj {row.get('obj_val')} "
                   f"({gap_text}), {row.get('elapsed_s')}s", flush=True)
 
-    print(f"\nResultados en {path}")
+    print(f"\nResults in {path}")
 
 
 if __name__ == "__main__":

@@ -259,12 +259,12 @@ def main():
     registry.to_csv(OUTPUT_PATH, index=False)
     summary = registry.groupby(["tier", "comparable_status", "comparable_objective"]).size()
     print(summary.to_string())
-    print(f"\n{len(registry)} filas en {OUTPUT_PATH}")
+    print(f"\n{len(registry)} rows in {OUTPUT_PATH}")
 
     results = build_results(registry)
     results.to_csv(RESULTS_PATH, index=False)
     print("\n" + _summarize_results(results))
-    print(f"\n{len(results)} filas en {RESULTS_PATH}")
+    print(f"\n{len(results)} rows in {RESULTS_PATH}")
 
 
 if __name__ == "__main__":

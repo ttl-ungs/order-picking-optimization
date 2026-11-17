@@ -93,7 +93,7 @@ def main(argv=None):
                     print(f"[{test_id}] {variant} seed {seed}: obj {result['obj_val']} ({gap_text}), "
                           f"{result['elapsed_s']:.1f}s")
 
-    print(f"\nResultados en {path}")
+    print(f"\nResults in {path}")
 
 
 if __name__ == "__main__":

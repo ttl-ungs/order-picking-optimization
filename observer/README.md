@@ -1,12 +1,15 @@
 # Observer
 
 `observer.py` defines `Observer`, the abstract receiver of the Observer pattern. A `Model`
-(`models/base/model.py`, the base class of the heuristics) keeps the observers given to `attach()` and
-calls their `update()` from `notify()`; the model never prints by itself.
+(`models/base/model.py`, the base class of the heuristics) keeps the observers given to `attach()` and,
+at the end of `solve()`, calls their `update()` through `notify()` with the full `solution_info`.
 
 Observers in the repository:
 
-- `models/opp_hc/utils/output_handler.py` and `models/opp_aco/utils/output_handler.py` — print the result.
-- `SolutionInfoCapture` in `tests/opp_hc/opp_hc_test_case.py` and `tests/opp_aco/opp_aco_test_case.py` — keeps the notified `solution_info` so the tests can assert on the assignment, the schedule and the cold chain.
+- `SolutionInfoCapture` in `tests/opp_hc/` and `tests/opp_aco/` (functional and stress test cases) — keeps the notified `solution_info` so the tests can assert on the assignment, the schedule and the cold chain.
+- `OutputHandler` in `models/opp_hc/utils/output_handler.py` and `models/opp_aco/utils/output_handler.py` — prints the full result. Nothing in the repository attaches it; attach it when you want that report (see the models' READMEs).
+
+The solvers also print on their own, outside the Observer: the reason when they return `"infeasible"`,
+and a one-line summary (execution time, iterations, final objective) before notifying.
 
 The exact models run through ZIMPL + SCIP from `tests/infra/zimpl/` and do not use it.

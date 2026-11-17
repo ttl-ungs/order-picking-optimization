@@ -137,10 +137,6 @@ class Case08(ExactModelTestCase):
             "El modelo no encontró una solución.",
         )
 
-        print("Output graph:", output_graph.to_string())
-        print("Expected graph:", expected_graph.to_string())
-
-        
         self.assertEqual(output_graph, expected_graph)
         if len(P) > 1 and len(B) > 1:
             self.assert_workload_balance(var_values, P, B, max_difference=1)

@@ -60,14 +60,15 @@ class OutputHandler(Observer):
             if batch_times:
                 print("Batch Execution Times (T_exec_pb):")
                 for batch, t_exec_val in sorted(batch_times.items()):
-                    print(f"  t_exec_{batch} (Batch {batch}): {t_exec_val:.4f}")
+                    picker = picker_assignments.get(batch, "?")
+                    print(f"  T_exec_pb[{picker}, {batch}]: {t_exec_val:.4f}")
                 print("-" * 50)
 
             batch_completions = solution_info.get("batch_completions", {})
             if batch_completions:
                 print("Batch Completion Times (c_b):")
                 for batch, completion_time in sorted(batch_completions.items()):
-                    print(f"  c_{batch} (Batch {batch}): {completion_time:.4f}")
+                    print(f"  c_b[{batch}]: {completion_time:.4f}")
                 print("-" * 50)
 
             tardiness = solution_info.get("tardiness", {})
@@ -80,7 +81,7 @@ class OutputHandler(Observer):
                 for order in sorted(all_orders):
                     ta = tardiness.get(order, 0)
                     ea = earliness.get(order, 0)
-                    print(f"  Order {order}: Tardiness (ta_{order})={ta:.4f}, Earliness (ea_{order})={ea:.4f}")
+                    print(f"  Order {order}: ta_n = {ta:.4f}, ea_n = {ea:.4f}")
                     total_tardiness += ta
                     total_earliness += ea
 
