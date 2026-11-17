@@ -1,4 +1,4 @@
-"""Functional cases shared by the exact models (monolithic and Split).
+"""Functional cases shared by the four models.
 
 Each module `case_NN.py` holds case NN of the thesis' functional tests, written
 once: it builds an instance, solves it with `self.solve(...)` or

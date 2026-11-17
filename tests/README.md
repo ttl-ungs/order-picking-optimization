@@ -8,27 +8,25 @@ and the 19 stress scenarios of the thesis.
 - `tests/functional_cases/` — `case_NN.py`, each functional case written once. A case builds an instance and solves it with `self.solve(...)` or `self.run_pipeline(...)`; it does not know which model runs it. Each test method carries its label in the docstring ("Case 24a"; letters follow the alphabetical order of the case's methods).
 - `tests/stress_cases/` — `case_NN.py`, each stress scenario written once; it calls `self.assert_stress_pipeline(scenario)`.
 - `tests/<model>/functional/` and `tests/<model>/stress/` — bind the model to the shared cases (`test_functional_cases.py`, `test_stress_cases.py`, using `bind_cases` and the model's adapter) and hold the tests of its own.
-- OPP-Split and OPP-Mono run the functional cases with their exact assertions (objective and routes). OPP-HC and OPP-ACO run the same instances through `test_functional_cases.py` (one test per instance of the functional cases, captured from OPP-Split's runs, with the same case class and test name as in the Split) and check the status against the Split's. See [Instances of the heuristics](#instances-of-the-heuristics).
+- The four models run the functional cases with the same scenarios and the same assertions; only the model changes. See [The heuristics on the functional cases](#the-heuristics-on-the-functional-cases).
 - Tests of their own, beyond the shared cases: OPP-Split (`test_case_24b.py`, the pre-flight check that no picker can run a batch within the cold-chain limit, and `test_case_38.py`), OPP-Mono (`test_case_38.py`), OPP-HC (`test_case_invalid_speed_rejected.py`, case 36c) and OPP-ACO (`test_case_invalid_speed_rejected.py`, case 36c, and `test_case_unreachable_required_location.py`).
 - `tests/shared_scenarios/` — graphs and scenarios shared by every model (`common/`, `functional/`, `stress/`).
-- `tests/infra/` — `execution/` (runner, config), `cases/` (`OPPTestCase`, `ExactModelTestCase`, `binding.py`, `route_assertions`), `factories/` (functional instances, scenario adapter, graphs) and `zimpl/` (helpers of the ZIMPL-based tests).
+- `tests/infra/` — `execution/` (runner, config), `cases/` (`OPPTestCase`, `ExactModelTestCase`, `HeuristicModelTestCase`, `binding.py`, `route_assertions`), `factories/` (the Split's functional instances, scenario adapter, graphs) and `zimpl/` (helpers of the ZIMPL-based tests).
 - `tests/run_suite.py` — single entry point to run a model's suite. Repo-wide checks and runs (`check_repo`, `run_all`) live in `scripts/`.
 
-## Instances of the heuristics
+## The heuristics on the functional cases
 
-The heuristics do not run the functional case classes: their assertions read the exact models'
-variables. Instead, `tests/shared_scenarios/functional/export_functional_instances.py` runs OPP-Split's
-functional suite and captures every scenario the Split writes to its `.dat` files, together with the
-Split's final status and objective, into `tests/shared_scenarios/functional/functional_instances.json`.
-`tests/infra/factories/functional_instances.py` turns each instance into one test of OPP-HC and OPP-ACO.
+The cases read the solution as the exact models' variables (`x_pb`, `c_pb`, `u_pb`, `c_b`, `r_b`,
+`z_ijb`, `ta_n`, `ea_n`). The heuristics' adapters (`OPPTestCaseHC`, `OPPTestCaseACO`, on
+`tests/infra/cases/heuristic_model_case.py`) solve the case's instance with the heuristic and return
+its solution under those names, so the case runs unchanged.
 
-- Excluded on purpose (`EXCLUDED`, with the reason in the JSON): `test_batch_is_delayed_while_early_orders_outweigh_completion_weight`, which checks that the Split waits voluntarily, something the heuristics do not model.
-- Not captured: case 36c, rejected before anything is written; each heuristic holds it as a test of its own.
-- Re-run the export (needs `zimpl` and SCIP) whenever an OPP-Split functional test or scenario changes:
+- `solve()` takes the instance the case just wrote with `build_dat_files()`; `run_pipeline()` takes the scenario.
+- Cases 06a, 06b and 37a fail on both heuristics: they assert that the batch waits until its due date to avoid earliness, and the heuristics do not wait.
 
-  ```bash
-  python -m tests.shared_scenarios.functional.export_functional_instances
-  ```
+`tests/shared_scenarios/functional/functional_instances.json` (exported from OPP-Split's runs with
+`python -m tests.shared_scenarios.functional.export_functional_instances`, needs `zimpl` and SCIP) is
+the Split's reference for the comparability registry, not a test input.
 
 ## Conventions for a case
 

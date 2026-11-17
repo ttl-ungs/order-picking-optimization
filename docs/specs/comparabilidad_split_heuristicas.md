@@ -14,7 +14,7 @@ Toda tabla o gráfico que compare el Split con las heurísticas debe filtrar por
 
 | Qué | Instancias de las heurísticas | Referencia del Split |
 |---|---|---|
-| **Funcional** | `<Caso>.<test del Split>[__<k>]` en `tests/opp_{aco,hc}/functional/test_functional_cases.py` (el mismo caso y nombre de test que en el Split; `__<k>` solo si un test tiene varias instancias) | Estado y objetivo por instancia en `tests/shared_scenarios/functional/functional_instances.json` |
+| **Funcional** | `<Caso>.<test del Split>[__<k>]` en los CSV funcionales de `opp_aco` y `opp_hc`: una fila por instancia, de las corridas del 2026-09-29, cuando las heurísticas resolvían cada instancia exportada por separado (`__<k>` solo si un test tiene varias instancias). Hoy corren los mismos casos que el Split (`tests/opp_{aco,hc}/functional/test_functional_cases.py`), con una fila por test | Estado y objetivo por instancia en `tests/shared_scenarios/functional/functional_instances.json` |
 | **Estrés** | Los casos de `tests/stress_cases/` (19 escenarios), con el mismo nombre de método en los CSV de los cuatro modelos | CSV de estrés de `opp_split`, combinados por `experiments.common.load`: 04–19 con W_c = 27 y 01–03 de las corridas consolidadas |
 | **Tiempo igual** | CSV de estrés de cada heurística | `results/equal_time/output_equal_time_<heurística>_*.csv`, donde el Split corre con el tiempo de la heurística como límite |
 
@@ -23,7 +23,7 @@ Toda tabla o gráfico que compare el Split con las heurísticas debe filtrar por
 ## Cómo se garantiza que sean los mismos datos
 
 - **Funcional.** `tests/shared_scenarios/functional/export_functional_instances.py` corre la suite funcional de `opp_split` y captura cada escenario en el momento en que el Split escribe sus archivos `.dat`. Guarda también el estado y el objetivo finales del Split.
-  - Las heurísticas resuelven exactamente ese escenario con `tests/infra/factories/scenario_adapter.py`.
+  - Las heurísticas corren los mismos casos funcionales que el Split: el mismo escenario y las mismas aserciones, con un adaptador que les da su solución con los nombres de las variables de los modelos exactos (`tests/infra/cases/heuristic_model_case.py`).
   - Donde el escenario no define velocidades ni límite de frío, se completan con V_p = 1,0 y T_cold = 10⁹, igual que hace el Split.
   - Hay que volver a correr el exportador si cambia un test o un escenario funcional del Split. Necesita zimpl y SCIP.
 - **Estrés.** Los tests de las dos heurísticas llaman al mismo constructor de escenario, con los mismos argumentos, que los del Split. Se verificó para los 19 el 2026-09-28.

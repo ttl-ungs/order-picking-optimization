@@ -1,6 +1,6 @@
 """
-Export opp_split's functional-test instances for the heuristic
-equivalence suite (see tests/infra/factories/functional_instances.py).
+Export opp_split's functional-test instances, the Split's reference for the
+comparability registry (see tests/infra/factories/functional_instances.py).
 
 Runs every test of tests/opp_split/functional (needs zimpl and SCIP) with two
 spies installed:

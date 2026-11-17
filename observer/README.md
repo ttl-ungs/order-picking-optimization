@@ -6,7 +6,7 @@ at the end of `solve()`, calls their `update()` through `notify()` with the full
 
 Observers in the repository:
 
-- `SolutionInfoCapture` in `tests/opp_hc/` and `tests/opp_aco/` (functional and stress test cases) — keeps the notified `solution_info` so the tests can assert on the assignment, the schedule and the cold chain.
+- `SolutionInfoCapture` in `tests/infra/cases/heuristic_model_case.py` (the heuristics' functional and stress test cases) — keeps the notified `solution_info` so the tests can assert on the assignment, the schedule and the cold chain.
 - `OutputHandler` in `models/opp_hc/utils/output_handler.py` and `models/opp_aco/utils/output_handler.py` — prints the full result. Attach it when you want that report (see the models' READMEs). The test runner attaches it to every solver the tests create when `PRINT_RESULTS=1` (see `.env.example`), through `Model.attach_to_new_instances()`, since the tests build their solvers themselves.
 
 The solvers also print on their own, outside the Observer: the reason when they return `"infeasible"`,

@@ -1,10 +1,12 @@
-"""Base class of the tests of the exact models (monolithic and Split).
+"""Base class of the shared functional cases.
 
-Both exact models write the same variables (x_pb, c_pb, r_b, z_ijb, ...), so
-the assertions that read a solution are the same for both and live here. What
-changes from one model to the other is where the .dat files are written
-(`dat_dir`) and how the model is solved (`solve`, `run_pipeline`): each model's
-adapter (OPPTestCaseMono, OPPTestCaseSplit) provides those.
+The cases read a solution as the exact models' variables (x_pb, c_pb, r_b,
+z_ijb, ...), so the assertions that read it are the same for every model and
+live here. What changes from one model to the other is where the .dat files are
+written (`dat_dir`) and how the model is solved (`solve`, `run_pipeline`): each
+model's adapter provides those (OPPTestCaseMono, OPPTestCaseSplit, and, through
+HeuristicModelTestCase, OPPTestCaseHC and OPPTestCaseACO, which return the
+heuristic's solution under the same names).
 """
 
 from models.utils.cold_chain_validation import COLD_CHAIN_TOLERANCE
