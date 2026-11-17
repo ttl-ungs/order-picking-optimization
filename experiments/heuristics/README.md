@@ -8,7 +8,7 @@ stress scenarios (`--id NN` is the number of `tests/stress_cases/case_NN.py`) an
 | --- | --- | --- | --- |
 | `hc/` | OPP-HC | `run_hc_budget_study.py` | Does the stress budget (`Max_it = 200`, `Max_imp = 60`) cut the search short? Also gives the seed-to-seed spread of the objective. |
 | `aco/` | OPP-ACO | `run_aco_ablation_study.py` | How much of the result comes from the ant colony itself and how much from each local-search component. |
-| `aco/` | OPP-ACO | `run_aco_pheromone_study.py` | How far does tuning the colony alone (`alpha`, `beta`, `rho`) move the result? |
+| `aco/` | OPP-ACO | `run_aco_pheromone_study.py` | How far does tuning the colony alone (`alpha`, `beta`, `rho` = the DTO's `Alpha`, `Beta`, `E`) move the result? |
 | `aco/` | OPP-ACO | `run_aco_seed_study.py` | How much does a different `Seed` change the result? |
 | `aco/` | OPP-ACO | `aco_study_common.py` | Helpers of the three ACO studies (not a study). |
 
