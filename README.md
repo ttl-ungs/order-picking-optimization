@@ -27,7 +27,7 @@ checked on the status, and their solutions are verified against OPP-Mono (`verif
 
 - `models/` — the four models, plus `base/` (abstract `Model`, location graph) and `utils/` (code shared by the heuristics and the pre-solve validations).
 - `dtos/` — parameter containers (`ModelDTO`, `SolveModelDTO`, `SolveHCModelDTO`, `SolveAcoModelDTO`, solve results and solution records).
-- `observer/` — the Observer pattern: models notify; each model's `utils/output_handler.py` prints.
+- `observer/` — the Observer pattern: the heuristics notify; each heuristic's `utils/output_handler.py` prints.
 - `tests/` — `functional_cases/` and `stress_cases/` hold each case once; each `tests/<model>/` binds a model to them (`bind_cases`) and holds the tests of its own; `shared_scenarios/` has the graphs and scenarios; `infra/` has the runner and helpers; `run_suite.py` is the entry point.
 - `results/` — CSVs of the runs: `results/<model>/<functional|stress>/`, studies of a model (`ablation`, `pheromone`, `seeds`, `budget`), `compliance/`, `comparability/` and `equal_time/`.
 - `verification/` — checks saved heuristic solutions against OPP-Mono and compares OPP-Split with OPP-Mono.
@@ -46,6 +46,8 @@ checked on the status, and their solutions are verified against OPP-Mono (`verif
 | [experiments/README.md](experiments/README.md) | Which experiments exist, for which models, and how they work. |
 | [verification/README.md](verification/README.md) | Checking the heuristics' solutions against OPP-Mono. |
 | [scripts/README.md](scripts/README.md) | Repository checks and CI. |
+| [observer/README.md](observer/README.md) | The Observer pattern and who uses it. |
+| [docs/README.md](docs/README.md) | The specs, the style guide and the generated reports. |
 | [docs/specs/comparabilidad_split_heuristicas.md](docs/specs/comparabilidad_split_heuristicas.md) | Which results of the exact models and the heuristics can be compared. |
 | [conventions.md](conventions.md) | The binding conventions. |
 
