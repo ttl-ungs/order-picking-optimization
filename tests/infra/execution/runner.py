@@ -106,7 +106,22 @@ def _save_solution(sr, test_name, solutions_dir, solve_data):
         solve_data["solution_file"] = f"ERROR: {e}"
 
 
-def _run_test_child(test_name, q, solutions_dir=None):
+def _attach_output_handlers():
+    """Make every OPP-HC and OPP-ACO solver created in this process print its
+    result through its own OutputHandler. The tests build the solvers
+    themselves, so the handler is registered on the classes."""
+    from models.opp_aco import OPPAntColonyOptimization
+    from models.opp_aco.utils.output_handler import OutputHandler as AcoOutputHandler
+    from models.opp_hc import OPPHillClimbing
+    from models.opp_hc.utils.output_handler import OutputHandler as HcOutputHandler
+
+    OPPHillClimbing.attach_to_new_instances(HcOutputHandler)
+    OPPAntColonyOptimization.attach_to_new_instances(AcoOutputHandler)
+
+
+def _run_test_child(test_name, q, solutions_dir=None, print_results=False):
+    if print_results:
+        _attach_output_handlers()
     start = time.time()
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromName(test_name)
@@ -148,9 +163,10 @@ class TestRunner:
 
     def __init__(
         self, timeout_minutes: int, write_csv: bool, model_name: str, test_type: str,
-        write_solutions: bool = False,
+        write_solutions: bool = False, print_results: bool = False,
     ):
         self.timeout_minutes = timeout_minutes
+        self.print_results = print_results
         self.TIMEOUT_MSG = f"{self.TIMEOUT_MSG} - {timeout_minutes}"
         self.write_csv = write_csv
 
@@ -196,7 +212,7 @@ class TestRunner:
         for test_id in test_ids:
             print(f"Running {test_id} (timeout: {self.timeout_minutes} min)")
             q = multiprocessing.Queue()
-            p = multiprocessing.Process(target=_run_test_child, args=(test_id, q, self.solutions_dir))
+            p = multiprocessing.Process(target=_run_test_child, args=(test_id, q, self.solutions_dir, self.print_results))
             p.start()
             p.join(timeout_seconds)
 

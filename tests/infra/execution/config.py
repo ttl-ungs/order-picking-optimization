@@ -15,6 +15,14 @@ WRITE_RESULTS_CSV = os.environ.get("WRITE_RESULTS_CSV", "").strip().lower() in (
     "yes",
 )
 
+# Print the full result of every OPP-HC and OPP-ACO solve through the model's
+# OutputHandler (the Observer). The exact models have no handler.
+PRINT_RESULTS = os.environ.get("PRINT_RESULTS", "").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+)
+
 # Keep each solution (instance + solution, JSON) next to the CSV, so that
 # verification/ can re-check it without running the suite again.
 WRITE_SOLUTIONS = os.environ.get("WRITE_SOLUTIONS", "").strip().lower() in (
