@@ -1,21 +1,15 @@
 """
-Shared T_exec_pb formula for opp_aco:
+The T_exec_pb formula of opp_aco, in one place for the solver, the evaluator
+and the validator:
 
     T_exec_pb[p, b] = fixed_time(b) + route_time(b) / V_p[p]
 
-where fixed_time(b) = T_setup + T_pick * sum(C_n over b's orders) does
-NOT depend on picker speed, and route_time(b) = T_travel * travel_distance +
-service_time is the part scaled by how fast the picker walks/scans.
+fixed_time(b) = T_setup + T_pick * sum(C_n over b's orders) does not depend
+on the picker; route_time(b) = T_travel * travel_distance + service_time is
+the part the picker's speed divides.
 
-Previously computed independently (and verified to compute the exact same
-formula) in three places -- opp_aco.py (route construction/reporting),
-route_evaluator.py (the search's objective function) and
-constraints_validator.py (cold-chain eligibility) -- extracted here so a
-future formula change only needs one edit instead of three kept in sync by
-hand.
-
-`route` throughout is the interior-only format RouteSolution stores
-(depot/final excluded); every caller adds them back via location_graph.
+`route` is always the interior-only list RouteSolution stores (without depot
+and final node).
 """
 
 from typing import Dict, List, Optional, Set
@@ -37,7 +31,7 @@ def calculate_route_distance(location_graph, route: List[str]) -> float:
 
 
 def fixed_time(orders: Set[str], C_n: Dict, T_setup: float, T_pick: float) -> float:
-    """Setup + picking time -- the part of T_exec_pb that does NOT depend on picker speed."""
+    """Setup + picking time: the part of T_exec_pb that does not depend on the picker."""
     picking_capacity = sum(C_n.get(o, 0) for o in orders) if isinstance(C_n, dict) else 0
     return T_setup + T_pick * picking_capacity
 
@@ -50,10 +44,8 @@ def route_time(
     distance: Optional[float] = None,
 ) -> float:
     """
-    Travel time (T_travel * distance) + service time -- the part of T_exec_pb
-    scaled by picker speed. Pass `distance` when the caller already
-    computed it, to avoid recomputing it again here (distance doesn't
-    depend on picker at all).
+    Travel + service time: the part of T_exec_pb the picker's speed divides.
+    `distance` may be passed when the caller already has it.
     """
     if not route:
         return 0.0

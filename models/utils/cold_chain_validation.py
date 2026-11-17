@@ -1,38 +1,25 @@
 """
-Pre-solve input validation for opp_split's Etapa 2 (opp_split_stage2_scheduling.zpl).
-Bug: opp_split_stage2_scheduling.zpl restricts x_pb's domain to PB_elig = {(p,b) : T_exec_pb[p,b] <= T_cold},
-so that`assign_exactly_one_picker` becomes a sum over an EMPTY set for that batch, and ZIMPL rejects that at
-COMPILE time.
-This mirrors models/utils/input_validation.py's role.
+Pre-solve validation of the picker speeds and the cold chain, shared by every
+model (all of them use T_exec_pb = fixed_time(b) + route_time(b) / V_p[p]).
 
-Shared by opp_split's own pre-solve pipeline, opp_hc and opp_aco (all
-three compute T_exec_pb = fixed_time(b) + route_time(b) / V_p[p]).
+OPP-Split's Stage 2 restricts x_pb to PB_elig = {(p, b) : T_exec_pb[p, b] <=
+T_cold}. For a batch with no eligible picker, assign_exactly_one_picker is a
+sum over an empty set, which ZIMPL rejects when it compiles the model; these
+checks report such an instance as infeasible before solving.
 """
 
-# Same tolerance opp_hc/opp_aco's own eligibility checks use
-# (T_exec_pb <= T_cold + 1e-9) -- kept in sync here so this shared
-# check can't be stricter than what those models actually enforce, which
-# would make it possible for a picker they'd accept to be reported as
-# ineligible by batches_without_eligible_picker (2026-09-10 audit finding:
-# opp_split_stage2_scheduling.zpl's PB_elig used a bare <=, with no epsilon at all).
+# Tolerance of every cold-chain comparison (T_exec_pb <= T_cold + 1e-9), here,
+# in the heuristics and in the ZIMPL models (EPS), so a batch with T_exec_pb
+# equal to T_cold up to rounding is eligible in all of them.
 COLD_CHAIN_TOLERANCE = 1e-9
 
 
 def invalid_speeds(V_p: dict) -> set:
     """
-    Picker ids whose speed is not strictly positive. V_p[p] is a divisor
-    in T_exec_pb = fixed_time(b) + route_time(b) / V_p[p]: a speed of
-    exactly 0 means a division by zero (undefined -- ZeroDivisionError in
-    Python, and ZIMPL has no graceful "infeasible" for it either, since
-    T_exec_pb is a plain parameter expression evaluated at model-read
-    time, not a constraint SCIP could reason about); a negative speed
-    silently produces a NEGATIVE T_exec_pb, which would then look
-    "eligible" for any T_cold, including ones that make no physical
-    sense (2026-09-10 audit finding -- nothing anywhere validated this).
-    Callers should treat a non-empty result the same way they'd treat
-    malformed input in general (report infeasible / reject cleanly,
-    mirroring how a missing `B_nb` is already handled), not let the
-    division happen at all.
+    Pickers whose speed is not strictly positive. V_p[p] divides in T_exec_pb:
+    a speed of 0 is a division by zero, and a negative one gives a negative
+    T_exec_pb that would look eligible for any T_cold. Callers reject the
+    instance when the result is not empty.
     """
     return {p for p, speed in V_p.items() if speed is None or speed <= 0}
 
@@ -42,17 +29,12 @@ def batches_without_eligible_picker(
     R_b: dict, V_p: dict, T_cold: float,
 ) -> set:
     """
-    Returns the set of batch ids in B that have zero (picker, batch) pair satisfying T_exec_pb <= T_cold
-    Replicates opp_split_stage2_scheduling.zpl's PB_elig/B_no_eligible_picker computation exactly
-    (same F_b/T_exec_pb formula, including its +1e-9 tolerance -- see COLD_CHAIN_TOLERANCE), so
-    solve_split_stage2 can short-circuit to a clean "infeasible" before invoking ZIMPL for these.
-    Empty result means every batch has at least one eligible picker.
+    Batches of B with no picker p such that T_exec_pb[p, b] <= T_cold: the
+    set B_no_eligible_picker of opp_split_stage2_scheduling.zpl, with the same
+    formula and tolerance. Empty when every batch has an eligible picker.
 
-    Callers are expected to have already rejected any picker with
-    invalid_speeds(V_p) non-empty -- a picker with V_p[p] <= 0 is treated
-    here as simply never eligible (skipped, not divided by), so this
-    function itself never raises, but that is a fallback, not a
-    substitute for checking invalid_speeds() up front.
+    A picker with V_p[p] <= 0 is never eligible here; callers are expected to
+    have checked invalid_speeds() first.
     """
     if not B or not P:
         return set(B) if B else set()
@@ -65,7 +47,7 @@ def batches_without_eligible_picker(
     without_picker = set()
     for b in B:
         if b not in R_b:
-            # Stage 1 never exported a route time for this batch.
+            # No route time for this batch (Stage 1 did not produce one).
             without_picker.add(b)
             continue
         has_eligible = any(

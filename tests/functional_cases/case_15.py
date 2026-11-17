@@ -17,9 +17,7 @@ from tests.shared_scenarios.functional.one_mission_one_picker_grid_graph import 
 
 
 class Case15(ExactModelTestCase):
-    """
-    Test 12: 3 orders, 1 mission, 1 picker. Each order is assigned to the same mission and picker. 4x4 graph.
-    """
+    """3 orders in one batch for one picker, on a 4x4 graph."""
 
     P, opp_location_graph, V, B = scenario_one_mission_one_picker_grid_graph(4, 4)
 
@@ -98,25 +96,25 @@ class Case15(ExactModelTestCase):
         cap_n = {"O1": 30, "O2": 10, "O3": 15}
         due_date = {"O1": 10, "O2": 5, "O3": 8}
 
-        w1 = 9.0  # cumplimiento peso alto
-        w2 = 1.0  # demoras y adelanto peso bajo
-        gamma = 1.0  # peso del adelanto bajo
-        delta = 1.0  # peso de demora bajo
+        w1 = 9.0  # completion time: high weight
+        w2 = 1.0  # penalties: low weight
+        gamma = 1.0  # earliness
+        delta = 1.0  # tardiness
 
         beta_time = 0.5
         beta_setup = 1.0
         beta_picking = 1.0
         M = 1000.0
-        # Adaptación de variables para el formato ZIMPL V4
+        # Parameter names of the ZIMPL models
         A_ni = a if "a" in locals() else {}
         B_nb = y if "y" in locals() else {}
         C_n = cap_n if "cap_n" in locals() else {}
         T_due_n = due_date if "due_date" in locals() else {n: 0.0 for n in N}
 
-        # Tiempo de servicio por defecto (si V2 no lo tenía explícito)
+        # No service time at any location
         S_i = {v: 0.0 for v in self.V}
 
-        # Generación de conjunto de Arcos válidos E y distancias D_ij
+        # Arcs (E) and distances (D_ij) of the graph
         E = set()
         D_ij = {}
         for i in self.opp_location_graph.get_vertices():
@@ -178,7 +176,7 @@ class Case15(ExactModelTestCase):
         except Exception as e:
             self.fail(f"ZPL solve failed: {e}")
 
-        # Extracción de grafo resultante
+        # Graph of the arcs the solution uses
         active_arcs = extract_active_arcs(var_values, self.B)
         output_graph = OPPLocationGraph(depot_node=self.opp_location_graph.get_depot(), final_node=self.opp_location_graph.get_final())
         for i in self.opp_location_graph.get_vertices():

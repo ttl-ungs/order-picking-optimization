@@ -1,1 +1,1 @@
-# Stress tests directory
+"""Stress tests of OPP-ACO."""

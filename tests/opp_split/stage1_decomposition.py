@@ -1,49 +1,26 @@
 """
-Per-batch decomposition of opp_split's Stage 1 (opp_split_stage1_routing.zpl).
+Per-batch decomposition of OPP-Split's Stage 1 (opp_split_stage1_routing.zpl).
 
-opp_split_stage1_routing.zpl's own header says batches never interact (every
-constraint is `forall <b> in B: ...`, and the objective is a plain sum of
-independent r_b[b] terms) -- solving all of them together in one MIP
-wastes work a MIP branch-and-bound tree doesn't give back. Measured
-empirically (2026-09-10/11 audit): the joint solve is ~3x SLOWER than the
-sum of solving each batch alone at just 10 batches, and doesn't even
-finish within 14 minutes at 20 batches (where the decomposed sum takes a
-few seconds) -- MIP solve time grows highly non-linearly with the number
-of integer variables (z_ijb/q_ijb, one full set per batch), so keeping
-every batch's variables in one model multiplies that cost for nothing:
-nothing in the objective or constraints ever links two different batches'
-variables.
+Batches never interact in Stage 1 (every constraint is per batch and the
+objective is a sum of independent r_b), but a joint MIP does not exploit
+that: solve time grows much faster than linearly with the integer variables
+(z_ijb, q_ijb: one full set per batch). Measured: with 10 batches the joint
+solve takes about three times the sum of the per-batch solves, and with 20 it
+does not finish in 14 minutes while the per-batch solves take seconds.
 
-No change to opp_split_stage1_routing.zpl itself was needed: it only ever reads
-whatever data_B.dat/B_nb.dat a caller has written, so calling the exact
-same file once per batch (with just those two narrowed to that one
-batch) is enough. data_N.dat/a_ni.dat are deliberately left UNTOUCHED
-(not just restored after -- never rewritten at all): the model only ever
-uses N to sum `A_ni[n,i] * B_nb[n,b]` (a plain parameter computation, not a
-decision variable), so narrowing N buys nothing and isn't worth the risk
--- an earlier version of this file did narrow it, and a batch with zero
-orders assigned (B_nb[n,b] == 0 for every n -- a real scenario in this
-test suite) turned a_ni.dat into a genuinely empty file, which ZIMPL
-rejects at compile time ("Symbol A_ni not initialised"), not the harmless
-"parameter with zero rows" it looks like. Keeping data_N.dat/a_ni.dat at
-their original (always non-empty, whole-scenario) size sidesteps that
-entirely, and costs nothing that matters: the actual combinatorial
-complexity driver is z_ijb/q_ijb (indexed by E * B), not the N-indexed
-sums, so narrowing B alone already captures the decomposition's benefit.
+The .zpl is used as it is, once per batch, with data_B.dat and B_nb.dat
+narrowed to that batch. data_N.dat and a_ni.dat are left whole: the model
+only uses N inside sums of parameters, so narrowing it gains nothing, and a
+batch without orders would leave a_ni.dat empty, which ZIMPL rejects when it
+compiles.
 
-Parallel mode is OPT-IN, via OPP_STAGE1_WORKERS=<n> (default: sequential).
-Each batch is then solved in its own temporary directory by a separate OS
-process via ProcessPoolExecutor. Each worker gets a copy of the dat_files/
-directory with data_B.dat/B_nb.dat narrowed to its batch, plus a copy of the
-ZPL file so that ZIMPL's relative-path reads (../dat_files/...) resolve
-into the worker's own directory regardless of whether ZIMPL resolves paths
-relative to CWD or to the ZPL file's location.
-
-It defaults to off because wall-clock timings are what this repo measures
-to compare models: with parallel batch solves those timings depend on how
-much CPU and RAM happened to be free at the time, which makes runs
-non-reproducible and not comparable against opp_mono (which cannot
-decompose, so it never gets the same treatment).
+Parallel mode is opt-in (OPP_STAGE1_WORKERS=<n>; sequential by default). Each
+batch is then solved by a separate process in its own temporary directory: a
+copy of dat_files/ narrowed to the batch, next to a copy of the .zpl, so that
+its relative reads (../dat_files/...) resolve inside that directory. It is
+off by default because the repository compares models by wall-clock time,
+and parallel solves make it depend on the free CPU and RAM and not comparable
+with OPP-Mono, which cannot be decomposed.
 """
 
 import os
@@ -106,39 +83,25 @@ def _write_file(path, content):
 
 def solve_stage1_decomposed(dat_dir, max_workers=None, time_budget_seconds=None):
     """
-    Call AFTER the full scenario's .dat files have already been written
-    to `dat_dir` (however the caller normally does that -- build_dat_files(),
-    or a test's own scenario construction). Decomposes
-    Stage 1 into one solve per batch instead of one joint solve for every
-    batch together, by temporarily narrowing ONLY data_B.dat/B_nb.dat to
-    each batch's own column in turn (see module docstring for why
-    data_N.dat/a_ni.dat are left untouched), then restoring the ORIGINAL
-    (full) contents of those two files before returning -- guaranteed
-    even if a solve raises, via `finally` -- so a caller that goes on to
-    invoke Stage 2 (which also reads data_B.dat/B_nb.dat) sees the correct
-    full scenario, not whichever batch was solved last.
+    Solve Stage 1 one batch at a time. The scenario's .dat files must already
+    be in `dat_dir`.
 
-    Sequential by default. Set OPP_STAGE1_WORKERS=<n> (or pass max_workers)
-    to solve batches in parallel instead, using separate OS processes, up
-    to <n> at a time; each works on its own copy of the dat files in a temp
-    directory, so the original dat_dir is never modified. Parallel needs
-    more than 4 batches to be worth its process-spawn overhead.
+    Sequentially, data_B.dat and B_nb.dat are narrowed to each batch in turn
+    and restored before returning (in a `finally`), so that Stage 2 reads the
+    full scenario. With OPP_STAGE1_WORKERS=<n> (or max_workers) and more than
+    4 batches, up to <n> processes solve the batches in parallel, each on its
+    own copy of the files.
 
-    Returns (status, merged_values): status is "optimal"/"feasible" iff
-    EVERY batch solved to one of those (the first non-"optimal"/"feasible"
-    status found is returned instead, matching what a single joint solve's
-    one status would have stood for); merged_values is the union of every
-    batch's solved variable dict -- safe to merge as-is, since every
-    variable name embeds its own batch id (e.g. "z_ijb$i$j$b"), so
-    different batches' entries never collide.
+    Returns (status, merged_values). The status is "optimal"/"feasible" iff
+    every batch reached one of those; otherwise it is the first other status
+    found. merged_values is the union of the batches' variable values (every
+    name carries its batch id, so they never collide).
 
     time_budget_seconds (optional, sequential only): a total wall-clock
-    budget for Stage 1, split evenly over the batches still to solve
-    (each batch's SCIP limits/time = remaining budget / batches left), for
-    experiments/comparison/run_equal_time_study.py. A batch cut by its limit still counts
-    if SCIP had an incumbent route for it; the overall status is then
-    "timelimit" instead of "optimal". A batch with no route at all within
-    its share ends Stage 1 with that status and no complete solution.
+    budget, split evenly over the batches still to solve, for
+    experiments/comparison/run_equal_time_study.py. A batch cut by its limit
+    counts if SCIP had a route for it, and the status is then "timelimit"; a
+    batch with no route within its share ends Stage 1 with that status.
     """
     data_B_path = os.path.join(dat_dir, "data_B.dat")
     bn_path = os.path.join(dat_dir, "B_nb.dat")

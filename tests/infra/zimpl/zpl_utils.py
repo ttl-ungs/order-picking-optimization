@@ -14,29 +14,23 @@ _LIMIT_STATUSES = ("timelimit", "gaplimit", "sollimit", "nodelimit", "totalnodel
 
 def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
     """
-    Compila el .zpl a .lp usando el binario `zimpl` y lo resuelve con SCIP.
-    Inyecta automáticamente las variables > 0 en params para los reportes CSV.
+    Compile the .zpl to .lp with the `zimpl` binary and solve it with SCIP.
+    The values of the variables that are > 0 are added to `params`, for the
+    results CSV.
 
-    time_limit_seconds: optional SCIP time limit (`limits/time`). Default
-    None keeps the previous behaviour (no limit, relies on the external
-    test-runner timeout / a process kill to bound wall time). Pass an
-    explicit limit when you need SCIP itself to conclude cleanly -- e.g. to
-    tell apart "SCIP proved infeasible" from "still searching, ran out of
-    time" for a diagnostic run, which an external kill can't distinguish
-    (it might kill SCIP moments before it would have concluded infeasible).
+    time_limit_seconds: optional SCIP time limit (`limits/time`). Without it
+    only the test runner's timeout bounds the run; pass it when SCIP itself
+    must conclude, e.g. to tell "proved infeasible" from "ran out of time".
     """
     if dat_dir is None:
         dat_dir = os.path.dirname(zpl_path)
     if params is None:
         params = {}
 
-    # The ZIMPL models take B_nb/C_v as fixed parameters, not decision
-    # variables, so it has no constraint left to reject a batch that
-    # overflows the vehicle or an order assigned to zero/two+ batches --
-    # it would just solve happily around garbage input (see
-    # models/utils/input_validation.py). Enforce both here, before ever
-    # calling zimpl/SCIP, so this input is rejected the same way
-    # opp_hc/opp_aco reject it for the same instance.
+    # The ZIMPL models take B_nb and C_v as parameters, so no constraint
+    # rejects an overloaded batch or an order in zero or several batches
+    # (models/utils/input_validation.py). Reject them here, like the
+    # heuristics do.
     bn = params.get("B_nb")
     invalid_reasons = []
 
@@ -67,7 +61,7 @@ def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
     out_base = os.path.join(dat_dir, "model")
     lp_path = f"{out_base}.lp"
 
-    # Paso 1: compilar .zpl → .lp con zimpl
+    # Step 1: compile the .zpl to .lp with zimpl
     result = subprocess.run(
         ["zimpl", "-t", "lp", "-l", "8192", "-o", out_base, zpl_path],
         cwd=dat_dir,
@@ -81,7 +75,7 @@ def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
             f"stderr: {result.stderr}"
         )
 
-    # Paso 2: resolver el .lp con PySCIPOpt
+    # Step 2: solve the .lp with PySCIPOpt
     model = pyscipopt.Model()
     model.hideOutput()
     if time_limit_seconds is not None:
@@ -96,12 +90,10 @@ def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
     var_values = {}
     debug_string = ""
 
-    # A limit-cut solve ("timelimit" etc., only possible when
-    # time_limit_seconds was given) may still hold a feasible incumbent:
-    # read it too, so a time-budgeted run reports its best solution found
-    # instead of nothing (experiments/comparison/run_equal_time_study.py). The returned
-    # status stays "timelimit" -- callers that require a proven
-    # "optimal"/"feasible" answer are unaffected.
+    # A solve cut by a limit (only with time_limit_seconds) may hold a feasible
+    # incumbent: read it too, so that a time-budgeted run
+    # (experiments/comparison/run_equal_time_study.py) reports its best
+    # solution. The status stays "timelimit".
     has_incumbent = status in ("optimal", "feasible") or (
         status in _LIMIT_STATUSES and model.getNSols() > 0
     )
@@ -123,10 +115,9 @@ def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
 
     params["debug_output"] = debug_string
 
-    # SLA (nivel de servicio): % de ordenes que llegaron a tiempo o antes
-    # (tardiness <= 0). Derivado de las variables ta_n$<orden> ya resueltas
-    # arriba -- ninguna de las etapas/modelos que no tienen esa variable aporta
-    # ta_values, asi que sla_on_time_pct queda ausente para esos, no en 0.
+    # Service level: % of orders on time or early (tardiness <= 0), from the
+    # ta_n values. A solve without that variable (Stage 1) reports no
+    # sla_on_time_pct rather than 0.
     ta_values = [val for name, val in var_values.items() if name.lower().startswith("ta_n$")]
     if ta_values:
         params["sla_on_time_pct"] = sum(1 for t in ta_values if t <= 1e-6) / len(ta_values) * 100
@@ -149,12 +140,7 @@ def solve_zpl(zpl_path, dat_dir=None, params=None, time_limit_seconds=None):
     return status, var_values
 
 def extract_active_arcs(var_values, B):
-    """
-    A partir del dict de variables resueltas, extrae los arcos activos:
-    z_ijb[i,j,b] == 1  ->  arco (i, j) en lote b.
-
-    Devuelve: dict { b: [(i, j), ...] }
-    """
+    """Active arcs of a solution: {b: [(i, j), ...]} for every z_ijb[i,j,b] == 1."""
     active = {b: [] for b in B}
     for name, val in var_values.items():
         if name.lower().startswith("z_ijb$") and round(val) == 1:

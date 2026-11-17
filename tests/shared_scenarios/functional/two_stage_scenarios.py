@@ -86,10 +86,9 @@ def cold_chain_infeasible_for_every_picker():
 
 
 def heterogeneous_speed_precise():
-    """Same two-batch, two-speed setup already used for the assignment-
-    direction test, kept here to assert the exact completion-time formula:
-    T_exec_pb = F_b + R_b / V_p -- i.e. that ONLY the route
-    portion is scaled by picker speed, never the fixed setup/picking time.
+    """Two batches and two speeds, to assert the exact completion-time
+    formula T_exec_pb = F_b + R_b / V_p: only the route part is divided by
+    the picker's speed, never the fixed setup and picking time.
     With V_p={P_slow: 1.0, P_fast: 2.0}, R_b={B1: 5.0, B2: 14.0} and
     F_b=2.0 for both batches (T_setup=1.0, T_pick=1.0,
     C_n={"O1": 1.0, "O2": 1.0}):

@@ -1,21 +1,18 @@
 """
-Functional instances for the heuristics: run opp_aco / opp_hc on EXACTLY the
-instances opp_split's functional tests solve (the functional cases of the
-thesis).
+Functional instances for the heuristics: opp_aco and opp_hc run on exactly
+the instances opp_split's functional tests solve.
 
-The instances are not copied by hand into heuristic tests: they are captured
-from the Split's own tests, so both models solve the same data:
+The instances are captured from the Split's own tests, not copied by hand:
 
-1. tests/shared_scenarios/functional/export_functional_instances.py
-   (needs zimpl/SCIP) runs opp_split's functional suite, captures
-   every scenario dict right when it's written to the .dat files, and the Split's
-   final status/objective for it, into functional_instances.json.
-2. bind_instances() builds, for a heuristic, one test per captured instance, with the
-   id of the Split's test (<case class>.<test method>[__<k>]), that solves it through
-   tests/infra/factories/scenario_adapter.py -- the same adapter
-   the stress cases use -- and checks the outcome class (feasible vs
-   infeasible) matches the Split's. The objective lands in the results CSV via
-   the solve registry, joinable with the Split's CSV by stripping the prefix.
+1. tests/shared_scenarios/functional/export_functional_instances.py (needs
+   zimpl and SCIP) runs opp_split's functional suite and saves, in
+   functional_instances.json, every scenario as it is written to the .dat
+   files, with the Split's final status and objective.
+2. bind_instances() builds, for a heuristic, one test per captured instance,
+   with the id of the Split's test (<case class>.<test method>[__<k>]). It
+   solves the instance through tests/infra/factories/scenario_adapter.py and
+   checks that the outcome (feasible or infeasible) is the Split's. The
+   objective reaches the results CSV through the solve registry.
 """
 
 import json
@@ -29,8 +26,8 @@ FIXTURE_PATH = os.path.abspath(os.path.join(
     os.path.dirname(__file__), "..", "..", "shared_scenarios", "functional", "functional_instances.json",
 ))
 
-# Same defaults opp_split applies to scenarios that predate picker speed
-# and cold chain (tests/infra/zimpl/dat_files_builder.py, OPPTestCaseSplit.solve).
+# The defaults opp_split applies to a scenario without picker speeds or a
+# cold-chain limit (tests/infra/zimpl/dat_files_builder.py).
 DEFAULT_SPEED = 1.0
 DEFAULT_T_COLD = 1_000_000_000.0
 
@@ -115,7 +112,7 @@ def _make_test(entry, model_cls, dto_cls, configure_params):
             self.assertIn(status, ("optimal", "feasible"), f"the Split found a solution ({expected}); heuristic: {status}")
         elif expected == "infeasible":
             self.assertEqual(status, "infeasible", "the Split proved this instance infeasible")
-        # Any other the Split outcome (timeout, limit) is inconclusive: nothing to compare the status to.
+        # Any other outcome of the Split (timeout, limit) is inconclusive: nothing to compare with.
 
     test.__doc__ = f"Same instance as opp_split's {entry['split_case']}.{entry['split_test']} (the Split: {entry['split_status']}, obj {entry['split_obj']})."
     return test
@@ -144,21 +141,18 @@ def bind_instances(model_cls, dto_cls, namespace, configure_params=None, fixture
 
 def split_waiting_batches(scenario, values, route_times, tolerance=1e-6):
     """
-    Batches whose completion the Split reports LATER than its picker could have
-    finished them: the Split's c_pb >= T_exec_pb (not ==) lets it delay a batch to
-    cut earliness -- "voluntary waiting", which the heuristics don't model.
-    For each picker, its batches (x_pb = 1, with orders) are taken in
-    completion order; batch b waits if c_pb[p, b] exceeds the previous
-    batch's completion (0 for the first) plus T_exec_pb[p, b] =
-    T_setup + T_pick * sum(C_n) + R_b[b] / V_p[p].
+    Batches the Split reports as completed later than their picker could have
+    finished them: its c_pb >= T_exec_pb (not ==) lets it delay a batch to
+    cut earliness ("voluntary waiting"), which the heuristics do not do. For
+    each picker, its batches are taken in completion order; batch b waits if
+    c_pb[p, b] exceeds the previous batch's completion (0 for the first)
+    plus T_exec_pb[p, b].
     """
     s = with_split_defaults(scenario)
     if s["W_pen"] * s["W_e"] <= 0:
-        # Earliness doesn't count: a later c_pb can't lower the objective,
-        # so any slack is just the solver's arbitrary pick within an
-        # indifferent range, not waiting that changes the result (e.g.
-        # test_longer_single_mission_penalties' second instance, W_c =
-        # W_e = 0: the Split and the heuristics both reach 0).
+        # Without an earliness weight a later c_pb cannot lower the objective:
+        # any slack is the solver's arbitrary pick, not waiting that changes
+        # the result.
         return []
     orders = {b: [n for n in s["N"] if s["B_nb"].get((n, b), 0) > 0.5] for b in s["B"]}
     waits = []
@@ -180,14 +174,14 @@ def split_waiting_batches(scenario, values, route_times, tolerance=1e-6):
 def comparability(entry):
     """
     (comparable_status, comparable_objective, reason) for one exported
-    instance -- the single rule every comparison document/plot should use:
+    instance: the rule every comparison uses.
 
-    - timeout: the Split never concluded -> nothing to compare;
-    - x_pb fixed by the Split -> the heuristics can't take that constraint;
-    - infeasible: the outcome is comparable, there's no objective;
-    - the Split waits voluntarily in some batch -> outcome comparable, objective
-      not (the Split's is lower by design, not by a better plan);
-    - otherwise (the Split optimal, no waiting) -> both comparable.
+    - timeout: the Split never concluded, nothing to compare;
+    - x_pb fixed by the Split: the heuristics cannot take that constraint;
+    - infeasible: the outcome is comparable, there is no objective;
+    - the Split waits voluntarily in some batch: the outcome is comparable,
+      the objective is not (the Split's is lower by design);
+    - otherwise (the Split is optimal and does not wait): both are comparable.
     """
     status = entry["split_status"]
     if status == "timeout":

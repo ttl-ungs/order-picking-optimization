@@ -91,7 +91,7 @@ class Case20(ExactModelTestCase):
         N = {f"O{i}" for i in range(1, 13)}
         a = {(n, v): 0 for n in N for v in V}
 
-        # Setup de locaciones
+        # Locations each order must visit
         locs = {
             "O1": ["V2", "V7"],
             "O2": ["V3"],
@@ -136,7 +136,7 @@ class Case20(ExactModelTestCase):
             "El modelo no encontró una solución.",
         )
 
-        # Validar cobertura de locaciones extrayendo arcos
+        # The active arcs cover every required location
         active_arcs = extract_active_arcs(var_values, B)
         required_by_batch = {
             "B1": {"V2", "V7", "V3", "V8"},

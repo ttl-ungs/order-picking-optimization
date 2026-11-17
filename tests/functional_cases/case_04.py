@@ -12,10 +12,8 @@ from tests.infra.zimpl.zpl_utils import extract_active_arcs
 
 
 class Case04(ExactModelTestCase):
-    """
-    Test 2.2: Medium. 8 vertex, 8 edges, 2 orders, 2 missions.
-    Purpose: To test the functionality of the model when we have few vertex assigned to orders.
-    """
+    """Medium instance: 8 vertices, 8 edges, 2 orders, 2 batches. Each order
+    visits a single location."""
 
     def test_two_orders_two_aisles_one_picking_point_per_order(self):
         """Case 4a."""
@@ -129,7 +127,7 @@ class Case04(ExactModelTestCase):
                     if p in key:
                         picker_workload[p] += 1
 
-        # Cada lote debe tener asignado exactamente un picker
+        # Every batch is assigned to exactly one picker
         for b in B:
             self.assertEqual(
                 assignments[b],
@@ -137,7 +135,7 @@ class Case04(ExactModelTestCase):
                 f"Batch {b} does not meet the unique assignment constraint (Assigned to {assignments[b]} pickers).",
             )
 
-        # Deberían paralelizar el trabajo
+        # Each picker runs one batch: the work is done in parallel
         for p in P:
             self.assertEqual(
                 picker_workload[p],
@@ -178,7 +176,6 @@ class Case04(ExactModelTestCase):
 
         self.assertEqual(output_graph, expected_graph)
 
-        # --- NUEVAS VALIDACIONES INTELIGENTES V4 ---
         if len(P) > 1 and len(B) > 1:
             self.assert_workload_balance(var_values, P, B, max_difference=1)
             

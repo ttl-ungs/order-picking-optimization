@@ -99,7 +99,7 @@ class Case25(ExactModelTestCase):
         N = {f"O{i}" for i in range(1, 13)}
         a = {(n, v): 0 for n in N for v in V}
 
-        # Setup de locaciones
+        # Locations each order must visit
         locs = {
             "O1": ["V2", "V7"],
             "O2": ["V3"],
@@ -144,7 +144,7 @@ class Case25(ExactModelTestCase):
             "El modelo no encontró una solución.",
         )
 
-        # Validar cobertura de locaciones extrayendo arcos
+        # The active arcs cover every required location
         active_arcs = extract_active_arcs(var_values, B)
         required_by_batch = {
             "B1": {"V2", "V7", "V3", "V8"},
@@ -251,8 +251,8 @@ class Case25(ExactModelTestCase):
         )
         self.assertIn(status_small, ("optimal", "feasible"))
 
-        # 2.0 per order * 3 orders per batch = 6.0, exactly cap_vehicle -> still feasible,
-        # boundary case for the new C_v pre-validation (see models/utils/capacity_validation.py).
+        # 2.0 per order * 3 orders per batch = 6.0, exactly cap_vehicle: still feasible
+        # (the boundary of the capacity check in models/utils/input_validation.py).
         cap_n_large = {n: 2.0 for n in N}
         status_large, _, _, _, _ = self._solve_grid_zpl(
             N, a, y, cap_n_large,

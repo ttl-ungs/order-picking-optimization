@@ -1,19 +1,11 @@
 """
-Configuration for the model-comparison analysis pipeline.
+Which models and which result files the experiments read.
 
-The four models of the thesis:
-
-- opp_split : exact model, 2-stage decomposition (routing then scheduling).
-                   The reference of the comparisons.
-- opp_mono  : exact model, the same problem solved as ONE monolithic MIP.
-- opp_hc       : Hill Climbing heuristic.
-- opp_aco      : Ant Colony Optimization heuristic.
-
-Neither the exact models nor the heuristics model congestion between pickers.
-
-Each entry maps a short label -> the directory name under results/.
-Add/remove entries here as models evolve; nothing else in the pipeline
-should need to change.
+- opp_split : exact, two stages (routing, then scheduling). The reference of
+              the comparisons.
+- opp_mono  : exact, the same problem as one monolithic MIP.
+- opp_hc    : Hill Climbing heuristic.
+- opp_aco   : Ant Colony Optimization heuristic.
 """
 
 import os

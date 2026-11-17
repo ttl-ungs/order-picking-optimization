@@ -34,13 +34,9 @@ class OPPTestCaseSplit(ExactModelTestCase):
         cold-chain limit is disabled. Returns (status, values), with the values of
         both stages together.
         """
-        # Decomposed into one solve per batch instead of one joint solve for
-        # every batch (see stage1_decomposition.py's module docstring for why).
-        # STAGE1_ZPL_PATH itself is unchanged. `params`
-        # (capacity/duplicate-assignment pre-checks, CSV metadata) isn't
-        # threaded into the per-batch solves; it's still applied at the Stage
-        # 2 call below with the untouched full scenario, so a genuinely
-        # invalid input is still caught -- just there instead of here.
+        # Stage 1 is solved one batch at a time (see stage1_decomposition.py).
+        # `params` (the input pre-checks and the CSV metadata) is applied at
+        # the Stage 2 call below, on the full scenario.
         stage1_status, stage1_values = solve_stage1_decomposed(self.dat_dir)
         if stage1_status not in ("optimal", "feasible"):
             return stage1_status, stage1_values
@@ -108,16 +104,10 @@ class OPPTestCaseSplit(ExactModelTestCase):
                 )
 
     def run_pipeline(self, scenario, solve_stage2=True):
-        # V_p[p] is a divisor in opp_split_stage2_scheduling.zpl's T_exec_pb (T_exec_pb
-        # = F_b[b] + R_b[b] / V_p[p]), evaluated eagerly by
-        # ZIMPL for every (p, b) pair as soon as the .dat is read -- a speed
-        # of exactly 0 divides by zero there (no graceful "infeasible", it's
-        # a plain parameter expression, not a constraint); a negative one
-        # silently yields a negative T_exec_pb that would look "eligible"
-        # for any T_cold. Reject before ZIMPL ever sees it, same pattern as the
-        # stuck_batches short-circuit below.
-        # It has to run before build_dat_files too: its M_seq estimate divides
-        # by the slowest speed, so a 0 would crash there first.
+        # A speed of 0 divides by zero in T_exec_pb when ZIMPL reads the data,
+        # and a negative one gives a negative T_exec_pb that looks eligible for
+        # any T_cold: reject both before ZIMPL runs. It goes before
+        # build_dat_files, whose M_seq estimate divides by the slowest speed.
         bad_speeds = invalid_speeds(scenario["V_p"])
         self.assertFalse(
             bad_speeds,
@@ -125,9 +115,7 @@ class OPPTestCaseSplit(ExactModelTestCase):
         )
 
         build_dat_files(self.dat_dir, scenario)
-        # Decomposed into one solve per batch instead of one joint solve
-        # for every batch (see stage1_decomposition.py's module docstring).
-        # STAGE1_ZPL_PATH itself is unchanged.
+        # Stage 1, one batch at a time (see stage1_decomposition.py).
         stage1_status, stage1_values = solve_stage1_decomposed(self.dat_dir)
         self.assertIn(stage1_status, ("optimal", "feasible"), "Stage 1 did not solve")
 
@@ -141,12 +129,9 @@ class OPPTestCaseSplit(ExactModelTestCase):
         if not solve_stage2:
             return stage1_values, route_times, None, None
 
-        # A batch with zero eligible pickers
-        # under the cold-chain limit makes opp_split_stage2_scheduling.zpl's
-        # assign_exactly_one_picker sum over an empty PB_elig slice for
-        # that batch, which ZIMPL rejects at COMPILE time (RuntimeError).
-        # Short-circuit here instead of letting that crash surface
-        # (same pattern as input_validation.py's pre-checks in solve_zpl).
+        # A batch without an eligible picker makes assign_exactly_one_picker a
+        # sum over an empty set, which ZIMPL rejects when it compiles: report
+        # the instance as infeasible instead.
         stuck_batches = batches_without_eligible_picker(
             scenario["P"], scenario["B"], scenario["N"], scenario["C_n"],
             scenario["B_nb"], scenario["T_setup"], scenario["T_pick"],

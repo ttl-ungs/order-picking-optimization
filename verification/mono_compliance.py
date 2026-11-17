@@ -41,17 +41,15 @@ def _close(a, b, tol=REL_TOL):
 
 
 def _drop_empty_batches(instance, solution, report):
-    """Remove from B every batch with no orders that the heuristic didn't
-    use either (agreed with the user, 2026-09-28).
+    """Remove from B every batch without orders that the heuristic did not use.
 
-    Mono forces EVERY batch in B to be routed, assigned and charged in the
-    objective (its c_b), even one with no orders; opp_hc/opp_aco skip
-    empty batches. Left in, mono prices a correct solution above what the
-    heuristic reports (e.g. 14.5 vs 6.25) and, with many of them free, SCIP
-    can hit its time limit on an otherwise trivial instance. An empty batch
-    has no real work, so dropping it verifies the same problem the heuristic
-    solved; no constraint of mono is touched. A batch that IS in the
-    solution is kept (and checked) even if empty."""
+    Mono routes, assigns and charges every batch of B, even one without
+    orders; the heuristics skip empty batches. Left in, mono would price a
+    correct solution above what the heuristic reports and, with many of them
+    free, SCIP can reach its time limit on a trivial instance. An empty batch
+    has no work, so dropping it verifies the problem the heuristic solved and
+    touches no constraint of mono. A batch that is in the solution is kept
+    (and checked) even if it is empty."""
     used = {b for seq in solution["picker_sequences"].values() for b in seq} | set(solution["routes"])
     with_orders = {b for (_n, b), value in instance["B_nb"].items() if value}
     empty = sorted(b for b in instance["B"] if b not in with_orders and b not in used)
@@ -363,10 +361,9 @@ def _diagnose(sc, ev, lp_path, time_limit, report):
 
 
 def _restrict_to_solution(sc, ev, report):
-    """Scenario for the SCIP levels restricted to what the fixed routes use
-    (agreed with the user, 2026-09-29): E -> the union of the routes' arcs,
-    V -> the nodes those routes touch (+ depot, final), and D_ij / S_i /
-    A_ni restricted accordingly.
+    """Scenario for the SCIP levels restricted to what the fixed routes use:
+    E -> the union of the routes' arcs, V -> the nodes those routes touch
+    (+ depot, final), and D_ij / S_i / A_ni restricted accordingly.
 
     Exactly equivalent for levels 1 and 2: with every route fixed, an arc
     no batch uses has z_ijb = 0 (hence q_ijb = 0) in every batch, and a

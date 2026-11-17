@@ -1,8 +1,6 @@
 """
-Shared SLA (nivel de servicio) computation for every Hill Climbing/ACO
-model (opp_hc, opp_aco): % of orders that finished on time or early
-(tardiness <= 0), out of every order that actually got scheduled (has a
-tardiness entry in solution_info).
+Service level of a heuristic's solution: the share of scheduled orders that
+finished on time or early.
 """
 
 from typing import Dict, Optional
@@ -10,9 +8,8 @@ from typing import Dict, Optional
 
 def sla_on_time_pct(tardiness: Dict[str, float]) -> Optional[float]:
     """
-    % of orders with tardiness <= 0 (on time or early). None if `tardiness`
-    is empty (no order was ever scheduled -- e.g. an all-empty-batches
-    instance), so a CSV row reports "no data" rather than a misleading 0%.
+    % of orders with tardiness <= 0. None if `tardiness` is empty (no order
+    was scheduled), so a CSV row reports "no data" rather than a misleading 0%.
     """
     if not tardiness:
         return None

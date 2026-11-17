@@ -1,12 +1,7 @@
-"""Adapts a scenario dict (the format tests/shared_scenarios/stress/
-stress_scenarios*.py and two_stage_scenarios.py build, and
-tests/infra/zimpl/dat_files_builder.py consumes for ZIMPL) into the
-OPPLocationGraph + DTO shape opp_aco/opp_hc expect.
-
-Needed because the stress scenarios (realistic_crew_scenario,
-grid_stress_scenario) are built in the exact models' format (.dat sets and
-parameters). This module is the translation needed to run the same scenario
-through opp_aco/opp_hc.
+"""Adapts a scenario dict (what the scenario builders produce and
+tests/infra/zimpl/dat_files_builder.py writes for ZIMPL) into the
+OPPLocationGraph and the DTOs the heuristics take, so that the same scenario
+runs on the four models.
 """
 
 from models.base.opp_location_graph import OPPLocationGraph
@@ -14,12 +9,9 @@ from dtos.opp.model_dto import ModelDTO
 
 
 def build_model_dto_and_params(scenario, dto_cls, seed=1):
-    """scenario: a dict (see stress_scenarios_designed.py's
-    designed_stress_scenario for the exact keys). dto_cls: SolveAcoModelDTO
-    or SolveHCModelDTO (field names are identical between the two, see
-    their docstrings). Returns (model_dto, params), ready for
-    OPPAntColonyOptimization(model_dto).solve(params) or
-    OPPHillClimbing(model_dto).solve(params).
+    """Build (model_dto, params) for a heuristic from a scenario dict (keys as
+    in designed_stress_scenario). `dto_cls` is SolveAcoModelDTO or
+    SolveHCModelDTO.
     """
     location_graph = OPPLocationGraph(depot_node=scenario["depot"], final_node=scenario["final"])
     for vertex in scenario["V"]:

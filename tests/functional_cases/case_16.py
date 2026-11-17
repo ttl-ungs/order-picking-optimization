@@ -17,10 +17,8 @@ from tests.shared_scenarios.functional.three_missions_two_pickers_grid_graph imp
 
 
 class Case16(ExactModelTestCase):
-    """
-    Test 13: 6 orders, 3 missions, 2 pickers on a 4x4 grid with transversal aisles.
-    Each order visits more than one location.
-    """
+    """6 orders, 3 batches, 2 pickers on a 4x4 grid with transversal aisles.
+    Each order visits more than one location."""
 
     P, opp_location_graph, V, B = (
         scenario_three_missions_two_pickers_two_periods_grid_graph(4, 4)
@@ -77,16 +75,16 @@ class Case16(ExactModelTestCase):
         beta_setup = 1.0
         beta_picking = 1.0
         M = 1000.0
-        # Adaptación de variables para el formato ZIMPL V4
+        # Parameter names of the ZIMPL models
         A_ni = a if "a" in locals() else {}
         B_nb = y if "y" in locals() else {}
         C_n = cap_n if "cap_n" in locals() else {}
         T_due_n = due_date if "due_date" in locals() else {n: 0.0 for n in N}
 
-        # Tiempo de servicio por defecto (si V2 no lo tenía explícito)
+        # No service time at any location
         S_i = {v: 0.0 for v in self.V}
 
-        # Generación de conjunto de Arcos válidos E y distancias D_ij
+        # Arcs (E) and distances (D_ij) of the graph
         E = set()
         D_ij = {}
         for i in self.opp_location_graph.get_vertices():
@@ -148,7 +146,7 @@ class Case16(ExactModelTestCase):
         except Exception as e:
             self.fail(f"ZPL solve failed: {e}")
 
-        # Extracción de grafo resultante
+        # Graph of the arcs the solution uses
         active_arcs = extract_active_arcs(var_values, self.B)
         output_graph = OPPLocationGraph(depot_node=self.opp_location_graph.get_depot(), final_node=self.opp_location_graph.get_final())
         for i in self.opp_location_graph.get_vertices():

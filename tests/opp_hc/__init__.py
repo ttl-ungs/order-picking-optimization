@@ -1,1 +1,1 @@
-# Package for opp_hc tests
+"""Tests of OPP-HC."""

@@ -23,8 +23,7 @@ The budget is wall-clock from the start of the model's pipeline (writing
 SCIP's limit only covers its own solve, so `elapsed_s` can slightly exceed
 `budget_s` by the compilation time -- reported as measured, not hidden.
 
-NOT a unittest test. Run directly (needs `zimpl` on PATH, e.g. the
-optimizacion conda env):
+NOT a unittest test. Run directly (needs `zimpl` on the PATH):
 
     python -m experiments.comparison.run_equal_time_study --budget-from opp_aco
     python -m experiments.comparison.run_equal_time_study --budget-from opp_hc --id 04 05

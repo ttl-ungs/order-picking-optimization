@@ -2,6 +2,9 @@ from models.base.opp_location_graph import OPPLocationGraph
 
 
 class ModelDTO:
+    """The structure of an instance: orders (N), batches (B), pickers (P),
+    the location graph and the time the pickers start at."""
+
     def __init__(self):
         self._N: set = None
         self._location_graph: OPPLocationGraph = None

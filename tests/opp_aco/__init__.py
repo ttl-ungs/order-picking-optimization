@@ -1,1 +1,1 @@
-# Package for opp_aco tests
+"""Tests of OPP-ACO."""

@@ -2,12 +2,8 @@ from observer.observer import Observer
 
 
 class OutputHandler(Observer):
-    """
-    Output handler for opp_aco (picker-speed and cold-chain-aware Ant
-    Colony Optimization, no congestion). Same format as opp_hc's
-    OutputHandler: it reports the picker speeds and cold-chain limit used
-    for this run.
-    """
+    """Prints the result of an OPP-ACO run, including the picker speeds and the
+    cold-chain limit it used."""
 
     def update(
         self,

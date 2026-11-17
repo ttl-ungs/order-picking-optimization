@@ -1,11 +1,10 @@
 """
-Objective function evaluator for opp_aco (picker speed, no congestion).
+Objective function evaluator for opp_aco.
 
-A batch's execution time depends on WHICH picker runs it: the travel+service portion is divided
-by that picker's speed (V_p), while setup/picking time stays fixed (same
-split as opp_split_stage2_scheduling.zpl's T_exec_pb -- see models/opp_aco/
-opp_aco.py header). Batches on the same picker still run sequentially;
-batches on different pickers still run in parallel.
+A batch's execution time depends on the picker that runs it: the travel +
+service part is divided by the picker's speed (V_p); setup and picking are
+not. Batches of the same picker run one after the other; pickers work in
+parallel.
 """
 
 from typing import Dict, List, Set
@@ -14,7 +13,7 @@ from models.opp_aco.utils import exec_time
 
 
 class RouteEvaluator:
-    """Evaluates the opp_aco objective function (picker-speed-aware)."""
+    """Evaluates the opp_aco objective function."""
 
     def __init__(
         self,
@@ -59,7 +58,7 @@ class RouteEvaluator:
         self.V_p = V_p or {}
 
     def picker_speed(self, picker: str) -> float:
-        """Speed of `picker`; defaults to 1.0 when unset (no-op)."""
+        """Speed of `picker` (1.0 when unset)."""
         return self.V_p.get(picker, 1.0)
 
     def evaluate(self, solution) -> float:
@@ -99,11 +98,9 @@ class RouteEvaluator:
 
     def compute_batch_completions(self, solution) -> Dict[str, float]:
         """
-        Compute c_b[b]: the completion time of each batch, given the picker
-        it is assigned to (which now also determines its speed) and its
-        position within that picker's sequence. Pickers process their
-        assigned batches sequentially starting from time zero; different
-        pickers work in parallel.
+        c_b[b]: the completion time of each batch, given its picker (and so
+        its speed) and its position in that picker's sequence. Each picker
+        runs its batches one after the other from time zero.
         """
         batch_times: Dict[str, float] = {}
 

@@ -12,9 +12,7 @@ from tests.infra.zimpl.zpl_utils import extract_active_arcs
 
 
 class Case05(ExactModelTestCase):
-    """
-    Test 2.3
-    """
+    """Two orders, two batches and two aisles; both orders pick in the first aisle."""
 
     def test_two_orders_two_aisles_using_one_aisle(self):
         """Case 5a."""
@@ -128,7 +126,7 @@ class Case05(ExactModelTestCase):
                     if p in key:
                         picker_workload[p] += 1
 
-        # Cada lote debe tener asignado exactamente un picker
+        # Every batch is assigned to exactly one picker
         for b in B:
             self.assertEqual(
                 assignments[b],
@@ -136,7 +134,7 @@ class Case05(ExactModelTestCase):
                 f"Batch {b} does not meet the unique assignment constraint (Assigned to {assignments[b]} pickers).",
             )
 
-        # Deberían paralelizar el trabajo
+        # Each picker runs one batch: the work is done in parallel
         for p in P:
             self.assertEqual(
                 picker_workload[p],
@@ -148,7 +146,7 @@ class Case05(ExactModelTestCase):
             if i not in expected_graph.get_vertices():
                 expected_graph.add_vertex(i, "picking")
 
-        # Pickers 1 y 2
+        # The route both batches follow
         expected_graph.add_edge("L1", "L2", location_graph.get_distance("L1", "L2"))
         expected_graph.add_edge("L2", "L3", location_graph.get_distance("L2", "L3"))
         expected_graph.add_edge("L3", "L4", location_graph.get_distance("L3", "L4"))
@@ -176,7 +174,6 @@ class Case05(ExactModelTestCase):
 
         self.assertEqual(output_graph, expected_graph)
 
-        # --- NUEVAS VALIDACIONES INTELIGENTES V4 ---
         if len(P) > 1 and len(B) > 1:
             self.assert_workload_balance(var_values, P, B, max_difference=1)
             

@@ -17,10 +17,8 @@ from tests.shared_scenarios.common.six_missions_three_pickers_grid_graph import 
 
 
 class Case14(ExactModelTestCase):
-    """
-    Test 11: 12 orders, 6 missions, 3 pickers. Each picker has two missions, and each mission has two orders.
-    One period per picker and two orders per vehicle.
-    """
+    """12 orders, 6 batches, 3 pickers: two batches per picker and two orders
+    per batch. One period per picker."""
 
     def test_one_period_two_orders_per_vehicle(self):
         """Case 14a."""
@@ -57,10 +55,10 @@ class Case14(ExactModelTestCase):
         y[("O11", "B6")] = 1
         y[("O12", "B6")] = 1
 
-        w1 = 9.0  # cumplimiento peso alto
-        w2 = 1.0  # demoras y adelanto peso bajp
-        gamma = 1.0  # peso del adelanto bajo
-        delta = 1.0  # peso de demora bajo
+        w1 = 9.0  # completion time: high weight
+        w2 = 1.0  # penalties: low weight
+        gamma = 1.0  # earliness
+        delta = 1.0  # tardiness
 
         beta_time = 0.5
         beta_setup = 1.0
@@ -97,16 +95,16 @@ class Case14(ExactModelTestCase):
             "O11": 15.0,
             "O12": 15.0,
         }
-        # Adaptación de variables para el formato ZIMPL V4
+        # Parameter names of the ZIMPL models
         A_ni = a if "a" in locals() else {}
         B_nb = y if "y" in locals() else {}
         C_n = cap_n if "cap_n" in locals() else {}
         T_due_n = due_date if "due_date" in locals() else {n: 0.0 for n in N}
 
-        # Tiempo de servicio por defecto (si V2 no lo tenía explícito)
+        # No service time at any location
         S_i = {v: 0.0 for v in V}
 
-        # Generación de conjunto de Arcos válidos E y distancias D_ij
+        # Arcs (E) and distances (D_ij) of the graph
         E = set()
         D_ij = {}
         for i in opp_location_graph.get_vertices():
@@ -174,7 +172,6 @@ class Case14(ExactModelTestCase):
             "El modelo no encontró una solución.",
         )
 
-        # --- NUEVAS VALIDACIONES INTELIGENTES V4 ---
         if len(P) > 1 and len(B) > 1:
             self.assert_workload_balance(var_values, P, B, max_difference=1)
 

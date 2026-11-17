@@ -12,11 +12,8 @@ from tests.shared_scenarios.functional.scenario_04 import bidirectional_edges
 
 class Case07(ExactModelTestCase):
 
-    """
-    Test 4: 5 vertex, 2 orders, 1 batch.
-    Purpose: Force the model to generate a cycle.
-    Status: Not feasible solution found.
-    """
+    """5 vertices, 2 orders, 1 batch. The picks would force the route into a
+    cycle, so the instance is infeasible."""
 
     def test_repeated_picking_locations(self):
         """Case 7a."""
@@ -39,16 +36,16 @@ class Case07(ExactModelTestCase):
         M = 1000.0
 
         due_date = {"O1": 15.0, "O2": 15.0}
-        # Adaptación de variables para el formato ZIMPL V4
+        # Parameter names of the ZIMPL models
         A_ni = a if 'a' in locals() else {} 
         B_nb = y if 'y' in locals() else {}
         C_n = cap_n if 'cap_n' in locals() else {}
         T_due_n = due_date if 'due_date' in locals() else {n: 0.0 for n in N}
         
-        # Tiempo de servicio por defecto (si V2 no lo tenía explícito)
+        # No service time at any location
         S_i = {v: 0.0 for v in V}
 
-        # Generación de conjunto de Arcos válidos E y distancias D_ij
+        # Arcs (E) and distances (D_ij) of the graph
         E = set()
         D_ij = {}
         for i in location_graph.get_vertices():

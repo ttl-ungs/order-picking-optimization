@@ -33,12 +33,10 @@ COMPONENT_FLAGS = (
 
 def split_reference_objectives():
     """
-    {test method name: opp_split obj_val or None}, taking for each test
-    the row of the NEWEST opp_split stress CSV that has it -- even if
-    that row is a timeout (None then): an older CSV may predate the
-    W_c = 27 change (2026-09-26) and hold an objective for a different
-    objective function, so it must never be used as a fallback for a test
-    the newer run also covered.
+    {test method name: opp_split obj_val or None}, from the newest opp_split
+    stress CSV that has the test, even if that row is a timeout (None then).
+    An older CSV is never used as a fallback: it may hold the objective of a
+    different objective function (another W_c).
     """
     paths = sorted(
         glob.glob(os.path.join(OUTPUTS_ROOT, "opp_split", "stress", "*.csv")),
@@ -108,9 +106,9 @@ def gap_pct(obj, reference):
 
 
 def warn_if_hash_seed_unset():
-    # Set iteration order of str sets varies per process unless
+    # The iteration order of sets of str varies per process unless
     # PYTHONHASHSEED is fixed, so two runs with the same Seed can differ
-    # slightly (measured 2026-09-27: 149,217.67 vs 149,219.75 on 7x7).
+    # slightly (149,217.67 vs 149,219.75 on 7x7).
     if os.environ.get("PYTHONHASHSEED") is None:
         print("AVISO: PYTHONHASHSEED no está fijado; los resultados pueden variar levemente entre corridas. "
               "Para reproducibilidad exacta: PYTHONHASHSEED=0 python -m ...")

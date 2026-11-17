@@ -12,9 +12,7 @@ from tests.infra.zimpl.zpl_utils import extract_active_arcs
 
 
 class Case01(ExactModelTestCase):
-    """
-    Test 1 (ZIMPL): Basic. 4 vertices, 5 edges, 2 orders, 2 batches.
-    """
+    """Basic instance: 4 vertices, 5 edges, 2 orders, 2 batches."""
 
     def test_basic_two_orders_capacity_limit(self):
         """Case 1a."""
@@ -101,17 +99,16 @@ class Case01(ExactModelTestCase):
             f"The model did not find a solution. Status: {status}",
         )
 
-        # NUEVAS VALIDACIONES
         assignments = {b: 0 for b in B}
         picker_workload = {p: 0 for p in P}
 
         for key, val in var_values.items():
             key_lower = (
                 key.lower()
-            )  # Pasamos a minúsculas por cómo ZIMPL exporta a SCIP
+            )  # the case of the names is not guaranteed
 
             if key_lower.startswith("x_pb") and val > 0.5:
-                # Buscamos el lote y el picker dentro del string original (ej: x_pb$P1$B1)
+                # The batch and the picker are in the variable name (e.g. x_pb$P1$B1)
                 for b in B:
                     if b in key:
                         assignments[b] += 1
@@ -119,7 +116,7 @@ class Case01(ExactModelTestCase):
                     if p in key:
                         picker_workload[p] += 1
 
-        # Cada lote debe tener asignado exactamente un picker
+        # Every batch is assigned to exactly one picker
         for b in B:
             self.assertEqual(
                 assignments[b],
@@ -127,16 +124,15 @@ class Case01(ExactModelTestCase):
                 f"Batch {b} does not meet the unique assignment constraint (Assigned to {assignments[b]} pickers).",
             )
 
-        # Deberían paralelizar el trabajo
+        # Each picker runs one batch: the work is done in parallel
         for p in P:
             self.assertEqual(
                 picker_workload[p],
                 1,
                 f"The picker {p} was expected to process exactly 1 batch to parallelize the load.",
             )
-        # =========================================================
 
-        # Verificar arcos activos contra el grafo esperado
+        # The active arcs are those of the expected graph
         expected_graph = OPPLocationGraph(depot_node="L1", final_node="L4")
         for i in location_graph.get_vertices():
             if i not in expected_graph.get_vertices():
@@ -159,7 +155,6 @@ class Case01(ExactModelTestCase):
                     output_graph.add_edge(i, j, location_graph.get_distance(i, j))
 
         self.assertEqual(output_graph, expected_graph)
-        # --- NUEVAS VALIDACIONES INTELIGENTES V4 ---
         if len(P) > 1 and len(B) > 1:
             self.assert_workload_balance(var_values, P, B, max_difference=1)
             

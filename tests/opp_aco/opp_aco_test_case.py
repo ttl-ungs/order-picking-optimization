@@ -13,12 +13,8 @@ class SolutionInfoCapture(Observer):
 
 
 class OPPTestCaseACO(OPPTestCase):
-    """
-    Base test case for opp_aco, adding assertions specific to the picker
-    speed / cold chain: eligibility of each
-    (picker, batch) assignment under T_cold, and the effect of V_p on
-    reported batch execution times.
-    """
+    """Base test case of opp_aco: solves, captures the solution_info and
+    asserts on the assignment, the schedule and the cold chain."""
 
     def solve_and_capture(self, model, params):
         """Attach a capture observer, solve, and return (result, output_graph, solution_info)."""

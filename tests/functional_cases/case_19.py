@@ -12,9 +12,7 @@ from tests.shared_scenarios.functional.scenario_19 import longer_single_mission_
 from tests.infra.cases.route_assertions import assert_route_covers_orders
 
 class Case19(ExactModelTestCase):
-    """
-    Test 16 (ZIMPL): Single mission, longer route. 9 vertices, 1 batch, 6 orders.
-    """
+    """A single batch with a longer route: 9 vertices, 1 batch, 6 orders."""
 
     def _solve_longer_route(
         self,
