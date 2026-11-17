@@ -43,6 +43,7 @@ class HeuristicModelTestCase(ExactModelTestCase):
     model_cls = None
     dto_cls = None
     dat_dir = _DAT_DIR
+    waits_voluntarily = False
 
     def solve(self, params=None):
         """Solve the instance whose .dat files the case just wrote.

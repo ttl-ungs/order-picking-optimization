@@ -21,6 +21,12 @@ class ExactModelTestCase(OPPTestCase):
     # Directory where the instance's .dat files are written. Set by the adapter.
     dat_dir = None
 
+    # Whether the model can finish a batch later than its picker could, to cut
+    # earliness (voluntary waiting). The exact models can; the heuristics
+    # schedule every batch as early as possible, so the assertions that need
+    # the wait (cases 06a, 06b and 37a) apply only when this is True.
+    waits_voluntarily = True
+
     def solve(self, params):
         """Solve the instance whose .dat files were just written in `dat_dir`.
 

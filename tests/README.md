@@ -22,7 +22,7 @@ The cases read the solution as the exact models' variables (`x_pb`, `c_pb`, `u_p
 its solution under those names, so the case runs unchanged.
 
 - `solve()` takes the instance the case just wrote with `build_dat_files()`; `run_pipeline()` takes the scenario.
-- Cases 06a, 06b and 37a fail on both heuristics: they assert that the batch waits until its due date to avoid earliness, and the heuristics do not wait.
+- Cases 06a, 06b and 37a check the completion time and the objective only on the exact models (`waits_voluntarily`): those values need the batch to wait until its due date, and the heuristics do not wait. The comment in each case says so.
 
 `tests/shared_scenarios/functional/functional_instances.json` (exported from OPP-Split's runs with
 `python -m tests.shared_scenarios.functional.export_functional_instances`, needs `zimpl` and SCIP) is
