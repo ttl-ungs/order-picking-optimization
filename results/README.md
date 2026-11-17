@@ -14,6 +14,7 @@ results/
 ```
 
 - One row per test. The `test` column is the dotted unittest id; models are joined by the last segment, the method name.
-- A run writes `output_<model>_<tier>_tests_<timestamp>.csv`; `experiments/common/config.py` (`LATEST_FILE_OVERRIDES`) declares which file counts when several exist.
+- A run writes `output_<model>_<tier>_tests_<timestamp>.csv`. Only the consolidated file counts (`result_csv` in `experiments/common/config.py`); a new run replaces it by hand.
+- `opp_mono/stress/`: rows 05–19 come from runs with `W_c = 9`. The current suite uses `W_c = 27` from scenario 04 on, and OPP-Mono was run with it only up to 04 (timeout at 40 min).
 - Columns: status (`ok`, `failed`, `timeout`), `total_time`, `model_time`, `obj_val`, `peak_rss_mb`, the instance parameters and, for the heuristics, `solution_file`.
 - Runs are produced with `python -m tests.run_suite <model> <tier>` and `WRITE_RESULTS_CSV=1`; the layout is checked by `python -m scripts.check_repo`.

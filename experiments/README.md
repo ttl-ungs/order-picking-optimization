@@ -24,5 +24,5 @@ All scripts run from the repository root with `python -m experiments.<directory>
 
 ## common
 
-- `config.py` — the model labels and their directories under `results/` (`MODEL_DIRS`), the two heuristics (`HEURISTIC_MODELS`), and `LATEST_FILE_OVERRIDES`: which CSV counts for each `(model, scenario)` when several runs exist (the consolidated runs are files with a fixed name, without a timestamp).
-- `load.py` — discovers those CSVs and concatenates them into one DataFrame (one row per test execution, with `model`, `scenario`, `instance` = method name and `source_file`). A missing `(model, scenario)` is reported on the console, never silently ignored.
+- `config.py` — the model labels and their directories under `results/` (`MODEL_DIRS`), the two heuristics (`HEURISTIC_MODELS`), and `result_csv(model, tier)`: the consolidated CSV that counts, the one with a fixed name and no timestamp.
+- `load.py` — reads those CSVs (`load_results`) and concatenates them (`load_all`) into one DataFrame (one row per test execution, with `model`, `scenario`, `instance` = method name and `source_file`). A missing `(model, scenario)` is reported on the console, never silently ignored.
