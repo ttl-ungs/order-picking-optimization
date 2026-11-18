@@ -572,10 +572,6 @@ class OPPHillClimbing(Model):
         """See models/utils/route_construction.py's build_reversal_prefix_arrays."""
         return route_construction.build_reversal_prefix_arrays(self.location_graph, route)
 
-    def _two_opt_tighten_route(self, route: List) -> List:
-        """Distance-minimizing 2-opt over `route` (route_construction.two_opt_tighten_route)."""
-        return route_construction.two_opt_tighten_route(self.location_graph, route)
-
     # Cap on the node expansions of the best-first search. Most batches of
     # 20-26 required locations on grids of 50-256 nodes resolve well below it;
     # a batch that exhausts it is larger than the search was designed for.
@@ -608,21 +604,6 @@ class OPPHillClimbing(Model):
         cost = objective + self._COLD_CHAIN_PENALTY_WEIGHT * violation
         return cost, objective, violation
 
-    def _route_local_search_cost(
-        self, batch: str, route: List, picker: str,
-        batch_assignments: Dict[str, Set[str]], params: SolveHCModelDTO,
-    ) -> float:
-        """
-        Cost of one batch's route (distance plus its own cold-chain overrun),
-        used only to pick the best 2-opt candidate without re-evaluating the
-        whole solution for each of the O(n^2) reversals. Whether the move is
-        kept is decided in solve() with _search_cost.
-        """
-        distance = self._calculate_route_distance(route)
-        t_exec = self._T_exec_pb(batch, route, picker, batch_assignments, params, distance=distance)
-        violation = max(0.0, t_exec - params.T_cold)
-        return params.T_travel * distance + self._COLD_CHAIN_PENALTY_WEIGHT * violation
-
     def _generate_feasible_neighbor(
         self,
         solution: RouteSolution,
@@ -654,7 +635,10 @@ class OPPHillClimbing(Model):
     ) -> Optional[RouteSolution]:
         """
         Best 2-opt reversal of a randomly chosen batch's route, scored by
-        _route_local_search_cost. A reversal that reduces the cold-chain
+        local_cost: the batch's route distance plus its own cold-chain
+        overrun, so the O(n^2) reversals are compared without re-evaluating
+        the whole solution (whether the move is kept is decided in solve()
+        with _search_cost). A reversal that reduces the cold-chain
         overrun without removing it still counts as an improvement.
 
         Each candidate is scored from its distance delta instead of building

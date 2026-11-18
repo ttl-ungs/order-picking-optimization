@@ -82,7 +82,6 @@ def main():
             "scenario": copy.deepcopy(scenario),
             "split_status": None,
             "split_obj": None,
-            "fixed_assignment": "X_pb" in scenario,
         }
         instances.append(entry)
         state["current"] = entry

@@ -45,49 +45,6 @@ class Case15(ExactModelTestCase):
 
         return orders, a, y
 
-    def get_output_graph(self):
-        expected_graph = OPPLocationGraph(
-            depot_node="V1",
-            final_node="V16",
-        )
-
-        for i in self.opp_location_graph.get_vertices():
-            if i not in expected_graph.get_vertices():
-                expected_graph.add_vertex(i, "picking")
-
-        expected_graph.add_edge(
-            "V1", "V2", self.opp_location_graph.get_distance("V1", "V2")
-        )
-        expected_graph.add_edge(
-            "V2", "V3", self.opp_location_graph.get_distance("V2", "V3")
-        )
-        expected_graph.add_edge(
-            "V3", "V7", self.opp_location_graph.get_distance("V3", "V7")
-        )
-        expected_graph.add_edge(
-            "V7", "V11", self.opp_location_graph.get_distance("V7", "V11")
-        )
-        expected_graph.add_edge(
-            "V11", "V10", self.opp_location_graph.get_distance("V11", "V10")
-        )
-        expected_graph.add_edge(
-            "V10", "V9", self.opp_location_graph.get_distance("V10", "V9")
-        )
-        expected_graph.add_edge(
-            "V9", "V13", self.opp_location_graph.get_distance("V9", "V13")
-        )
-        expected_graph.add_edge(
-            "V13", "V14", self.opp_location_graph.get_distance("V13", "V14")
-        )
-        expected_graph.add_edge(
-            "V14", "V15", self.opp_location_graph.get_distance("V14", "V15")
-        )
-        expected_graph.add_edge(
-            "V15", "V16", self.opp_location_graph.get_distance("V15", "V16")
-        )
-
-        return expected_graph
-
     def test_3_orders_1_mission_1_picker(self):
         """Case 15a."""
         N, a, y = self.get_orders()

@@ -31,9 +31,9 @@ the Split's reference for the comparability registry, not a test input.
 ## Conventions for a case
 
 - Isolate the term under test with the objective weights (for example `W_c = 0`, `W_pen = 1`, `W_e = 0`, `W_t = 1` for tardiness).
-- Validate that routes visit every required location (`assert_route_covers_orders`, `assert_batch_routes_cover_locations`).
+- Validate that routes visit every required location (`assert_route_covers_orders`).
 - For infeasible cases force one cause (duplicated location in a batch, vehicle capacity too low, disconnected graph) and assert the status `"infeasible"`.
-- Use the helpers `OPPTestCase.normalize_due_dates`, `apply_weight_overrides` and `sum_vars_with_prefix`.
+- Use the helpers `OPPTestCase.normalize_due_dates` and `apply_weight_overrides`.
 - Assertions are never relaxed to make a test pass.
 
 ## Execution

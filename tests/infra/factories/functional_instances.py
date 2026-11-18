@@ -41,20 +41,6 @@ def encode(value):
     return value
 
 
-def decode(value):
-    if isinstance(value, dict):
-        if set(value) == {"__set__"}:
-            return {decode(v) for v in value["__set__"]}
-        if set(value) == {"__tuple__"}:
-            return tuple(decode(v) for v in value["__tuple__"])
-        if set(value) == {"__dict_items__"}:
-            return {decode(k): decode(v) for k, v in value["__dict_items__"]}
-        return {k: decode(v) for k, v in value.items()}
-    if isinstance(value, list):
-        return [decode(v) for v in value]
-    return value
-
-
 def with_split_defaults(scenario):
     """Fill V_p / T_cold the way opp_split does when a scenario omits them."""
     scenario = dict(scenario)
@@ -127,7 +113,6 @@ def comparability(entry):
     instance: the rule every comparison uses.
 
     - timeout: the Split never concluded, nothing to compare;
-    - x_pb fixed by the Split: the heuristics cannot take that constraint;
     - infeasible: the outcome is comparable, there is no objective;
     - the Split waits voluntarily in some batch: the outcome is comparable,
       the objective is not (the Split's is lower by design);
@@ -136,8 +121,6 @@ def comparability(entry):
     status = entry["split_status"]
     if status == "timeout":
         return False, False, "el Split no terminó (timeout)"
-    if entry.get("fixed_assignment"):
-        return False, False, "el Split fija la asignación batch-picker (x_pb); las heurísticas no la admiten"
     if status == "infeasible":
         return True, False, "infeasible: no hay objetivo que comparar"
     if entry.get("split_waiting_batches"):

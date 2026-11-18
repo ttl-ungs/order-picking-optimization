@@ -6,7 +6,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "el Split usa espera voluntaria en ['B1']",
    "scenario": {
     "A_ni": {
@@ -286,7 +285,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -674,7 +672,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -1062,7 +1059,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -1450,7 +1446,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -1838,7 +1833,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "el Split usa espera voluntaria en ['B1', 'B2']",
    "scenario": {
     "A_ni": {
@@ -2144,7 +2138,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "el Split usa espera voluntaria en ['B1', 'B2']",
    "scenario": {
     "A_ni": {
@@ -2450,7 +2443,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "infeasible: no hay objetivo que comparar",
    "scenario": {
     "A_ni": {
@@ -2819,7 +2811,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -3334,7 +3325,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -3683,7 +3673,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -4021,7 +4010,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -4631,7 +4619,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -7866,7 +7853,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -11101,7 +11087,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -12385,7 +12370,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -14293,7 +14277,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -14911,7 +14894,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -15711,7 +15693,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "el Split usa espera voluntaria en ['B1']",
    "scenario": {
     "A_ni": {
@@ -16713,7 +16694,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -17713,7 +17693,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -18713,7 +18692,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "el Split usa espera voluntaria en ['B1']",
    "scenario": {
     "A_ni": {
@@ -19715,7 +19693,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -22561,7 +22538,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "infeasible: no hay objetivo que comparar",
    "scenario": {
     "A_ni": {
@@ -24837,7 +24813,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -25809,7 +25784,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -26781,7 +26755,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -27064,7 +27037,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -27347,7 +27319,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -27507,7 +27478,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "infeasible: no hay objetivo que comparar",
    "scenario": {
     "A_ni": {
@@ -27667,7 +27637,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "infeasible: no hay objetivo que comparar",
    "scenario": {
     "A_ni": {
@@ -30513,7 +30482,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -33359,7 +33327,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -36205,7 +36172,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "infeasible: no hay objetivo que comparar",
    "scenario": {
     "A_ni": {
@@ -39051,7 +39017,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -41897,7 +41862,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -44743,7 +44707,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -47589,7 +47552,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -50435,7 +50397,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -53281,7 +53242,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "infeasible: no hay objetivo que comparar",
    "scenario": {
     "A_ni": {
@@ -55557,7 +55517,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "el Split usa espera voluntaria en ['B2', 'B4']",
    "scenario": {
     "A_ni": {
@@ -57866,7 +57825,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "el Split usa espera voluntaria en ['B1', 'B3']",
    "scenario": {
     "A_ni": {
@@ -60175,7 +60133,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -62481,7 +62438,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -64787,7 +64743,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -67093,7 +67048,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -67371,7 +67325,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -67669,7 +67622,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -67967,7 +67919,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "el Split usa espera voluntaria en ['B2', 'B3']",
    "scenario": {
     "A_ni": {
@@ -70817,7 +70768,6 @@
   {
    "comparable_objective": false,
    "comparable_status": false,
-   "fixed_assignment": false,
    "not_comparable_reason": "el Split no termin\u00f3 (timeout)",
    "scenario": {
     "A_ni": {
@@ -74252,7 +74202,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "infeasible: no hay objetivo que comparar",
    "scenario": {
     "A_ni": {
@@ -77687,7 +77636,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "infeasible: no hay objetivo que comparar",
    "scenario": {
     "A_ni": {
@@ -78075,7 +78023,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "el Split usa espera voluntaria en ['B1', 'B2']",
    "scenario": {
     "A_ni": {
@@ -78466,7 +78413,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "infeasible: no hay objetivo que comparar",
    "scenario": {
     "A_ni": {
@@ -80738,7 +80684,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -81016,7 +80961,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -81294,7 +81238,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "el Split usa espera voluntaria en ['B1']",
    "scenario": {
     "A_ni": {
@@ -81574,7 +81517,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "infeasible: no hay objetivo que comparar",
    "scenario": {
     "A_ni": {
@@ -81734,7 +81676,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -81894,7 +81835,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -82177,7 +82117,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -82460,7 +82399,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -82620,7 +82558,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "infeasible: no hay objetivo que comparar",
    "scenario": {
     "A_ni": {
@@ -82780,7 +82717,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -83063,7 +82999,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -83346,7 +83281,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -83504,7 +83438,6 @@
   {
    "comparable_objective": true,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "",
    "scenario": {
     "A_ni": {
@@ -83814,7 +83747,6 @@
   {
    "comparable_objective": false,
    "comparable_status": true,
-   "fixed_assignment": false,
    "not_comparable_reason": "infeasible: no hay objetivo que comparar",
    "scenario": {
     "A_ni": {
