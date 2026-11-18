@@ -14,15 +14,15 @@ import json
 import os
 from collections import Counter, defaultdict
 
+from tests.infra.zimpl.dat_files_builder import DEFAULT_T_COLD
 
 FIXTURE_PATH = os.path.abspath(os.path.join(
     os.path.dirname(__file__), "..", "..", "shared_scenarios", "functional", "functional_instances.json",
 ))
 
-# The defaults opp_split applies to a scenario without picker speeds or a
-# cold-chain limit (tests/infra/zimpl/dat_files_builder.py).
+# The speed opp_split gives every picker when a scenario defines none (the
+# cold-chain limit's default, DEFAULT_T_COLD, is dat_files_builder's).
 DEFAULT_SPEED = 1.0
-DEFAULT_T_COLD = 1_000_000_000.0
 
 
 # --- JSON encoding: sets and tuple-keyed dicts --------------------------------
