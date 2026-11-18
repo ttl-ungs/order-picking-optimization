@@ -94,7 +94,6 @@ El marco de validación científica de la tesis exige que los cuatro modelos res
 * **Uso de Helpers:** Es obligatorio usar los métodos de conveniencia heredados o importados para manipulación de parámetros de test, tales como:
   * OPPTestCase.normalize_due_dates()
   * OPPTestCase.apply_weight_overrides()
-  * OPPTestCase.sum_vars_with_prefix()
 
 ### 5. Convenciones de Documentación (Docs Conventions)
 
