@@ -14,6 +14,7 @@ import atexit
 import shutil
 import tempfile
 
+from models.utils import solve_registry
 from models.utils.cold_chain_validation import invalid_speeds
 from observer.observer import Observer
 from tests.infra.cases.exact_model_case import ExactModelTestCase
@@ -75,6 +76,7 @@ class HeuristicModelTestCase(ExactModelTestCase):
         return values, route_times, status, values
 
     def _solve_scenario(self, scenario):
+        solve_registry.begin_instance()
         model_dto, params = build_model_dto_and_params(scenario, self.dto_cls)
         model_dto.start_time = self.start_time
         model = self.model_cls(model_dto)

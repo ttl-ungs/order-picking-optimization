@@ -3,6 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
+from models.utils import solve_registry
 from models.utils.cold_chain_validation import invalid_speeds
 from tests.infra.cases.exact_model_case import ExactModelTestCase
 from tests.infra.zimpl.dat_files_builder import build_dat_files
@@ -16,6 +17,7 @@ class OPPTestCaseMono(ExactModelTestCase):
     dat_dir = DAT_DIR
 
     def solve(self, params):
+        solve_registry.begin_instance()
         return solve_zpl(ZPL_PATH, dat_dir=self.dat_dir, params=params)
 
     def run_pipeline(self, scenario):
@@ -26,6 +28,7 @@ class OPPTestCaseMono(ExactModelTestCase):
         OPPTestCaseSplit.run_pipeline so the same case runs on both models.
         `route_times` are the r_b values the model itself chose.
         """
+        solve_registry.begin_instance()
         # Reject a non-positive speed before ZIMPL runs (see
         # models/utils/cold_chain_validation.invalid_speeds).
         bad_speeds = invalid_speeds(scenario["V_p"])

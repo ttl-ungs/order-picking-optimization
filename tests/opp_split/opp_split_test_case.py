@@ -8,6 +8,7 @@ from models.utils.cold_chain_validation import (
     batches_without_eligible_picker, invalid_speeds,
 )
 from dtos.opp.solve_result import SolveResult
+from models.utils import solve_registry
 from models.utils.solve_registry import get_last, register as register_solve
 from tests.infra.cases.exact_model_case import ExactModelTestCase
 from tests.opp_split.config import DAT_DIR, STAGE1_ZPL_PATH, STAGE2_ZPL_PATH
@@ -34,6 +35,7 @@ class OPPTestCaseSplit(ExactModelTestCase):
         cold-chain limit is disabled. Returns (status, values), with the values of
         both stages together.
         """
+        solve_registry.begin_instance()
         # Stage 1 is solved one batch at a time (see stage1_decomposition.py).
         # `params` (the input pre-checks and the CSV metadata) is applied at
         # the Stage 2 call below, on the full scenario.
@@ -104,6 +106,7 @@ class OPPTestCaseSplit(ExactModelTestCase):
                 )
 
     def run_pipeline(self, scenario, solve_stage2=True):
+        solve_registry.begin_instance()
         # A speed of 0 divides by zero in T_exec_pb when ZIMPL reads the data,
         # and a negative one gives a negative T_exec_pb that looks eligible for
         # any T_cold: reject both before ZIMPL runs. It goes before
