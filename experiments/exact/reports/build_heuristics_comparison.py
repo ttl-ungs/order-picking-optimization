@@ -21,7 +21,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from experiments.exact.reports.build_functional_comparison import (
-    MONO_RUN, SPLIT_RUN, case_ids, label, load, table,
+    MONO_RUN, SPLIT_RUN, base_method, case_ids, label, load, table,
 )
 from experiments.exact.reports.charts import Chart, ROOT, es
 from experiments.exact.reports.comparable_set import HEURISTICS, compliance, registry, results
@@ -49,12 +49,18 @@ def pct(value, dec=2):
 
 
 def instance_ids():
-    """{Split method: [case id, ...]} from the split run, to label instances like the mono report."""
+    """{Split method: [case id, ...]} from the split run, to label instances like the mono report.
+
+    The Split run has one row per instance; a test with several gives its case
+    id once (without the instance number, which instance_label adds)."""
     split = load(SPLIT_RUN)
     ids = case_ids(set(split) | set(load(MONO_RUN)))
     out = {}
     for key in sorted(split):
-        out.setdefault(key[1], []).append((ids[key], label(*key)))
+        instance = re.search(r"__(\d+)$", key[1])
+        if instance and instance.group(1) != "1":
+            continue
+        out.setdefault(base_method(key[1]), []).append((ids[key].split("·")[0], label(*key)))
     return out
 
 

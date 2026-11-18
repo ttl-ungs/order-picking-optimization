@@ -92,14 +92,28 @@ def num(value):
         return None
 
 
+_INSTANCE = re.compile(r"__(\d+)$")
+
+
+def base_method(method):
+    """The test method of a results row: test_x__2 (instance 2 of test_x) -> test_x."""
+    return _INSTANCE.sub("", method)
+
+
 def case_ids(keys):
-    """'19a', '19b'... for test cases with several methods, in method order."""
-    ids, by_case = {}, {}
-    for key in sorted(keys):
-        by_case.setdefault(key[0], []).append(key)
-    for case, members in by_case.items():
-        for i, key in enumerate(members):
-            ids[key] = case + ("abcdefgh"[i] if len(members) > 1 else "")
+    """'19a', '19b'... for test cases with several methods, in method order. A
+    row of a test that solves several instances adds its number: '26b·1'."""
+    methods_by_case = {}
+    for case, method in sorted(keys):
+        methods = methods_by_case.setdefault(case, [])
+        if base_method(method) not in methods:
+            methods.append(base_method(method))
+    ids = {}
+    for case, method in keys:
+        methods = methods_by_case[case]
+        letter = "abcdefgh"[methods.index(base_method(method))] if len(methods) > 1 else ""
+        instance = _INSTANCE.search(method)
+        ids[(case, method)] = case + letter + (f"·{instance.group(1)}" if instance else "")
     return ids
 
 
@@ -129,7 +143,7 @@ def build():
 
     feasible, infeasible, excluded_keys = [], [], []
     for key in shared:
-        if not comparable[key[1]][0]:
+        if not comparable[base_method(key[1])][0]:
             excluded_keys.append(key)
         elif verdict[key][0] in ("same_solution", "alternative_optimum"):
             feasible.append(key)
@@ -205,7 +219,7 @@ def build():
          es(num(mono[k]["total_time"]) / num(split[k]["total_time"]), 2) + "×"] for k in infeasible
     ])
     def reason(key):
-        text = comparable[key[1]][1]
+        text = comparable[base_method(key[1])][1]
         if "timeout" in text:
             return "Timeout en split (25 min): sin referencia"
         if "espere" in text:

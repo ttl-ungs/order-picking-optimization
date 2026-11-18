@@ -19,7 +19,7 @@
 
 \startsection[title={Resumen}]
 \startitemize
-\item {\bf Mismo problema, mismo óptimo}: en los 49 pares que los dos resuelven el
+\item {\bf Mismo problema, mismo óptimo}: en los 55 pares que los dos resuelven el
 objetivo es el mismo, y los 11 infactibles lo son en los dos.
 \item {\bf En instancias chicas da lo mismo}: el monolítico es algo más rápido por décimas de
 segundo, porque compila un modelo en vez de dos.
@@ -38,9 +38,9 @@ secuenciación, con velocidades heterogéneas de pickers y cadena de frío) y ti
 
 Los datos son los CSV consolidados de cada modelo:
 \startitemize
-\item \type{results/opp_split/functional/} — 64 tests, con la Etapa 1 en
+\item \type{results/opp_split/functional/} — 70 tests, con la Etapa 1 en
 secuencia.
-\item \type{results/opp_mono/functional/} — 63 tests.
+\item \type{results/opp_mono/functional/} — 69 tests.
 \item \type{results/comparability/compare_split_vs_mono.csv} — la comparación de las
 soluciones guardadas de los dos modelos, test por test.
 \stopitemize
@@ -65,9 +65,9 @@ solución y tiempos) o si los dos lo declaran infactible (se compara el estado).
 \bTABLE[split=yes, align=middle, frame=on, width=fit]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \bTR \bTH Métrica \eTH \bTH Pares \eTH \eTR
-\bTR \bTD Tests en los dos modelos \eTD \bTD 63 \eTD \eTR
-\bTR \bTD Comparables \eTD \bTD 60 \eTD \eTR
-\bTR \bTD \quad resueltos en los dos \eTD \bTD 49 \eTD \eTR
+\bTR \bTD Tests en los dos modelos \eTD \bTD 69 \eTD \eTR
+\bTR \bTD Comparables \eTD \bTD 66 \eTD \eTR
+\bTR \bTD \quad resueltos en los dos \eTD \bTD 55 \eTD \eTR
 \bTR \bTD \quad infactibles en los dos \eTD \bTD 11 \eTD \eTR
 \bTR \bTD Fuera de la comparación \eTD \bTD 4 \eTD \eTR
 \eTABLE
@@ -90,7 +90,7 @@ con las heurísticas:
 \stopsection
 
 \startsection[title={Equivalencia del valor objetivo}]
-De los 49 pares resueltos, {\bf 49 tienen el mismo valor objetivo}. La
+De los 55 pares resueltos, {\bf 55 tienen el mismo valor objetivo}. La
 diferencia máxima es $3{,}83 \times 10^{-6}$ (casos 13, 14), dentro de la tolerancia de
 SCIP. Los 11 pares infactibles lo son en los dos modelos.
 
@@ -100,10 +100,10 @@ los tests de cadena de frío, velocidad y ruta más corta.
 
 \startsection[title={Soluciones: mismo óptimo, no siempre la misma solución}]
 Los dos modelos alcanzan el mismo objetivo, pero no siempre con la misma solución. En
-28 de los 49 pares devuelven la misma; en los otros
-21 el monolítico devuelve un {\em óptimo alternativo}: otras rutas
-(13 pares), otra asignación de lotes a pickers o de órdenes a lotes
-(16), o las dos cosas.
+30 de los 55 pares devuelven la misma; en los otros
+25 el monolítico devuelve un {\em óptimo alternativo}: otras rutas
+(17 pares), otra asignación de lotes a pickers o de órdenes a lotes
+(20), o las dos cosas.
 
 Es lo esperable. El objetivo no tiene un término de tiempo de ruta, así que el monolítico puede
 elegir cualquier ruta que no empeore las penalizaciones; en el split, la Etapa 1 siempre produce la
@@ -113,33 +113,33 @@ sección \in[sec:detalle] dice en qué difiere cada par.
 \stopsection
 
 \startsection[title={Tiempos de los pares resueltos}]
-Sobre los 49 pares resueltos. \type{total_time} es la ejecución completa del test,
+Sobre los 55 pares resueltos. \type{total_time} es la ejecución completa del test,
 incluida la compilación de ZIMPL; \type{model_time} es solo el solver (en el split, la Etapa 2).
 
 \blank[medium]
 \bTABLE[split=yes, align=middle, frame=on, width=fit]
 \setupTABLE[row][1][background=color, backgroundcolor=darkgray, style=bold]
 \bTR \bTH Métrica \eTH \bTH Mono (s) \eTH \bTH Split (s) \eTH \bTH Mono / split \eTH \eTR
-\bTR \bTD \type{total_time} suma \eTD \bTD 140,3 \eTD \bTD 24,4 \eTD \bTD 5,75× \eTD \eTR
-\bTR \bTD \type{total_time} promedio \eTD \bTD 2,864 \eTD \bTD 0,498 \eTD \bTD 5,75× \eTD \eTR
-\bTR \bTD \type{total_time} mediana \eTD \bTD 0,225 \eTD \bTD 0,309 \eTD \bTD 0,73× \eTD \eTR
-\bTR \bTD \type{total_time} desvío \eTD \bTD 8,792 \eTD \bTD 0,697 \eTD \bTD -- \eTD \eTR
-\bTR \bTD \type{total_time} mínimo \eTD \bTD 0,191 \eTD \bTD 0,226 \eTD \bTD 0,84× \eTD \eTR
+\bTR \bTD \type{total_time} suma \eTD \bTD 148,1 \eTD \bTD 26,5 \eTD \bTD 5,60× \eTD \eTR
+\bTR \bTD \type{total_time} promedio \eTD \bTD 2,692 \eTD \bTD 0,481 \eTD \bTD 5,60× \eTD \eTR
+\bTR \bTD \type{total_time} mediana \eTD \bTD 0,226 \eTD \bTD 0,315 \eTD \bTD 0,72× \eTD \eTR
+\bTR \bTD \type{total_time} desvío \eTD \bTD 8,326 \eTD \bTD 0,659 \eTD \bTD -- \eTD \eTR
+\bTR \bTD \type{total_time} mínimo \eTD \bTD 0,071 \eTD \bTD 0,226 \eTD \bTD 0,31× \eTD \eTR
 \bTR \bTD \type{total_time} máximo \eTD \bTD 43,534 \eTD \bTD 3,863 \eTD \bTD 11,27× \eTD \eTR
-\bTR \bTD \type{model_time} suma \eTD \bTD 124,76 \eTD \bTD 7,19 \eTD \bTD 17,35× \eTD \eTR
-\bTR \bTD \type{model_time} mediana \eTD \bTD 0,007 \eTD \bTD 0,003 \eTD \bTD 2,33× \eTD \eTR
+\bTR \bTD \type{model_time} suma \eTD \bTD 131,92 \eTD \bTD 7,47 \eTD \bTD 17,66× \eTD \eTR
+\bTR \bTD \type{model_time} mediana \eTD \bTD 0,007 \eTD \bTD 0,003 \eTD \bTD 1,99× \eTD \eTR
 \eTABLE
 \blank[medium]
 
-En total, el monolítico tardó 5,7 veces más que el split, pero en la mediana la
-diferencia se invierte: 0,225~s contra 0,309~s. En 38
-de los 49 pares el monolítico fue {\bf más rápido} (entre 0,37× y
+En total, el monolítico tardó 5,6 veces más que el split, pero en la mediana la
+diferencia se invierte: 0,226~s contra 0,315~s. En 42
+de los 55 pares el monolítico fue {\bf más rápido} (entre 0,31× y
 0,98×): son instancias chicas, donde compilar y resolver un solo modelo cuesta
 menos que compilar dos. La suma la dominan las instancias de grilla, donde el monolítico llega a
 tardar 28,9 veces más (caso 29).
 
-En \type{model_time} la diferencia es mayor (17 veces en la suma,
-2,3 en la mediana), porque el monolítico resuelve un MIP con más variables y
+En \type{model_time} la diferencia es mayor (18 veces en la suma,
+2,0 en la mediana), porque el monolítico resuelve un MIP con más variables y
 restricciones que cualquiera de las dos etapas.
 \stopsection
 
@@ -191,6 +191,7 @@ fill fullcircle scaled 4pt shifted (1.638cm,1.872cm) withcolor \MPcolor{darkblue
 fill fullcircle scaled 4pt shifted (1.329cm,1.058cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (1.226cm,0.769cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (1.119cm,1.096cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.393cm,0.182cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (1.407cm,1.154cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (1.050cm,0.855cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (1.854cm,4.541cm) withcolor \MPcolor{darkblue};
@@ -201,13 +202,18 @@ fill fullcircle scaled 4pt shifted (1.213cm,0.915cm) withcolor \MPcolor{darkblue
 fill fullcircle scaled 4pt shifted (1.872cm,0.779cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (1.661cm,5.305cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (1.683cm,4.536cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.731cm,3.388cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (2.114cm,3.145cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.254cm,4.560cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (2.199cm,4.671cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (1.736cm,4.762cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.590cm,1.118cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (2.151cm,1.866cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (1.654cm,1.502cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (1.466cm,1.315cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (2.061cm,2.022cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (1.135cm,0.921cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (0.972cm,-0.403cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (1.493cm,1.074cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (1.457cm,5.353cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (1.226cm,0.938cm) withcolor \MPcolor{darkblue};
@@ -254,62 +260,69 @@ label.lft(textext("\tfx 50"), (-0.120cm,6.000cm));
 label.lft(textext("Mono / split (tiempo total)") rotated 90, (-1.25cm,h/2));
 draw (0.000cm,1.139cm)--(14.000cm,1.139cm) withpen pencircle scaled .5pt dashed evenly;
 label.lft(textext("\tfxx igual"), (13.900cm,0.939cm));
-fill (0.043cm,-0.110cm)--(0.243cm,-0.110cm)--(0.243cm,1.139cm)--(0.043cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (0.329cm,-0.096cm)--(0.529cm,-0.096cm)--(0.529cm,1.139cm)--(0.329cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (0.614cm,-0.034cm)--(0.814cm,-0.034cm)--(0.814cm,1.139cm)--(0.614cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (0.900cm,0.062cm)--(1.100cm,0.062cm)--(1.100cm,1.139cm)--(0.900cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (1.186cm,0.403cm)--(1.386cm,0.403cm)--(1.386cm,1.139cm)--(1.186cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (1.471cm,0.640cm)--(1.671cm,0.640cm)--(1.671cm,1.139cm)--(1.471cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (1.757cm,0.648cm)--(1.957cm,0.648cm)--(1.957cm,1.139cm)--(1.757cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (2.043cm,0.676cm)--(2.243cm,0.676cm)--(2.243cm,1.139cm)--(2.043cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (2.329cm,0.682cm)--(2.529cm,0.682cm)--(2.529cm,1.139cm)--(2.329cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (2.614cm,0.689cm)--(2.814cm,0.689cm)--(2.814cm,1.139cm)--(2.614cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (2.900cm,0.703cm)--(3.100cm,0.703cm)--(3.100cm,1.139cm)--(2.900cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (3.186cm,0.736cm)--(3.386cm,0.736cm)--(3.386cm,1.139cm)--(3.186cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (3.471cm,0.746cm)--(3.671cm,0.746cm)--(3.671cm,1.139cm)--(3.471cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (3.757cm,0.776cm)--(3.957cm,0.776cm)--(3.957cm,1.139cm)--(3.757cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (4.043cm,0.777cm)--(4.243cm,0.777cm)--(4.243cm,1.139cm)--(4.043cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (4.329cm,0.819cm)--(4.529cm,0.819cm)--(4.529cm,1.139cm)--(4.329cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (4.614cm,0.830cm)--(4.814cm,0.830cm)--(4.814cm,1.139cm)--(4.614cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (4.900cm,0.833cm)--(5.100cm,0.833cm)--(5.100cm,1.139cm)--(4.900cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (5.186cm,0.840cm)--(5.386cm,0.840cm)--(5.386cm,1.139cm)--(5.186cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (5.471cm,0.842cm)--(5.671cm,0.842cm)--(5.671cm,1.139cm)--(5.471cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (5.757cm,0.847cm)--(5.957cm,0.847cm)--(5.957cm,1.139cm)--(5.757cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (6.043cm,0.867cm)--(6.243cm,0.867cm)--(6.243cm,1.139cm)--(6.043cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (6.329cm,0.883cm)--(6.529cm,0.883cm)--(6.529cm,1.139cm)--(6.329cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (6.614cm,0.909cm)--(6.814cm,0.909cm)--(6.814cm,1.139cm)--(6.614cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (6.900cm,0.915cm)--(7.100cm,0.915cm)--(7.100cm,1.139cm)--(6.900cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (7.186cm,0.922cm)--(7.386cm,0.922cm)--(7.386cm,1.139cm)--(7.186cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (7.471cm,0.927cm)--(7.671cm,0.927cm)--(7.671cm,1.139cm)--(7.471cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (7.757cm,0.929cm)--(7.957cm,0.929cm)--(7.957cm,1.139cm)--(7.757cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (8.043cm,0.929cm)--(8.243cm,0.929cm)--(8.243cm,1.139cm)--(8.043cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (8.329cm,0.940cm)--(8.529cm,0.940cm)--(8.529cm,1.139cm)--(8.329cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (8.614cm,0.943cm)--(8.814cm,0.943cm)--(8.814cm,1.139cm)--(8.614cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (8.900cm,0.953cm)--(9.100cm,0.953cm)--(9.100cm,1.139cm)--(8.900cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (9.186cm,0.961cm)--(9.386cm,0.961cm)--(9.386cm,1.139cm)--(9.186cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (9.471cm,0.975cm)--(9.671cm,0.975cm)--(9.671cm,1.139cm)--(9.471cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (9.757cm,1.018cm)--(9.957cm,1.018cm)--(9.957cm,1.139cm)--(9.757cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (10.043cm,1.096cm)--(10.243cm,1.096cm)--(10.243cm,1.139cm)--(10.043cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (10.329cm,1.114cm)--(10.529cm,1.114cm)--(10.529cm,1.139cm)--(10.329cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (10.614cm,1.114cm)--(10.814cm,1.114cm)--(10.814cm,1.139cm)--(10.614cm,1.139cm)--cycle withcolor \MPcolor{redline};
-fill (10.900cm,1.139cm)--(11.100cm,1.139cm)--(11.100cm,1.162cm)--(10.900cm,1.162cm)--cycle withcolor \MPcolor{darkblue};
-fill (11.186cm,1.139cm)--(11.386cm,1.139cm)--(11.386cm,1.390cm)--(11.186cm,1.390cm)--cycle withcolor \MPcolor{darkblue};
-fill (11.471cm,1.139cm)--(11.671cm,1.139cm)--(11.671cm,2.245cm)--(11.471cm,2.245cm)--cycle withcolor \MPcolor{darkblue};
-fill (11.757cm,1.139cm)--(11.957cm,1.139cm)--(11.957cm,3.791cm)--(11.757cm,3.791cm)--cycle withcolor \MPcolor{darkblue};
-fill (12.043cm,1.139cm)--(12.243cm,1.139cm)--(12.243cm,4.022cm)--(12.043cm,4.022cm)--cycle withcolor \MPcolor{darkblue};
-label.top(textext("\tfxx 20"), (12.143cm,4.052cm));
-fill (12.329cm,1.139cm)--(12.529cm,1.139cm)--(12.529cm,4.149cm)--(12.329cm,4.149cm)--cycle withcolor \MPcolor{darkblue};
-label.top(textext("\tfxx 13"), (12.429cm,4.179cm));
-fill (12.614cm,1.139cm)--(12.814cm,1.139cm)--(12.814cm,4.196cm)--(12.614cm,4.196cm)--cycle withcolor \MPcolor{darkblue};
-label.top(textext("\tfxx 14"), (12.714cm,4.226cm));
-fill (12.900cm,1.139cm)--(13.100cm,1.139cm)--(13.100cm,4.201cm)--(12.900cm,4.201cm)--cycle withcolor \MPcolor{darkblue};
-label.top(textext("\tfxx 25c"), (13.000cm,4.231cm));
-fill (13.186cm,1.139cm)--(13.386cm,1.139cm)--(13.386cm,4.385cm)--(13.186cm,4.385cm)--cycle withcolor \MPcolor{darkblue};
-label.top(textext("\tfxx 25g"), (13.286cm,4.415cm));
-fill (13.471cm,1.139cm)--(13.671cm,1.139cm)--(13.671cm,5.048cm)--(13.471cm,5.048cm)--cycle withcolor \MPcolor{darkblue};
-label.top(textext("\tfxx 25b"), (13.571cm,5.078cm));
-fill (13.757cm,1.139cm)--(13.957cm,1.139cm)--(13.957cm,5.319cm)--(13.757cm,5.319cm)--cycle withcolor \MPcolor{darkblue};
-label.top(textext("\tfxx 29"), (13.857cm,5.349cm));
+fill (0.038cm,-0.336cm)--(0.216cm,-0.336cm)--(0.216cm,1.139cm)--(0.038cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (0.293cm,-0.161cm)--(0.471cm,-0.161cm)--(0.471cm,1.139cm)--(0.293cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (0.547cm,-0.110cm)--(0.725cm,-0.110cm)--(0.725cm,1.139cm)--(0.547cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (0.802cm,-0.096cm)--(0.980cm,-0.096cm)--(0.980cm,1.139cm)--(0.802cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (1.056cm,-0.034cm)--(1.235cm,-0.034cm)--(1.235cm,1.139cm)--(1.056cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (1.311cm,0.062cm)--(1.489cm,0.062cm)--(1.489cm,1.139cm)--(1.311cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (1.565cm,0.403cm)--(1.744cm,0.403cm)--(1.744cm,1.139cm)--(1.565cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (1.820cm,0.632cm)--(1.998cm,0.632cm)--(1.998cm,1.139cm)--(1.820cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (2.075cm,0.640cm)--(2.253cm,0.640cm)--(2.253cm,1.139cm)--(2.075cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (2.329cm,0.648cm)--(2.507cm,0.648cm)--(2.507cm,1.139cm)--(2.329cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (2.584cm,0.676cm)--(2.762cm,0.676cm)--(2.762cm,1.139cm)--(2.584cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (2.838cm,0.682cm)--(3.016cm,0.682cm)--(3.016cm,1.139cm)--(2.838cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (3.093cm,0.689cm)--(3.271cm,0.689cm)--(3.271cm,1.139cm)--(3.093cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (3.347cm,0.703cm)--(3.525cm,0.703cm)--(3.525cm,1.139cm)--(3.347cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (3.602cm,0.736cm)--(3.780cm,0.736cm)--(3.780cm,1.139cm)--(3.602cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (3.856cm,0.746cm)--(4.035cm,0.746cm)--(4.035cm,1.139cm)--(3.856cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (4.111cm,0.776cm)--(4.289cm,0.776cm)--(4.289cm,1.139cm)--(4.111cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (4.365cm,0.777cm)--(4.544cm,0.777cm)--(4.544cm,1.139cm)--(4.365cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (4.620cm,0.819cm)--(4.798cm,0.819cm)--(4.798cm,1.139cm)--(4.620cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (4.875cm,0.830cm)--(5.053cm,0.830cm)--(5.053cm,1.139cm)--(4.875cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (5.129cm,0.833cm)--(5.307cm,0.833cm)--(5.307cm,1.139cm)--(5.129cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (5.384cm,0.840cm)--(5.562cm,0.840cm)--(5.562cm,1.139cm)--(5.384cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (5.638cm,0.842cm)--(5.816cm,0.842cm)--(5.816cm,1.139cm)--(5.638cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (5.893cm,0.847cm)--(6.071cm,0.847cm)--(6.071cm,1.139cm)--(5.893cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (6.147cm,0.867cm)--(6.325cm,0.867cm)--(6.325cm,1.139cm)--(6.147cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (6.402cm,0.883cm)--(6.580cm,0.883cm)--(6.580cm,1.139cm)--(6.402cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (6.656cm,0.909cm)--(6.835cm,0.909cm)--(6.835cm,1.139cm)--(6.656cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (6.911cm,0.915cm)--(7.089cm,0.915cm)--(7.089cm,1.139cm)--(6.911cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (7.165cm,0.922cm)--(7.344cm,0.922cm)--(7.344cm,1.139cm)--(7.165cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (7.420cm,0.927cm)--(7.598cm,0.927cm)--(7.598cm,1.139cm)--(7.420cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (7.675cm,0.929cm)--(7.853cm,0.929cm)--(7.853cm,1.139cm)--(7.675cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (7.929cm,0.929cm)--(8.107cm,0.929cm)--(8.107cm,1.139cm)--(7.929cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (8.184cm,0.940cm)--(8.362cm,0.940cm)--(8.362cm,1.139cm)--(8.184cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (8.438cm,0.943cm)--(8.616cm,0.943cm)--(8.616cm,1.139cm)--(8.438cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (8.693cm,0.953cm)--(8.871cm,0.953cm)--(8.871cm,1.139cm)--(8.693cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (8.947cm,0.961cm)--(9.125cm,0.961cm)--(9.125cm,1.139cm)--(8.947cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (9.202cm,0.975cm)--(9.380cm,0.975cm)--(9.380cm,1.139cm)--(9.202cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (9.456cm,0.977cm)--(9.635cm,0.977cm)--(9.635cm,1.139cm)--(9.456cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (9.711cm,1.018cm)--(9.889cm,1.018cm)--(9.889cm,1.139cm)--(9.711cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (9.965cm,1.096cm)--(10.144cm,1.096cm)--(10.144cm,1.139cm)--(9.965cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (10.220cm,1.114cm)--(10.398cm,1.114cm)--(10.398cm,1.139cm)--(10.220cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (10.475cm,1.114cm)--(10.653cm,1.114cm)--(10.653cm,1.139cm)--(10.475cm,1.139cm)--cycle withcolor \MPcolor{redline};
+fill (10.729cm,1.139cm)--(10.907cm,1.139cm)--(10.907cm,1.162cm)--(10.729cm,1.162cm)--cycle withcolor \MPcolor{darkblue};
+fill (10.984cm,1.139cm)--(11.162cm,1.139cm)--(11.162cm,1.390cm)--(10.984cm,1.390cm)--cycle withcolor \MPcolor{darkblue};
+fill (11.238cm,1.139cm)--(11.416cm,1.139cm)--(11.416cm,2.245cm)--(11.238cm,2.245cm)--cycle withcolor \MPcolor{darkblue};
+fill (11.493cm,1.139cm)--(11.671cm,1.139cm)--(11.671cm,2.916cm)--(11.493cm,2.916cm)--cycle withcolor \MPcolor{darkblue};
+fill (11.747cm,1.139cm)--(11.925cm,1.139cm)--(11.925cm,3.791cm)--(11.747cm,3.791cm)--cycle withcolor \MPcolor{darkblue};
+fill (12.002cm,1.139cm)--(12.180cm,1.139cm)--(12.180cm,4.022cm)--(12.002cm,4.022cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 20"), (12.091cm,4.052cm));
+fill (12.256cm,1.139cm)--(12.435cm,1.139cm)--(12.435cm,4.149cm)--(12.256cm,4.149cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 13"), (12.345cm,4.179cm));
+fill (12.511cm,1.139cm)--(12.689cm,1.139cm)--(12.689cm,4.196cm)--(12.511cm,4.196cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 14"), (12.600cm,4.226cm));
+fill (12.765cm,1.139cm)--(12.944cm,1.139cm)--(12.944cm,4.201cm)--(12.765cm,4.201cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 25c"), (12.855cm,4.231cm));
+fill (13.020cm,1.139cm)--(13.198cm,1.139cm)--(13.198cm,4.385cm)--(13.020cm,4.385cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 25g"), (13.109cm,4.415cm));
+fill (13.275cm,1.139cm)--(13.453cm,1.139cm)--(13.453cm,4.686cm)--(13.275cm,4.686cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 25f·1"), (13.364cm,4.716cm));
+fill (13.529cm,1.139cm)--(13.707cm,1.139cm)--(13.707cm,5.048cm)--(13.529cm,5.048cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 25b"), (13.618cm,5.078cm));
+fill (13.784cm,1.139cm)--(13.962cm,1.139cm)--(13.962cm,5.319cm)--(13.784cm,5.319cm)--cycle withcolor \MPcolor{darkblue};
+label.top(textext("\tfxx 29"), (13.873cm,5.349cm));
 fill (0.400cm,5.730cm)--(0.800cm,5.730cm)--(0.800cm,5.970cm)--(0.400cm,5.970cm)--cycle withcolor \MPcolor{darkblue};
 label.rt(textext("\tfx split más rápido"), (1.000cm,5.850cm));
 fill (0.400cm,5.310cm)--(0.800cm,5.310cm)--(0.800cm,5.550cm)--(0.400cm,5.550cm)--cycle withcolor \MPcolor{redline};
@@ -319,7 +332,7 @@ label.rt(textext("\tfx mono más rápido"), (1.000cm,5.430cm));
 
 \startsubsection[title={Tiempo del solver según el tamaño}]
 Tiempo del solver contra el tamaño de la instancia, medido como lotes × ubicaciones, para los
-36 pares cuyo CSV registra ese tamaño. La separación entre las dos nubes crece con el
+42 pares cuyo CSV registra ese tamaño. La separación entre las dos nubes crece con el
 tamaño: la descomposición escala mejor.
 
 \placefigure[force][fig:size]{Tiempo del solver contra el tamaño de la instancia (escala logarítmica en los dos ejes).}
@@ -391,6 +404,8 @@ fill fullcircle scaled 4pt shifted (4.317cm,1.172cm) withcolor \MPcolor{redline}
 fill fullcircle scaled 4pt shifted (4.317cm,0.838cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (4.562cm,1.940cm) withcolor \MPcolor{redline};
 fill fullcircle scaled 4pt shifted (4.562cm,0.657cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (4.562cm,1.621cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (4.562cm,0.956cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (4.562cm,1.433cm) withcolor \MPcolor{redline};
 fill fullcircle scaled 4pt shifted (4.562cm,0.779cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (4.562cm,1.537cm) withcolor \MPcolor{redline};
@@ -405,20 +420,30 @@ fill fullcircle scaled 4pt shifted (8.500cm,4.980cm) withcolor \MPcolor{redline}
 fill fullcircle scaled 4pt shifted (8.500cm,2.789cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (8.500cm,4.680cm) withcolor \MPcolor{redline};
 fill fullcircle scaled 4pt shifted (8.500cm,2.862cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (8.500cm,4.241cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (8.500cm,2.881cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (8.500cm,2.551cm) withcolor \MPcolor{redline};
 fill fullcircle scaled 4pt shifted (8.500cm,1.442cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (8.500cm,4.701cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (8.500cm,2.674cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (8.500cm,4.388cm) withcolor \MPcolor{redline};
 fill fullcircle scaled 4pt shifted (8.500cm,2.617cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (8.500cm,4.769cm) withcolor \MPcolor{redline};
 fill fullcircle scaled 4pt shifted (8.500cm,2.867cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (8.037cm,3.211cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (8.037cm,2.960cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (8.037cm,3.010cm) withcolor \MPcolor{redline};
 fill fullcircle scaled 4pt shifted (8.037cm,2.765cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (8.037cm,3.188cm) withcolor \MPcolor{redline};
 fill fullcircle scaled 4pt shifted (8.037cm,2.868cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (8.037cm,3.363cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (8.037cm,2.781cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (8.037cm,3.066cm) withcolor \MPcolor{redline};
 fill fullcircle scaled 4pt shifted (8.037cm,2.714cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (4.317cm,2.067cm) withcolor \MPcolor{redline};
 fill fullcircle scaled 4pt shifted (4.317cm,1.798cm) withcolor \MPcolor{darkblue};
+fill fullcircle scaled 4pt shifted (4.780cm,1.573cm) withcolor \MPcolor{redline};
+fill fullcircle scaled 4pt shifted (4.780cm,1.718cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (4.780cm,1.157cm) withcolor \MPcolor{redline};
 fill fullcircle scaled 4pt shifted (4.780cm,0.900cm) withcolor \MPcolor{darkblue};
 fill fullcircle scaled 4pt shifted (8.964cm,4.997cm) withcolor \MPcolor{redline};
@@ -462,7 +487,8 @@ label.rt(textext("\tfx split (Etapa 2)"), (1.000cm,5.430cm));
 \bTR \bTD 17 \eTD \bTD Ruta ramificada \eTD \bTD 0,249 \eTD \bTD 0,315 \eTD \bTD 0,79× \eTD \bTD 2.512,5 \eTD \bTD igual \eTD \eTR
 \bTR \bTD 18 \eTD \bTD Ruta con desvío \eTD \bTD 0,194 \eTD \bTD 0,288 \eTD \bTD 0,67× \eTD \bTD 4.518,0 \eTD \bTD igual \eTD \eTR
 \bTR \bTD 19a \eTD \bTD Ruta extendida, ubicación dup. \eTD \bTD 0,258 \eTD \bTD 0,263 \eTD \bTD 0,98× \eTD \bTD 25,0 \eTD \bTD otras rutas \eTD \eTR
-\bTR \bTD 19b \eTD \bTD Ruta extendida, penalizaciones \eTD \bTD 0,271 \eTD \bTD 0,337 \eTD \bTD 0,80× \eTD \bTD 0,0 \eTD \bTD otras rutas \eTD \eTR
+\bTR \bTD 19b·1 \eTD \bTD Ruta extendida, penalizaciones \eTD \bTD 0,117 \eTD \bTD 0,333 \eTD \bTD 0,35× \eTD \bTD 120,0 \eTD \bTD igual \eTD \eTR
+\bTR \bTD 19b·2 \eTD \bTD Ruta extendida, penalizaciones \eTD \bTD 0,271 \eTD \bTD 0,337 \eTD \bTD 0,80× \eTD \bTD 0,0 \eTD \bTD otras rutas \eTD \eTR
 \bTR \bTD 19c \eTD \bTD Ruta extendida \eTD \bTD 0,209 \eTD \bTD 0,248 \eTD \bTD 0,85× \eTD \bTD 25,0 \eTD \bTD otras rutas \eTD \eTR
 \bTR \bTD 20 \eTD \bTD Grilla multiubicación \eTD \bTD 5,047 \eTD \bTD 0,496 \eTD \bTD 10,18× \eTD \bTD 2.620,0 \eTD \bTD otra asignación \eTD \eTR
 \bTR \bTD 22a \eTD \bTD Adelanto \eTD \bTD 0,235 \eTD \bTD 0,258 \eTD \bTD 0,91× \eTD \bTD 10.126,0 \eTD \bTD igual \eTD \eTR
@@ -472,14 +498,19 @@ label.rt(textext("\tfx split (Etapa 2)"), (1.000cm,5.430cm));
 \bTR \bTD 24a \eTD \bTD Frío excluye al picker lento \eTD \bTD 0,196 \eTD \bTD 0,504 \eTD \bTD 0,39× \eTD \bTD 9,0 \eTD \bTD igual \eTD \eTR
 \bTR \bTD 25b \eTD \bTD Grilla: ubicación dup. \eTD \bTD 9,758 \eTD \bTD 0,420 \eTD \bTD 23,25× \eTD \bTD 2.434,0 \eTD \bTD otras rutas y asignación \eTD \eTR
 \bTR \bTD 25c \eTD \bTD Grilla multiubicación \eTD \bTD 5,025 \eTD \bTD 0,428 \eTD \bTD 11,75× \eTD \bTD 2.620,0 \eTD \bTD otra asignación \eTD \eTR
-\bTR \bTD 25e \eTD \bTD Grilla: penalización por fecha \eTD \bTD 1,512 \eTD \bTD 0,621 \eTD \bTD 2,44× \eTD \bTD 0,0 \eTD \bTD otras rutas y asignación \eTD \eTR
-\bTR \bTD 25f \eTD \bTD Grilla: orden igual al carro \eTD \bTD 5,643 \eTD \bTD 0,668 \eTD \bTD 8,45× \eTD \bTD 156,0 \eTD \bTD otras rutas y asignación \eTD \eTR
+\bTR \bTD 25e·1 \eTD \bTD Grilla: penalización por fecha \eTD \bTD 1,863 \eTD \bTD 0,446 \eTD \bTD 4,18× \eTD \bTD 276,0 \eTD \bTD otras rutas y asignación \eTD \eTR
+\bTR \bTD 25e·2 \eTD \bTD Grilla: penalización por fecha \eTD \bTD 1,512 \eTD \bTD 0,621 \eTD \bTD 2,44× \eTD \bTD 0,0 \eTD \bTD otras rutas y asignación \eTD \eTR
+\bTR \bTD 25f·1 \eTD \bTD Grilla: orden igual al carro \eTD \bTD 5,129 \eTD \bTD 0,295 \eTD \bTD 17,36× \eTD \bTD 102,0 \eTD \bTD otras rutas y asignación \eTD \eTR
+\bTR \bTD 25f·2 \eTD \bTD Grilla: orden igual al carro \eTD \bTD 5,643 \eTD \bTD 0,668 \eTD \bTD 8,45× \eTD \bTD 156,0 \eTD \bTD otras rutas y asignación \eTD \eTR
 \bTR \bTD 25g \eTD \bTD Grilla: ubic. compartidas \eTD \bTD 6,104 \eTD \bTD 0,448 \eTD \bTD 13,64× \eTD \bTD 3.224,0 \eTD \bTD otra asignación \eTD \eTR
-\bTR \bTD 26b \eTD \bTD Puente: adelanto \eTD \bTD 0,501 \eTD \bTD 0,641 \eTD \bTD 0,78× \eTD \bTD 20.899,0 \eTD \bTD otra asignación \eTD \eTR
+\bTR \bTD 26b·1 \eTD \bTD Puente: adelanto \eTD \bTD 0,263 \eTD \bTD 0,395 \eTD \bTD 0,67× \eTD \bTD 20.725,0 \eTD \bTD otras rutas y asignación \eTD \eTR
+\bTR \bTD 26b·2 \eTD \bTD Puente: adelanto \eTD \bTD 0,501 \eTD \bTD 0,641 \eTD \bTD 0,78× \eTD \bTD 20.899,0 \eTD \bTD otra asignación \eTD \eTR
 \bTR \bTD 26c \eTD \bTD Puente: ubic. compartidas \eTD \bTD 0,366 \eTD \bTD 0,417 \eTD \bTD 0,88× \eTD \bTD 2.463,0 \eTD \bTD otra asignación \eTD \eTR
-\bTR \bTD 26d \eTD \bTD Puente: atraso \eTD \bTD 0,573 \eTD \bTD 0,593 \eTD \bTD 0,97× \eTD \bTD 13.479,0 \eTD \bTD otras rutas y asignación \eTD \eTR
+\bTR \bTD 26d·1 \eTD \bTD Puente: atraso \eTD \bTD 0,311 \eTD \bTD 0,355 \eTD \bTD 0,88× \eTD \bTD 5.325,0 \eTD \bTD otras rutas y asignación \eTD \eTR
+\bTR \bTD 26d·2 \eTD \bTD Puente: atraso \eTD \bTD 0,573 \eTD \bTD 0,593 \eTD \bTD 0,97× \eTD \bTD 13.479,0 \eTD \bTD otras rutas y asignación \eTD \eTR
 \bTR \bTD 27 \eTD \bTD Pesos distintos \eTD \bTD 0,221 \eTD \bTD 0,266 \eTD \bTD 0,83× \eTD \bTD 58,0 \eTD \bTD otra asignación \eTD \eTR
-\bTR \bTD 28 \eTD \bTD Fechas ajustadas y holgadas \eTD \bTD 0,253 \eTD \bTD 0,363 \eTD \bTD 0,70× \eTD \bTD 0,0 \eTD \bTD igual \eTD \eTR
+\bTR \bTD 28·1 \eTD \bTD Fechas ajustadas y holgadas \eTD \bTD 0,071 \eTD \bTD 0,231 \eTD \bTD 0,31× \eTD \bTD 20,0 \eTD \bTD igual \eTD \eTR
+\bTR \bTD 28·2 \eTD \bTD Fechas ajustadas y holgadas \eTD \bTD 0,253 \eTD \bTD 0,363 \eTD \bTD 0,70× \eTD \bTD 0,0 \eTD \bTD igual \eTD \eTR
 \bTR \bTD 29 \eTD \bTD Lote vacío permitido \eTD \bTD 10,170 \eTD \bTD 0,352 \eTD \bTD 28,90× \eTD \bTD 327,0 \eTD \bTD otras rutas y asignación \eTD \eTR
 \bTR \bTD 31b \eTD \bTD Orden en un lote \eTD \bTD 0,225 \eTD \bTD 0,288 \eTD \bTD 0,78× \eTD \bTD 100,0 \eTD \bTD igual \eTD \eTR
 \bTR \bTD 33a \eTD \bTD Servicio mixto \eTD \bTD 0,208 \eTD \bTD 0,278 \eTD \bTD 0,75× \eTD \bTD 106,5 \eTD \bTD igual \eTD \eTR
@@ -740,13 +771,13 @@ formulaciones exactas que prueba el óptimo.} El monolítico solo es competitivo
 chicas, donde la diferencia es de décimas de segundo.
 
 \startitemize[n]
-\item {\bf Mismo problema, mismo óptimo.} Los 49 pares resueltos dan el mismo
+\item {\bf Mismo problema, mismo óptimo.} Los 55 pares resueltos dan el mismo
 objetivo (diferencia máxima $3{,}83 \times 10^{-6}$, redondeo del solver) y los 11
-infactibles lo son en los dos. En 21 pares el monolítico llega a ese óptimo con
+infactibles lo son en los dos. En 25 pares el monolítico llega a ese óptimo con
 otra solución (otras rutas u otra asignación), porque el objetivo no penaliza la longitud de la ruta.
 \item {\bf Instancias chicas: da lo mismo.} En los tests funcionales el solver tarda
-milisegundos; el monolítico es algo más rápido en 38 de 49 pares
-(mediana 0,225~s contra 0,309~s) solo porque compila un modelo en
+milisegundos; el monolítico es algo más rápido en 42 de 55 pares
+(mediana 0,226~s contra 0,315~s) solo porque compila un modelo en
 vez de dos.
 \item {\bf En cuanto la instancia crece, el monolítico se queda atrás.} Ya en las grillas de los
 tests funcionales tarda hasta 28,9 veces más. Con el perfil realista (sección
