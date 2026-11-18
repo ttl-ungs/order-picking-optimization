@@ -11,7 +11,7 @@ from models.opp_aco import OPPAntColonyOptimization
 
 from tests.infra.cases.opp_test_case import OPPTestCase
 from tests.infra.factories.scenario_adapter import build_model_dto_and_params
-from tests.opp_aco.opp_aco_test_case import SolutionInfoCapture
+from tests.infra.cases.heuristic_model_case import SolutionInfoCapture
 
 
 class OPPAcoStressTestCase(OPPTestCase):

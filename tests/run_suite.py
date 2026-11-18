@@ -25,7 +25,9 @@ if hasattr(sys.stdout, "reconfigure"):
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from tests.infra.execution.config import STRESS_TEST_TIMEOUT_MINUTES, TEST_TIMEOUT_MINUTES, WRITE_RESULTS_CSV, WRITE_SOLUTIONS
+from tests.infra.execution.config import (
+    PRINT_RESULTS, STRESS_TEST_TIMEOUT_MINUTES, TEST_TIMEOUT_MINUTES, WRITE_RESULTS_CSV, WRITE_SOLUTIONS,
+)
 from tests.infra.execution.runner import TestRunner
 
 
@@ -78,6 +80,7 @@ def main(argv=None):
         model_name=args.model,
         test_type=args.tier,
         write_solutions=WRITE_SOLUTIONS,
+        print_results=PRINT_RESULTS,
     )
 
     suite = unittest.TestLoader().discover(start_dir=start_dir, pattern="test_*.py")

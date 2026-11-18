@@ -1,81 +1,10 @@
-from observer.observer import Observer
-from tests.infra.cases.opp_test_case import OPPTestCase
+from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
+from models.opp_aco import OPPAntColonyOptimization
+from tests.infra.cases.heuristic_model_case import HeuristicModelTestCase
 
 
-class SolutionInfoCapture(Observer):
-    """Captures the solution_info dict notified by opp_aco's OPPAntColonyOptimization.solve()."""
+class OPPTestCaseACO(HeuristicModelTestCase):
+    """Adapter of OPP-ACO: solves the shared cases with Ant Colony Optimization."""
 
-    def __init__(self):
-        self.solution_info = {}
-
-    def update(self, solution_info: dict, **kwargs):
-        self.solution_info = solution_info
-
-
-class OPPTestCaseACO(OPPTestCase):
-    """Base test case of opp_aco: solves, captures the solution_info and
-    asserts on the assignment, the schedule and the cold chain."""
-
-    def solve_and_capture(self, model, params):
-        """Attach a capture observer, solve, and return (result, output_graph, solution_info)."""
-        capture = SolutionInfoCapture()
-        model.attach(capture)
-        result, output_graph = model.solve(params)
-        return result, output_graph, capture.solution_info
-
-    def assert_every_batch_has_one_picker(self, solution_info, P):
-        """Mirrors the ZPL constraint (14): assign_exactly_one_picker."""
-        picker_assignments = solution_info.get("picker_assignments", {})
-        for batch, picker in picker_assignments.items():
-            self.assertIn(
-                picker, P, f"Batch {batch} assigned to unknown picker {picker}"
-            )
-
-    def assert_workload_balance(self, solution_info, P, max_difference=1):
-        """Batches should be spread across pickers, not piled on one."""
-        picker_assignments = solution_info.get("picker_assignments", {})
-        workload = {p: 0 for p in P}
-        for _, picker in picker_assignments.items():
-            workload[picker] = workload.get(picker, 0) + 1
-
-        workloads = list(workload.values())
-        if workloads:
-            self.assertLessEqual(
-                max(workloads) - min(workloads),
-                max_difference,
-                f"Picker workload imbalance: {workload}",
-            )
-
-    def assert_no_time_overlap(self, solution_info, P):
-        """Mirrors the ZPL constraints (19)/(20): no overlap on the same picker."""
-        picker_assignments = solution_info.get("picker_assignments", {})
-        batch_times = solution_info.get("batch_times", {})
-        batch_completions = solution_info.get("batch_completions", {})
-
-        for picker in P:
-            batches = [b for b, p in picker_assignments.items() if p == picker]
-            intervals = sorted(
-                (
-                    batch_completions[b] - batch_times[b],
-                    batch_completions[b],
-                    b,
-                )
-                for b in batches
-            )
-            for i in range(len(intervals) - 1):
-                end_i = intervals[i][1]
-                start_next = intervals[i + 1][0]
-                self.assertGreaterEqual(
-                    start_next,
-                    end_i - 1e-6,
-                    f"Time overlap on picker {picker}: {intervals[i]} vs {intervals[i + 1]}",
-                )
-
-    def assert_cold_chain_respected(self, solution_info, T_cold, tolerance=1e-6):
-        """Every reported batch execution time (T_exec_pb) must respect T_cold."""
-        batch_times = solution_info.get("batch_times", {})
-        for batch, t_exec in batch_times.items():
-            self.assertLessEqual(
-                t_exec, T_cold + tolerance,
-                f"Batch {batch} exceeds cold-chain deadline: T_exec_pb={t_exec} > T_cold={T_cold}",
-            )
+    model_cls = OPPAntColonyOptimization
+    dto_cls = SolveAcoModelDTO

@@ -106,7 +106,22 @@ def _save_solution(sr, test_name, solutions_dir, solve_data):
         solve_data["solution_file"] = f"ERROR: {e}"
 
 
-def _run_test_child(test_name, q, solutions_dir=None):
+def _attach_output_handlers():
+    """Make every OPP-HC and OPP-ACO solver created in this process print its
+    result through its own OutputHandler. The tests build the solvers
+    themselves, so the handler is registered on the classes."""
+    from models.opp_aco import OPPAntColonyOptimization
+    from models.opp_aco.utils.output_handler import OutputHandler as AcoOutputHandler
+    from models.opp_hc import OPPHillClimbing
+    from models.opp_hc.utils.output_handler import OutputHandler as HcOutputHandler
+
+    OPPHillClimbing.attach_to_new_instances(HcOutputHandler)
+    OPPAntColonyOptimization.attach_to_new_instances(AcoOutputHandler)
+
+
+def _run_test_child(test_name, q, solutions_dir=None, print_results=False):
+    if print_results:
+        _attach_output_handlers()
     start = time.time()
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromName(test_name)
@@ -115,15 +130,24 @@ def _run_test_child(test_name, q, solutions_dir=None):
     duration = time.time() - start
     peak_rss_mb = _peak_rss_mb()
 
-    solve_data = None
+    # One row per instance the test solved. A test with several instances
+    # (the variants of a case) gets the ids <test>__1, <test>__2, ... in solve
+    # order, the ids of functional_instances.json; each row's total_time is
+    # the time of its own instance.
+    instances = []
     try:
-        from models.utils.solve_registry import get_last
+        from models.utils.solve_registry import get_instances
 
-        sr = get_last()
-        if sr is not None:
-            solve_data = sr.to_csv_row()
+        entries = [e for e in get_instances() if e["result"] is not None]
+        for k, entry in enumerate(entries, start=1):
+            instance_id = f"{test_name}__{k}" if len(entries) > 1 else test_name
+            solve_data = entry["result"].to_csv_row()
             if solutions_dir:
-                _save_solution(sr, test_name, solutions_dir, solve_data)
+                _save_solution(entry["result"], instance_id, solutions_dir, solve_data)
+            instance_duration = duration
+            if len(entries) > 1 and entry["started_at"] is not None:
+                instance_duration = entry["ended_at"] - entry["started_at"]
+            instances.append({"test": instance_id, "duration": instance_duration, "solve_data": solve_data})
     except Exception:
         pass
 
@@ -134,7 +158,7 @@ def _run_test_child(test_name, q, solutions_dir=None):
         "errors": [t[0].id() for t in result.errors],
         "duration": duration,
         "peak_rss_mb": peak_rss_mb,
-        "solve_data": solve_data,
+        "instances": instances or [{"test": test_name, "duration": duration, "solve_data": None}],
     }
     try:
         q.put(summary)
@@ -148,9 +172,10 @@ class TestRunner:
 
     def __init__(
         self, timeout_minutes: int, write_csv: bool, model_name: str, test_type: str,
-        write_solutions: bool = False,
+        write_solutions: bool = False, print_results: bool = False,
     ):
         self.timeout_minutes = timeout_minutes
+        self.print_results = print_results
         self.TIMEOUT_MSG = f"{self.TIMEOUT_MSG} - {timeout_minutes}"
         self.write_csv = write_csv
 
@@ -196,7 +221,7 @@ class TestRunner:
         for test_id in test_ids:
             print(f"Running {test_id} (timeout: {self.timeout_minutes} min)")
             q = multiprocessing.Queue()
-            p = multiprocessing.Process(target=_run_test_child, args=(test_id, q, self.solutions_dir))
+            p = multiprocessing.Process(target=_run_test_child, args=(test_id, q, self.solutions_dir, self.print_results))
             p.start()
             p.join(timeout_seconds)
 
@@ -274,7 +299,8 @@ class TestRunner:
             dict.fromkeys(
                 k
                 for r in results
-                for k in (r.get("solve_data") or {})
+                for instance in self._instances(r)
+                for k in (instance.get("solve_data") or {})
                 if k not in ("model_time", "obj_val")
             )
         )
@@ -283,13 +309,13 @@ class TestRunner:
         with open(self.csv_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
-            for r in results:
+            for r, instance in ((r, instance) for r in results for instance in self._instances(r)):
                 is_timeout = r.get("status") == "timeout"
-                solve_data = r.get("solve_data") or {}
+                solve_data = instance.get("solve_data") or {}
                 row = {
-                    "test": r["test"],
+                    "test": instance["test"],
                     "status": r.get("status"),
-                    "total_time": self.TIMEOUT_MSG if is_timeout else r.get("duration"),
+                    "total_time": self.TIMEOUT_MSG if is_timeout else instance.get("duration"),
                     "model_time": (
                         self.TIMEOUT_MSG if is_timeout else solve_data.get("model_time")
                     ),
@@ -302,6 +328,12 @@ class TestRunner:
                     **{k: solve_data.get(k) for k in param_keys},
                 }
                 writer.writerow(row)
+
+    @staticmethod
+    def _instances(result):
+        """The CSV rows of one test's result: one per instance it solved (a
+        timed-out test has a single row, with its own id)."""
+        return result.get("instances") or [{"test": result["test"], "duration": result.get("duration"), "solve_data": None}]
 
     def succeeded(self, results: list, allow_timeout: bool = False) -> bool:
         """True if every test passed; with allow_timeout, timeouts are tolerated

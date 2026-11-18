@@ -55,7 +55,7 @@ checked on the status, and their solutions are verified against OPP-Mono (`verif
 
 Python 3.12+ and `pip install -r requirements.txt` (PySCIPOpt, python-dotenv, pandas).
 The exact models also need the `zimpl` binary on the `PATH` (conda-forge package `zimpl`).
-Local settings (per-test timeouts, whether to write result CSVs and solutions) come from a `.env`;
+Local settings (per-test timeouts, whether to write result CSVs and solutions, whether the heuristics print their full result) come from a `.env`;
 copy `.env.example` to change them.
 
 ## Running the tests

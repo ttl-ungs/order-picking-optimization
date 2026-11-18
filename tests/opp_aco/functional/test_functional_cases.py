@@ -1,7 +1,6 @@
-"""opp_aco on exactly the instances of opp_split's functional cases (see tests/infra/factories/functional_instances.py)."""
+"""The functional cases of the thesis, solved with OPP-ACO."""
 
-from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
-from models.opp_aco import OPPAntColonyOptimization
-from tests.infra.factories.functional_instances import bind_instances
+from tests.functional_cases import bind_cases
+from tests.opp_aco.opp_aco_test_case import OPPTestCaseACO
 
-bind_instances(OPPAntColonyOptimization, SolveAcoModelDTO, globals())
+bind_cases(OPPTestCaseACO, globals())

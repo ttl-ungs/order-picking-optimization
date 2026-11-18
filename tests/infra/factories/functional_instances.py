@@ -1,26 +1,19 @@
 """
-Functional instances for the heuristics: opp_aco and opp_hc run on exactly
-the instances opp_split's functional tests solve.
+The Split's reference for the comparability registry: every instance its
+functional cases solve, with its final status and objective.
 
-The instances are captured from the Split's own tests, not copied by hand:
-
-1. tests/shared_scenarios/functional/export_functional_instances.py (needs
-   zimpl and SCIP) runs opp_split's functional suite and saves, in
-   functional_instances.json, every scenario as it is written to the .dat
-   files, with the Split's final status and objective.
-2. bind_instances() builds, for a heuristic, one test per captured instance,
-   with the id of the Split's test (<case class>.<test method>[__<k>]). It
-   solves the instance through tests/infra/factories/scenario_adapter.py and
-   checks that the outcome (feasible or infeasible) is the Split's. The
-   objective reaches the results CSV through the solve registry.
+tests/shared_scenarios/functional/export_functional_instances.py (needs zimpl
+and SCIP) runs opp_split's functional suite and saves, in
+functional_instances.json, every scenario as it is written to the .dat files.
+experiments/comparison/comparability.py reads it through case_instances() and
+applies comparability() to each instance. The heuristics do not read it: they
+run the functional cases themselves (tests/infra/cases/heuristic_model_case.py).
 """
 
 import json
 import os
 from collections import Counter, defaultdict
 
-from tests.infra.cases.opp_test_case import OPPTestCase
-from tests.infra.factories.scenario_adapter import build_model_dto_and_params
 
 FIXTURE_PATH = os.path.abspath(os.path.join(
     os.path.dirname(__file__), "..", "..", "shared_scenarios", "functional", "functional_instances.json",
@@ -76,7 +69,7 @@ def load_fixtures(path=FIXTURE_PATH):
         return json.load(f)
 
 
-# --- heuristic test factory ---------------------------------------------------
+# --- instances ------------------------------------------------------------------
 
 def case_instances(entries):
     """(case, test name, entry) for every captured instance.
@@ -92,49 +85,6 @@ def case_instances(entries):
         seen[key] += 1
         suffix = f"__{seen[key]}" if counts[key] > 1 else ""
         yield key[0], key[1] + suffix, entry
-
-
-def _make_test(entry, model_cls, dto_cls, configure_params):
-    def test(self):
-        if entry.get("fixed_assignment"):
-            self.skipTest("the Split fixes the batch->picker assignment (x_pb) here; the heuristics can't take it")
-        scenario = with_split_defaults(decode(entry["scenario"]))
-        model_dto, params = build_model_dto_and_params(scenario, dto_cls, seed=1)
-        model_dto.start_time = self.start_time
-        if configure_params:
-            configure_params(params)
-
-        raw = model_cls(model_dto).solve(params)
-        status = raw[0] if isinstance(raw, tuple) else raw.status
-
-        expected = entry["split_status"]
-        if expected in ("optimal", "feasible"):
-            self.assertIn(status, ("optimal", "feasible"), f"the Split found a solution ({expected}); heuristic: {status}")
-        elif expected == "infeasible":
-            self.assertEqual(status, "infeasible", "the Split proved this instance infeasible")
-        # Any other outcome of the Split (timeout, limit) is inconclusive: nothing to compare with.
-
-    test.__doc__ = f"Same instance as opp_split's {entry['split_case']}.{entry['split_test']} (the Split: {entry['split_status']}, obj {entry['split_obj']})."
-    return test
-
-
-def bind_instances(model_cls, dto_cls, namespace, configure_params=None, fixture_path=FIXTURE_PATH):
-    """Define in `namespace` one test class per case, with one test per captured instance of it.
-
-    The instances are solved by `model_cls` with a `dto_cls` params DTO (seed 1; `configure_params`
-    can adjust it, e.g. HC's iteration budget). Each class has the name of the Split's case class
-    and each test the name of the Split's test, so tests/run_suite.py launches them by the same
-    dotted id as in the exact models (and `--id NN` selects a case).
-    """
-    classes = {}
-    for case, name, entry in case_instances(load_fixtures(fixture_path)["instances"]):
-        if case not in classes:
-            classes[case] = type(case, (OPPTestCase,), {
-                "__module__": namespace["__name__"],
-                "__doc__": f"The instances of opp_split's {case}, solved by this model.",
-            })
-        setattr(classes[case], name, _make_test(entry, model_cls, dto_cls, configure_params))
-    namespace.update(classes)
 
 
 # --- comparability ------------------------------------------------------------

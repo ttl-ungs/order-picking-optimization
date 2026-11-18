@@ -1,10 +1,12 @@
-"""Base class of the tests of the exact models (monolithic and Split).
+"""Base class of the shared functional cases.
 
-Both exact models write the same variables (x_pb, c_pb, r_b, z_ijb, ...), so
-the assertions that read a solution are the same for both and live here. What
-changes from one model to the other is where the .dat files are written
-(`dat_dir`) and how the model is solved (`solve`, `run_pipeline`): each model's
-adapter (OPPTestCaseMono, OPPTestCaseSplit) provides those.
+The cases read a solution as the exact models' variables (x_pb, c_pb, r_b,
+z_ijb, ...), so the assertions that read it are the same for every model and
+live here. What changes from one model to the other is where the .dat files are
+written (`dat_dir`) and how the model is solved (`solve`, `run_pipeline`): each
+model's adapter provides those (OPPTestCaseMono, OPPTestCaseSplit, and, through
+HeuristicModelTestCase, OPPTestCaseHC and OPPTestCaseACO, which return the
+heuristic's solution under the same names).
 """
 
 from models.utils.cold_chain_validation import COLD_CHAIN_TOLERANCE
@@ -18,6 +20,12 @@ class ExactModelTestCase(OPPTestCase):
 
     # Directory where the instance's .dat files are written. Set by the adapter.
     dat_dir = None
+
+    # Whether the model can finish a batch later than its picker could, to cut
+    # earliness (voluntary waiting). The exact models can; the heuristics
+    # schedule every batch as early as possible, so the assertions that need
+    # the wait (cases 06a, 06b and 37a) apply only when this is True.
+    waits_voluntarily = True
 
     def solve(self, params):
         """Solve the instance whose .dat files were just written in `dat_dir`.
