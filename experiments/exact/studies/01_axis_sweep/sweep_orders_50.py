@@ -35,10 +35,8 @@ from tests.infra.zimpl.dat_files_builder import (
 from tests.opp_split.config import STAGE2_ZPL_PATH
 from tests.opp_split.stage1_decomposition import solve_stage1_decomposed
 
-# The main sweep owns the shared models/dat_files workspace through its own
-# config import; this process gets its own temp workspace from the same import,
-# so the two never write the same .dat. Confirmed by tests/opp_split/config.py
-# creating a per-process tempfile.mkdtemp workspace.
+# tests/opp_split/config.py gives every process its own tempfile.mkdtemp
+# workspace, so this script and the main sweep never write the same .dat.
 from tests.opp_split.config import DAT_DIR
 
 CAP = 300

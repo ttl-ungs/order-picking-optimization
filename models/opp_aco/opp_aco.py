@@ -23,7 +23,6 @@ search ended without a compliant ant.
 
 import time
 import random
-import heapq
 from typing import Dict, List, Set, Optional, Tuple
 
 from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
