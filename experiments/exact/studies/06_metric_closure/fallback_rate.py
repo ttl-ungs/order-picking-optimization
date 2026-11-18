@@ -8,12 +8,18 @@ solves each batch on the closure and checks the expansion, without paying for
 the fallback re-solve.
 
 Kept as it was run on 2026-09-23 (translated to English on 2026-09-24, same
-logic). It NO LONGER RUNS: it calls the closure helpers of
-tests/opp_split/stage1_decomposition.py (`_closure_context`,
-`_narrow_to_batch`, `_expand_to_real_arcs`, `_CLOSURE_FILES`) and
-tests/opp_split/metric_closure.py, all removed with the closure on
-2026-09-23. Its printed output is recorded in
-docs/thesis/opp_split_exploration.tex (study 06).
+logic). It NO LONGER RUNS: it calls closure helpers of
+tests/opp_split/stage1_decomposition.py that were removed with the closure on
+2026-09-23 (`_closure_context`, `_narrow_to_batch`, `_expand_to_real_arcs`,
+`_CLOSURE_FILES`; `_read_indexed_dat_pairs`, `_read_file` and `_write_file`
+are still there), and OPP_STAGE1_METRIC_CLOSURE no longer has any effect.
+
+Do not delete it: it is the source of a result the thesis cites. Its printed
+output (fallback in 4/6, 6/6 and 5/6 batches on 25x25, 13x13 and 7x7) is
+hard-coded in experiments/exact/reports/build_split_exploration.py (figure
+"respaldo" of docs/thesis/opp_split_exploration.tex), and the 67-100% of
+batches re-solved on the full graph is quoted in the thesis's Appendix 5
+(ap5.tex, table tab:anexo_intentos_split, "Clausura métrica" row).
 """
 import os
 import sys
