@@ -85,32 +85,3 @@ class RouteSolution:
         new_solution.picker_of = deepcopy(self.picker_of)
         new_solution.sequence = deepcopy(self.sequence)
         return new_solution
-
-    def to_z_dict(self) -> Dict[tuple, int]:
-        """
-        Convert routes to z_ijb format (binary dict indicating if arc (i,j) is in batch b).
-
-        Returns:
-            Dict[(i, j, batch)] = 1 if arc is used, 0 otherwise
-        """
-        z = {}
-
-        for batch in self.batches:
-            route = self.routes[batch]
-
-            for i in self.location_graph.get_vertices():
-                for j in self.location_graph.get_vertices():
-                    z[(i, j, batch)] = 0
-
-            depot = self.location_graph.get_depot()
-            final = self.location_graph.get_final()
-
-            if route:
-                z[(depot, route[0], batch)] = 1
-
-                for i in range(len(route) - 1):
-                    z[(route[i], route[i+1], batch)] = 1
-
-                z[(route[-1], final, batch)] = 1
-
-        return z

@@ -35,7 +35,6 @@ Están implementadas en `tests/infra/factories/functional_instances.py` (`compar
 | Situación | ¿Estado comparable? | ¿Objetivo comparable? | Motivo |
 |---|---|---|---|
 | el Split no terminó (timeout) | No | No | No hay referencia |
-| el Split fija la asignación batch→picker (`x_pb`) | No | No | Las heurísticas no admiten esa restricción. Hoy no hay ningún caso |
 | el Split infeasible | **Sí** | No | No hay objetivo; sí se compara que la heurística también dé infeasible |
 | el Split usa espera voluntaria | **Sí** | No | Ver abajo |
 | el Split óptimo, sin espera | **Sí** | **Sí** | Mismos datos, mismo objetivo |

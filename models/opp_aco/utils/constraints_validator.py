@@ -7,8 +7,8 @@ batch with a tight margin would make it reject the ant's whole solution, and
 if no ant built a short enough route for that batch no solution of the
 iteration would validate and the pheromone would never update. So the cold
 chain is soft during the search (cold_chain_violation(), an objective penalty
-in route_evaluator.py) and hard only on the reported answer
-(validate_cold_chain_strict()).
+in route_evaluator.py) and hard only on the reported answer (only a solution
+with cold_chain_violation() == 0 is kept as the answer).
 """
 
 from typing import Dict, List, Set
@@ -56,33 +56,13 @@ class ConstraintsValidator(BaseConstraintsValidator):
         """
         return super().validate_solution(solution)
 
-    def validate_cold_chain_strict(self, solution) -> bool:
-        """
-        Hard cold-chain check: every batch with orders is assigned to a picker
-        whose T_exec_pb is within T_cold. Decides whether a solution may be
-        reported; the search itself uses cold_chain_violation().
-        """
-        for batch in self.B:
-            orders = self.batch_assignments.get(batch)
-            if not orders:
-                continue
-
-            picker = solution.get_batch_picker(batch)
-            if picker is None or picker not in self.P:
-                return False
-
-            route = solution.get_batch_route(batch)
-            if self.T_exec_pb(batch, route, picker) > self.T_cold + COLD_CHAIN_TOLERANCE:
-                return False
-
-        return True
-
     def cold_chain_violation(self, solution) -> float:
         """
         Total cold-chain overrun: the sum over the batches with orders of
         max(0, T_exec_pb[picker, b] - T_cold - COLD_CHAIN_TOLERANCE). It is
-        zero exactly when validate_cold_chain_strict() holds (the tolerance
-        is subtracted here too, so that state is reachable).
+        zero exactly when every batch with orders is within T_cold (the
+        tolerance is subtracted here too, so that state is reachable); only
+        such solutions are reported.
         """
         total = 0.0
         for batch in self.B:

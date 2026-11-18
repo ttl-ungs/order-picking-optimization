@@ -7,7 +7,7 @@ The checks that were done by hand after every restructuring, as one command:
 
 Checks:
   imports     every tracked module imports cleanly
-  naming      test files (test_*.py) under tests/<model>/{functional,stress,diagnostics}/
+  naming      test files (test_*.py) under tests/<model>/{functional,stress}/
               are test_case_<NN|slug>.py, and the numbered ones are continuous (01..N)
   layout      no leftover scenarios/, tests/, doc/ inside tests/<model>/;
               results/ is results/<model>/<tier|study>/, results/compliance/<model>/<tier>/
@@ -27,7 +27,6 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 ROOT = os.getcwd()
-TIERS = ("functional", "stress", "diagnostics")
 RESULT_TIERS = {"functional", "stress"}
 # results/<model>/<study>/: a model's own calibration studies (opp_aco's
 # ablation, pheromone and seed sweeps, opp_hc's budget study), not test-suite runs.
@@ -94,7 +93,7 @@ def check_naming(files):
     errors = []
     by_dir = {}
     for f in files:
-        m = re.match(r"tests/(opp_\w+)/(functional|stress|diagnostics)/([^/]+\.py)$", f)
+        m = re.match(r"tests/(opp_\w+)/(functional|stress)/([^/]+\.py)$", f)
         if m and m.group(3).startswith("test_"):  # helper modules in a tier dir are not tests
             by_dir.setdefault((m.group(1), m.group(2)), []).append(m.group(3))
     for (model, tier), names in sorted(by_dir.items()):

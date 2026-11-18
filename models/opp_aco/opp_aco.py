@@ -23,7 +23,6 @@ search ended without a compliant ant.
 
 import time
 import random
-import heapq
 from typing import Dict, List, Set, Optional, Tuple
 
 from dtos.aco.solve_aco_model_dto import SolveAcoModelDTO
@@ -109,7 +108,6 @@ class OPPAntColonyOptimization(Model):
         self.T_0 = dto.start_time
         self.P = sorted(dto.P) if getattr(dto, "P", None) else ["P1"]
         self._fallback_cache: Dict[frozenset, Optional[List[str]]] = {}
-        self._fallback_calls = 0
         self._required_by_batch: Dict[str, Set[str]] = {}
         # Undirected adjacency, for the completability check of
         # route_construction.stitch_route (keeps_route_completable).
@@ -906,7 +904,6 @@ class OPPAntColonyOptimization(Model):
                     self.location_graph, full[1:-1], required_locations, deadline=self._deadline,
                 ) + [final]
             self._fallback_cache[key] = full
-        self._fallback_calls += 1
         cached = self._fallback_cache[key]
         return list(cached) if cached is not None else None
 

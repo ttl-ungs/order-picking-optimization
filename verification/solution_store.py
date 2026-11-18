@@ -129,7 +129,7 @@ def _scenario_value(key, value):
         return sorted(items, key=str)
     if isinstance(value, dict):
         if value and isinstance(next(iter(value)), tuple):
-            drop_zeros = key in ("A_ni", "B_nb", "X_pb")
+            drop_zeros = key in ("A_ni", "B_nb")
             return [[*(str(k) for k in ks), v] for ks, v in value.items() if v or not drop_zeros]
         return [[str(k), v] for k, v in value.items()]
     return value

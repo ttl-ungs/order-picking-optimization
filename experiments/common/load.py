@@ -24,10 +24,7 @@ from experiments.common.config import MODEL_DIRS, SCENARIOS, result_csv
 NUMERIC_COLUMNS = [
     "total_time",
     "model_time",
-    "solver_time",
     "obj_val",
-    "obj_val_congestion",
-    "congestion_collisions",
     "peak_rss_mb",
     "sla_on_time_pct",
     "iterations_run",

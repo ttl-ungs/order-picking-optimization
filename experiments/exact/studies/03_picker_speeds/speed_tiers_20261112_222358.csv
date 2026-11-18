@@ -1,7 +1,0 @@
-pickers,tiers,distinct_speeds,speeds,stage1_s,stage2_s,status,obj,bb_nodes,sla_pct
-3,uniform,1,1.00,9.05,5.87,optimal,118339.0,2936,100.0
-3,2 tiers,2,0.70|1.30,8.42,11.63,optimal,150904.63,13228,100.0
-3,3 tiers,3,0.70|1.00|1.30,8.65,34.26,optimal,150820.63,59965,100.0
-3,all distinct,3,0.70|1.00|1.30,9.16,34.86,optimal,150820.63,59965,100.0
-4,uniform,1,1.00,8.59,9.42,optimal,89281.9,5355,96.2
-4,2 tiers,2,0.70|1.30,7.11,299.3,timelimit,,729317,

@@ -123,8 +123,6 @@ def build_dat_files(tmpdir, scenario_data):
     write_indexed_dat(os.path.join(tmpdir, "service_time.dat"),scenario_data["S_i"])
     write_indexed_dat(os.path.join(tmpdir, "a_ni.dat"),        scenario_data["A_ni"])
     write_indexed_dat(os.path.join(tmpdir, "B_nb.dat"),          scenario_data["B_nb"])
-    if "X_pb" in scenario_data:
-        write_indexed_dat(os.path.join(tmpdir, "x_pb.dat"), scenario_data["X_pb"])
 
     # Picker speeds and cold-chain limit (read by opp_mono and by opp_split's
     # Stage 2). A scenario that does not define them gets V_p = 1.0 for every

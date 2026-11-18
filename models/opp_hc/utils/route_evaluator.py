@@ -73,7 +73,6 @@ class RouteEvaluator:
         self._last_recollection_time = 0.0
         self._last_earliness_total = 0.0
         self._last_tardiness_total = 0.0
-        self._last_objective = 0.0
 
         self._pending_solution = None
         self._pending_batch_times: Dict[str, float] = {}
@@ -82,7 +81,6 @@ class RouteEvaluator:
         self._pending_recollection_time = 0.0
         self._pending_earliness_total = 0.0
         self._pending_tardiness_total = 0.0
-        self._pending_objective = 0.0
 
     def picker_speed(self, picker: str) -> float:
         """Speed of `picker` (1.0 when unset)."""
@@ -212,7 +210,6 @@ class RouteEvaluator:
             self._pending_recollection_time = sum(batch_times.values()) if batch_times else 0.0
             self._pending_earliness_total = sum(earliness_by_batch.values())
             self._pending_tardiness_total = sum(tardiness_by_batch.values())
-            self._pending_objective = objective
             return objective
 
         batch_times, changed_batches = self._compute_batch_completions_incremental(solution)
@@ -248,7 +245,6 @@ class RouteEvaluator:
         self._pending_recollection_time = recollection_time
         self._pending_earliness_total = earliness_total
         self._pending_tardiness_total = tardiness_total
-        self._pending_objective = objective
         return objective
 
     def commit(self, solution) -> None:
@@ -262,7 +258,6 @@ class RouteEvaluator:
             self._last_recollection_time = self._pending_recollection_time
             self._last_earliness_total = self._pending_earliness_total
             self._last_tardiness_total = self._pending_tardiness_total
-            self._last_objective = self._pending_objective
             return
 
         # Defensive: `solution` was not the last one scored incrementally.
@@ -274,7 +269,6 @@ class RouteEvaluator:
         self._last_recollection_time = self._pending_recollection_time
         self._last_earliness_total = self._pending_earliness_total
         self._last_tardiness_total = self._pending_tardiness_total
-        self._last_objective = self._pending_objective
 
     def compute_batch_completions(self, solution) -> Dict[str, float]:
         """

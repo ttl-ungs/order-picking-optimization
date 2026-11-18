@@ -1,9 +1,8 @@
 class OPPLocation:
-    """A warehouse location: its id and its type (picking, depot, final or aisle)."""
+    """A warehouse location, identified by its id."""
 
-    def __init__(self, location_id, type="picking"):
+    def __init__(self, location_id):
         self.location_id = location_id
-        self.type = type
 
     def __repr__(self):
         return f"OPPLocation({self.location_id})"
@@ -33,8 +32,8 @@ class OPPLocationGraph:
         # get_distance are the hottest calls of the search loops, and this
         # saves them building and hashing an OPPLocation per call.
         self._distance_by_id = {}
-        self.depot_node = OPPLocation(depot_node, "depot") if depot_node else None
-        self.final_node = OPPLocation(final_node, "final") if final_node else None
+        self.depot_node = OPPLocation(depot_node) if depot_node else None
+        self.final_node = OPPLocation(final_node) if final_node else None
 
         self._vertices_set = (
             {self.depot_node, self.final_node} if depot_node and final_node else set()
@@ -55,7 +54,7 @@ class OPPLocationGraph:
         if type not in {"picking", "depot", "final"}:
             raise ValueError("Vertex type must be 'picking', 'depot', or 'final'.")
 
-        opp_location = OPPLocation(vertex, type)
+        opp_location = OPPLocation(vertex)
         if opp_location not in self._vertices_set:
             self._vertices_set.add(opp_location)
             self._vertices_sorted = sorted(v.location_id for v in self._vertices_set)
@@ -123,15 +122,6 @@ class OPPLocationGraph:
     def get_vertices(self):
         """Get all vertex IDs in the graph."""
         return self._vertices_sorted
-
-    def getPaths(self, origin_vertex, destination_vertex):
-        """All simple paths from origin to destination."""
-        if (
-            origin_vertex not in self.get_vertices()
-            or destination_vertex not in self.get_vertices()
-        ):
-            raise ValueError("Both vertices must be in the graph.")
-        return self._find_paths(origin_vertex, destination_vertex)
 
     def _find_paths(self, origin_vertex, destination_vertex, visited=None):
         """All simple paths from origin to destination, by depth-first search."""
