@@ -1,6 +1,0 @@
-test,status,total_time,model_time,solver_time,W_c,W_pen,W_e,W_t,C_v,T_travel,T_setup,T_pick,M,N,B,V
-test_opp_v3_model_30.TestOPPModel.test_10_orders_per_batch_10_x_10,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,
-test_opp_v3_model_31.TestOPPModel.test_10_orders_per_batch_5_x_5_250_orders,ok,71.45043611526489,1781358166.712621,70.637329,9.0,1.0,1.0,1.0,200,0.5,1.0,1.0,1000.0,250,25,25
-test_opp_v3_model_32.TestOPPModel.test_10_orders_per_batch_5_x_5_500_orders,ok,907.3647239208221,1781359074.012612,905.2508,9.0,1.0,1.0,1.0,200,0.5,1.0,1.0,1000.0,500,50,25
-test_opp_v3_model_33.TestOPPModel.test_10_orders_per_batch_7_x_7_500_orders,timeout,Ejecución detenida por timeout - 25,Ejecución detenida por timeout - 25,,,,,,,,,,,,,
-test_opp_v3_model_34.TestOPPModel.test_8_orders_per_batch_7_x_7_320_orders,ok,912.5396008491516,1781361486.0597818,908.076081,9.0,1.0,1.0,1.0,200,0.5,1.0,1.0,1000.0,320,40,49

@@ -3,19 +3,22 @@ from dtos.opp.solve_model_dto import SolveModelDTO
 
 class SolveAcoModelDTO(SolveModelDTO):
     """
-    Data Transfer Object (DTO) for Ant Colony Optimization (ACO) model parameters.
-    Inherits from SolveModelDTO to maintain exact model constraints and inputs,
-    while adding specific metaheuristic hyperparameters.
+    Parameters of the Ant Colony Optimization heuristic (OPP-ACO): the
+    problem's parameters (SolveModelDTO) plus the colony's hyperparameters,
+    the time budget, the picker speeds and the cold-chain limit.
     """
 
     def __init__(self):
         super().__init__()
-        self._A_ants = 15  # Renamed from _A to avoid collision with visitation matrix A
+        self._A_ants = 15  # not _A: A is the visit matrix
         self._Max_it = 60
-        self._Alpha = 1.0  # Importance of accumulated pheromone
-        self._Beta = 2.5  # Importance of visibility (inverse distance)
-        self._E = 0.15  # Pheromone evaporation rate
-        self._Q = 100.0  # Pheromone deposit factor
+        self._Alpha = 1.0
+        self._Beta = 2.5
+        self._E = 0.15
+        self._Q = 100.0
+        self._V_p: dict = {}
+        self._T_cold: float = float("inf")
+        self._Max_time: float = 1800.0
 
     @property
     def A_ants(self) -> int:
@@ -70,3 +73,39 @@ class SolveAcoModelDTO(SolveModelDTO):
     @Q.setter
     def Q(self, value: float):
         self._Q = value
+
+    @property
+    def Max_time(self) -> float:
+        """Wall-clock budget (seconds) of the solve. When it runs out the
+        current iteration stops building ants, its ants still update the
+        best solution, and the run ends. It never ends a run that has no
+        cold-chain-compliant solution yet, so it cannot turn a solvable
+        instance into a false "infeasible". The default of 1800 s is above
+        every realistic-crew stress run (at most ~410 s) and below the
+        stress runner's 40-minute timeout, so it only bounds the very large
+        instances (the 100x100 grid would need about 5 h for its 60
+        iterations)."""
+        return self._Max_time
+
+    @Max_time.setter
+    def Max_time(self, value: float):
+        self._Max_time = value
+
+    @property
+    def V_p(self) -> dict:
+        """dict {picker: speed}. A picker missing from it has speed 1.0."""
+        return self._V_p
+
+    @V_p.setter
+    def V_p(self, value: dict):
+        self._V_p = value or {}
+
+    @property
+    def T_cold(self) -> float:
+        """Cold-chain limit: the largest T_exec_pb[p, b] for which the pair
+        (picker, batch) is eligible. The default, +inf, disables it."""
+        return self._T_cold
+
+    @T_cold.setter
+    def T_cold(self, value: float):
+        self._T_cold = value

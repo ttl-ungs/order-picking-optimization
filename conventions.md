@@ -8,20 +8,20 @@ Este documento sirve como guía estricta y vinculante para cualquier agente aut�
 ### 1. Convenciones de Nomenclatura (Naming Conventions)
 
 * **Archivos y Módulos (.py):** Siempre en `snake_case`. Los nombres deben ser descriptivos del modelo o su función.
-    * *Ejemplos:* `opp_model_v3.py`, `constraints_validator.py`, `route_evaluator.py`.
-* **Clases:** Siempre en `PascalCase`. 
-    * *Ejemplos:* `OPPModelV3`, `OPPHillClimbingV3`, `ConstraintsValidator`, `OutputHandler`.
+    * *Ejemplos:* `opp_hc.py`, `constraints_validator.py`, `route_evaluator.py`.
+* **Clases:** Siempre en `PascalCase`.
+    * *Ejemplos:* `OPPHillClimbing`, `OPPAntColonyOptimization`, `ConstraintsValidator`, `OutputHandler`.
 * **Métodos y Funciones:** Siempre en `snake_case`. Los métodos públicos deben comenzar con verbos de acción.
     * *Ejemplos:* `solve()`, `validate_constraints()`, `calculate_objective()`.
-* **Variables y Atributos:** Siempre en `snake_case`. Evitar abreviaturas crípticas a menos que correspondan exactamente a los parámetros matemáticos del modelo original (ej. `w1`, `w2`, `gamma`, `delta`).
+* **Variables y Atributos:** Siempre en `snake_case`. Evitar abreviaturas crípticas a menos que correspondan exactamente a los parámetros matemáticos del modelo (ej. `W_c`, `W_pen`, `T_setup`, `V_p`).
     * *Ejemplos:* `current_route`, `is_feasible`, `active_arcs`.
 * **Constantes:** Siempre en `UPPER_SNAKE_CASE`.
     * *Ejemplos:* `MAX_ITERATIONS`, `BIG_M`, `DEFAULT_TIMEOUT`.
-* **Archivos de Test:** Llevan siempre el prefijo `test_case_` seguido de un número de dos dígitos o de un identificador descriptivo en `snake_case`. No repiten el nombre del modelo ni el del tier: ya los da el directorio (`tests/<modelo>/<tier>/`).
-    * *Numerados* (continuos, sin huecos, dentro de cada modelo y tier): `tests/opp_hc_2/functional/test_case_02.py`, `tests/opp_hc_2/stress/test_case_11.py`.
-    * *Descriptivos* (tests propios de una familia, sin equivalente en su base): `tests/opp_hc_3/functional/test_case_congestion.py`.
+* **Archivos de Test:** Llevan siempre el prefijo `test_case_` seguido de un identificador descriptivo en `snake_case`; los casos compartidos son `case_NN.py` (dos dígitos, continuos, sin huecos). No repiten el nombre del modelo ni el del tier: ya los da el directorio.
+    * *Casos compartidos:* `tests/functional_cases/case_24.py`, `tests/stress_cases/case_04.py`.
+    * *Tests propios de un modelo:* `tests/opp_hc/functional/test_case_invalid_speed_rejected.py`.
 * **Data Transfer Objects (DTOs):** Siempre deben finalizar con el sufijo `DTO`.
-    * *Ejemplos:* `ModelDTO`, `SolveModelDTO`, `SolveHCModelDTO`.
+    * *Ejemplos:* `ModelDTO`, `SolveModelDTO`, `SolveHCModelDTO`, `SolveAcoModelDTO`.
 
 El código se debe escribir en inglés.
 
@@ -29,49 +29,48 @@ El código se debe escribir en inglés.
 
 ### 2. Convenciones de Estructura de Directorios (Dirs Conventions)
 
-El repositorio sigue un patrón modular estricto por modelo. No se deben mezclar lógicas de distintas naturalezas dentro de un mismo directorio.
+El repositorio contiene los cuatro modelos de la tesis (OPP-Split, OPP-Mono, OPP-HC y OPP-ACO) y lo que los ejecuta y verifica. No se deben mezclar lógicas de distintas naturalezas dentro de un mismo directorio.
 
 ```text
 raiz-del-proyecto/
-├── dtos/                        # DTOs globales compartidos por los modelos
+├── dtos/                        # DTOs compartidos
 │   ├── opp/                     # DTOs del problema OPP (compartidos por todos los modelos)
-│   ├── hc/                      # DTOs de la heurística Hill Climbing
-│   └── aco/                     # DTOs de Ant Colony Optimization
-├── models/                      # Todos los resolvedores (exactos e heurísticos)
-│   ├── base/                    # Clases base abstractas compartidas
-│   │   ├── model.py             # Clase abstracta Model (base del patrón Observer)
-│   │   └── opp_location_graph.py# Grafo base de locaciones
-│   ├── opp_v1 ... opp_v4, opp_v5_1_mono, opp_v5_2_split/  # Modelos exactos (v1-v3 PySCIPOpt, v4 y v5.x ZIMPL+SCIP)
-│   ├── opp_hc_1 ... opp_hc_4/   # Heurísticas Hill Climbing
-│   └── opp_aco_1 ... opp_aco_4/ # Metaheurísticas ACO
-├── observer/                    # Infraestructura del patrón de diseño Observer
-│   └── observer.py              # Clase abstracta Observer
-├── tests/                       # Suite de testing organizada por modelo
+│   ├── hc/  aco/                # Parámetros de las heurísticas
+│   └── verification/            # DTO del reporte de cumplimiento
+├── models/
+│   ├── base/                    # Clase abstracta Model (patrón Observer) y grafo de locaciones
+│   ├── utils/                   # Código compartido por los modelos (validaciones previas, rutas, SLA)
+│   ├── opp_split/  opp_mono/    # Modelos exactos (ZIMPL + SCIP)
+│   └── opp_hc/  opp_aco/        # Heurísticas (Hill Climbing, Ant Colony Optimization)
+├── observer/                    # Infraestructura del patrón Observer
+├── tests/
 │   ├── run_suite.py             # Punto de entrada único: python -m tests.run_suite <modelo> functional|stress
-│   ├── infra/                   # Infraestructura de tests (no son tests)
-│   │   ├── execution/           # runner.py, config.py: ejecuta cada test aislado, con timeout, y escribe el CSV en results/
-│   │   ├── cases/               # opp_test_case.py (TestCase base, OPPTestCase), route_assertions.py
-│   │   ├── factories/           # family_case.py, migrated_case.py (reutilizan tests de otro modelo), graphs_factory.py
-│   │   └── zimpl/               # zpl_utils.py, dat_files_builder.py: soporte de los tests ZIMPL (opp_v2_zpl, opp_v4, opp_v5_1_mono, opp_v5_2_split)
-│   ├── shared_scenarios/        # Todos los escenarios (grafos y parámetros); los propios de un modelo llevan sufijo _vN
-│   │   ├── common/  functional/  stress/
-│   └── opp_hc_2/                # Un directorio por modelo
-│       ├── functional/          # Pruebas funcionales regulares: test_case_01.py, test_case_02.py, ...
-│       └── stress/              # Pruebas de estrés
-├── examples/                    # Scripts de uso de los modelos heurísticos
-├── scripts/                     # Herramientas del repo: check_repo, run_all, make_stress_smoke, new_family_tests (ver scripts/README.md)
+│   ├── functional_cases/        # Los casos funcionales, escritos una vez (case_NN.py)
+│   ├── stress_cases/            # Los escenarios de estrés, escritos una vez (case_NN.py)
+│   ├── infra/                   # Infraestructura de tests (no son tests): execution/, cases/, factories/, zimpl/
+│   ├── shared_scenarios/        # Grafos y escenarios compartidos: common/, functional/, stress/
+│   └── opp_split/ ...           # Un directorio por modelo: enlaza el modelo con los casos compartidos
+│       ├── functional/          #   test_functional_cases.py + tests propios
+│       └── stress/              #   test_stress_cases.py + adaptador
+├── results/                     # CSV de resultados: results/<modelo>/<functional|stress>/, compliance/, comparability/, equal_time/
+├── verification/                # Verifica soluciones de las heurísticas contra opp_mono; compara opp_split con opp_mono
+├── experiments/                 # Lo que no es un test y lee o produce results/, según para quién es
+│   ├── common/                  #   todos los modelos: qué archivos de resultados cuentan
+│   ├── comparison/              #   los modelos entre sí: comparabilidad y tiempo igual
+│   ├── exact/                   #   OPP-Split y OPP-Mono: exploraciones e informes
+│   └── heuristics/              #   OPP-HC y OPP-ACO: estudios (hc/, aco/)
+├── scripts/                     # check_repo, run_all, make_stress_smoke (ver scripts/README.md)
 ├── .github/workflows/           # CI: ci.yml (por PR) y nightly.yml (programado)
-├── docs/                        # Documentación: thesis/ (tex, pdf, results_outline), guides/, specs/, tests/<modelo>/ (índice en docs/README.md)
-└── results/                     # CSV de resultados (datos generados): results/<modelo>/<functional|stress|stability>/
+└── docs/                        # Especificaciones, guía de estilo e informes generados (ver README.md)
 ```
 
-Los escenarios ya no viven dentro de cada modelo: están todos en `tests/shared_scenarios/`. Un escenario compartido por varios modelos no lleva sufijo; uno propio de un modelo lleva su sufijo (`scenario_01_v4.py`, `single_order_params_hc4.py`).
+Los escenarios no viven dentro de cada modelo: están todos en `tests/shared_scenarios/`.
 
 
-### 3. Resolución Dinámica de Rutas (sys.path.insert)
-Para asegurar que cualquier test o script sea ejecutable de forma directa desde la terminal o el IDE sin fallas de importación (ModuleNotFoundError), se utiliza un hack estricto de resolución dinámica del path de ejecución.
+### 3. Ejecución e imports
+Todo se ejecuta desde la raíz del repositorio con `python -m` (`python -m tests.run_suite ...`, `python -m scripts.check_repo`, `python -m experiments...`), y todos los imports son absolutos a partir de la raíz (`from models.opp_hc import ...`). No se admiten imports relativos.
 
-* El Snippet Obligatorio: En la cabecera de todo archivo ejecutable principal (test, script de estrés, ejemplo de uso), se DEBE incluir exactamente el siguiente bloque de código antes de cualquier importación local:
+* **Archivos que además se ejecutan directamente:** Los casos de test y los scripts que también se corren como archivo suelto (por ejemplo desde el IDE) llevan, antes de cualquier import local, exactamente este bloque:
 
 ```python
 import sys
@@ -79,75 +78,64 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 ```
 
-    (Nota: El número de saltos de directorio ".." debe ajustarse exactamente según la profundidad del archivo respecto a la raíz del proyecto para que el path apunte siempre al root).
+    (El número de saltos `".."` se ajusta a la profundidad del archivo para que el path apunte a la raíz.)
 
-* ¿Para qué se usa? Permite que Python reconozca la raíz del proyecto como el directorio de búsqueda de módulos prioritario, garantizando que los entornos virtuales y entornos de CI/CD funcionen de manera idéntica.
-
-* Prohibición Absoluta: NO se permite el uso de variables de entorno manuales, manipulación con sys.path.append(), inicializaciones con pathlib para alterar el sys path, ni ninguna otra variante sintáctica. Tampoco se admiten imports relativos en archivos ejecutables. Todos los imports deben ser absolutos a partir del root del proyecto (from models.opp_v3...).
+* Los módulos que solo se importan o se corren con `python -m` no lo llevan.
+* **Prohibición:** No se usa ninguna otra forma de alterar el path (`sys.path.append()`, `pathlib`, variables de entorno manuales).
 
 ### 4. Convenciones para la Creación de Tests
-El marco de validación científica de la tesis exige comparar modelos exactos contra heurísticas bajo las mismas condiciones.
+El marco de validación científica de la tesis exige que los cuatro modelos resuelvan los mismos casos bajo las mismas condiciones.
 
-* Clonación Estricta: Al desarrollar un nuevo modelo heurístico, su batería de pruebas debe ser una copia exacta de los escenarios lógicos de opp_v3.
-* Adaptación Técnica Permitida: Solo se permite modificar lo estrictamente necesario para que el test compile y ejecute:
-  * Mapeos de imports (para apuntar al nuevo modelo heurístico y a sus DTOs correspondientes).
-  * Instanciación del modelo y su respectivo output_handler.
-* Inmutabilidad de Aserciones: BAJO NINGUNA CIRCUNSTANCIA el agente debe relajar, comentar o eliminar un assertEqual, assertTrue o validación matemática del test original, a menos que el usuario lo autorice explícitamente (ej. debido a la tolerancia decimal aceptada en heurísticas). Lo que el test valida a nivel de negocio debe preservarse idéntico.
-* Uso de Helpers: Es obligatorio usar los métodos de conveniencia heredados o importados para manipulación de parámetros de test, tales como:
+* **Un caso, una vez:** Cada caso funcional vive en `tests/functional_cases/case_NN.py` y cada escenario de estrés en `tests/stress_cases/case_NN.py`. Un caso no sabe qué modelo lo resuelve: llama a `self.solve(...)`, `self.run_pipeline(...)` o `self.assert_stress_pipeline(...)`, que implementa el adaptador de cada modelo. `bind_cases` genera las clases de test de cada modelo.
+* **Etiquetas:** Cada método de test de un caso funcional lleva en su docstring la etiqueta del anexo de la tesis (por ejemplo `Case 24a`); las letras siguen el orden alfabético de los métodos del caso.
+* **Heurísticas:** OPP-HC y OPP-ACO ejecutan las mismas instancias de los casos funcionales (capturadas de las corridas de OPP-Split) y se contrasta el estado, no el objetivo exacto.
+* **Inmutabilidad de Aserciones:** BAJO NINGUNA CIRCUNSTANCIA el agente debe relajar, comentar o eliminar un assertEqual, assertTrue o validación matemática de un caso, a menos que el usuario lo autorice explícitamente. Lo que el test valida a nivel de negocio debe preservarse idéntico.
+* **No agregar tests sin pedido:** No se agregan tests nuevos que no correspondan a un caso de la tesis o que no sumen cobertura de lógica del modelo.
+* **Uso de Helpers:** Es obligatorio usar los métodos de conveniencia heredados o importados para manipulación de parámetros de test, tales como:
   * OPPTestCase.normalize_due_dates()
   * OPPTestCase.apply_weight_overrides()
-  * OPPTestCase.sum_vars_with_prefix()
 
 ### 5. Convenciones de Documentación (Docs Conventions)
 
 #### 5.1. Código Fuente (Módulos, Clases y Métodos)
-Los comentarios deben ser en inglés.
-Se debe utilizar obligatoriamente el formato de Docstrings de Google (PEP 257) para documentar:
-1.  **Propósito:** Breve descripción del objetivo del componente.
-2.  **Argumentos (`Args`):** Enumeración de parámetros indicando nombre, tipo y descripción.
-3.  **Retornos (`Returns`):** Tipo de dato devuelto y significado.
+Los comentarios y docstrings se escriben en inglés.
+Cada módulo, clase y método público lleva un docstring que dice su propósito y, sobre todo, el porqué de lo que no es evidente (una decisión de diseño, una tolerancia, un caso borde). Cuando los parámetros o el valor devuelto no se entienden por su nombre y su tipo, se documentan con las secciones `Args` y `Returns` del formato de Google.
 
 *Ejemplo en código:*
 ```python
 def validate_vehicle_capacity(self, route: list, batch_id: int) -> bool:
-    """Comprueba que la carga total de las órdenes asignadas al lote no exceda la capacidad del vehículo.
+    """Check that the load of the orders assigned to the batch fits in the vehicle.
 
     Args:
-        route (list): Lista ordenada de nodos visitados en el viaje.
-        batch_id (int): Identificador del lote bajo evaluación.
+        route (list): Ordered list of the nodes visited in the trip.
+        batch_id (int): The batch under evaluation.
 
     Returns:
-        bool: True si la ruta es factible a nivel de capacidad, False en caso contrario.
+        bool: True if the route is feasible for the capacity, False otherwise.
     """
 ```
 
 #### 5.2. Documentación de Tests
-Los métodos de prueba dentro de los archivos de test no deben documentar la mecánica del código, sino la **intención del negocio o restricción matemática** bajo prueba.
-* *Formato Correcto:* `"""Verifica el comportamiento de penalización por tardanza (tardiness) aislando la función objetivo con w1=0 y w2=1 en un grafo desconectado."""`
+Los métodos de prueba no deben documentar la mecánica del código, sino la **intención del negocio o restricción matemática** bajo prueba.
+* *Formato Correcto:* `"""Verifica el comportamiento de penalización por tardanza (tardiness) aislando la función objetivo con W_c=0 y W_pen=1 en un grafo desconectado."""`
 * *Formato Incorrecto:* `"""Prueba que da falso con dto y weights."""`
-
-#### 5.3. Estructura de Documentos de Escenarios (`test_cases.md`)
-Cada modelo debe incluir en `docs/tests/<modelo>/` archivos markdown que documenten detalladamente cada escenario de prueba utilizando la siguiente estructura fija:
-* **ID de Escenario:** Coincidente con el número de archivo (ej. Escenario 1).
-* **Descripción del Grafo:** Layout de depósito, pasillos, nodos finales y distancias.
-* **Configuración de Órdenes:** Lista de órdenes, locaciones requeridas, volúmenes (`cap_n`) y ventanas de tiempo (`due_date`).
-* **Resultado Esperado:** Factibilidad, valor óptimo teórico de la función objetivo, arcos activos esperados.
 
 ---
 
 ### 6. Convenciones de Arquitectura: Herencia, DTOs y Patrón Observer
 
-* **Herencia de Modelos:** Todo solver debe heredar de la clase base abstracta `Model` (`models/base/model.py`). Esto obliga a implementar la firma unificada del método `solve()` y hereda los mecanismos para interactuar con observadores.
-* **Encapsulamiento mediante DTOs:** Queda estrictamente **prohibido** el paso de parámetros primitivos sueltos en las firmas de los métodos principales de inicialización o resolución. Toda la información de entrada debe viajar encapsulada en objetos contenedores (`ModelDTO`, `SolveModelDTO`).
+* **Modelos exactos:** OPP-Split y OPP-Mono son archivos ZIMPL (`.zpl`) que resuelve SCIP; no tienen clase Python. Los puntos siguientes sobre herencia y Observer aplican a las heurísticas (OPP-HC, OPP-ACO).
+* **Herencia de Modelos:** Toda heurística debe heredar de la clase base abstracta `Model` (`models/base/model.py`). Esto obliga a implementar la firma unificada del método `solve()` y hereda los mecanismos para interactuar con observadores.
+* **Encapsulamiento mediante DTOs:** Queda estrictamente **prohibido** el paso de parámetros primitivos sueltos en las firmas de los métodos principales de inicialización o resolución. Toda la información de entrada debe viajar encapsulada en objetos contenedores (`ModelDTO`, `SolveModelDTO` y sus subclases `SolveHCModelDTO`, `SolveAcoModelDTO`).
 * **Patrón Observer para Salidas (Output):** La lógica de cálculo matemática está desacoplada al 100% de la lógica de visualización o guardado de resultados.
     * Un modelo **NUNCA** debe contener sentencias `print()` de resultados intermedios, ni guardar archivos CSV o logs de solución dentro de su algoritmo principal.
     * Al finalizar el cálculo, el modelo debe invocar obligatoriamente a `self.notify(result_data)`.
-    * Cada modelo debe tener asignado su propio `utils/output_handler.py` que herede de `Observer` (`observer/observer.py`). Este handler se acopla dinámicamente en tiempo de ejecución (normalmente en los métodos de configuración de los tests) mediante `model.attach(handler)`.
+    * Cada heurística debe tener asignado su propio `utils/output_handler.py` que herede de `Observer` (`observer/observer.py`). Este handler se acopla en tiempo de ejecución mediante `model.attach(handler)` cuando se quiere ver el resultado. El runner de tests lo acopla a cada solver que crean los tests si `PRINT_RESULTS=1` (`Model.attach_to_new_instances`). Los tests de las heurísticas acoplan su propio observador, `SolutionInfoCapture`, para verificar la solución notificada.
 
 ---
 
 ### 7. Directrices de Comportamiento del Agente Autónomo
 
-1.  **Validación Previa:** Antes de escribir una sola línea de código para un nuevo modelo heurístico, el agente debe leer las especificaciones del archivo de requerimientos particulares (ej. `model_based_on_opp_v3_specs.md`).
-2.  **Consulta Obligatoria ante Ambigüedades:** Si un requerimiento técnico o fórmula matemática de penalización genera dudas de interpretación, el agente tiene prohibido tomar decisiones autónomas de diseño. Debe pausar la ejecución y consultar al usuario.
-3.  **Fidelidad al Legado:** El código exacto (por ejemplo, `opp_v3` en `model_based_on_opp_v3_specs.md`) es la verdad absoluta de negocio. Si una heurística produce resultados lógicamente inconsistentes con los tests clonados del modelo, el error reside en la implementación de la heurística y no en el caso de prueba. No se permite alterar los tests para forzar su aprobación ("pasar en verde").
+1.  **Consulta Obligatoria ante Ambigüedades:** Si un requerimiento técnico o fórmula matemática de penalización genera dudas de interpretación, el agente tiene prohibido tomar decisiones autónomas de diseño. Debe pausar la ejecución y consultar al usuario.
+2.  **Los modelos exactos son la verdad de negocio:** Si una heurística produce resultados lógicamente inconsistentes con los casos, el error reside en la implementación de la heurística y no en el caso de prueba. No se permite alterar los casos para forzar su aprobación ("pasar en verde").
+3.  **Sin referencias a versiones anteriores:** Ningún archivo menciona versiones anteriores de los modelos (`check_repo` lo verifica).

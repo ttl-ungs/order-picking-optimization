@@ -3,19 +3,16 @@ from typing import Optional
 
 class ZimplSolutionRecordDTO:
     """
-    Instance + solution of an exact ZIMPL/SCIP model run (opp_v5_1_mono,
-    opp_v5_2_split), the counterpart of SolutionRecordDTO for the heuristics.
+    Instance and solution of a run of an exact model (opp_mono, opp_split):
+    the counterpart of SolutionRecordDTO.
 
-    `scenario` is the dict handed to tests/infra/zimpl/dat_files_builder
-    .build_dat_files (the instance exactly as the .dat files were written);
-    `values` are SCIP's variable values of the solve that produced this
-    record. opp_v5_2_split solves in two stages: its record is the Stage 2
-    solve, and the split pipelines add the Stage 1 values (the routes,
-    z_ijb, and r_b) with add_stage1_values once Stage 2 finished.
+    `scenario` is the dict given to dat_files_builder.build_dat_files (the
+    instance as the .dat files were written) and `values` are SCIP's variable
+    values. opp_split's record is the one of Stage 2; add_stage1_values adds
+    the routes (z_ijb) and r_b of Stage 1.
 
-    Holds references only; serialization happens after the test finished,
-    and only when the runner was asked to keep solutions (WRITE_SOLUTIONS,
-    see verification/solution_store.py).
+    Holds references only; it is serialized after the test, and only when the
+    runner keeps solutions (WRITE_SOLUTIONS, verification/solution_store.py).
     """
 
     def __init__(self, zpl_path: str, scenario: Optional[dict], status: str, objective: Optional[float], values: dict):

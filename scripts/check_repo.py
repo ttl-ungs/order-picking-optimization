@@ -6,15 +6,13 @@ The checks that were done by hand after every restructuring, as one command:
     python -m scripts.check_repo --skip-imports   # layout/naming/references only (instant)
 
 Checks:
-  imports     every tracked module imports cleanly (this also resolves the base
-              module of every family_case()/migrated_case() factory)
-  factories   the module path inside every family_case()/migrated_case() call exists
-  naming      test files (test_*.py) under tests/<model>/{functional,stress,diagnostics}/
+  imports     every tracked module imports cleanly
+  naming      test files (test_*.py) under tests/<model>/{functional,stress}/
               are test_case_<NN|slug>.py, and the numbered ones are continuous (01..N)
   layout      no leftover scenarios/, tests/, doc/ inside tests/<model>/;
               results/ is results/<model>/<tier|study>/, results/compliance/<model>/<tier>/
               or the flat results/comparability/ and results/equal_time/ (tiers:
-              functional|stress|stability; studies: ablation|pheromone)
+              functional|stress; studies: ablation|pheromone|seeds|budget)
   references  no tracked .py/.md still uses a module path or directory that
               was removed or renamed
 Exit code is 1 if any check fails.
@@ -29,14 +27,13 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 ROOT = os.getcwd()
-TIERS = ("functional", "stress", "diagnostics")
-RESULT_TIERS = {"functional", "stress", "stability"}
-# results/<model>/<study>/: a model's own calibration studies (opp_aco_4's
-# ablation and pheromone sweeps), not test-suite runs.
-RESULT_STUDIES = {"ablation", "pheromone"}
+RESULT_TIERS = {"functional", "stress"}
+# results/<model>/<study>/: a model's own calibration studies (opp_aco's
+# ablation, pheromone and seed sweeps, opp_hc's budget study), not test-suite runs.
+RESULT_STUDIES = {"ablation", "pheromone", "seeds", "budget"}
 # results/<dir>/ that hold cross-model outputs instead of one model's runs:
 #   compliance/<model>/<tier>/  verification/ reports (one per run it checks)
-#   comparability/, equal_time/  flat CSVs (analysis.comparability, the
+#   comparability/, equal_time/  flat CSVs (experiments.comparison.comparability, the
 #                                equal-time study)
 RESULT_CROSS_MODEL_NESTED = {"compliance"}
 RESULT_CROSS_MODEL_FLAT = {"comparability", "equal_time"}
@@ -44,11 +41,14 @@ RESULT_CROSS_MODEL_FLAT = {"comparability", "equal_time"}
 # Entry points / scripts whose import would run something or is not a library module.
 # experiments/*/studies/ keeps each study's scripts exactly as they were run;
 # most execute the experiment at import time.
-IMPORT_SKIP_PREFIXES = ("examples/", "experiments/opp_v5/studies/")
+IMPORT_SKIP_PREFIXES = ("experiments/exact/studies/",)
 IMPORT_SKIP_FILES = {"tests/run_suite.py"}
 
 # (pattern, why) -- paths and dotted modules that no longer exist.
 STALE = [
+    (r"\bopp_(?:v[1-5]\w*|hc_[1-4]|aco_[1-4]|model_v\w+)\b|\bhc_[1-4]\b|\baco_[1-4]\b",
+     "earlier model versions are not part of the repository (use opp_hc, opp_aco, opp_split, opp_mono)"),
+    (r"\bv5\b|\bfamily_case\b|\bmigrated_case\b", "no reference to earlier versions or removed mechanisms"),
     (r"tests/outputs", "results moved to results/"),
     (r"tests\.opp_test_case\b", "moved to tests.infra.cases.opp_test_case"),
     (r"tests\.family_case\b", "moved to tests.infra.factories.family_case"),
@@ -56,16 +56,13 @@ STALE = [
     (r"tests\.utils\.zpl_utils\b", "moved to tests.infra.zimpl.zpl_utils"),
     (r"models\.utils\.dat_files_builder\b", "moved to tests.infra.zimpl.dat_files_builder"),
     (r"\bgraphs\.graphs_factory\b", "moved to tests.infra.factories.graphs_factory"),
-    (r"tests\.opp_v5\.v4_compat\b", "renamed to tests.infra.factories.migrated_case"),
-    (r"\b(models|tests)\.opp_v5\b|\b(models|tests|results)/opp_v5\b", "opp_v5 was renamed to opp_v5_2_split"),
     (r"tests\.opp_v[24]\.route_assertions\b", "moved to tests.infra.cases.route_assertions"),
     (r"tests\.opp_\w+\.tests\.(normal|stress|diagnostics)\b", "tests/<model>/tests/ was flattened"),
     (r"tests\.support\b|tests/support\b", "tests/support/ was regrouped into tests/infra/{execution,cases,factories,zimpl}"),
     (r"tests\.shared_scenarios\.normal\b", "renamed to tests.shared_scenarios.functional"),
-    (r"\bmodels\.opp\.|\bmodels\.opp_hc\.|\bmodels\.opp_aco\.", "renamed to opp_v1 / opp_hc_1 / opp_aco_1"),
 ]
 # Text where the old names are the point (history), not live references.
-STALE_ALLOW = ("meta.md", "scripts/check_repo.py", "analysis/output/")
+STALE_ALLOW = ("scripts/check_repo.py",)
 
 
 def tracked():
@@ -92,28 +89,18 @@ def check_imports(files):
     return mods, errors
 
 
-def check_factories(files):
-    errors = []
-    pat = re.compile(r"(?:family_case|migrated_case)\(\s*['\"]([\w.]+)['\"]")
-    for f in files:
-        if not f.startswith("tests/") or not f.endswith(".py"):
-            continue
-        for target in pat.findall(open(f, encoding="utf-8").read()):
-            if not os.path.exists(target.replace(".", "/") + ".py"):
-                errors.append(f"{f}: factory points at missing module {target}")
-    return errors
-
-
 def check_naming(files):
     errors = []
     by_dir = {}
     for f in files:
-        m = re.match(r"tests/(opp_\w+)/(functional|stress|diagnostics)/([^/]+\.py)$", f)
+        m = re.match(r"tests/(opp_\w+)/(functional|stress)/([^/]+\.py)$", f)
         if m and m.group(3).startswith("test_"):  # helper modules in a tier dir are not tests
             by_dir.setdefault((m.group(1), m.group(2)), []).append(m.group(3))
     for (model, tier), names in sorted(by_dir.items()):
         numbers = []
         for n in names:
+            if n in ("test_functional_cases.py", "test_stress_cases.py"):  # bind the shared cases to the model
+                continue
             m = re.fullmatch(r"test_case_(\d+|[a-z0-9_]+)\.py", n)
             if not m:
                 errors.append(f"tests/{model}/{tier}/{n}: not named test_case_<NN|slug>.py")
@@ -121,9 +108,15 @@ def check_naming(files):
                 if len(m.group(1)) != 2:
                     errors.append(f"tests/{model}/{tier}/{n}: number must have two digits")
                 numbers.append(int(m.group(1)))
-        if numbers and sorted(numbers) != list(range(1, len(numbers) + 1)):
+        if tier != "functional" and numbers and sorted(numbers) != list(range(1, len(numbers) + 1)):
             missing = sorted(set(range(1, max(numbers) + 1)) - set(numbers))
             errors.append(f"tests/{model}/{tier}: numbering not continuous (missing {missing}, duplicates: {len(numbers) - len(set(numbers))})")
+    shared = sorted(int(m.group(1)) for f in files if (m := re.fullmatch(r"tests/functional_cases/case_(\d\d)\.py", f)))
+    if shared != list(range(1, len(shared) + 1)):
+        errors.append(f"tests/functional_cases: case numbering not continuous (found {shared})")
+    stress = sorted(int(m.group(1)) for f in files if (m := re.fullmatch(r"tests/stress_cases/case_(\d\d)\.py", f)))
+    if stress != list(range(1, len(stress) + 1)):
+        errors.append(f"tests/stress_cases: case numbering not continuous (found {stress})")
     return errors
 
 
@@ -133,6 +126,8 @@ def _check_result_path(f):
       results/compliance/<opp_model>/<tier>/<file>
       results/comparability/<file>, results/equal_time/<file>
     """
+    if f == "results/README.md":
+        return []
     parts = f.split("/")[1:]
     top = parts[0]
     if top.startswith("opp_"):
@@ -158,7 +153,7 @@ def check_layout(files):
     for f in files:
         m = re.match(r"tests/(opp_\w+)/(scenarios|tests|doc)/", f)
         if m:
-            errors.append(f"{f}: tests/<model>/{m.group(2)}/ should not exist (scenarios -> tests/shared_scenarios, docs -> docs/tests)")
+            errors.append(f"{f}: tests/<model>/{m.group(2)}/ should not exist (scenarios -> tests/shared_scenarios)")
         if re.match(r"models/opp_\w+/example_usage\.py$", f):
             errors.append(f"{f}: usage examples live in examples/")
         if f.startswith("results/"):
@@ -187,7 +182,6 @@ def main():
     sections = [
         ("layout", lambda: (None, check_layout(files))),
         ("naming", lambda: (None, check_naming(files))),
-        ("factories", lambda: (None, check_factories(files))),
         ("references", lambda: (None, check_references(files))),
     ]
     if not skip_imports:

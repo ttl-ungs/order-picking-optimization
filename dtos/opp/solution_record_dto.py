@@ -5,19 +5,16 @@ from models.base.opp_location_graph import OPPLocationGraph
 
 class SolutionRecordDTO:
     """
-    Everything needed to re-check a heuristic's solution outside the run
-    that produced it: the instance it ACTUALLY solved and the solution
-    itself (the solution_info dict the model already hands to its Observer).
+    What is needed to re-check a heuristic's solution outside the run that
+    produced it: the instance it solved and the solution (the solution_info
+    dict the model hands to its Observer).
 
-    The sets are the model's effective ones, not the input ModelDTO's: e.g.
-    opp_hc_4/opp_aco_4 fall back to P = ["P1"] when a test leaves P unset,
-    and the verifier must check against that same picker set.
+    The sets are the ones the model actually used, not those of the input
+    ModelDTO: the heuristics fall back to P = ["P1"] when a test leaves P
+    unset, and the verifier must use that same picker set.
 
-    Holds references only -- nothing is copied or serialized while the model
-    is solving, so attaching one to a SolveResult costs nothing measurable.
-    Serialization happens after the test finished, and only when the runner
-    was asked to keep solutions (WRITE_SOLUTIONS, see
-    verification/solution_store.py).
+    Holds references only; it is serialized after the test, and only when the
+    runner keeps solutions (WRITE_SOLUTIONS, verification/solution_store.py).
     """
 
     def __init__(
@@ -67,7 +64,7 @@ class SolutionRecordDTO:
 
     @property
     def params(self):
-        """The model's solve DTO (SolveHC4ModelDTO / SolveAco4ModelDTO)."""
+        """The model's solve DTO (SolveHCModelDTO / SolveAcoModelDTO)."""
         return self._params
 
     @property

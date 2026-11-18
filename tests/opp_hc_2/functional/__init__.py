@@ -1,1 +1,0 @@
-# Normal tests directory

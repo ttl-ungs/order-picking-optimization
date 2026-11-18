@@ -1,17 +1,18 @@
-"""Write/read a heuristic's solution record (instance + solution) as JSON.
+"""Write/read a solution record (instance + solution) as JSON.
 
 One file per test, written by the test runner when WRITE_SOLUTIONS is set
-(tests/infra/execution/runner.py) and read back by verification/ to re-check
-the solution against opp_v5_1_mono without re-running the heuristic.
+(tests/infra/execution/runner.py) and read back by verification/ without
+running the model again.
 
-Format (format_version 1), every id (order, batch, picker, vertex) stored as
+Format of a heuristic's record (format_version 1). Every id (order, batch,
+picker, vertex) is stored as
 a string -- ZIMPL reads them as strings anyway (dat_files_builder quotes
 every element), and it keeps JSON's string-only object keys from silently
 turning an int vertex id into a different key than the same id in a list:
 
     {
       "format_version": 1,
-      "model": "opp_hc_4",
+      "model": "opp_hc",
       "test": "<unittest id>",
       "instance": {
         "N": [...], "V": [...], "P": [...], "B": [...],
@@ -128,7 +129,7 @@ def _scenario_value(key, value):
         return sorted(items, key=str)
     if isinstance(value, dict):
         if value and isinstance(next(iter(value)), tuple):
-            drop_zeros = key in ("A_ni", "B_nb", "X_pb")
+            drop_zeros = key in ("A_ni", "B_nb")
             return [[*(str(k) for k in ks), v] for ks, v in value.items() if v or not drop_zeros]
         return [[str(k), v] for k, v in value.items()]
     return value
@@ -137,7 +138,7 @@ def _scenario_value(key, value):
 def zimpl_record_to_dict(record, test_id):
     """Serialize a ZimplSolutionRecordDTO (dtos/opp/zimpl_solution_record_dto.py):
     kind "zimpl", the instance as the build_dat_files scenario dict (see
-    _scenario_value) and every non-zero variable value; for opp_v5_2_split
+    _scenario_value) and every non-zero variable value; for opp_split
     also Stage 1's values (the routes)."""
     def nonzero(values):
         return None if values is None else {k: v for k, v in values.items() if abs(v) > 1e-9}

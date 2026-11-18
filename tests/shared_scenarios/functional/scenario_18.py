@@ -3,6 +3,7 @@ from models.base.opp_location_graph import OPPLocationGraph
 
 def detour_single_mission_route():
     V = {"L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8"}
+    P = {"P1"}
     B = {"B1"}
 
     opp_location_graph = OPPLocationGraph("L1", "L8")
@@ -44,6 +45,9 @@ def detour_single_mission_route():
     w2 = 10.0
     gamma = 1.0
     delta = 5.0
+
+    x = {("P1", "B1"): 1}
+
     cap_vehicle = 10.0
 
-    return V, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle
+    return V, P, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle, x

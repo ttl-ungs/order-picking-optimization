@@ -1,182 +1,76 @@
 # Linear Picking Routing
 
-## Table of Contents
+Implementation of the thesis on the order picking problem (OPP) in a warehouse: jointly deciding how
+batches of customer orders are assigned to pickers, in which sequence each picker runs them, and
+which route each batch follows through the warehouse graph, so that the weighted completion time
+plus the earliness and tardiness penalties is minimized. Pickers have heterogeneous speeds and a
+cold-chain limit bounds how long a batch may take.
 
-- [Linear Picking Routing](#linear-picking-routing)
-  - [Table of Contents](#table-of-contents)
-  - [Project Purpose](#project-purpose)
-  - [How the Project Was Implemented](#how-the-project-was-implemented)
-    - [Current Repository Structure](#current-repository-structure)
-    - [How the Observer Pattern Is Used](#how-the-observer-pattern-is-used)
-    - [Optimization approach](#optimization-approach)
-    - [Model parameters](#model-parameters)
-  - [Requirements](#requirements)
-    - [Installation](#installation)
-  - [How to Run the Tests](#how-to-run-the-tests)
-    - [Run the full test suite](#run-the-full-test-suite)
-    - [Run a single test file](#run-a-single-test-file)
-    - [What the tests cover](#what-the-tests-cover)
-  - [Authors](#authors)
+The formulation follows *A Model for the Joint Optimisation of Order Batching, Batch Assignment
+Sequencing and Picking Routing*.
 
-## Project Purpose
+## The four models
 
-This repository implements a mathematical optimization model for the order picking problem in a warehouse setting.
+| Model | Directory | What it is |
+| --- | --- | --- |
+| OPP-Split | `models/opp_split/` | Exact, two stages in ZIMPL + SCIP: Stage 1 routes each batch, Stage 2 assigns and sequences. The reference of the comparisons. |
+| OPP-Mono | `models/opp_mono/` | Exact, the same problem as one monolithic MIP in ZIMPL + SCIP. |
+| OPP-HC | `models/opp_hc/` | Hill Climbing heuristic (Python). |
+| OPP-ACO | `models/opp_aco/` | Ant Colony Optimization heuristic (Python). |
 
-The project focuses on the joint optimization of:
+All four solve the same cases: the 38 functional cases (37 in `tests/functional_cases/` plus case 38,
+which each exact model holds as a test of its own) and the 19 stress scenarios of the thesis.
+The exact models are checked against the exact optimum (objective and routes); the heuristics are
+checked on the status, and their solutions are verified against OPP-Mono (`verification/`).
 
-- order batching,
-- batch assignment,
-- mission sequencing, and
-- picking routing.
+## Repository layout
 
-In practice, the model decides how customer orders should be grouped and routed through a directed warehouse graph so that the total collection time and the penalties for earliness and tardiness are minimized.
+- `models/` — the four models, plus `base/` (abstract `Model`, location graph) and `utils/` (code shared by the heuristics and the pre-solve validations).
+- `dtos/` — parameter containers (`ModelDTO`, `SolveModelDTO`, `SolveHCModelDTO`, `SolveAcoModelDTO`, solve results and solution records).
+- `observer/` — the Observer pattern: the heuristics notify; each heuristic's `utils/output_handler.py` prints.
+- `tests/` — `functional_cases/` and `stress_cases/` hold each case once; each `tests/<model>/` binds a model to them (`bind_cases`) and holds the tests of its own; `shared_scenarios/` has the graphs and scenarios; `infra/` has the runner and helpers; `run_suite.py` is the entry point.
+- `results/` — CSVs of the runs: `results/<model>/<functional|stress>/`, studies of a model (`ablation`, `pheromone`, `seeds`, `budget`), `compliance/`, `comparability/` and `equal_time/`.
+- `verification/` — checks saved heuristic solutions against OPP-Mono and compares OPP-Split with OPP-Mono.
+- `experiments/` — everything that is not a test and reads or produces `results/`, split by who it is for: `common/` (all models: which result files count), `comparison/` (models against each other), `exact/` (OPP-Split and OPP-Mono) and `heuristics/` (OPP-HC, OPP-ACO). See [experiments/README.md](experiments/README.md).
+- `scripts/` — repository checks (`check_repo`, `run_all`, `make_stress_smoke`).
+- `docs/` — specs, the style guide and the generated reports; `conventions.md` — the binding conventions.
 
-The implementation follows the formulation described in the article mentioned in the source code comments: *A Model for the Joint Optimisation of Order Batching, Batch Assignment Sequencing and Picking Routing*.
+## Documentation
 
-## How the Project Was Implemented
-
-The project is implemented in Python and uses `PySCIPOpt` as the optimization engine.
-
-### Current Repository Structure
-
-- `models/base/model.py` contains the abstract base model shared by all optimization approaches.
-- `models/opp_v1/` contains the original OPP implementation and its related classes; later exact models are `opp_v2`..`opp_v4`, `opp_v5_1_mono` (monolithic) and `opp_v5_2_split` (two-stage), and the heuristics are `opp_hc_1`..`opp_hc_4` (Hill Climbing) and `opp_aco_1`..`opp_aco_4` (Ant Colony Optimization).
-- `tests/<model>/functional/` and `tests/<model>/stress/` contain each model's tests (`test_case_NN.py`).
-- `tests/shared_scenarios/` contains every reusable warehouse scenario used by the tests.
-- `results/<model>/<functional|stress|stability>/` holds the CSV results produced by the test runs, read by `analysis/`.
-
-Main components:
-
-- `models/base/model.py` defines a base abstract model and supports an observer pattern.
-- `models/opp_v1/opp_model_v1.py` contains the main OPP optimization model. It creates decision variables, defines the objective function, adds routing and timing constraints, solves the model, and returns the resulting status and output graph.
-- `models/opp_v1/opp_location_graph.py` defines a lightweight directed graph structure used to represent warehouse locations, depot and final nodes, and distances between locations.
-- `models/opp_v1/opp_output_builder.py` reconstructs the selected arcs from the solved model and converts them into an output graph.
-- `utils/output_handler.py` acts as an observer that prints the optimization results in a readable way, including objective value, mission times, tardiness/earliness, and selected routes.
-- `tests/shared_scenarios/` contains reusable warehouse layouts and parameter sets used by the tests.
-- `tests/<model>/` contains the tests that validate different routing and assignment situations for each implementation.
-
-### How the Observer Pattern Is Used
-
-The project uses the Observer pattern to keep the optimization model independent from the way results are displayed.
-
-The implementation works as follows:
-
-1. `models/base/model.py` defines the abstract base class `Model`.
-  This class stores a list of observers and provides `attach()`, `detach()`, and `notify()` methods.
-
-2. `observer/observer.py` defines the abstract class `Observer`.
-  Any observer must implement the `update()` method.
-
-3. `utils/output_handler.py` implements `Observer`.
-  Its `update()` method receives the solved SCIP model, the relevant sets, and the decision variables, and then prints a readable summary of the solution.
-
-4. `models/opp_v1/opp_model_v1.py` inherits from `Model`.
-  After the optimization finishes, it calls `notify(...)` with the solution data.
-
-5. In the tests, an `OutputHandler` object is created and attached to the model before calling `solve()`.
-  Because of that, every test can automatically display objective values, execution times, tardiness, earliness, and mission routes after the solver finishes.
-
-This design has two main advantages:
-
-- it keeps `OPPModel` focused on building and solving the mathematical model,
-- it makes output handling extensible, because new observers can be added later without changing the optimization code.
-
-### Optimization approach
-
-The model is built as a mixed-integer optimization problem. Among other elements, it includes:
-
-- binary routing variables to decide whether an arc is used in a mission,
-- flow variables to control capacity and avoid invalid cycles,
-- timing variables for mission execution and batch completion,
-- tardiness and earliness variables for order service evaluation.
-
-The objective combines:
-
-- total collection/completion time, and
-- weighted penalties for earliness and tardiness.
-
-### Model parameters
-
-Common parameters used by the OPP/OPP v2 models:
-
-- `w1`: weight of completion time (sum of `v[p,b]`).
-- `w2`: weight of penalty term (earliness + tardiness).
-- `gamma`: weight of earliness sum.
-- `delta`: weight of tardiness sum.
-- `cap_n`: capacity required by each order `n`.
-- `cap_vehicle`: vehicle capacity per batch.
-- `a[n,i]`: 1 if order `n` must visit location `i`.
-- `beta_time`: time per distance unit traveled.
-- `beta_setup`: setup time per batch.
-- `beta_picking`: time per unit picked (multiplies sum of `cap_n`).
-- `due_date[n]`: due date for each order `n`.
-- `M`: big-M constant used in timing constraints.
-- `x[p,b]`: 1 if batch `b` is assigned to picker `p`.
-- `y[n,b]`: 1 if order `n` is assigned to batch `b`.
-
-Graph parameters are provided by the location graph:
-
-- `d(i,j)`: distance between locations `i` and `j` (from the graph weights).
+| Where | What |
+| --- | --- |
+| [models/README.md](models/README.md) | The four models and the code they share; one README per model. |
+| [dtos/README.md](dtos/README.md) | The parameter and result containers. |
+| [tests/README.md](tests/README.md) | How the cases are shared and how to run them. |
+| [results/README.md](results/README.md) | Layout of the result files. |
+| [experiments/README.md](experiments/README.md) | Which experiments exist, for which models, and how they work. |
+| [verification/README.md](verification/README.md) | Checking the heuristics' solutions against OPP-Mono. |
+| [scripts/README.md](scripts/README.md) | Repository checks and CI. |
+| [observer/README.md](observer/README.md) | The Observer pattern and who uses it. |
+| [docs/README.md](docs/README.md) | The specs, the style guide and the generated reports. |
+| [docs/specs/comparabilidad_split_heuristicas.md](docs/specs/comparabilidad_split_heuristicas.md) | Which results of the exact models and the heuristics can be compared. |
+| [conventions.md](conventions.md) | The binding conventions. |
 
 ## Requirements
 
-Minimum project requirements:
+Python 3.12+ and `pip install -r requirements.txt` (PySCIPOpt, python-dotenv, pandas).
+The exact models also need the `zimpl` binary on the `PATH` (conda-forge package `zimpl`).
+Local settings (per-test timeouts, whether to write result CSVs and solutions, whether the heuristics print their full result) come from a `.env`;
+copy `.env.example` to change them.
 
-- Python 3
-- `PySCIPOpt >= 5.6.0`
+## Running the tests
 
-The repository currently declares the following dependency in `requirements.txt`:
-
-```txt
-pyscipopt>=5.6.0
-```
-
-### Installation
-
-Create and activate a virtual environment if needed, then install dependencies:
+From the repository root:
 
 ```bash
-pip install -r requirements.txt
+python -m tests.run_suite opp_hc functional
+python -m tests.run_suite opp_split stress --id 04
+python -m scripts.check_repo
+python -m scripts.run_all --collect-only --profile full --tier all
 ```
 
-## How to Run the Tests
-
-The test suite is implemented with Python's built-in `unittest` framework.
-
-### Run the full test suite
-
-From the project root:
-
-```bash
-python -m unittest discover -s tests/opp_v1/functional -p "test_case_*.py"
-```
-
-To run any model's suite (functional or stress) with the timeout/CSV runner:
-
-```bash
-python -m tests.run_suite opp_hc_2 functional
-python -m tests.run_suite opp_hc_3 stress --id 04
-```
-
-### Run a single test file
-
-For example:
-
-```bash
-python tests/opp_v1/functional/test_case_08.py
-```
-
-### What the tests cover
-
-The tests are based on predefined scenarios and check cases such as:
-
-- basic two-order routing,
-- routes across multiple aisles,
-- alternative route selection,
-- repeated picking locations,
-- single-mission and multi-mission assignments.
-
-Each test builds a warehouse graph, defines orders, missions, capacities, due dates, and assignment parameters, then solves the model and compares the generated output graph against an expected route.
+`run_suite` runs every test in its own process with a timeout and, with `WRITE_RESULTS_CSV=1`, writes
+`results/<model>/<tier>/`. `--id NN` selects one case. See `scripts/README.md` and `tests/README.md`.
 
 ## Authors
 

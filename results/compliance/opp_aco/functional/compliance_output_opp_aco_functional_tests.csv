@@ -1,0 +1,71 @@
+test,model,verdict,heuristic_obj,recomputed_obj,level1_status,level1_obj,level2_status,level2_obj,big_m_substituted,prechecks,diagnosis,notes,error,check_time
+test_case_invalid_speed_rejected.TestOPPAntColonyOptimizationInvalidSpeedRejected.test_negative_speed_is_rejected,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
+test_case_invalid_speed_rejected.TestOPPAntColonyOptimizationInvalidSpeedRejected.test_zero_speed_is_rejected,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
+test_functional_cases.Case15.test_3_orders_1_mission_1_picker,opp_aco,compliant,889.0,889.0,optimal,889.0,optimal,889.0,False,,,,,0.08929228782653809
+test_functional_cases.Case16.test_6_orders_3_missions_2_pickers,opp_aco,compliant,1338.0,1338.0,optimal,1338.0,optimal,1338.0,False,,,,,0.09238314628601074
+test_functional_cases.Case01.test_basic_two_orders_capacity_limit,opp_aco,compliant,39.0,39.0,optimal,30.0,optimal,39.0,False,,,,,0.0798501968383789
+test_functional_cases.Case27.test_basic_two_orders_with_different_weights,opp_aco,compliant,58.05,58.05,optimal,58.05,optimal,58.05,False,,,,,0.07966113090515137
+test_functional_cases.Case37JustInTime.test_batch_is_not_delayed_when_completion_weight_dominates,opp_aco,compliant,78.0,78.0,optimal,78.0,optimal,78.0,False,,,,,0.13940215110778809
+test_functional_cases.Case36SpeedCoverage.test_batches_are_split_when_fast_picker_is_only_twice_as_fast,opp_aco,compliant,25.0,25.0,optimal,25.0,optimal,25.0,False,,,,,0.0825343132019043
+test_functional_cases.Case17.test_branched_single_mission_route,opp_aco,compliant,2512.5,2512.5,optimal,2512.5,optimal,2512.5,False,,,,,0.09557151794433594
+test_functional_cases.Case21.test_bridge_disconnected_required_location,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
+test_functional_cases.Case26.test_bridge_disconnected_required_location_with_capacities,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
+test_functional_cases.Case26.test_bridge_earliness_order_size__1,opp_aco,compliant,596375.0,596375.0,optimal,22175.0,optimal,596375.0,False,,,,,0.10830950736999512
+test_functional_cases.Case26.test_bridge_earliness_order_size__2,opp_aco,compliant,595505.0,595505.0,optimal,22697.0,optimal,595505.0,False,,,,,0.10071897506713867
+test_functional_cases.Case26.test_bridge_shared_locations_across_batches,opp_aco,compliant,2463.0,2463.0,optimal,2463.0,optimal,2463.0,False,,,,,0.07948780059814453
+test_functional_cases.Case26.test_bridge_tardiness_beta_picking__1,opp_aco,compliant,5325.0,5325.0,optimal,5325.0,optimal,5325.0,False,,,,,0.09400105476379395
+test_functional_cases.Case26.test_bridge_tardiness_beta_picking__2,opp_aco,compliant,13479.0,13479.0,optimal,13479.0,optimal,13479.0,False,,,,,0.10709452629089355
+test_functional_cases.Case24ColdChain.test_cold_chain_filters_out_the_slow_picker,opp_aco,compliant,9.0,9.0,optimal,9.0,optimal,9.0,False,,,,,0.08440613746643066
+test_functional_cases.Case35ColdChainCoverage.test_cold_limit_applies_to_each_batch_not_the_whole_shift,opp_aco,compliant,27.0,27.0,optimal,27.0,optimal,27.0,False,,,,,0.07741379737854004
+test_functional_cases.Case35ColdChainCoverage.test_cold_limit_tolerance_keeps_a_picker_within_rounding_noise,opp_aco,compliant,9.0,9.0,optimal,9.0,optimal,9.0,False,,,,,0.06624960899353027
+test_functional_cases.Case34SpeedFormula.test_completion_time_matches_the_documented_formula_exactly,opp_aco,compliant,16.0,16.0,optimal,16.0,optimal,16.0,False,,,,,0.0909731388092041
+test_functional_cases.Case18.test_detour_single_mission_route,opp_aco,compliant,4518.0,4518.0,optimal,4518.0,optimal,4518.0,False,,,,,0.08798813819885254
+test_functional_cases.Case28.test_due_dates_tight_vs_relaxed__1,opp_aco,compliant,20.0,20.0,optimal,20.0,optimal,20.0,False,,,,,0.08312129974365234
+test_functional_cases.Case28.test_due_dates_tight_vs_relaxed__2,opp_aco,compliant,0.0,0.0,optimal,0.0,optimal,0.0,False,,,,,0.11119723320007324
+test_functional_cases.Case22.test_earliness_when_batch_finishes_before_due_date,opp_aco,compliant,10126.0,10126.0,optimal,10126.0,optimal,10126.0,False,,,,,0.09157967567443848
+test_functional_cases.Case36SpeedCoverage.test_fast_picker_takes_both_batches_when_four_times_faster,opp_aco,compliant,16.5,16.5,optimal,16.5,optimal,16.5,False,,,,,0.0779268741607666
+test_functional_cases.Case35ColdChainCoverage.test_fixed_time_counts_toward_the_cold_limit,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
+test_functional_cases.Case11.test_four_orders_two_locations_two_missions,opp_aco,compliant,3666.0,3666.0,optimal,3666.0,optimal,3666.0,False,,,,,0.08495426177978516
+test_functional_cases.Case30.test_fractional_and_zero_capacities_feasible,opp_aco,compliant,344.0,344.0,optimal,213.5,optimal,344.0,False,,,"dropped 10 empty batch(es) not in the solution: ['B11', 'B12', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']",,0.08081412315368652
+test_functional_cases.Case30.test_fractional_and_zero_capacities_infeasible,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
+test_functional_cases.Case25.test_grid_batch_infeasible_order_size,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
+test_functional_cases.Case25.test_grid_duplicate_location_within_batch,opp_aco,compliant,2434.0,2434.0,optimal,2434.0,optimal,2434.0,False,,,,,0.10317325592041016
+test_functional_cases.Case20.test_grid_multi_location_orders,opp_aco,compliant,2620.0,2620.0,optimal,2620.0,optimal,2620.0,False,,,,,0.11884474754333496
+test_functional_cases.Case25.test_grid_multi_location_orders_with_capacities,opp_aco,compliant,2620.0,2620.0,optimal,2620.0,optimal,2620.0,False,,,,,0.0895833969116211
+test_functional_cases.Case25.test_grid_order_size_bigger_than_cart_infeasible,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
+test_functional_cases.Case25.test_grid_penalties_due_date__1,opp_aco,compliant,276.0,276.0,optimal,276.0,optimal,276.0,False,,,,,0.0965576171875
+test_functional_cases.Case25.test_grid_penalties_due_date__2,opp_aco,compliant,0.0,0.0,optimal,0.0,optimal,0.0,False,,,,,0.10132598876953125
+test_functional_cases.Case25.test_grid_penalties_order_size_equal_to_cart__1,opp_aco,compliant,102.0,102.0,optimal,102.0,optimal,102.0,False,,,,,0.09145927429199219
+test_functional_cases.Case25.test_grid_penalties_order_size_equal_to_cart__2,opp_aco,compliant,156.0,156.0,optimal,156.0,optimal,156.0,False,,,,,0.09736871719360352
+test_functional_cases.Case25.test_grid_shared_locations_across_batches,opp_aco,compliant,3224.0,3224.0,optimal,3224.0,optimal,3224.0,False,,,,,0.09554195404052734
+test_functional_cases.Case23RoutingAndScheduling.test_longer_route_is_assigned_to_the_faster_picker,opp_aco,compliant,16.0,16.0,optimal,16.0,optimal,16.0,False,,,,,0.0987999439239502
+test_functional_cases.Case19.test_longer_single_mission_duplicate_location,opp_aco,compliant,320.0,320.0,optimal,25.0,optimal,320.0,False,,,,,0.0935666561126709
+test_functional_cases.Case19.test_longer_single_mission_penalties__1,opp_aco,compliant,120.0,120.0,optimal,120.0,optimal,120.0,False,,,,,0.1058204174041748
+test_functional_cases.Case19.test_longer_single_mission_penalties__2,opp_aco,compliant,0.0,0.0,optimal,0.0,optimal,0.0,False,,,,,0.08578848838806152
+test_functional_cases.Case19.test_longer_single_mission_route,opp_aco,compliant,320.0,320.0,optimal,25.0,optimal,320.0,False,,,,,0.0839076042175293
+test_functional_cases.Case34ColdChainEdgeCases.test_no_eligible_picker_returns_infeasible_gracefully,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
+test_functional_cases.Case29.test_one_empty_batch_allowed,opp_aco,compliant,386.0,386.0,optimal,386.0,optimal,386.0,False,,,"SCIP levels ran on the routes' subgraph: 17 of 25 nodes, 18 of 80 arcs",,0.19736838340759277
+test_functional_cases.Case14.test_one_period_two_orders_per_vehicle,opp_aco,compliant,3087.0,3087.0,optimal,3087.0,optimal,3087.0,False,,,,,0.13316559791564941
+test_functional_cases.Case31.test_order_assigned_to_multiple_batches_infeasible,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
+test_functional_cases.Case31.test_order_assigned_to_single_batch_feasible,opp_aco,compliant,388.0,388.0,optimal,298.0,optimal,388.0,False,,,,,0.08184957504272461
+test_functional_cases.Case34ColdChainEdgeCases.test_picker_exactly_at_the_cold_chain_limit_is_still_eligible,opp_aco,compliant,9.0,9.0,optimal,9.0,optimal,9.0,False,,,,,0.09793281555175781
+test_functional_cases.Case24bPreflightEligibility.test_preflight_detects_when_no_picker_is_eligible,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
+test_functional_cases.Case07.test_repeated_picking_locations,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
+test_functional_cases.Case08.test_repeated_picking_locations_2,opp_aco,compliant,69.0,69.0,optimal,69.0,optimal,69.0,False,,,,,0.07743024826049805
+test_functional_cases.Case38SimplePathLimit.test_route_that_must_revisit_a_vertex_is_infeasible,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
+test_functional_cases.Case23RoutingAndScheduling.test_routes_are_exported_and_used_by_scheduling,opp_aco,compliant,16.0,16.0,optimal,16.0,optimal,16.0,False,,,,,0.07470512390136719
+test_functional_cases.Case33.test_service_time_mixed,opp_aco,compliant,106.5,106.5,optimal,106.5,optimal,106.5,False,,,,,0.07377839088439941
+test_functional_cases.Case33.test_service_time_one,opp_aco,compliant,81.0,81.0,optimal,81.0,optimal,81.0,False,,,,,0.07375621795654297
+test_functional_cases.Case33.test_service_time_zero,opp_aco,compliant,39.0,39.0,optimal,30.0,optimal,39.0,False,,,,,0.07251715660095215
+test_functional_cases.Case32.test_single_order_exceeds_vehicle,,skipped,,,,,,,False,,,no saved solution (test status: ok),,
+test_functional_cases.Case36SpeedCoverage.test_tardiness_uses_the_speed_scaled_route_time,opp_aco,compliant,310.0,310.0,optimal,310.0,optimal,310.0,False,,,,,0.0674123764038086
+test_functional_cases.Case22.test_tardiness_when_batch_finishes_after_due_date,opp_aco,compliant,154.0,154.0,optimal,154.0,optimal,154.0,False,,,,,0.06650948524475098
+test_functional_cases.Case02.test_two_orders_two_aisles,opp_aco,compliant,795.0,795.0,optimal,795.0,optimal,795.0,False,,,,,0.10151457786560059
+test_functional_cases.Case03.test_two_orders_two_aisles,opp_aco,compliant,795.0,795.0,optimal,795.0,optimal,795.0,False,,,,,0.062348365783691406
+test_functional_cases.Case04.test_two_orders_two_aisles_one_picking_point_per_order,opp_aco,compliant,795.0,795.0,optimal,795.0,optimal,795.0,False,,,,,0.09387707710266113
+test_functional_cases.Case05.test_two_orders_two_aisles_using_one_aisle,opp_aco,compliant,846.0,846.0,optimal,846.0,optimal,846.0,False,,,,,0.09872269630432129
+test_functional_cases.Case09.test_two_orders_two_locations,opp_aco,compliant,1833.0,1833.0,optimal,1833.0,optimal,1833.0,False,,,,,0.09833455085754395
+test_functional_cases.Case10.test_two_orders_two_locations_two_missions,opp_aco,compliant,1509.0,1509.0,optimal,1509.0,optimal,1509.0,False,,,,,0.09138917922973633
+test_functional_cases.Case13.test_two_periods_two_orders_per_vehicle,opp_aco,compliant,3087.0,3087.0,optimal,3087.0,optimal,3087.0,False,,,,,0.1199648380279541
+test_functional_cases.Case06ShortestRoute.test_every_route_is_optimal_when_all_arrive_in_time,opp_aco,compliant,144.0,144.0,optimal,144.0,optimal,144.0,False,,,"SCIP levels ran on the routes' subgraph: 3 of 5 nodes, 2 of 6 arcs",,0.15586256980895996
+test_functional_cases.Case06ShortestRoute.test_shorter_route_is_chosen_when_the_longer_one_is_late,opp_aco,compliant,56.0,56.0,optimal,20.0,optimal,56.0,False,,,"SCIP levels ran on the routes' subgraph: 3 of 5 nodes, 2 of 6 arcs",,0.12978005409240723

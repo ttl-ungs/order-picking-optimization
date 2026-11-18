@@ -1,6 +1,6 @@
-"""Check a heuristic solution (opp_hc_4 / opp_aco_4) against opp_v5_1_mono.
+"""Check a heuristic solution (opp_hc / opp_aco) against opp_mono.
 
-The monolithic MIP is the single source of truth for the v5 constraints:
+The monolithic MIP is the single source of truth for the constraints:
 instead of re-implementing them in Python, the heuristic's values are fixed
 on mono's own variables and SCIP decides whether they are feasible. Two
 SCIP levels plus a Python precheck, see dtos/verification/
@@ -29,7 +29,7 @@ from tests.infra.zimpl.dat_files_builder import (
 )
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-MONO_ZPL = os.path.join(PROJECT_ROOT, "models", "opp_v5_1_mono", "opp_model_v5_1_mono.zpl")
+MONO_ZPL = os.path.join(PROJECT_ROOT, "models", "opp_mono", "opp_mono.zpl")
 
 REL_TOL = 1e-6
 COLD_CHAIN_TOL = 1e-9  # same tolerance mono's u_pb upper bound uses
@@ -41,17 +41,15 @@ def _close(a, b, tol=REL_TOL):
 
 
 def _drop_empty_batches(instance, solution, report):
-    """Remove from B every batch with no orders that the heuristic didn't
-    use either (agreed with the user, 2026-09-28).
+    """Remove from B every batch without orders that the heuristic did not use.
 
-    Mono forces EVERY batch in B to be routed, assigned and charged in the
-    objective (its c_b), even one with no orders; opp_hc_4/opp_aco_4 skip
-    empty batches. Left in, mono prices a correct solution above what the
-    heuristic reports (e.g. 14.5 vs 6.25) and, with many of them free, SCIP
-    can hit its time limit on an otherwise trivial instance. An empty batch
-    has no real work, so dropping it verifies the same problem the heuristic
-    solved; no constraint of mono is touched. A batch that IS in the
-    solution is kept (and checked) even if empty."""
+    Mono routes, assigns and charges every batch of B, even one without
+    orders; the heuristics skip empty batches. Left in, mono would price a
+    correct solution above what the heuristic reports and, with many of them
+    free, SCIP can reach its time limit on a trivial instance. An empty batch
+    has no work, so dropping it verifies the problem the heuristic solved and
+    touches no constraint of mono. A batch that is in the solution is kept
+    (and checked) even if it is empty."""
     used = {b for seq in solution["picker_sequences"].values() for b in seq} | set(solution["routes"])
     with_orders = {b for (_n, b), value in instance["B_nb"].items() if value}
     empty = sorted(b for b in instance["B"] if b not in with_orders and b not in used)
@@ -100,7 +98,7 @@ def _scenario(instance):
         "B_nb": {(n, b): instance["B_nb"].get((n, b), 0) for n in N for b in B},
         "V_p": dict(instance["V_p"]),
         # +inf (cold chain disabled, the heuristics' default) can't be written
-        # to a .dat: use the same stand-in the v5 migrated tests use.
+        # to a .dat: use the same stand-in the functional cases use.
         "T_cold": instance["T_cold"] if math.isfinite(instance["T_cold"]) else DEFAULT_T_COLD,
     }
 
@@ -263,7 +261,7 @@ def _compile_lp(sc, m, m_seq, workdir):
     tests/infra/zimpl/zpl_utils.solve_zpl does (zimpl run from the dat dir,
     mono reads ../dat_files/*)."""
     dat_dir = os.path.join(workdir, "dat_files")
-    zpl_dir = os.path.join(workdir, "opp_v5_1_mono")
+    zpl_dir = os.path.join(workdir, "opp_mono")
     os.makedirs(dat_dir)
     os.makedirs(zpl_dir)
     zpl_path = os.path.join(zpl_dir, os.path.basename(MONO_ZPL))
@@ -363,10 +361,9 @@ def _diagnose(sc, ev, lp_path, time_limit, report):
 
 
 def _restrict_to_solution(sc, ev, report):
-    """Scenario for the SCIP levels restricted to what the fixed routes use
-    (agreed with the user, 2026-09-29): E -> the union of the routes' arcs,
-    V -> the nodes those routes touch (+ depot, final), and D_ij / S_i /
-    A_ni restricted accordingly.
+    """Scenario for the SCIP levels restricted to what the fixed routes use:
+    E -> the union of the routes' arcs, V -> the nodes those routes touch
+    (+ depot, final), and D_ij / S_i / A_ni restricted accordingly.
 
     Exactly equivalent for levels 1 and 2: with every route fixed, an arc
     no batch uses has z_ijb = 0 (hence q_ijb = 0) in every batch, and a
@@ -402,7 +399,7 @@ def _restrict_to_solution(sc, ev, report):
 
 def check_compliance(meta, instance, solution, time_limit=300.0, keep_workdir=None, restrict=True):
     """Check one solution (as read by verification.solution_store) against
-    opp_v5_1_mono.
+    opp_mono.
 
     Args:
         meta: {"model", "test"}.

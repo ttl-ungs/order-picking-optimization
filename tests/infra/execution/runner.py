@@ -5,7 +5,7 @@ import subprocess
 import sys
 import time
 import unittest
-from datetime import datetime  # NUEVO IMPORT
+from datetime import datetime
 
 try:
     import resource  # Unix only
@@ -19,27 +19,20 @@ _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.
 
 def _peak_rss_mb():
     """
-    Peak resident set size (RAM actually used, all of it -- Python objects
-    AND native allocations like PySCIPOpt's C-level SCIP state) of the
-    CURRENT process since it started, in MB. Read from the OS, not
-    tracemalloc: tracemalloc only sees Python-level allocations, which would
-    badly UNDERSTATE memory for exact-model tests (opp_v2/v3/v4/v5_1_mono/v5_2_split), whose
-    actual RAM cost is dominated by SCIP's native branch-and-bound state.
+    Peak resident set size of the current process, in MB, read from the OS.
+    tracemalloc sees only Python allocations and would badly understate the
+    exact models, whose memory is mostly SCIP's native state.
 
-    Unix: getrusage's ru_maxrss (bytes on macOS/BSD, KB on Linux), normalized
-    to MB. Windows has no `resource` module: uses the process's
-    PeakWorkingSetSize instead. Returns None if neither is available.
+    Unix: getrusage's ru_maxrss (bytes on macOS/BSD, KB on Linux). Windows:
+    the process's PeakWorkingSetSize. None if neither is available.
     """
     if resource is not None:
         raw = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         divisor = (1024 * 1024) if sys.platform == "darwin" else 1024
         return raw / divisor
     if sys.platform == "win32":
-        # Guarded because this runs in _run_test_child BEFORE the result is
-        # queued: any exception here (e.g. `from ctypes import wintypes`
-        # failing under memory pressure) would kill the child silently and
-        # the parent would report "no_result", discarding the test's real
-        # outcome. A missing memory figure must never cost us the result.
+        # Guarded: this runs in the child before the result is queued, and an
+        # exception here would lose the test's outcome for a memory figure.
         try:
             import ctypes
             from ctypes import wintypes
@@ -76,12 +69,9 @@ def _kill_process_tree(pid):
     """Kill `pid` and every descendant (best effort).
 
     multiprocessing's terminate() kills only the direct child. A test that
-    spawned worker processes of its own -- opp_v5_2_split's Stage 1 runs a
-    ProcessPoolExecutor -- leaves them orphaned when a timeout terminates
-    that child: SCIP keeps optimizing in each worker with nobody left to
-    collect the result, holding RAM and burning CPU against every test that
-    runs afterwards, so one timeout silently corrupts the timings of all
-    the tests behind it.
+    spawned workers of its own (opp_split's parallel Stage 1) would leave
+    them orphaned on a timeout, with SCIP still running in each and
+    distorting the timings of every test that runs afterwards.
     """
     if sys.platform == "win32":
         subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)], capture_output=True)
@@ -96,29 +86,42 @@ def _kill_process_tree(pid):
 
 
 def _save_solution(sr, test_name, solutions_dir, solve_data):
-    """Write the heuristic's solution record (if the model attached one) as
-    JSON under solutions_dir and link it from the CSV row as solution_file,
-    a path relative to the project root. Runs after `duration` was taken,
-    so serializing never counts towards the test's reported time. A failure
-    here is reported in the row instead of costing the test's result."""
+    """Write the solution record (if the model attached one) as JSON under
+    solutions_dir and link it from the CSV row as solution_file, a path
+    relative to the project root. It runs after `duration` was taken, so it
+    does not count towards the test's time; a failure here is reported in the
+    row instead of costing the test's result."""
     record = getattr(sr, "solution_record", None)
     if record is None or solve_data is None:
         return
     try:
         from verification.solution_store import write_solution_record
 
-        # <module>.<method>.json: the class name is dropped to stay under
-        # Windows' 260-char path limit (git can't index longer paths by
-        # default); the full unittest id is kept inside the JSON ("test").
+        # <module>.<class>.<method>.json: the id of the test as it appears in the CSV.
         parts = test_name.split(".")
-        path = os.path.join(solutions_dir, f"{parts[0]}.{parts[-1]}.json")
+        path = os.path.join(solutions_dir, f"{'.'.join(parts[-3:])}.json")
         write_solution_record(record, test_name, path)
         solve_data["solution_file"] = os.path.relpath(path, _PROJECT_ROOT).replace(os.sep, "/")
     except Exception as e:
         solve_data["solution_file"] = f"ERROR: {e}"
 
 
-def _run_test_child(test_name, q, solutions_dir=None):
+def _attach_output_handlers():
+    """Make every OPP-HC and OPP-ACO solver created in this process print its
+    result through its own OutputHandler. The tests build the solvers
+    themselves, so the handler is registered on the classes."""
+    from models.opp_aco import OPPAntColonyOptimization
+    from models.opp_aco.utils.output_handler import OutputHandler as AcoOutputHandler
+    from models.opp_hc import OPPHillClimbing
+    from models.opp_hc.utils.output_handler import OutputHandler as HcOutputHandler
+
+    OPPHillClimbing.attach_to_new_instances(HcOutputHandler)
+    OPPAntColonyOptimization.attach_to_new_instances(AcoOutputHandler)
+
+
+def _run_test_child(test_name, q, solutions_dir=None, print_results=False):
+    if print_results:
+        _attach_output_handlers()
     start = time.time()
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromName(test_name)
@@ -127,15 +130,24 @@ def _run_test_child(test_name, q, solutions_dir=None):
     duration = time.time() - start
     peak_rss_mb = _peak_rss_mb()
 
-    solve_data = None
+    # One row per instance the test solved. A test with several instances
+    # (the variants of a case) gets the ids <test>__1, <test>__2, ... in solve
+    # order, the ids of functional_instances.json; each row's total_time is
+    # the time of its own instance.
+    instances = []
     try:
-        from models.utils.solve_registry import get_last
+        from models.utils.solve_registry import get_instances
 
-        sr = get_last()
-        if sr is not None:
-            solve_data = sr.to_csv_row()
+        entries = [e for e in get_instances() if e["result"] is not None]
+        for k, entry in enumerate(entries, start=1):
+            instance_id = f"{test_name}__{k}" if len(entries) > 1 else test_name
+            solve_data = entry["result"].to_csv_row()
             if solutions_dir:
-                _save_solution(sr, test_name, solutions_dir, solve_data)
+                _save_solution(entry["result"], instance_id, solutions_dir, solve_data)
+            instance_duration = duration
+            if len(entries) > 1 and entry["started_at"] is not None:
+                instance_duration = entry["ended_at"] - entry["started_at"]
+            instances.append({"test": instance_id, "duration": instance_duration, "solve_data": solve_data})
     except Exception:
         pass
 
@@ -146,7 +158,7 @@ def _run_test_child(test_name, q, solutions_dir=None):
         "errors": [t[0].id() for t in result.errors],
         "duration": duration,
         "peak_rss_mb": peak_rss_mb,
-        "solve_data": solve_data,
+        "instances": instances or [{"test": test_name, "duration": duration, "solve_data": None}],
     }
     try:
         q.put(summary)
@@ -160,19 +172,18 @@ class TestRunner:
 
     def __init__(
         self, timeout_minutes: int, write_csv: bool, model_name: str, test_type: str,
-        write_solutions: bool = False,
+        write_solutions: bool = False, print_results: bool = False,
     ):
         self.timeout_minutes = timeout_minutes
+        self.print_results = print_results
         self.TIMEOUT_MSG = f"{self.TIMEOUT_MSG} - {timeout_minutes}"
         self.write_csv = write_csv
 
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # Ej: 20231024_153000
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        # Ej: output_opp_hc_stress_tests_20231024_153000.csv
         csv_filename = f"output_{model_name}_{test_type}_tests_{timestamp}.csv"
 
-        # Ej: results/opp_hc_1/stress/output_opp_hc_stress_tests_20231024_153000.csv
         self.csv_path = os.path.join(
             project_root, "results", model_name, test_type, csv_filename
         )
@@ -210,7 +221,7 @@ class TestRunner:
         for test_id in test_ids:
             print(f"Running {test_id} (timeout: {self.timeout_minutes} min)")
             q = multiprocessing.Queue()
-            p = multiprocessing.Process(target=_run_test_child, args=(test_id, q, self.solutions_dir))
+            p = multiprocessing.Process(target=_run_test_child, args=(test_id, q, self.solutions_dir, self.print_results))
             p.start()
             p.join(timeout_seconds)
 
@@ -279,16 +290,17 @@ class TestRunner:
             print("\nAll tests passed.")
 
         if self.write_csv:
-            print(f"\n✅ Resultados guardados en:\n{self.csv_path}")
+            print(f"\n✅ Results written to:\n{self.csv_path}")
         if self.solutions_dir and os.path.isdir(self.solutions_dir):
-            print(f"\n✅ Soluciones guardadas en:\n{self.solutions_dir}")
+            print(f"\n✅ Solutions written to:\n{self.solutions_dir}")
 
     def write_results_csv(self, results: list):
         param_keys = list(
             dict.fromkeys(
                 k
                 for r in results
-                for k in (r.get("solve_data") or {})
+                for instance in self._instances(r)
+                for k in (instance.get("solve_data") or {})
                 if k not in ("model_time", "obj_val")
             )
         )
@@ -297,13 +309,13 @@ class TestRunner:
         with open(self.csv_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
-            for r in results:
+            for r, instance in ((r, instance) for r in results for instance in self._instances(r)):
                 is_timeout = r.get("status") == "timeout"
-                solve_data = r.get("solve_data") or {}
+                solve_data = instance.get("solve_data") or {}
                 row = {
-                    "test": r["test"],
+                    "test": instance["test"],
                     "status": r.get("status"),
-                    "total_time": self.TIMEOUT_MSG if is_timeout else r.get("duration"),
+                    "total_time": self.TIMEOUT_MSG if is_timeout else instance.get("duration"),
                     "model_time": (
                         self.TIMEOUT_MSG if is_timeout else solve_data.get("model_time")
                     ),
@@ -316,6 +328,12 @@ class TestRunner:
                     **{k: solve_data.get(k) for k in param_keys},
                 }
                 writer.writerow(row)
+
+    @staticmethod
+    def _instances(result):
+        """The CSV rows of one test's result: one per instance it solved (a
+        timed-out test has a single row, with its own id)."""
+        return result.get("instances") or [{"test": result["test"], "duration": result.get("duration"), "solve_data": None}]
 
     def succeeded(self, results: list, allow_timeout: bool = False) -> bool:
         """True if every test passed; with allow_timeout, timeouts are tolerated

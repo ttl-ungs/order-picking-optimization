@@ -2,6 +2,8 @@ import unittest
 
 
 class OPPTestCase(unittest.TestCase):
+    """Base of every test case: helpers to prepare the parameters of an instance."""
+
     def setUp(self):
         self.start_time = 0
 
@@ -32,11 +34,3 @@ class OPPTestCase(unittest.TestCase):
         if delta_override is not None:
             delta = delta_override
         return w1, w2, gamma, delta
-
-    def sum_vars_with_prefix(self, scip_model, prefix):
-        total = 0.0
-        for var in scip_model.getVars():
-            name = var.name if hasattr(var, "name") else var.getName()
-            if name.startswith(prefix):
-                total += scip_model.getVal(var)
-        return total

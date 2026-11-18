@@ -7,6 +7,7 @@ from models.base.opp_location_graph import OPPLocationGraph
 
 def bidirectional_edges():
     V = {"L1", "L2", "L3", "L4", "L5", "LC"}
+    P = {"P1", "P2"}
     B = {"B1"}
 
     opp_location_graph = OPPLocationGraph("L1", "L5")
@@ -45,6 +46,9 @@ def bidirectional_edges():
     gamma = 1.0
     delta = 1.0
 
+    x = {(p, b): 0 for p in P for b in B}
+    x[("P1", "B1")] = 1
+
     cap_vehicle = 25.0
 
-    return V, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle
+    return V, P, B, w1, w2, gamma, delta, opp_location_graph, cap_vehicle, x
