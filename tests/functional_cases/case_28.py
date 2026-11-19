@@ -1,6 +1,7 @@
 import unittest
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from tests.infra.zimpl.dat_files_builder import build_dat_files
@@ -68,8 +69,13 @@ class Case28(ExactModelTestCase):
 
         return self.solve(
             params={
-                "N": len(N), "B": len(B), "V": len(V), "P": len(P),
-                "C_n": cap_n, "B_nb": y, "C_v": cap_vehicle,
+                "N": len(N),
+                "B": len(B),
+                "V": len(V),
+                "P": len(P),
+                "C_n": cap_n,
+                "B_nb": y,
+                "C_v": cap_vehicle,
             },
         )
 
@@ -79,7 +85,7 @@ class Case28(ExactModelTestCase):
             status_tight, _ = self._solve({"O1": 1.0, "O2": 1.0})
         except Exception as e:
             self.fail(f"ZPL solve failed (tight): {e}")
-        self.assertIn(status_tight, ("optimal", "feasible", "infeasible"))
+        self.assertIn(status_tight, ("optimal", "feasible"))
 
         try:
             status_relaxed, _ = self._solve({"O1": 1000.0, "O2": 1000.0})
