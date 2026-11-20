@@ -1,6 +1,11 @@
-# Linear Picking Routing
+# Order Picking Optimization
 
-Implementation of the thesis on the order picking problem (OPP) in a warehouse: jointly deciding how
+Code of the models and tests of the undergraduate thesis *Optimización del picking y del ruteo de
+pedidos en un centro de distribución* (Licenciatura en Sistemas, IDEI, Universidad Nacional de
+General Sarmiento). The thesis document, written in Spanish, is in
+[ttl-ungs/order-picking-optimization-thesis](https://github.com/ttl-ungs/order-picking-optimization-thesis).
+
+The thesis studies the order picking problem (OPP) in a warehouse: jointly deciding how
 batches of customer orders are assigned to pickers, in which sequence each picker runs them, and
 which route each batch follows through the warehouse graph, so that the weighted completion time
 plus the earliness and tardiness penalties is minimized. Pickers have heterogeneous speeds and a
@@ -50,6 +55,7 @@ checked on the status, and their solutions are verified against OPP-Mono (`verif
 | [docs/README.md](docs/README.md) | The specs, the style guide and the generated reports. |
 | [docs/specs/comparabilidad_split_heuristicas.md](docs/specs/comparabilidad_split_heuristicas.md) | Which results of the exact models and the heuristics can be compared. |
 | [conventions.md](conventions.md) | The binding conventions. |
+| [ttl-ungs/order-picking-optimization-thesis](https://github.com/ttl-ungs/order-picking-optimization-thesis) | The thesis document (Spanish): formulation, experiments and results. |
 
 ## Requirements
 
@@ -74,5 +80,5 @@ python -m scripts.run_all --collect-only --profile full --tier all
 
 ## Authors
 
-- Lucia Soria
 - Ximena Ebertz
+- Lucía Soria
